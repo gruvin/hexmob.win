@@ -1,0 +1,28 @@
+/* iPhone 11 1792x828px at 326ppi */:b1
+@media only screen
+    and (device-width: 414px)
+    and (device-height: 896px)
+    and (-webkit-device-pixel-ratio: 2) { }
+
+/* iPhone 11 Pro 2436x1125px at 458ppi */
+@media only screen
+    and (device-width: 375px)
+    and (device-height: 812px)
+    and (-webkit-device-pixel-ratio: 3) { }
+
+/* iPhone 11 Pro max 2688x1242px at 458ppi */
+@media only screen 
+    and (device-width: 414px) 
+    and (device-height: 896px) 
+    and (-webkit-device-pixel-ratio: 3) { }
+
+body { 
+    font-family: Arial,sans-serif; 
+    background: url(/hex/bg.jpg);
+    background-size: auto;
+}
+
+.bg-primary {
+    background-color: #2e79ca!important;
+}
+
