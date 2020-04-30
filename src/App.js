@@ -1,5 +1,5 @@
-import React from 'react'
-import 'bootstrap/dist/css/bootstrap.min.css'
+    import React from 'react'
+    import 'bootstrap/dist/css/bootstrap.min.css'
 //import Container from 'react-bootstrap/Container'
 import { Container, Card, Row, Col, Button } from 'react-bootstrap'
 
@@ -43,7 +43,17 @@ class App extends React.Component {
         this.contract = null
         this.state = {
             walletConnected: false,
-            walletAddress: null
+            walletAddress: null,
+            contractGlobals: {
+                lockedHeartsTotal: 0,
+                nextStakeSharesTotal: 0,
+                shareRate: 0,
+                stakePenaltyTotal: 0,
+                dailyDataCount: 0,
+                stakeSharesTotal: 0,
+                latestStakeId: 0,
+                claimStats: 0
+            }
         }
     }
 
@@ -63,6 +73,7 @@ class App extends React.Component {
                     window.location.reload(); 
                 })            
                 this.state.walletAddress = account.givenProvider.selectedAddress
+
                 this.setState({ walletConnected: true });
             }
         })
@@ -93,7 +104,7 @@ class App extends React.Component {
             return (
                 <Container fluid className="overflow-auto p-1">
                     <this.MyAddress />
-                    {this.state.walletConnected && <Stakes contract={this.contract} myAddress={this.state.walletAddress} /> }
+                    {this.state.walletConnected && <Stakes contract={this.contract} contractGlobals={this.state.contractGlobals} myAddress={this.state.walletAddress} /> }
                 </Container>
             )
         }
