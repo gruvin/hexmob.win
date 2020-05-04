@@ -54,7 +54,10 @@ class App extends React.Component {
         .then((provider) => {
             this.provider = provider
             this.web3 = new Web3(provider)
+            
             this.contract = new this.web3.eth.Contract(contractABI, contractAddress)
+            this.contract.globals = { }
+
             let account = this.web3.eth.accounts
             let walletAddress = account.givenProvider.selectedAddress
             //Check if Metamask is locked
@@ -63,16 +66,18 @@ class App extends React.Component {
                     console.log("MetaMask account change. Reloading...");
                     window.location.reload(); 
                 })            
-                this.setState({walletAddress: account.givenProvider.selectedAddress})
+                this.setState({
+                    walletAddress: account.givenProvider.selectedAddress,
+                    walletConnected: true 
+                })
 
-                this.setState({ walletConnected: true });
+                Promise.all([
+                    this.contract.methods.allocatedSupply().call(),
+                    this.contract.methods.globals().call()
+                ]).then((results) => {
+                    this.contract.globals.allocatedSupply = results[0] 
 
-                this.contract.methods.allocatedSupply().call().then(as => { 
-                    console.log('allocatedSupply: ', as)
-                    this.contract.allocatedSupply = as 
-                });
-
-                this.contract.methods.globals().call().then((globals) => {
+                    let globals = results[1]
                     // decode claimstats
                     const SATOSHI_UINT_SIZE = 51 // bits
                     let binaryClaimStats = new BigNumber(globals.claimStats).toString(2).padStart(153, '0')
@@ -86,7 +91,7 @@ class App extends React.Component {
                     }
                     this.contract.globals = globals // attach to contract itself (because I can :p)
 
-                    this.setState({ appReady: true });
+                    this.setState({ appReady: true })
                 })
             }
         })

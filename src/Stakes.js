@@ -26,7 +26,7 @@ class Stakes extends React.Component {
             address: props.myAddress,
             currentDay: null,
             stakeCount: null,
-            stakeList:  [],
+            stakeList:  [ ],
             stakedTotal: 0,
             sharesTotal: 0,
             poolShareTotal: 0,
@@ -36,36 +36,48 @@ class Stakes extends React.Component {
         }
     }
 
+    calcBigPayDaySlice = (shares, pool) => {
+        return Object.entries(this.contract.globals).length 
+            && new BigNumber(this.contract.globals.claimStats.unclaimedSatoshisTotal).times(10000).times(shares).idiv(pool)
+            || new BigNumber('fae0c6a6400dadc0', 16) // total claimable Satoshis
+    }
+
     componentDidMount() {
         Promise.all([
-              this.contract.methods.currentDay().call()
-            , this.contract.methods.stakeCount(this.state.address).call()
+            this.contract.methods.currentDay().call(),
+            this.contract.methods.stakeCount(this.state.address).call()
         ])
         .then((results) => {
             this.setState({
                 currentDay: Number(results[0]),
-                stakeCount: Number(results[1])
-            })
-            this.setState({ 
-                stakedTotal: 0,
-                sharesTotal: 0
+                stakeCount: Number(results[1]),
+                stakedTotal: new BigNumber(0),
+                sharesTotal: new BigNumber(0),
+                poolShareTotal: new BigNumber(0)
             })
             for (let index = 0; index < this.state.stakeCount; index++) {
-                this.setState({ stakeList: this.state.stakeList.concat(index) })
                 this.contract.methods.stakeLists(this.state.address, index).call()
-                .then((stakeNumbers) => {
-                    stakeNumbers.poolShare = new BigNumber(stakeNumbers.stakeShares).dividedBy(this.contract.globals.stakeSharesTotal).toString()
+                .then((data) => {
+                    let stake = {
+                        stakeId: data.stakeId,
+                        lockedDay: Number(data.lockedDay),
+                        stakedDays: Number(data.stakedDays),
+                        stakedHearts: new BigNumber(data.stakedHearts),
+                        stakeShares: new BigNumber(data.stakeShares),
+                        unlockedDay: Number(data.unlockedDay),
+                        isAUtoStake: Boolean(data.isAutoStakte),
+                        progress: Math.trunc(Math.min((this.state.currentDay - data.lockedDay) / data.stakedDays * 100000, 100000)),
+                        poolShare: new BigNumber(data.stakeShares).div(this.contract.globals.stakeSharesTotal),
+                        bigPayDaySlice: this.calcBigPayDaySlice(data.stakeShares, this.contract.globals.stakeSharesTotal)
+                    }
+                    const stakeList = this.state.stakeList.concat(stake)
 
-                    // update stake record at correct index in (a copy of) state.stakeList (async data can arrive in any order)
-                    const stakeList = this.state.stakeList.slice()
-                    stakeList.splice(index, 1, stakeNumbers);
-                
                     // update this.state
                     this.setState({ 
                         stakeList,
-                        stakedTotal: new BigNumber(this.state.stakedTotal).plus(stakeNumbers.stakedHearts).toString(),
-                        sharesTotal: new BigNumber(this.state.sharesTotal).plus(stakeNumbers.stakeShares).toString(),
-                        poolShareTotal: new BigNumber(this.state.sharesTotal).plus(stakeNumbers.stakeShares).dividedBy(this.contract.globals.stakeSharesTotal).toString()
+                        stakedTotal: this.state.stakedTotal.plus(data.stakedHearts),
+                        sharesTotal: this.state.sharesTotal.plus(data.stakeShares),
+                        poolShareTotal: this.state.sharesTotal.plus(stake.poolShare)
                     })
                 })
             }
@@ -106,17 +118,16 @@ class Stakes extends React.Component {
                                 <th className="hex-value">HEX</th>
                                 <th className="shares-value">Shares</th>
                                 <th>Pool %</th> 
-                                <th>{' '}</th>
+                                <th>Interest</th>
                             </tr>
                         </thead>
                         <tbody>
-                            {this.contract.globals &&
+                            { this.state.stakeList &&
                                 this.state.stakeList.map((stakeData) => {
-                                    
                                     return (typeof stakeData === 'object') ? 
                                     (
                                         <tr key={stakeData.stakeId}>
-                                            <td>{Number(stakeData.lockedDay) + 1}</td>
+                                            <td>{stakeData.lockedDay + 1}</td>
                                             <td>{
                                                 <OverlayTrigger
                                                     key={stakeData.stakeId}
@@ -127,7 +138,7 @@ class Stakes extends React.Component {
                                                       </Tooltip>
                                                     }
                                                 >
-                                                <div>{Number(stakeData.lockedDay) + Number(stakeData.stakedDays) + 1}</div>
+                                                <div>{stakeData.lockedDay + stakeData.stakedDays + 1}</div>
                                                 </OverlayTrigger>
                                             }</td>
                                             <td>{ stakeData.stakedDays }</td>
