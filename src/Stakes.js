@@ -15,6 +15,8 @@ import {
 } from 'react-bootstrap'
 import { FormattedDate, FormattedNumber} from 'react-intl';
 import styles from './Stakes.css'
+import StakeDetail from './StakeDetail.js'
+import { BigNumber } from 'bignumber.js'
 
 class Stakes extends React.Component {
     constructor(props) {
@@ -22,7 +24,6 @@ class Stakes extends React.Component {
         this.contract = props.contract
         this.state = {
             address: props.myAddress,
-            contractGlobals: null,
             currentDay: null,
             stakeCount: null,
             stakeList:  [],
@@ -30,65 +31,57 @@ class Stakes extends React.Component {
             sharesTotal: 0,
             poolShareTotal: 0,
             stakeContext: { }, // active UI stake context
-            showExitModal: false
+            showExitModal: false,
+            showDetailModal: false
         }
     }
 
     componentDidMount() {
         Promise.all([
-            new Promise((resolve, reject) => {
-                this.contract.methods.globals().call().then((globals) => {
-                    let stateGlobals = { }
-                    for (const key in globals) {
-                        // filter numeric keys and convert string values to numbers
-                        if (isNaN(parseInt(key))) stateGlobals[key] = Number(globals[key])
-                    }
-                    resolve(stateGlobals)
-                })
-            })
-            , this.contract.methods.currentDay().call()
+              this.contract.methods.currentDay().call()
             , this.contract.methods.stakeCount(this.state.address).call()
         ])
         .then((results) => {
             this.setState({
-                contractGlobals: results[0],
-                currentDay: results[1],
-                stakeCount: results[2]
+                currentDay: Number(results[0]),
+                stakeCount: Number(results[1])
             })
-            let stakedTotal = 0
-            let sharesTotal = 0
-            for (let i=0; i<this.state.stakeCount; i++) {
-                this.setState({ stakeList: this.state.stakeList.concat(i) })
-                this.contract.methods.stakeLists(this.state.address, i).call()
-                .then((stakeData) => {
-                    let poolShare = (Number(stakeData.stakeShares) / this.state.contractGlobals.stakeSharesTotal) 
-                    const stakeList = this.state.stakeList.slice() // is const **reference** to **slice (copy)** of thus **unmutated** original array
-                    stakeList.splice(i, 1, { // data retrieval is async and can arrive in any order
-                        stakeId: Number(stakeData.stakeId),
-                        lockedDay: Number(stakeData.lockedDay),
-                        stakedDays: Number(stakeData.stakedDays),
-                        stakedHEX: Number(stakeData.stakedHearts / 1e8),
-                        stakeShares: Number(stakeData.stakeShares),
-                        poolShare: poolShare,
-                        unlockedDay: Number(stakeData.unlockedDay),
-                        isAutoStake: Boolean(stakeData.isAutoStake)
-                    })
-                    stakedTotal += Number(stakeData.stakedHearts / 1e8)
-                    sharesTotal += Number(stakeData.stakeShares)
+            this.setState({ 
+                stakedTotal: 0,
+                sharesTotal: 0
+            })
+            for (let index = 0; index < this.state.stakeCount; index++) {
+                this.setState({ stakeList: this.state.stakeList.concat(index) })
+                this.contract.methods.stakeLists(this.state.address, index).call()
+                .then((stakeNumbers) => {
+                    stakeNumbers.poolShare = new BigNumber(stakeNumbers.stakeShares).dividedBy(this.contract.globals.stakeSharesTotal).toString()
+
+                    // update stake record at correct index in (a copy of) state.stakeList (async data can arrive in any order)
+                    const stakeList = this.state.stakeList.slice()
+                    stakeList.splice(index, 1, stakeNumbers);
+                
+                    // update this.state
                     this.setState({ 
                         stakeList,
-                        stakedTotal,
-                        sharesTotal,
-                        poolShareTotal: sharesTotal / this.state.contractGlobals.stakeSharesTotal
+                        stakedTotal: new BigNumber(this.state.stakedTotal).plus(stakeNumbers.stakedHearts).toString(),
+                        sharesTotal: new BigNumber(this.state.sharesTotal).plus(stakeNumbers.stakeShares).toString(),
+                        poolShareTotal: new BigNumber(this.state.sharesTotal).plus(stakeNumbers.stakeShares).dividedBy(this.contract.globals.stakeSharesTotal).toString()
                     })
                 })
             }
         })
-        .catch(e => console.log('Contract query error: ',e))
+        .catch(e => console.log('ERROR: Contract query error: ',e))
     }
 
     render() {
 
+        const handleCloseDetail = () => this.setState({ showDetailModal: false })
+        const handleShowDetail = (stakeData) => {
+            this.setState({
+                stakeContext: stakeData,
+                showDetailModal: true
+            })
+        }
         const handleClose = () => this.setState({ showExitModal: false })
         const handleShow = (stakeData) => {
             this.setState({
@@ -107,8 +100,9 @@ class Stakes extends React.Component {
                     <Table variant="secondary" size="sm" striped borderless>
                         <thead>
                             <tr>
-                                <th>Started</th>
-                                <th>Ends</th>
+                                <th>Start</th>
+                                <th>End</th>
+                                <th>Days</th>
                                 <th className="hex-value">HEX</th>
                                 <th className="shares-value">Shares</th>
                                 <th>Pool %</th> 
@@ -116,13 +110,13 @@ class Stakes extends React.Component {
                             </tr>
                         </thead>
                         <tbody>
-                            {this.state.contractGlobals &&
+                            {this.contract.globals &&
                                 this.state.stakeList.map((stakeData) => {
                                     
                                     return (typeof stakeData === 'object') ? 
                                     (
                                         <tr key={stakeData.stakeId}>
-                                            <td>{stakeData.lockedDay + 1}</td>
+                                            <td>{Number(stakeData.lockedDay) + 1}</td>
                                             <td>{
                                                 <OverlayTrigger
                                                     key={stakeData.stakeId}
@@ -133,10 +127,11 @@ class Stakes extends React.Component {
                                                       </Tooltip>
                                                     }
                                                 >
-                                                <div>{stakeData.lockedDay + stakeData.stakedDays + 1}</div>
+                                                <div>{Number(stakeData.lockedDay) + Number(stakeData.stakedDays) + 1}</div>
                                                 </OverlayTrigger>
                                             }</td>
-                                            <td className="hex-value"><FormattedNumber minimumFractionDigits={2} maximumFractionDigits={4} value={stakeData.stakedHEX} /></td>
+                                            <td>{ stakeData.stakedDays }</td>
+                                            <td className="hex-value"><FormattedNumber minimumFractionDigits={2} maximumFractionDigits={4} value={stakeData.stakedHearts / 1e8} /></td>
                                             <td className="shares-value">
                                                 <FormattedNumber 
                                                     maximumPrecision={6}
@@ -150,7 +145,14 @@ class Stakes extends React.Component {
                                                     value = { stakeData.poolShare * 100 }
                                                 />%
                                             </td>
-                                            <td align="right"><Button variant="outline-primary" size="sm" onClick={(e) => handleShow(stakeData, e)}>Exit</Button></td>
+                                            <td align="right">
+                                                <Button variant="warning" size="sm" onClick={(e) => handleShowDetail(stakeData, e)}>
+                                                    Detail
+                                                </Button>
+                                                <Button variant="outline-primary" size="sm" onClick={(e) => handleShow(stakeData, e)}>
+                                                    Exit
+                                                </Button>
+                                            </td>
                                         </tr>
                                     ) : (
                                         <tr key={stakeData}><td colSpan="5">loading</td></tr>
@@ -160,12 +162,12 @@ class Stakes extends React.Component {
                         </tbody>
                         <tfoot>
                             <tr>
-                                <td colSpan="2"></td>
+                                <td colSpan="3"></td>
                                 <td className="hex-value">
                                     <FormattedNumber 
                                         minimumFractionDigits={2} 
                                         maximumFractionDigits={4} 
-                                        value={this.state.stakedTotal} 
+                                        value={this.state.stakedTotal / 1e8} 
                                     />
                                 </td>
                                 <td className="shares-value">
@@ -187,6 +189,11 @@ class Stakes extends React.Component {
                     </Table>
                 </Card.Body>
             </Card>
+
+            <Modal show={this.state.showDetailModal} onHide={handleCloseDetail}>
+                <StakeDetail contract={this.contract} currentDay={this.state.currentDay} stakeData={this.state.stakeContext} />
+            </Modal>
+
             <Modal show={this.state.showExitModal} onHide={handleClose} animation={false}>
                 <Modal.Header closeButton>
                     <Modal.Title>End Stake</Modal.Title>

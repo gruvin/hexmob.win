@@ -1,6 +1,6 @@
-    import React from 'react'
-    import 'bootstrap/dist/css/bootstrap.min.css'
-//import Container from 'react-bootstrap/Container'
+import React from 'react'
+import 'bootstrap/dist/css/bootstrap.min.css'
+import { BigNumber } from 'bignumber.js'
 import { Container, Card, Row, Col, Button } from 'react-bootstrap'
 
 import Stakes from './Stakes.js'
@@ -44,16 +44,7 @@ class App extends React.Component {
         this.state = {
             walletConnected: false,
             walletAddress: null,
-            contractGlobals: {
-                lockedHeartsTotal: 0,
-                nextStakeSharesTotal: 0,
-                shareRate: 0,
-                stakePenaltyTotal: 0,
-                dailyDataCount: 0,
-                stakeSharesTotal: 0,
-                latestStakeId: 0,
-                claimStats: 0
-            }
+            appReady: false
         }
     }
 
@@ -72,9 +63,31 @@ class App extends React.Component {
                     console.log("MetaMask account change. Reloading...");
                     window.location.reload(); 
                 })            
-                this.state.walletAddress = account.givenProvider.selectedAddress
+                this.setState({walletAddress: account.givenProvider.selectedAddress})
 
                 this.setState({ walletConnected: true });
+
+                this.contract.methods.allocatedSupply().call().then(as => { 
+                    console.log('allocatedSupply: ', as)
+                    this.contract.allocatedSupply = as 
+                });
+
+                this.contract.methods.globals().call().then((globals) => {
+                    // decode claimstats
+                    const SATOSHI_UINT_SIZE = 51 // bits
+                    let binaryClaimStats = new BigNumber(globals.claimStats).toString(2).padStart(153, '0')
+                    let a = binaryClaimStats.slice(0, SATOSHI_UINT_SIZE)
+                    let b = binaryClaimStats.slice(SATOSHI_UINT_SIZE, SATOSHI_UINT_SIZE * 2)
+                    let c = binaryClaimStats.slice(SATOSHI_UINT_SIZE * 2)
+                    globals.claimStats = {
+                        claimedBtcAddrCount: new BigNumber(a, 2).toString(),
+                        claimedSatoshisTotal: new BigNumber(b, 2).toString(),
+                        unclaimedSatoshisTotal: new BigNumber(c, 2).toString()
+                    }
+                    this.contract.globals = globals // attach to contract itself (because I can :p)
+
+                    this.setState({ appReady: true });
+                })
             }
         })
     }
@@ -90,12 +103,12 @@ class App extends React.Component {
     }
 
     render() {
-        if (!this.state.walletConnected) {
+        if (!this.state.walletConnected && !this.state.appReady) {
             return (
                 <Card bg="primary" text="light" className="overflow-auto m-2">
                     <Card.Body className="p-2">
                         <Card.Title as="h5" className="m-0">Wallet is Locked</Card.Title>
-                        <p>Please unlock your wallet to use this App</p>
+                        <p>Please unlock and connect your wallet</p>
                         <Button onClick={() => window.location.reload(false)} variant="primary">Reload</Button>
                     </Card.Body>
                 </Card>
@@ -103,8 +116,11 @@ class App extends React.Component {
         } else {
             return (
                 <Container fluid className="overflow-auto p-1">
-                    <this.MyAddress />
-                    {this.state.walletConnected && <Stakes contract={this.contract} contractGlobals={this.state.contractGlobals} myAddress={this.state.walletAddress} /> }
+                    {this.state.walletConnected && <this.MyAddress />}
+                    {this.state.appReady 
+                        ? <Stakes contract={this.contract} contractGlobals={this.state.contractGlobals} myAddress={this.state.walletAddress} />
+                        : <div>Loading contract data ...</div>
+                    }
                 </Container>
             )
         }
