@@ -28,15 +28,17 @@ class Stakes extends React.Component {
             stakeList:  null,
             stakedTotal: 0,
             sharesTotal: 0,
-            poolShareTotal: 0,
+            poolShareTotal: 0, // note: not being displayed
+            bpdTotal: 0,
+            interestTotal: 0,
             stakeContext: { }, // active UI stake context
             showExitModal: false,
         }
     }
 
     calcBigPayDaySlice = (shares, pool) => {
-        return Object.entries(this.contract.globals).length 
-            && new BigNumber(this.contract.globals.claimStats.unclaimedSatoshisTotal).times(10000).times(shares).idiv(pool)
+        return Object.entries(this.state.contractData.globals).length 
+            && new BigNumber(this.state.contractData.globals.claimStats.unclaimedSatoshisTotal).times(10000).times(shares).idiv(pool)
             || new BigNumber('fae0c6a6400dadc0', 16) // total claimable Satoshis
     }
 
@@ -49,7 +51,9 @@ class Stakes extends React.Component {
                 stakeCount: Number(stakeCount),
                 stakedTotal: new BigNumber(0),
                 sharesTotal: new BigNumber(0),
-                poolShareTotal: new BigNumber(0)
+                poolShareTotal: new BigNumber(0),
+                bpdTotal: new BigNumber(0),
+                interestTotal: new BigNumber(0)
             })
             for (let index = 0; index < this.state.stakeCount; index++) {
                 this.contract.methods.stakeLists(this.state.address, index).call()
@@ -64,7 +68,7 @@ class Stakes extends React.Component {
                         isAutoStake: Boolean(data.isAutoStakte),
                         progress: Math.trunc(Math.min((currentDay - data.lockedDay) / data.stakedDays * 100000, 100000)),
                         poolShare: new BigNumber(data.stakeShares).div(globals.stakeSharesTotal),
-                        bigPayDaySlice: this.calcBigPayDaySlice(data.stakeShares, globals.stakeSharesTotal)
+                        bigPayDay: this.calcBigPayDaySlice(data.stakeShares, globals.stakeSharesTotal)
                     }
                     const stakeList = Object.assign({ }, this.state.stakeList)
                     stakeList[data.stakeId] = stakeData
@@ -74,7 +78,7 @@ class Stakes extends React.Component {
                         stakeList,
                         stakedTotal: this.state.stakedTotal.plus(data.stakedHearts),
                         sharesTotal: this.state.sharesTotal.plus(data.stakeShares),
-                        poolShareTotal: this.state.poolShareTotal.plus(stakeData.poolShare)
+                        poolShareTotal: this.state.poolShareTotal.plus(stakeData.poolShare),
                     })
 
                     this.updateStakePayout(stakeData)
@@ -84,7 +88,7 @@ class Stakes extends React.Component {
         .catch(e => console.log('ERROR: Contract call - ',e))
     }
 
-    updateStakePayout(stakeData) {
+    updateStakePayout(_stakeData) {
         const CLAIM_PHASE_START_DAY = 1
         const CLAIM_PHASE_DAYS = 7 * 50
         const CLAIM_PHASE_END_DAY = CLAIM_PHASE_START_DAY + CLAIM_PHASE_DAYS
@@ -98,8 +102,9 @@ class Stakes extends React.Component {
         const claimedBtcAddrCount = new BigNumber(globals.claimStats.claimedBtcAddrCount)
         const stakeSharesTotal = new BigNumber(globals.stakeSharesTotal)
         const nextStakeSharesTotal = new BigNumber(globals.nextStakeSharesTotal)
-
         const currentDay = this.state.contractData.currentDay
+
+        const stakeData = Object.assign({ }, _stakeData)
         const startDay = stakeData.lockedDay
         const endDay = startDay + stakeData.stakedDays
 
@@ -121,7 +126,9 @@ class Stakes extends React.Component {
             }
 
             // iterate over daily payouts history
-            let payout = new BigNumber(0)
+            stakeData.payout = new BigNumber(0)
+            stakeData.bigPayDay = new BigNumber(0)
+
             dailyData.forEach((dailyDataMapping, dayNumber) => {
                 // extract dailyData struct from uint256 mapping
                 let hex = new BigNumber(dailyDataMapping).toString(16).padStart(64, '0')
@@ -129,22 +136,26 @@ class Stakes extends React.Component {
                 let dayStakeSharesTotal = new BigNumber(hex.slice(28,46), 16)
                 let dayUnclaimedSatoshisTotal = new BigNumber(hex.slice(12,28), 16)
                 
-                payout = payout.plus(dayPayoutTotal.times(stakeData.stakeShares).idiv(dayStakeSharesTotal))
+                stakeData.payout = stakeData.payout.plus(dayPayoutTotal.times(stakeData.stakeShares).idiv(dayStakeSharesTotal))
 
                 if (Number(startDay) <= BIG_PAY_DAY && Number(endDay) > BIG_PAY_DAY) {
                     const bigPaySlice = dayUnclaimedSatoshisTotal.times(HEARTS_PER_SATOSHI) .times(stakeData.stakeShares).idiv(stakeSharesTotal)
                     const bonuses = calcAdoptionBonus(bigPaySlice)
                     stakeData.bigPayDay = bigPaySlice.plus(bonuses)
-                    if (startDay + dayNumber === BIG_PAY_DAY) payout = payout.plus(stakeData.bigPayDay)
+                    if (startDay + dayNumber === BIG_PAY_DAY) stakeData.payout = stakeData.payout.plus(stakeData.bigPayDay.plus(bonuses))
                 }
+
             })
-            payout = payout.plus(calcDailyBonus(stakeData.stakeShares, stakeSharesTotal))
-            stakeData.payout = payout
+            stakeData.payout = stakeData.payout.plus(calcDailyBonus(stakeData.stakeShares, stakeSharesTotal))
 
             const stakeList = Object.assign({ }, this.state.stakeList)
             stakeList[stakeData.stakeId] = stakeData
 
-            this.setState({ stakeList })
+            this.setState({ 
+                bpdTotal: this.state.bpdTotal.plus(stakeData.bigPayDay),
+                interestTotal: this.state.interestTotal.plus(stakeData.payout),
+                stakeList
+            })
         })
     }
 
@@ -179,7 +190,7 @@ class Stakes extends React.Component {
                                 <th className="day-value">End</th>
                                 <th className="day-value">Days</th>
                                 <th className="day-value">Progress</th>
-                                <th className="hex-value">HEX</th>
+                                <th className="hex-value">Principal</th>
                                 <th className="shares-value">Shares</th>
                                 <th className="hex-value">BigPayDay</th> 
                                 <th className="hex-value">Interest</th>
@@ -214,7 +225,12 @@ class Stakes extends React.Component {
                                                     value={stakeData.progress / 1000}
                                                 />%
                                             </td>
-                                            <td className="hex-value"><FormattedNumber minimumFractionDigits={2} maximumFractionDigits={4} value={stakeData.stakedHearts / 1e8} /></td>
+                                            <td className="hex-value">
+                                                <FormattedNumber 
+                                                    maximumSignificantDigits={5} 
+                                                    value={stakeData.stakedHearts / 1e8} 
+                                                />
+                                            </td>
                                             <td className="shares-value">
                                                 <FormattedNumber 
                                                     maximumPrecision={6}
@@ -247,23 +263,30 @@ class Stakes extends React.Component {
                         </tbody>
                         <tfoot>
                             <tr>
-                                <td colSpan="3"></td>
+                                <td colSpan="4"></td>
                                 <td className="hex-value">
                                     <FormattedNumber 
-                                        minimumFractionDigits={2} 
-                                        maximumFractionDigits={4} 
+                                        maximumSignificantDigits={5} 
                                         value={this.state.stakedTotal / 1e8} 
                                     />
                                 </td>
-                                <td> </td>
                                 <td className="shares-value">
                                     <FormattedNumber
-                                        maximumPrecision={6}
+                                        maximumSignificantDigits={5}
                                         value={(this.state.sharesTotal / 1e12)}
                                     />T
                                 </td>
-                                <td className="hex-value">TODO: total</td>
-                                <td className="hex-value">TODO: total</td>
+                                <td className="hex-value">
+                                    <FormattedNumber
+                                        maximumSignificantDigits={5}
+                                        value={(this.state.bpdTotal / 1e8)}
+                                    />
+                                </td>
+                                <td className="hex-value">
+                                    <FormattedNumber
+                                        value={(this.state.interestTotal / 1e8)}
+                                    />
+                                </td>
                                 <td>{' '}</td>
                             </tr>
                         </tfoot>
