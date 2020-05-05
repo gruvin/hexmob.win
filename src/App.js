@@ -44,6 +44,7 @@ class App extends React.Component {
         this.state = {
             walletConnected: false,
             walletAddress: null,
+            contractGlobals: null,
             appReady: false
         }
     }
@@ -73,25 +74,30 @@ class App extends React.Component {
 
                 Promise.all([
                     this.contract.methods.allocatedSupply().call(),
+                    this.contract.methods.currentDay().call(),
                     this.contract.methods.globals().call()
                 ]).then((results) => {
-                    this.contract.globals.allocatedSupply = results[0] 
-
-                    let globals = results[1]
+                    let contractData = { 
+                        allocatedSupply:    new BigNumber(results[0]),
+                        currentDay:         Number(results[1]),
+                        globals:            results[2]
+                    }
                     // decode claimstats
                     const SATOSHI_UINT_SIZE = 51 // bits
-                    let binaryClaimStats = new BigNumber(globals.claimStats).toString(2).padStart(153, '0')
+                    let binaryClaimStats = new BigNumber(contractData.globals.claimStats).toString(2).padStart(153, '0')
                     let a = binaryClaimStats.slice(0, SATOSHI_UINT_SIZE)
                     let b = binaryClaimStats.slice(SATOSHI_UINT_SIZE, SATOSHI_UINT_SIZE * 2)
                     let c = binaryClaimStats.slice(SATOSHI_UINT_SIZE * 2)
-                    globals.claimStats = {
+                    contractData.globals.claimStats = {
                         claimedBtcAddrCount: new BigNumber(a, 2).toString(),
                         claimedSatoshisTotal: new BigNumber(b, 2).toString(),
                         unclaimedSatoshisTotal: new BigNumber(c, 2).toString()
                     }
-                    this.contract.globals = globals // attach to contract itself (because I can :p)
 
-                    this.setState({ appReady: true })
+                    this.setState({
+                        contractData,
+                        appReady: true 
+                    })
                 })
             }
         })
@@ -120,10 +126,10 @@ class App extends React.Component {
             )
         } else {
             return (
-                <Container fluid className="overflow-auto p-1">
+                <Container className="overflow-auto p-1">
                     {this.state.walletConnected && <this.MyAddress />}
                     {this.state.appReady 
-                        ? <Stakes contract={this.contract} contractGlobals={this.state.contractGlobals} myAddress={this.state.walletAddress} />
+                        ? <Stakes contract={this.contract} contractData={this.state.contractData} myAddress={this.state.walletAddress} />
                         : <div>Loading contract data ...</div>
                     }
                 </Container>
