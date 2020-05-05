@@ -1,7 +1,7 @@
 import React from 'react'
 import 'bootstrap/dist/css/bootstrap.min.css'
 import { BigNumber } from 'bignumber.js'
-import { Container, Card, Row, Col, Button } from 'react-bootstrap'
+import { Container, Card, Row, Col, Button, Badge } from 'react-bootstrap'
 
 import Stakes from './Stakes.js'
 
@@ -10,70 +10,97 @@ import Web3 from "web3";
 import Web3Modal from "web3modal";
 
 import WalletConnectProvider from "@walletconnect/web3-provider";
-import Portis from "@portis/web3";
-const providerOptions = {
-  walletconnect: {
-    package: WalletConnectProvider, // required
-    options: {
-      infuraId: "ba82349aaccf4a448b43bf651e4d9145" // required
-    }
-  },
-  portis: {
-    package: Portis, // required
-    options: {
-      id: "e55eff64-770e-4b93-9377-fb42791b5738" // required
-    }
-  }
-};
-const web3Modal = new Web3Modal({
-  network: "mainnet", // optional
-  cacheProvider: true, // optional
-  providerOptions // required
-});
-const contractABI = require('./hexabi.js')
-const contractAddress ="0x2b591e99afe9f32eaa6214f7b7629768c40eeb39"
-
 /*
 function sleep(ms) {
   return new Promise(resolve => { setTimeout(resolve, ms) });
 }
 */
+const INITIAL_STATE = {
+    walletConnected: false,
+    walletAddress: null,
+    contractGlobals: null,
+    contractReady: false
+}
 
 class App extends React.Component {
-    //const web3 = new Web3(new Web3.providers.HttpProvider("https://mainnet.infura.io/v3/ba82349aaccf4a448b43bf651e4d9145"))
-
     constructor(props) {
         super(props)
+
         this.web3 = null
         this.contract = null
         this.state = {
-            walletConnected: false,
-            walletAddress: null,
-            contractGlobals: null,
-            appReady: false
+            ...INITIAL_STATE
         }
     }
 
-    componentDidMount() {
-        web3Modal
-        .connect()
+    getProviderOptions = () => {
+        const providerOptions = {
+            walletconnect: {
+                package: WalletConnectProvider, // required
+                options: {
+                    infuraId: "ba82349aaccf4a448b43bf651e4d9145" // required
+                }
+            }
+        }
+        return providerOptions
+    }
+
+    subscribeProvider = async (provider) => {
+        if (!provider.on) {
+            return
+        }
+        provider.on("close", () => this.resetApp()) // not supported by MetaMask ...
+        // ... work around ...
+        if (provider.isMetaMask) {
+            window.ethereum.on('accountsChanged', async (accounts) => {
+                if (!accounts.length) this.resetApp() 
+                else this.setState({ walletAddress: accounts[0] })
+            })
+        }
+
+        provider.on("accountsChanged", async (accounts) => {
+            await this.setState({ walletAddress: accounts[0] })
+            // await this.getAccountAssets()
+        });
+        provider.on("chainChanged", async (chainId) => {
+            const { web3 } = this
+            const networkId = await web3.eth.net.getId()
+            await this.setState({ chainId, networkId })
+            // await this.getAccountAssets()
+        });
+
+        provider.on("networkChanged", async (networkId: number) => {
+            const { web3 } = this
+            const chainId = await web3.eth.chainId()
+            await this.setState({ chainId, networkId })
+            //await this.getAccountAssets()
+        });
+
+    };
+
+    componentDidMount = () => {
+        this.web3Modal = new Web3Modal({
+            network: "mainnet",         // optional
+            cacheProvider: true,        // optional
+            providerOptions: this.getProviderOptions()   // required
+        });
+        const contractABI = require('./hexabi.js')
+        const contractAddress ="0x2b591e99afe9f32eaa6214f7b7629768c40eeb39"
+        this.web3Modal.connect()
         .then((provider) => {
             this.provider = provider
+
             this.web3 = new Web3(provider)
             
             this.contract = new this.web3.eth.Contract(contractABI, contractAddress)
-            this.contract.globals = { }
 
-            let account = this.web3.eth.accounts
-            let walletAddress = account.givenProvider.selectedAddress
+            const account = this.web3.eth.accounts
+            const walletAddress = account.givenProvider.selectedAddress
             //Check if Metamask is locked
             if (walletAddress) {
-                window.ethereum.on('accountsChanged', function (accounts) {
-                    console.log("Web3 wallet account change. Reloading...");
-                    window.location.reload(); 
-                })            
+                this.subscribeProvider(this.provider)
                 this.setState({
-                    walletAddress: account.givenProvider.selectedAddress,
+                    walletAddress: walletAddress,
                     walletConnected: true 
                 })
 
@@ -101,47 +128,72 @@ class App extends React.Component {
 
                     this.setState({
                         contractData,
-                        appReady: true 
+                        contractReady: true 
                     })
                 })
             }
         })
     }
 
-    MyAddress = () => {
+    resetApp = async () => {
+        const { web3 } = this
+        if (web3 && web3.currentProvider && web3.currentProvider.close) {
+            await web3.currentProvider.close()
+        }
+        await this.web3Modal.clearCachedProvider()
+        this.setState({ ...INITIAL_STATE })
+        window.location.reload()
+    }
+
+    WalletStatus = () => {
         return (
-            <Card bg="primary" text="light" className="overflow-auto m-2">
-                <Card.Body className="p-2">
-                    <Card.Title as="h5" className="m-0">{this.state.walletAddress}</Card.Title>
-                </Card.Body>
-            </Card>
+            <Container fluid>
+            <Row>
+                <Col md={{span: 2}}><Badge variant="success" className="small">mainnet</Badge></Col>
+                <Col md={{span: 4, offset: 6}} className="text-right">
+                    <Badge className="text-info">{ this.state.walletAddress.slice(0,6)+'...'+this.state.walletAddress.slice(-4) }</Badge>
+                    <Badge variant="secondary" style={{cursor: "pointer"}} onClick={this.resetApp} className="small">
+                        disconnect</Badge>
+                </Col>
+            </Row>
+            </Container>
         )
     }
 
-    render() {
-        if (!this.state.walletConnected && !this.state.appReady) {
+    AppContent = () => {
+        if (!this.state.walletConnected) {
             return (
-                <Container>
+                <>
                     <Card bg="primary" text="light" className="overflow-auto m-2">
                         <Card.Body className="p-2">
-                            <Card.Title as="h5" className="m-0">Wallet is Locked</Card.Title>
-                            <p>Please unlock and connect your wallet</p>
+                            <Card.Title as="h5" className="m-0">Please Connect a Wallet</Card.Title>
+                            <p>Select a wallet provider ...</p>
                             <Button onClick={() => window.location.reload(false)} variant="primary">Reload</Button>
                         </Card.Body>
                     </Card>
-                </Container>
+                </>
             )
         } else {
             return (
-                <Container className="overflow-auto p-1">
-                    {this.state.walletConnected && <this.MyAddress />}
-                    {this.state.appReady 
-                        ? <Stakes contract={this.contract} contractData={this.state.contractData} myAddress={this.state.walletAddress} />
+                <>
+                    { this.state.contractReady
+                        ? <Stakes contract={this.contract} contractData={this.state.contractData} walletAddress={this.state.walletAddress} />
                         : <div>Loading contract data ...</div>
                     }
-                </Container>
+                </>
             )
         }
+    }
+
+    render() {
+        return (
+            <>
+           { this.state.walletConnected && <this.WalletStatus />}
+            <Container className="overflow-auto p-1">
+                <this.AppContent />
+            </Container>
+            </>
+        )
     }
 }
 
