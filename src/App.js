@@ -151,7 +151,7 @@ class App extends React.Component {
             <Row>
                 <Col md={{span: 2}}><Badge variant="success" className="small">mainnet</Badge></Col>
                 <Col md={{span: 4, offset: 6}} className="text-right">
-                    <Badge>{ this.state.walletAddress.slice(0,6)+'...'+this.state.walletAddress.slice(-4) }</Badge>
+                    <Badge className="text-info">{ this.state.walletAddress.slice(0,6)+'...'+this.state.walletAddress.slice(-4) }</Badge>
                     <Badge variant="secondary" style={{cursor: "pointer"}} onClick={this.resetApp} className="small">
                         disconnect</Badge>
                 </Col>
