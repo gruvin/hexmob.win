@@ -16,13 +16,17 @@
     and (device-height: 896px) 
     and (-webkit-device-pixel-ratio: 3) { }
 
+@import url('https://fonts.googleapis.com/css2?family=Jura:wght@500;700&display=swap');
+
 body { 
-    font-family: Arial,sans-serif; 
-    background: url(/hex/bg.jpg);
+    font-family: Jura, sans-serif; 
+    font-weight: 500;
+    background: #333333 url(/bg.jpg);
+    color: #777;
     background-size: auto;
 }
 
 .bg-primary {
-    background-color: #2e79ca!important;
+    background-color: #2662e8 !important;
 }
-
+.modal-header { font-weight: bold; color:#333; }

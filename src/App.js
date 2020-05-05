@@ -10,11 +10,18 @@ import Web3 from "web3";
 import Web3Modal from "web3modal";
 
 import WalletConnectProvider from "@walletconnect/web3-provider";
+import Portis from "@portis/web3";
 const providerOptions = {
   walletconnect: {
     package: WalletConnectProvider, // required
     options: {
       infuraId: "ba82349aaccf4a448b43bf651e4d9145" // required
+    }
+  },
+  portis: {
+    package: Portis, // required
+    options: {
+      id: "e55eff64-770e-4b93-9377-fb42791b5738" // required
     }
   }
 };
@@ -25,14 +32,12 @@ const web3Modal = new Web3Modal({
 });
 const contractABI = require('./hexabi.js')
 const contractAddress ="0x2b591e99afe9f32eaa6214f7b7629768c40eeb39"
-const myAddress = '0xD30542151ea34007c4c4ba9d653f4DC4707ad2d2'
 
 /*
 function sleep(ms) {
   return new Promise(resolve => { setTimeout(resolve, ms) });
 }
 */
-
 
 class App extends React.Component {
     //const web3 = new Web3(new Web3.providers.HttpProvider("https://mainnet.infura.io/v3/ba82349aaccf4a448b43bf651e4d9145"))
@@ -64,7 +69,7 @@ class App extends React.Component {
             //Check if Metamask is locked
             if (walletAddress) {
                 window.ethereum.on('accountsChanged', function (accounts) {
-                    console.log("MetaMask account change. Reloading...");
+                    console.log("Web3 wallet account change. Reloading...");
                     window.location.reload(); 
                 })            
                 this.setState({
@@ -116,13 +121,15 @@ class App extends React.Component {
     render() {
         if (!this.state.walletConnected && !this.state.appReady) {
             return (
-                <Card bg="primary" text="light" className="overflow-auto m-2">
-                    <Card.Body className="p-2">
-                        <Card.Title as="h5" className="m-0">Wallet is Locked</Card.Title>
-                        <p>Please unlock and connect your wallet</p>
-                        <Button onClick={() => window.location.reload(false)} variant="primary">Reload</Button>
-                    </Card.Body>
-                </Card>
+                <Container>
+                    <Card bg="primary" text="light" className="overflow-auto m-2">
+                        <Card.Body className="p-2">
+                            <Card.Title as="h5" className="m-0">Wallet is Locked</Card.Title>
+                            <p>Please unlock and connect your wallet</p>
+                            <Button onClick={() => window.location.reload(false)} variant="primary">Reload</Button>
+                        </Card.Body>
+                    </Card>
+                </Container>
             )
         } else {
             return (

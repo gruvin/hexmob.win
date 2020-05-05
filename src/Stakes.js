@@ -31,11 +31,10 @@ class Stakes extends React.Component {
             contractData: props.contractData,
             stakeCount: null,
             stakeList:  null,
-            stakedTotal: 0,
-            sharesTotal: 0,
-            poolShareTotal: 0, // note: not being displayed
-            bpdTotal: 0,
-            interestTotal: 0,
+            stakedTotal: new BigNumber(0),
+            sharesTotal: new BigNumber(0),
+            bpdTotal: new BigNumber(0),
+            interestTotal: new BigNumber(0),
             stakeContext: { }, // active UI stake context
             showExitModal: false,
         }
@@ -56,7 +55,6 @@ class Stakes extends React.Component {
                 stakeCount: Number(stakeCount),
                 stakedTotal: new BigNumber(0),
                 sharesTotal: new BigNumber(0),
-                poolShareTotal: new BigNumber(0),
                 bpdTotal: new BigNumber(0),
                 interestTotal: new BigNumber(0)
             })
@@ -72,7 +70,6 @@ class Stakes extends React.Component {
                         unlockedDay: Number(data.unlockedDay),
                         isAutoStake: Boolean(data.isAutoStakte),
                         progress: Math.trunc(Math.min((currentDay - data.lockedDay) / data.stakedDays * 100000, 100000)),
-                        poolShare: new BigNumber(data.stakeShares).div(globals.stakeSharesTotal),
                         bigPayDay: this.calcBigPayDaySlice(data.stakeShares, globals.stakeSharesTotal)
                     }
                     const stakeList = Object.assign({ }, this.state.stakeList)
@@ -83,7 +80,6 @@ class Stakes extends React.Component {
                         stakeList,
                         stakedTotal: this.state.stakedTotal.plus(data.stakedHearts),
                         sharesTotal: this.state.sharesTotal.plus(data.stakeShares),
-                        poolShareTotal: this.state.poolShareTotal.plus(stakeData.poolShare),
                     })
 
                     this.updateStakePayout(stakeData)
@@ -199,6 +195,7 @@ class Stakes extends React.Component {
                                 <th className="shares-value">Shares</th>
                                 <th className="hex-value">BigPayDay</th> 
                                 <th className="hex-value">Interest</th>
+                                <th className="hex-value">Current Value</th>
                                 <th>{' '}</th>
                             </tr>
                         </thead>
@@ -239,6 +236,9 @@ class Stakes extends React.Component {
                                             <td className="hex-value">
                                                 { hexFormat(stakeData.payout / 1e8) }
                                             </td>
+                                            <td className="hex-value">
+                                                { hexFormat(stakeData.stakedHearts.plus(stakeData.payout) / 1e8) }
+                                            </td>
                                             <td align="right">
                                                 <Button variant="outline-primary" size="sm" onClick={(e) => handleShow(stakeData, e)}>
                                                     Exit
@@ -266,6 +266,9 @@ class Stakes extends React.Component {
                                 <td className="hex-value">
                                     { hexFormat(this.state.interestTotal / 1e8) }
                                 </td>
+                                <td className="hex-value">
+                                    { hexFormat(this.state.stakedTotal.plus(this.state.interestTotal) / 1e8) }
+                                </td>
                                 <td>{' '}</td>
                             </tr>
                         </tfoot>
@@ -273,7 +276,7 @@ class Stakes extends React.Component {
                 </Card.Body>
             </Card>
 
-            <Modal show={this.state.showExitModal} onHide={handleClose} animation={false}>
+            <Modal show={this.state.showExitModal} onHide={handleClose} animation={false} variant="primary">
                 <Modal.Header closeButton>
                     <Modal.Title>End Stake</Modal.Title>
                 </Modal.Header>
