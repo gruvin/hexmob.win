@@ -13,9 +13,14 @@ import {
     OverlayTrigger,
     Tooltip
 } from 'react-bootstrap'
-import { FormattedDate, FormattedNumber} from 'react-intl';
+import { FormattedDate } from 'react-intl';
 import styles from './Stakes.css'
 import { BigNumber } from 'bignumber.js'
+import { format } from 'd3-format'
+
+function hexFormat(v) {
+    return format(v < 1e6 ? (v < 1e3 ? ",.3f" : ",.0f") : ",.5s")(v)
+}
 
 class Stakes extends React.Component {
     constructor(props) {
@@ -220,34 +225,19 @@ class Stakes extends React.Component {
                                             }</td>
                                             <td className="day-value">{ stakeData.stakedDays }</td>
                                             <td className="day-value">
-                                                <FormattedNumber 
-                                                    maximumPrecision={3}
-                                                    value={stakeData.progress / 1000}
-                                                />%
+                                                { hexFormat(stakeData.progress / 1000) }%
                                             </td>
                                             <td className="hex-value">
-                                                <FormattedNumber 
-                                                    maximumSignificantDigits={5} 
-                                                    value={stakeData.stakedHearts / 1e8} 
-                                                />
+                                                { hexFormat(stakeData.stakedHearts / 1e8)} 
                                             </td>
                                             <td className="shares-value">
-                                                <FormattedNumber 
-                                                    maximumPrecision={6}
-                                                    value={(stakeData.stakeShares / 1e12 /*Tera*/)}
-                                                />T
+                                                {hexFormat(stakeData.stakeShares)} 
                                             </td>
                                             <td className="hex-value">
-                                                <FormattedNumber 
-                                                    maximumFractionDigits={0}
-                                                    value = { stakeData.bigPayDay ? stakeData.bigPayDay.div(1e8).toString() : 0 }
-                                                />
+                                                { hexFormat(stakeData.bigPayDay / 1e8) }
                                             </td>
                                             <td className="hex-value">
-                                                <FormattedNumber 
-                                                    maximumFractionDigits={4}
-                                                    value = { stakeData.payout ? stakeData.payout.div(1e8).toString() : 0 }
-                                                />
+                                                { hexFormat(stakeData.payout / 1e8) }
                                             </td>
                                             <td align="right">
                                                 <Button variant="outline-primary" size="sm" onClick={(e) => handleShow(stakeData, e)}>
@@ -265,27 +255,16 @@ class Stakes extends React.Component {
                             <tr>
                                 <td colSpan="4"></td>
                                 <td className="hex-value">
-                                    <FormattedNumber 
-                                        maximumSignificantDigits={5} 
-                                        value={this.state.stakedTotal / 1e8} 
-                                    />
+                                    { hexFormat(this.state.stakedTotal / 1e8)} 
                                 </td>
                                 <td className="shares-value">
-                                    <FormattedNumber
-                                        maximumSignificantDigits={5}
-                                        value={(this.state.sharesTotal / 1e12)}
-                                    />T
+                                    { hexFormat(this.state.sharesTotal) }
                                 </td>
                                 <td className="hex-value">
-                                    <FormattedNumber
-                                        maximumSignificantDigits={5}
-                                        value={(this.state.bpdTotal / 1e8)}
-                                    />
+                                    { hexFormat(this.state.bpdTotal / 1e8) }
                                 </td>
                                 <td className="hex-value">
-                                    <FormattedNumber
-                                        value={(this.state.interestTotal / 1e8)}
-                                    />
+                                    { hexFormat(this.state.interestTotal / 1e8) }
                                 </td>
                                 <td>{' '}</td>
                             </tr>
