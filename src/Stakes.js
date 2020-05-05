@@ -27,7 +27,7 @@ class Stakes extends React.Component {
         super(props)
         this.contract = props.contract
         this.state = {
-            address: props.myAddress,
+            address: props.walletAddress,
             contractData: props.contractData,
             stakeCount: null,
             stakeList:  null,
@@ -48,11 +48,13 @@ class Stakes extends React.Component {
     }
 
     loadStakes() {
+        console.log(this.state)
         this.contract.methods.stakeCount(this.state.address).call()
         .then((stakeCount) => {
             const currentDay = this.state.contractData.currentDay
             const globals = this.state.contractData.globals
             this.setState({
+                stakeList: { },
                 stakeCount: Number(stakeCount),
                 stakedTotal: new BigNumber(0),
                 sharesTotal: new BigNumber(0),
@@ -166,6 +168,14 @@ class Stakes extends React.Component {
 
     componentDidMount() {
         this.loadStakes()
+    }
+    componentDidUpdate = (prevProps, prevState) => {
+        if (prevProps.walletAddress != this.props.walletAddress) {
+            this.setState(
+                { address: this.props.walletAddress },
+                this.loadStakes
+            )
+        }
     }
 
     render() {
