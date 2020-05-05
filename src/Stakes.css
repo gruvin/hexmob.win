@@ -6,3 +6,27 @@
     text-align: center;
 }
 thead, tfoot { background-color: #333; color: #eee; font-weight: bold }
+button.btn-sm { padding: 0.1rem .2rem; line-height: 1em; } 
+button.earlyexit { font-family: Nosifer, sans-serif; color: #a00; padding: 0.1rem 0.25rem; border: none; }
+button.earlyexit.btn-outline-primary:hover {
+    color: #fff;
+    background-color: #a00;
+}
+button.midexit { font-family: "Press Start", sans-serif; color: #d60; border-color: #d60; font-size:1em;}
+button.midexit.btn-outline-primary:hover {
+    color: #fff;
+    background-color: #d60; 
+    border-color: #d60;
+}
+button.termexit { font-family: "Happy Monkey", sans-serif; color: #292; border-color: #292; font-weight: bold; }
+button.termexit.btn-outline-primary:hover {
+    color: #fff;
+    background-color: #292; 
+    border-color: #292;
+}
+button.lateexit { font-family: "Happy Monkey", sans-serif; color: #727; border-color: #727; font-weight: bold; }
+button.lateexit.btn-outline-primary:hover {
+    color: #fff;
+    background-color: #727; 
+    border-color: #727;
+}

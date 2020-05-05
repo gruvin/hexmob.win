@@ -16,13 +16,13 @@
     and (device-height: 896px) 
     and (-webkit-device-pixel-ratio: 3) { }
 
+@import url('https://fonts.googleapis.com/css2?family=Happy+Monkey&family=Jura:wght@500;700&family=Nosifer&family=Press+Start+2P&display=swap');
 body { 
-    font-family: Arial,sans-serif; 
-    background: url(/hex/bg.jpg);
+    font-family: Jura, sans-serif; 
+    background: url(/bg.jpg);
     background-size: auto;
 }
 
 .bg-primary {
-    background-color: #2e79ca!important;
+    background-color: #2662e7!important;
 }
-

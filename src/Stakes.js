@@ -250,7 +250,16 @@ class Stakes extends React.Component {
                                                 { hexFormat(stakeData.payout / 1e8) }
                                             </td>
                                             <td align="right">
-                                                <Button variant="outline-primary" size="sm" onClick={(e) => handleShow(stakeData, e)}>
+                                                <Button 
+                                                    variant="outline-primary" size="sm" 
+                                                    onClick={(e) => handleShow(stakeData, e)}
+                                                    className={ 
+            currentDay < (stakeData.lockedDay + stakeData.stakedDays / 2) ? "earlyexit"
+                : currentDay < (stakeData.lockedDay + stakeData.stakedDays) ? "midexit"
+                : currentDay < (stakeData.lockedDay + stakeData.stakedDays + 7) ? "termexit"
+                : "lateexit"
+                                                    }
+                                                >
                                                     Exit
                                                 </Button>
                                             </td>
