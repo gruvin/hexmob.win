@@ -8,14 +8,17 @@ import Stakes from './Stakes.js'
 import './App.css'
 import Web3 from "web3";
 import Web3Modal from "web3modal";
-
 import WalletConnectProvider from "@walletconnect/web3-provider";
+
+import { apiGetAccountAssets } from './lib/api'
+
 /*
 function sleep(ms) {
   return new Promise(resolve => { setTimeout(resolve, ms) });
 }
 */
 const INITIAL_STATE = {
+    chainId: 1, // ETH mainnet
     walletConnected: false,
     walletAddress: null,
     contractGlobals: null,
@@ -56,40 +59,57 @@ class App extends React.Component {
                 if (!accounts.length) this.resetApp() 
                 else this.setState({ walletAddress: accounts[0] })
             })
+            if (window.ethereum && window.ethereum.autoRefreshOnNetworkChange) window.ethereum.autoRefreshOnNetworkChange = false
+        } else {
+
+            provider.on("accountsChanged", async (accounts) => {
+                await this.setState({ walletAddress: accounts[0] })
+                await this.getAccountAssets()
+            })
         }
 
-        provider.on("accountsChanged", async (accounts) => {
-            await this.setState({ walletAddress: accounts[0] })
-            // await this.getAccountAssets()
-        });
         provider.on("chainChanged", async (chainId) => {
             const { web3 } = this
             const networkId = await web3.eth.net.getId()
             await this.setState({ chainId, networkId })
-            // await this.getAccountAssets()
-        });
+            await this.getAccountAssets()
+        })
 
         provider.on("networkChanged", async (networkId: number) => {
             const { web3 } = this
             const chainId = await web3.eth.chainId()
             await this.setState({ chainId, networkId })
-            //await this.getAccountAssets()
-        });
+            await this.getAccountAssets()
+        })
 
-    };
+    }
+
+    getAccountAssets = async () => {
+        const { walletAddress:address, chainId } = this.state;
+        this.setState({ fetching: true });
+        try {
+            // get account balances
+            const assets = await apiGetAccountAssets(address, chainId);
+            console.log("ASSETS: ", address, assets)
+
+            await this.setState({ fetching: false, assets });
+        } catch (error) {
+            console.error(error); // tslint:disable-line
+            await this.setState({ fetching: false });
+        }
+    }
 
     componentDidMount = () => {
-        this.web3Modal = new Web3Modal({
-            network: "mainnet",         // optional
-            cacheProvider: true,        // optional
-            providerOptions: this.getProviderOptions()   // required
-        });
         const contractABI = require('./hexabi.js')
         const contractAddress ="0x2b591e99afe9f32eaa6214f7b7629768c40eeb39"
+        this.web3Modal = new Web3Modal({
+            network: "mainnet",                         // optional
+            cacheProvider: true,                        // optional
+            providerOptions: this.getProviderOptions()  // required
+        });
         this.web3Modal.connect()
         .then((provider) => {
             this.provider = provider
-
             this.web3 = new Web3(provider)
             
             this.contract = new this.web3.eth.Contract(contractABI, contractAddress)
@@ -103,16 +123,16 @@ class App extends React.Component {
                     walletAddress: walletAddress,
                     walletConnected: true 
                 })
-
                 Promise.all([
+                    this.getAccountAssets(),
                     this.contract.methods.allocatedSupply().call(),
                     this.contract.methods.currentDay().call(),
                     this.contract.methods.globals().call()
                 ]).then((results) => {
                     let contractData = { 
-                        allocatedSupply:    new BigNumber(results[0]),
-                        currentDay:         Number(results[1]),
-                        globals:            results[2]
+                        allocatedSupply:    new BigNumber(results[1]),
+                        currentDay:         Number(results[2]),
+                        globals:            results[3]
                     }
                     // decode claimstats
                     const SATOSHI_UINT_SIZE = 51 // bits
@@ -133,6 +153,7 @@ class App extends React.Component {
                 })
             }
         })
+        .catch((e) => console.error('Wallet Connect ERROR: ', e))
     }
 
     resetApp = async () => {
@@ -166,8 +187,7 @@ class App extends React.Component {
                 <>
                     <Card bg="primary" text="light" className="overflow-auto m-2">
                         <Card.Body className="p-2">
-                            <Card.Title as="h5" className="m-0">Please Connect a Wallet</Card.Title>
-                            <p>Select a wallet provider ...</p>
+                            <Card.Title as="h5" className="m-0">Please Connect a Wallet (below)</Card.Title>
                             <Button onClick={() => window.location.reload(false)} variant="primary">Reload</Button>
                         </Card.Body>
                     </Card>

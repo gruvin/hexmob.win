@@ -1,11 +1,8 @@
-import React, { useState } from 'react'
+import React, { useState } from 'react'  // eslint-disable-line no-use-before-define
 import 'bootstrap/dist/css/bootstrap.min.css'
 import { 
-    Container,
     Card,
     Table,
-    Row,
-    Col,
     Button,
     Modal,
     Badge,
@@ -13,8 +10,8 @@ import {
     OverlayTrigger,
     Tooltip
 } from 'react-bootstrap'
-import { FormattedDate } from 'react-intl';
-import styles from './Stakes.css'
+import { FormattedDate } from 'react-intl'; // eslint-disable-line no-use-before-define
+import styles from './Stakes.css' // eslint-disable-line no-use-before-define
 import { BigNumber } from 'bignumber.js'
 import { format } from 'd3-format'
 
@@ -41,9 +38,9 @@ class Stakes extends React.Component {
     }
 
     calcBigPayDaySlice = (shares, pool) => {
-        return Object.entries(this.state.contractData.globals).length 
-            && new BigNumber(this.state.contractData.globals.claimStats.unclaimedSatoshisTotal).times(10000).times(shares).idiv(pool)
-            || new BigNumber('fae0c6a6400dadc0', 16) // total claimable Satoshis
+        return Object.entries(this.state.contractData.globals).length
+            ? new BigNumber(this.state.contractData.globals.claimStats.unclaimedSatoshisTotal).times(10000).times(shares).idiv(pool)
+            : new BigNumber('fae0c6a6400dadc0', 16) // total claimable Satoshis
     }
 
     loadStakes() {
@@ -74,7 +71,7 @@ class Stakes extends React.Component {
                         progress: Math.trunc(Math.min((currentDay - data.lockedDay) / data.stakedDays * 100000, 100000)),
                         bigPayDay: this.calcBigPayDaySlice(data.stakeShares, globals.stakeSharesTotal)
                     }
-                    const stakeList = Object.assign({ }, this.state.stakeList)
+                    const stakeList = { ...this.state.stakeList }
                     stakeList[data.stakeId] = stakeData
 
                     // update this.state
@@ -101,13 +98,13 @@ class Stakes extends React.Component {
         const HEARTS_PER_SATOSHI = 10000
         const globals = this.state.contractData.globals 
         const claimedSatoshisTotal = new BigNumber(globals.claimStats.claimedSatoshisTotal)
-        const unclaimedSatoshisTotal = new BigNumber(globals.claimStats.unclaimedSatoshisTotal)
+//        const unclaimedSatoshisTotal = new BigNumber(globals.claimStats.unclaimedSatoshisTotal)
         const claimedBtcAddrCount = new BigNumber(globals.claimStats.claimedBtcAddrCount)
         const stakeSharesTotal = new BigNumber(globals.stakeSharesTotal)
-        const nextStakeSharesTotal = new BigNumber(globals.nextStakeSharesTotal)
+//        const nextStakeSharesTotal = new BigNumber(globals.nextStakeSharesTotal)
         const currentDay = this.state.contractData.currentDay
 
-        const stakeData = Object.assign({ }, _stakeData)
+        const stakeData = { ..._stakeData }
         const startDay = stakeData.lockedDay
         const endDay = startDay + stakeData.stakedDays
 
@@ -142,7 +139,7 @@ class Stakes extends React.Component {
                 stakeData.payout = stakeData.payout.plus(dayPayoutTotal.times(stakeData.stakeShares).idiv(dayStakeSharesTotal))
 
                 if (Number(startDay) <= BIG_PAY_DAY && Number(endDay) > BIG_PAY_DAY) {
-                    const bigPaySlice = dayUnclaimedSatoshisTotal.times(HEARTS_PER_SATOSHI) .times(stakeData.stakeShares).idiv(stakeSharesTotal)
+                    const bigPaySlice = dayUnclaimedSatoshisTotal.times(HEARTS_PER_SATOSHI).times(stakeData.stakeShares).idiv(stakeSharesTotal)
                     const bonuses = calcAdoptionBonus(bigPaySlice)
                     stakeData.bigPayDay = bigPaySlice.plus(bonuses)
                     if (startDay + dayNumber === BIG_PAY_DAY) stakeData.payout = stakeData.payout.plus(stakeData.bigPayDay.plus(bonuses))
@@ -151,7 +148,7 @@ class Stakes extends React.Component {
             })
             stakeData.payout = stakeData.payout.plus(calcDailyBonus(stakeData.stakeShares, stakeSharesTotal))
 
-            const stakeList = Object.assign({ }, this.state.stakeList)
+            const stakeList = { ...this.state.stakeList }
             stakeList[stakeData.stakeId] = stakeData
 
             this.setState({ 
@@ -166,7 +163,7 @@ class Stakes extends React.Component {
         this.loadStakes()
     }
     componentDidUpdate = (prevProps, prevState) => {
-        if (prevProps.walletAddress != this.props.walletAddress) {
+        if (prevProps.walletAddress !== this.props.walletAddress) {
             this.setState(
                 { address: this.props.walletAddress },
                 this.loadStakes
@@ -177,7 +174,6 @@ class Stakes extends React.Component {
     render() {
 
         const currentDay = this.state.contractData.currentDay
-        const globals = this.state.contractData.globals
 
         const handleClose = () => this.setState({ showExitModal: false })
         const handleShow = (stakeData) => {
