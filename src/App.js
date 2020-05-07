@@ -1,7 +1,7 @@
 import React from 'react'
 import 'bootstrap/dist/css/bootstrap.min.css'
 import { BigNumber } from 'bignumber.js'
-import { Container, Card, Row, Col, Button, Badge } from 'react-bootstrap'
+import { Container, Card, Row, Col, Button, Badge, ProgressBar } from 'react-bootstrap'
 
 import Stakes from './Stakes.js'
 
@@ -196,10 +196,10 @@ class App extends React.Component {
         } else {
             return (
                 <>
-                    { this.state.contractReady
-                        ? <Stakes contract={this.contract} contractData={this.state.contractData} walletAddress={this.state.walletAddress} />
-                        : <div>Loading contract data ...</div>
-                    }
+                {this.state.contractReady
+                    ? <Stakes contract={this.contract} contractData={this.state.contractData} walletAddress={this.state.walletAddress} />
+                    : <ProgressBar animated now={60} label="initializing" />
+                }
                 </>
             )
         }

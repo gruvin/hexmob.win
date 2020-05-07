@@ -8,7 +8,8 @@ import {
     Badge,
     Alert,
     OverlayTrigger,
-    Tooltip
+    Tooltip,
+    ProgressBar
 } from 'react-bootstrap'
 import { FormattedDate } from 'react-intl'; // eslint-disable-line no-use-before-define
 import styles from './Stakes.css' // eslint-disable-line no-use-before-define
@@ -44,7 +45,6 @@ class Stakes extends React.Component {
     }
 
     loadStakes() {
-        console.log(this.state)
         this.contract.methods.stakeCount(this.state.address).call()
         .then((stakeCount) => {
             const currentDay = this.state.contractData.currentDay
@@ -69,7 +69,8 @@ class Stakes extends React.Component {
                         unlockedDay: Number(data.unlockedDay),
                         isAutoStake: Boolean(data.isAutoStakte),
                         progress: Math.trunc(Math.min((currentDay - data.lockedDay) / data.stakedDays * 100000, 100000)),
-                        bigPayDay: this.calcBigPayDaySlice(data.stakeShares, globals.stakeSharesTotal)
+                        bigPayDay: this.calcBigPayDaySlice(data.stakeShares, globals.stakeSharesTotal),
+                        payout: new BigNumber(0)
                     }
                     const stakeList = { ...this.state.stakeList }
                     stakeList[data.stakeId] = stakeData
@@ -83,9 +84,10 @@ class Stakes extends React.Component {
 
                     this.updateStakePayout(stakeData)
                 })
+                .catch((e) => console.log(`Stakes::loadStakes:contract.methods.stakeLists(${this.state.address}, ${index}).call()`, e))
             }
         })
-        .catch(e => console.log('ERROR: Contract call - ',e))
+        .catch((e) => console.log(`Stakes::loadStakes:contract.methods.stakeCount(${this.state.address}).call()`, e))
     }
 
     updateStakePayout(_stakeData) {
@@ -107,6 +109,7 @@ class Stakes extends React.Component {
         const stakeData = { ..._stakeData }
         const startDay = stakeData.lockedDay
         const endDay = startDay + stakeData.stakedDays
+        if (currentDay === startDay) return
 
         this.contract.methods.dailyDataRange(startDay, Math.min(currentDay, endDay)).call()
         .then((dailyData) => {
@@ -157,10 +160,11 @@ class Stakes extends React.Component {
                 stakeList
             })
         })
+        .catch((e) => console.log(`Stakes::updateStakePayout:contract.methods.dailyDataRange(${startDay}, Math.min(${currentDay}, ${endDay}).call()`, e))
     }
 
     componentDidMount() {
-        this.loadStakes()
+        if (this.contract) this.loadStakes()
     }
     componentDidUpdate = (prevProps, prevState) => {
         if (prevProps.walletAddress !== this.props.walletAddress) {
@@ -186,7 +190,9 @@ class Stakes extends React.Component {
         const IsEarlyExit = (thisStake.stakeId && currentDay <= (thisStake.lockedDay + thisStake.stakedDays)) 
 
         return (
-            <div>
+            !this.state.stakeList
+                ? <ProgressBar animated now={90} label="loading contract data" />
+                : <>
             <Card bg="primary" text="light" className="overflow-auto m-2">
                 <Card.Body className="p-2">
                     <Card.Title>Stakes <Badge variant='warning' className="float-right">Day {currentDay+1}</Badge></Card.Title>
@@ -332,7 +338,7 @@ class Stakes extends React.Component {
                     }
                 </Modal.Footer>
             </Modal>
-            </div>
+            </>
         )
     }
 }
