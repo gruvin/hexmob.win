@@ -1,3 +1,13 @@
+.card {
+    border:none;
+    border-radius: 8px;
+    background: rgb(2,0,36);
+    background: linear-gradient(180deg, rgba(2,0,36,1) 0%, rgba(9,9,121,1) 20%, rgba(0,155,255,1) 100%);
+}
+.card-title.h5 {
+    font-weight: bold;
+}
+
 .hex-value,
 .shares-value {
     text-align: right;
@@ -5,12 +15,16 @@
 .day-value {
     text-align: center;
 }
-thead, tfoot { background-color: #333; color: #eee; font-weight: bold }
+thead, tfoot {
+    background: rgb(51,51,51);
+    background: linear-gradient(180deg, rgba(51,51,51,1) 0%, rgba(0,0,0,1) 48%, rgba(51,51,51,1) 100%);
+    color: #eee; font-weight: bold;
+}
 button.btn-sm { padding: 0.1rem .2rem; line-height: 1em; } 
 button.earlyexit { font-family: Nosifer, sans-serif; color: #a00; padding: 0.25rem 0.5rem; border: none; line-height:1.1em }
 button.earlyexit.btn-outline-primary:hover {
     color: #fff;
-    background-color: #a00;
+    background-color: #bb0088;
 }
 button.midexit { font-family: "Press Start", sans-serif; color: #d60; border-color: #d60; font-size:1em;}
 button.midexit.btn-outline-primary:hover {

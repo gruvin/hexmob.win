@@ -194,7 +194,7 @@ class Stakes extends React.Component {
                 ? <ProgressBar animated now={90} label="loading contract data" />
                 : <>
             <Card bg="primary" text="light" className="overflow-auto m-2">
-                <Card.Body className="p-2">
+                <Card.Body className="p-3">
                     <Card.Title>Stakes <Badge variant='warning' className="float-right">Day {currentDay+1}</Badge></Card.Title>
                     <Table variant="secondary" size="sm" striped borderless>
                         <thead>

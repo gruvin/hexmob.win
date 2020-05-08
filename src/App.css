@@ -4,7 +4,7 @@
     and (device-height: 896px)
     and (-webkit-device-pixel-ratio: 2) { }
 
-/* iPhone 11 Pro 2436x1125px at 458ppi */
+/* iPhone X/11 Pro 2436x1125px at 458ppi */
 @media only screen
     and (device-width: 375px)
     and (device-height: 812px)
@@ -25,4 +25,8 @@ body {
 
 .bg-primary {
     background-color: #2662e7!important;
+}
+
+.container, .container-md, .container-sm {
+    max-width: 800px;
 }
