@@ -1,11 +1,18 @@
 .card {
     border:none;
-    border-radius: 8px;
-    background: rgb(2,0,36);
-    background: linear-gradient(180deg, rgba(2,0,36,1) 0%, rgba(9,9,121,1) 20%, rgba(0,155,255,1) 100%);
+    border-radius: 3px;
 }
-.card-title.h5 {
+.card-header {
     font-weight: bold;
+    padding: .3rem .5rem!important
+}
+.card-header span.badge-info { 
+    color: #e3e7ff;
+    background-color: #2d009a;
+    font-size: 0.9em;
+}
+.card-body {
+    background-color: #110033;
 }
 
 .hex-value,
@@ -15,7 +22,6 @@
 .day-value {
     text-align: center;
 }
-.card-title span.badge-warning { color: #e3e7ff; background-color: #2d009a }
 thead, tfoot {
     background: rgb(51,51,51);
     background: linear-gradient(180deg, rgba(51,51,51,1) 0%, rgba(0,0,0,1) 48%, rgba(51,51,51,1) 100%);

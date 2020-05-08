@@ -9,7 +9,8 @@ import {
     Alert,
     OverlayTrigger,
     Tooltip,
-    ProgressBar
+    ProgressBar,
+    Accordion
 } from 'react-bootstrap'
 import { FormattedDate } from 'react-intl'; // eslint-disable-line no-use-before-define
 import styles from './Stakes.css' // eslint-disable-line no-use-before-define
@@ -192,10 +193,14 @@ class Stakes extends React.Component {
         return (
             !this.state.stakeList
                 ? <ProgressBar animated now={90} label="loading contract data" />
-                : <>
+                : <> 
+            <Accordion defaultActiveKey="0">
             <Card bg="primary" text="light" className="overflow-auto m-2">
-                <Card.Body className="p-3">
-                    <Card.Title>Stakes <Badge variant='warning' className="float-right">Day {currentDay+1}</Badge></Card.Title>
+                <Accordion.Toggle as={Card.Header} eventKey="0">
+                    Current Stakes <Badge variant='info' className="float-right">Day {currentDay+1}</Badge>
+                </Accordion.Toggle>
+                <Accordion.Collapse eventKey="0">
+                <Card.Body className="p-3 pt-0">
                     <Table variant="secondary" size="sm" striped borderless>
                         <thead>
                             <tr>
@@ -207,7 +212,7 @@ class Stakes extends React.Component {
                                 <th className="shares-value">Shares</th>
                                 <th className="hex-value">BigPayDay</th> 
                                 <th className="hex-value">Interest</th>
-                                <th className="hex-value">Current Value</th>
+                                <th className="hex-value">Value</th>
                                 <th>{' '}</th>
                             </tr>
                         </thead>
@@ -295,7 +300,33 @@ class Stakes extends React.Component {
                         </tfoot>
                     </Table>
                 </Card.Body>
+            </Accordion.Collapse>
             </Card>
+            <Card bg="primary" text="light" className="overflow-auto m-2">
+                <Accordion.Toggle as={Card.Header} eventKey="1">
+                    New Stake
+                </Accordion.Toggle>
+                <Accordion.Collapse eventKey="1">
+                <Card.Body className="p-3">
+                    Enter new stake data TODO
+                </Card.Body>
+                </Accordion.Collapse>
+            </Card>
+            <Card bg="primary" text="light" className="overflow-auto m-2">
+                <Accordion.Toggle as={Card.Header} eventKey="2">
+                    Stake History
+                </Accordion.Toggle>
+                <Accordion.Collapse eventKey="2">
+                <Card.Body className="p-3">
+                    <p>HISTORY TODO</p>
+                    <p>HISTORY TODO</p>
+                    <p>HISTORY TODO</p>
+                    <p>HISTORY TODO</p>
+                    <p>HISTORY TODO</p>
+                </Card.Body>
+                </Accordion.Collapse>
+            </Card>
+            </Accordion>
 
             <Modal show={this.state.showExitModal} onHide={handleClose} animation={false} variant="primary">
                 <Modal.Header closeButton>
