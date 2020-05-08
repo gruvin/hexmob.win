@@ -15,13 +15,14 @@
 .day-value {
     text-align: center;
 }
+.card-title span.badge-warning { color: #e3e7ff; background-color: #2d009a }
 thead, tfoot {
     background: rgb(51,51,51);
     background: linear-gradient(180deg, rgba(51,51,51,1) 0%, rgba(0,0,0,1) 48%, rgba(51,51,51,1) 100%);
     color: #eee; font-weight: bold;
 }
 button.btn-sm { padding: 0.1rem .2rem; line-height: 1em; } 
-button.earlyexit { font-family: Nosifer, sans-serif; color: #a00; padding: 0.25rem 0.5rem; border: none; line-height:1.1em }
+button.earlyexit { font-family: Nosifer, sans-serif; color: #bb0088; padding: 0.25rem 0.5rem; border: none; line-height:1.1em }
 button.earlyexit.btn-outline-primary:hover {
     color: #fff;
     background-color: #bb0088;
