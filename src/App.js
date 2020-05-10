@@ -1,6 +1,7 @@
 import React from 'react'
 import 'bootstrap/dist/css/bootstrap.min.css'
 import { BigNumber } from 'bignumber.js'
+import { format } from 'd3-format'
 import { Container, Card, Row, Col, Button, Badge, ProgressBar } from 'react-bootstrap'
 
 import Stakes from './Stakes.js'
@@ -10,13 +11,6 @@ import Web3 from "web3";
 import Web3Modal from "web3modal";
 import WalletConnectProvider from "@walletconnect/web3-provider";
 
-import { apiGetAccountAssets } from './lib/api'
-
-/*
-function sleep(ms) {
-  return new Promise(resolve => { setTimeout(resolve, ms) });
-}
-*/
 const INITIAL_STATE = {
     chainId: 1, // ETH mainnet
     walletConnected: false,
@@ -76,27 +70,11 @@ class App extends React.Component {
         })
 
         provider.on("networkChanged", async (networkId: number) => {
-            const { web3 } = this
-            const chainId = await web3.eth.chainId()
+            const chainId = await this.web3.eth.chainId()
             await this.setState({ chainId, networkId })
             await this.getAccountAssets()
         })
 
-    }
-
-    getAccountAssets = async () => {
-        const { walletAddress:address, chainId } = this.state;
-        this.setState({ fetching: true });
-        try {
-            // get account balances
-            const assets = await apiGetAccountAssets(address, chainId);
-            console.log("ASSETS: ", address, assets)
-
-            await this.setState({ fetching: false, assets });
-        } catch (error) {
-            console.error(error); // tslint:disable-line
-            await this.setState({ fetching: false });
-        }
     }
 
     componentDidMount = () => {
@@ -112,8 +90,9 @@ class App extends React.Component {
             this.provider = provider
             this.web3 = new Web3(provider)
             
-            const account = this.web3.eth.accounts
-            this.setState({ walletAddress: account.givenProvider.selectedAddress }, () => {
+            const accounts = this.web3.eth.accounts
+            console.log(accounts)
+            this.setState({ walletAddress: accounts.givenProvider.selectedAddress }, () => {
 
                 //Check if Metamask is locked
                 if (this.state.walletAddress && this.state.walletAddress !== '') {
@@ -125,8 +104,8 @@ class App extends React.Component {
                     })
                     
                     Promise.all([
-                        this.getAccountAssets(),
                         this.contract.methods.allocatedSupply().call(),
+                        this.contract.methods.balanceOf(this.state.walletAddress).call(),
                         this.contract.methods.currentDay().call(),
                         this.contract.methods.globals().call()
                     ]).then((results) => {
@@ -149,13 +128,14 @@ class App extends React.Component {
                         }
 
                         let contractData = { 
-                            allocatedSupply:    new BigNumber(results[1]),
+                            allocatedSupply:    new BigNumber(results[0]),
+                            accountBalance:     new BigNumber(results[1]),
                             currentDay:         Number(results[2]),
                             globals:            globals
                         }
                         this.setState({
                             contractData,
-                            contractReady: true 
+                            contractReady: true,
                         })
                     })
                 }
@@ -175,11 +155,19 @@ class App extends React.Component {
     }
 
     WalletStatus = () => {
+        const balanceHEX = this.state.contractReady
+            ? this.state.contractData.accountBalance.idiv(1e8).toString()
+            : null
         return (
             <Container fluid>
             <Row>
                 <Col md={{span: 2}}><Badge variant="success" className="small">mainnet</Badge></Col>
-                <Col md={{span: 4, offset: 6}} className="text-right">
+                <Col md={{span: 2, offset: 3}} className="text-center"> 
+                    <Badge variant="info" className="small"> 
+                        { balanceHEX ? format(',')(balanceHEX) : '...' }
+                    </Badge>
+                </Col>
+                <Col md={{span: 3, offset: 2}} className="text-right">
                     <Badge className="text-info">{ this.state.walletAddress.slice(0,6)+'...'+this.state.walletAddress.slice(-4) }</Badge>
                     <Badge variant="secondary" style={{cursor: "pointer"}} onClick={this.resetApp} className="small">
                         disconnect</Badge>
