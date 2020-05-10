@@ -47,8 +47,7 @@ class Stakes extends React.Component {
     loadStakes() {
         this.contract.methods.stakeCount(this.state.address).call()
         .then((stakeCount) => {
-            const currentDay = this.state.contractData.currentDay
-            const globals = this.state.contractData.globals
+            const { currentDay, globals } = this.state.contractData
             this.setState({
                 stakeList: { },
                 stakeCount: Number(stakeCount),
@@ -98,13 +97,9 @@ class Stakes extends React.Component {
         const CLAIMABLE_BTC_ADDR_COUNT = new BigNumber('27997742')
         const CLAIMABLE_SATOSHIS_TOTAL = new BigNumber('910087996911001')
         const HEARTS_PER_SATOSHI = 10000
-        const globals = this.state.contractData.globals 
-        const claimedSatoshisTotal = new BigNumber(globals.claimStats.claimedSatoshisTotal)
-//        const unclaimedSatoshisTotal = new BigNumber(globals.claimStats.unclaimedSatoshisTotal)
-        const claimedBtcAddrCount = new BigNumber(globals.claimStats.claimedBtcAddrCount)
-        const stakeSharesTotal = new BigNumber(globals.stakeSharesTotal)
-//        const nextStakeSharesTotal = new BigNumber(globals.nextStakeSharesTotal)
-        const currentDay = this.state.contractData.currentDay
+
+        const { currentDay, allocatedSupply, globals } = this.state.contractData
+        const { claimedSatoshisTotal, claimedBtcAddrCount, stakeSharesTotal } = globals.claimStats
 
         const stakeData = { ..._stakeData }
         const startDay = stakeData.lockedDay
@@ -123,7 +118,7 @@ class Stakes extends React.Component {
 
             const calcDailyBonus = (shares, sharesTotal) => {
                 // HEX mints 0.009955% daily interest (3.69%pa) and statkers get adoption bonuses from that each day
-                const dailyInterest = new BigNumber(this.state.contractData.allocatedSupply).times(10000).idiv(100448995) // .sol line: 1243 
+                const dailyInterest = allocatedSupply.times(10000).idiv(100448995) // .sol line: 1243 
                 const bonus = shares.times(dailyInterest.plus(calcAdoptionBonus(dailyInterest))).idiv(sharesTotal)
                 return bonus
             }
@@ -132,24 +127,26 @@ class Stakes extends React.Component {
             stakeData.payout = new BigNumber(0)
             stakeData.bigPayDay = new BigNumber(0)
 
-            dailyData.forEach((dailyDataMapping, dayNumber) => {
+            dailyData.forEach((mapped_dailyData, dayNumber) => {
                 // extract dailyData struct from uint256 mapping
-                let hex = new BigNumber(dailyDataMapping).toString(16).padStart(64, '0')
-                let dayPayoutTotal = new BigNumber(hex.slice(46,64), 16)
-                let dayStakeSharesTotal = new BigNumber(hex.slice(28,46), 16)
-                let dayUnclaimedSatoshisTotal = new BigNumber(hex.slice(12,28), 16)
+                const hex = new BigNumber(mapped_dailyData).toString(16).padStart(64, '0')
+                const day = {
+                    payoutTotal: new BigNumber(hex.slice(46,64), 16),
+                    stakeSharesTotal: new BigNumber(hex.slice(28,46), 16),
+                    unclaimedSatoshisTotal: BigNumber(hex.slice(12,28), 16)
+                }
                 
-                stakeData.payout = stakeData.payout.plus(dayPayoutTotal.times(stakeData.stakeShares).idiv(dayStakeSharesTotal))
+                stakeData.payout = stakeData.payout.plus(day.payoutTotal.times(stakeData.stakeShares).idiv(day.stakeSharesTotal))
 
-                if (Number(startDay) <= BIG_PAY_DAY && Number(endDay) > BIG_PAY_DAY) {
-                    const bigPaySlice = dayUnclaimedSatoshisTotal.times(HEARTS_PER_SATOSHI).times(stakeData.stakeShares).idiv(stakeSharesTotal)
+                if (startDay <= BIG_PAY_DAY && endDay > BIG_PAY_DAY) {
+                    const bigPaySlice = day.unclaimedSatoshisTotal.times(HEARTS_PER_SATOSHI).times(stakeData.stakeShares).idiv(globals.stakeSharesTotal)
                     const bonuses = calcAdoptionBonus(bigPaySlice)
                     stakeData.bigPayDay = bigPaySlice.plus(bonuses)
                     if (startDay + dayNumber === BIG_PAY_DAY) stakeData.payout = stakeData.payout.plus(stakeData.bigPayDay.plus(bonuses))
                 }
 
             })
-            stakeData.payout = stakeData.payout.plus(calcDailyBonus(stakeData.stakeShares, stakeSharesTotal))
+            stakeData.payout = stakeData.payout.plus(calcDailyBonus(stakeData.stakeShares, globals.stakeSharesTotal))
 
             const stakeList = { ...this.state.stakeList }
             stakeList[stakeData.stakeId] = stakeData

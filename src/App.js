@@ -21,8 +21,8 @@ const INITIAL_STATE = {
     chainId: 1, // ETH mainnet
     walletConnected: false,
     walletAddress: null,
-    contractGlobals: null,
-    contractReady: false
+    contractReady: false,
+    contractGlobals: null
 }
 
 class App extends React.Component {
@@ -112,46 +112,54 @@ class App extends React.Component {
             this.provider = provider
             this.web3 = new Web3(provider)
             
-            this.contract = new this.web3.eth.Contract(contractABI, contractAddress)
-
             const account = this.web3.eth.accounts
-            const walletAddress = account.givenProvider.selectedAddress
-            //Check if Metamask is locked
-            if (walletAddress) {
-                this.subscribeProvider(this.provider)
-                this.setState({
-                    walletAddress: walletAddress,
-                    walletConnected: true 
-                })
-                Promise.all([
-                    this.getAccountAssets(),
-                    this.contract.methods.allocatedSupply().call(),
-                    this.contract.methods.currentDay().call(),
-                    this.contract.methods.globals().call()
-                ]).then((results) => {
-                    let contractData = { 
-                        allocatedSupply:    new BigNumber(results[1]),
-                        currentDay:         Number(results[2]),
-                        globals:            results[3]
-                    }
-                    // decode claimstats
-                    const SATOSHI_UINT_SIZE = 51 // bits
-                    let binaryClaimStats = new BigNumber(contractData.globals.claimStats).toString(2).padStart(153, '0')
-                    let a = binaryClaimStats.slice(0, SATOSHI_UINT_SIZE)
-                    let b = binaryClaimStats.slice(SATOSHI_UINT_SIZE, SATOSHI_UINT_SIZE * 2)
-                    let c = binaryClaimStats.slice(SATOSHI_UINT_SIZE * 2)
-                    contractData.globals.claimStats = {
-                        claimedBtcAddrCount: new BigNumber(a, 2).toString(),
-                        claimedSatoshisTotal: new BigNumber(b, 2).toString(),
-                        unclaimedSatoshisTotal: new BigNumber(c, 2).toString()
-                    }
+            this.setState({ walletAddress: account.givenProvider.selectedAddress }, () => {
 
+                //Check if Metamask is locked
+                if (this.state.walletAddress && this.state.walletAddress !== '') {
+                    
+                    this.contract = new this.web3.eth.Contract(contractABI, contractAddress)
+                    this.subscribeProvider(this.provider)
                     this.setState({
-                        contractData,
-                        contractReady: true 
+                        walletConnected: true 
                     })
-                })
-            }
+                    
+                    Promise.all([
+                        this.getAccountAssets(),
+                        this.contract.methods.allocatedSupply().call(),
+                        this.contract.methods.currentDay().call(),
+                        this.contract.methods.globals().call()
+                    ]).then((results) => {
+                        let globals = { }
+                        const rawGlobals = results[3]
+                        for (const k in rawGlobals) {
+                            const v = rawGlobals[k]
+                            if (isNaN(k)) globals[k] = new BigNumber(rawGlobals[k]);
+                        }
+                        // decode claimstats
+                        const SATOSHI_UINT_SIZE = 51 // bits
+                        let binaryClaimStats = globals.claimStats.toString(2).padStart(153, '0')
+                        let a = binaryClaimStats.slice(0, SATOSHI_UINT_SIZE)
+                        let b = binaryClaimStats.slice(SATOSHI_UINT_SIZE, SATOSHI_UINT_SIZE * 2)
+                        let c = binaryClaimStats.slice(SATOSHI_UINT_SIZE * 2)
+                        globals.claimStats = {
+                            claimedBtcAddrCount: new BigNumber(a, 2),
+                            claimedSatoshisTotal: new BigNumber(b, 2),
+                            unclaimedSatoshisTotal: new BigNumber(c, 2)
+                        }
+
+                        let contractData = { 
+                            allocatedSupply:    new BigNumber(results[1]),
+                            currentDay:         Number(results[2]),
+                            globals:            globals
+                        }
+                        this.setState({
+                            contractData,
+                            contractReady: true 
+                        })
+                    })
+                }
+            })
         })
         .catch((e) => console.error('Wallet Connect ERROR: ', e))
     }
