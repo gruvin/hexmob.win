@@ -11,6 +11,8 @@ import Web3 from "web3";
 import Web3Modal from "web3modal";
 import WalletConnectProvider from "@walletconnect/web3-provider";
 
+import { ContractAddress, ABI } from './hex_contract.js'
+
 const INITIAL_STATE = {
     chainId: 1, // ETH mainnet
     walletConnected: false,
@@ -19,8 +21,6 @@ const INITIAL_STATE = {
     contractReady: false,
     contractGlobals: null
 }
-const contractABI = require('./hexabi.js')
-const contractAddress ="0x2b591e99afe9f32eaa6214f7b7629768c40eeb39"
 
 class App extends React.Component {
     constructor(props) {
@@ -86,7 +86,7 @@ class App extends React.Component {
 
     subscribeTransfers = () => {
         this.wssInSubscription = this.web3.eth.subscribe('logs', {
-            address: contractAddress,
+            address: ContractAddress,
             topics: [
                 this.state.contractData.TOPIC_HASH_TRANSFER,
                 null,
@@ -98,7 +98,7 @@ class App extends React.Component {
             this.updateHEXBalance()
         });
         this.wssOutSubscription = this.web3.eth.subscribe('logs', {
-            address: contractAddress,
+            address: ContractAddress,
             topics: [
                 this.state.contractData.TOPIC_HASH_TRANSFER,
                 '0x' + this.state.walletAddress.slice(2).toLowerCase().padStart(64, '0')
@@ -143,7 +143,7 @@ class App extends React.Component {
                 //Check if Metamask is locked
                 if (this.state.walletAddress && this.state.walletAddress !== '') {
                     
-                    this.contract = new this.web3.eth.Contract(contractABI, contractAddress)
+                    this.contract = new this.web3.eth.Contract(ABI, ContractAddress)
                     this.subscribeProvider(this.provider)
                     this.setState({
                         walletConnected: true 
