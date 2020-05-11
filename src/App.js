@@ -19,6 +19,8 @@ const INITIAL_STATE = {
     contractReady: false,
     contractGlobals: null
 }
+const contractABI = require('./hexabi.js')
+const contractAddress ="0x2b591e99afe9f32eaa6214f7b7629768c40eeb39"
 
 class App extends React.Component {
     constructor(props) {
@@ -82,6 +84,37 @@ class App extends React.Component {
         })
     }
 
+    subscribeTransfers = () => {
+        this.wssInSubscription = this.web3.eth.subscribe('logs', {
+            address: contractAddress,
+            topics: [
+                this.state.contractData.TOPIC_HASH_TRANSFER,
+                null,
+                '0x' + this.state.walletAddress.slice(2).toLowerCase().padStart(64, '0')
+            ]
+        }, (error, result) => {
+            if (error) return
+            console.log('EVENT: HEX [IN] from: 0x' + result.topics[1].match(/[^0x]+.+/)[0])
+            this.updateHEXBalance()
+        });
+        this.wssOutSubscription = this.web3.eth.subscribe('logs', {
+            address: contractAddress,
+            topics: [
+                this.state.contractData.TOPIC_HASH_TRANSFER,
+                '0x' + this.state.walletAddress.slice(2).toLowerCase().padStart(64, '0')
+            ]
+        }, (error, result) => {
+            if (error) return
+            console.log('EVENT: HEX [OUT] to: 0x' + result.topics[2].match(/[^0x]+.+/)[0])
+            this.updateHEXBalance()
+        });
+    }
+
+    unsubscribeTransfers = () => {
+        this.wssInSubscription.unsubscribe()
+        this.wssOutSubscription.unsubscribe()
+    }
+
     updateHEXBalance = () => {
         return new Promise((resolve, reject) => {
             if (!this.contract) return reject('contract not available')
@@ -94,8 +127,6 @@ class App extends React.Component {
     }
 
     componentDidMount = () => {
-        const contractABI = require('./hexabi.js')
-        const contractAddress ="0x2b591e99afe9f32eaa6214f7b7629768c40eeb39"
         this.web3Modal = new Web3Modal({
             network: "mainnet",                         // optional
             cacheProvider: true,                        // optional
@@ -152,6 +183,7 @@ class App extends React.Component {
                         const CLAIMABLE_BTC_ADDR_COUNT =  new BigNumber('27997742')
                         const CLAIMABLE_SATOSHIS_TOTAL =  new BigNumber('910087996911001')
                         const HEARTS_PER_SATOSHI =  10000
+                        const TOPIC_HASH_TRANSFER = "0xddf252ad1be2c89b69c2b068fc378daa952ba7f163c4a11628f55a4df523b3ef"
                         let contractData = { 
                             START_DATE,
                             CLAIM_PHASE_START_DAY,
@@ -161,6 +193,7 @@ class App extends React.Component {
                             CLAIMABLE_BTC_ADDR_COUNT,
                             CLAIMABLE_SATOSHIS_TOTAL,
                             HEARTS_PER_SATOSHI,
+                            TOPIC_HASH_TRANSFER,
                             allocatedSupply,
                             currentDay,
                             globals,
@@ -171,19 +204,8 @@ class App extends React.Component {
                         })
 
                         this.updateHEXBalance()
-                        setInterval(this.updateHEXBalance, 30000) // a fallback, in case our wss feed breaks
-
-                        // subscrivb to get notified when a HEX:Transfer involving our walletAddress occurs
-                        this.wssSubscription = this.web3.eth.subscribe('logs', {
-                            address: contractAddress,
-                            topics: [
-                                "0xddf252ad1be2c89b69c2b068fc378daa952ba7f163c4a11628f55a4df523b3ef", // methods.Transfer
-                                '0x' + this.state.walletAddress.slice(2).toLowerCase().padStart(64, '0')
-                            ]
-                        }, function(error, result){
-                            if (error) return
-                            this.updateHEXBalance()
-                        });
+                        this.subscribeTransfers()
+                        //setInterval(this.updateHEXBalance, 30000) // a fallback, in case our wss feed breaks
                     })
                 }
             })
@@ -191,7 +213,9 @@ class App extends React.Component {
         .catch((e) => console.error('Wallet Connect ERROR: ', e))
     }
 
-    componentWillUnmount = () => this.wssSubscription.unsubscribe()
+    componentWillUnmount = () => {
+        this.unsubscribeTransfers()
+    }
 
     resetApp = async () => {
         const { web3 } = this
