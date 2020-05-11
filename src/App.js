@@ -82,23 +82,6 @@ class App extends React.Component {
         })
     }
 
-/* TEMPORARY NOTE
-https://infura.io/docs/ethereum/wss/eth-subscribe
-Subscribe to blockchain event relating to my walletAddress HEX transactions
-{"jsonrpc":"2.0",
-    "id": 1,
-    "method": "eth_subscribe",
-    "params": [
-        "logs", {
-            "address": "0x2b591e99afE9f32eAA6214f7B7629768c40Eeb39", // HEX contract address
-            "topics":[
-                "0xddf252ad1be2c89b69c2b068fc378daa952ba7f163c4a11628f55a4df523b3ef", // keccak hash of the contract's Transfer event
-                this.state.walletAddress.toLower() // "0x000000000000000000000000d30542151ea34007c4c4ba9d653f4dc4707ad2d2"
-            ]
-        }
-    ]
-}
-*/
     updateHEXBalance = () => {
         return new Promise((resolve, reject) => {
             if (!this.contract) return reject('contract not available')
@@ -124,7 +107,6 @@ Subscribe to blockchain event relating to my walletAddress HEX transactions
             this.web3 = new Web3(provider)
             
             const accounts = this.web3.eth.accounts
-            console.log(accounts)
             this.setState({ walletAddress: accounts.givenProvider.selectedAddress }, () => {
 
                 //Check if Metamask is locked
@@ -191,15 +173,15 @@ Subscribe to blockchain event relating to my walletAddress HEX transactions
                         this.updateHEXBalance()
                         setInterval(this.updateHEXBalance, 30000) // a fallback, in case our wss feed breaks
 
-                        var subscription = this.web3.eth.subscribe('logs', {
+                        // subscrivb to get notified when a HEX:Transfer involving our walletAddress occurs
+                        this.wssSubscription = this.web3.eth.subscribe('logs', {
                             address: contractAddress,
                             topics: [
-                                "0xddf252ad1be2c89b69c2b068fc378daa952ba7f163c4a11628f55a4df523b3ef", // Transfer
+                                "0xddf252ad1be2c89b69c2b068fc378daa952ba7f163c4a11628f55a4df523b3ef", // methods.Transfer
                                 '0x' + this.state.walletAddress.slice(2).toLowerCase().padStart(64, '0')
                             ]
                         }, function(error, result){
                             if (error) return
-                            console.log(result);
                             this.updateHEXBalance()
                         });
                     })
@@ -209,6 +191,8 @@ Subscribe to blockchain event relating to my walletAddress HEX transactions
         .catch((e) => console.error('Wallet Connect ERROR: ', e))
     }
 
+    componentWillUnmount = () => this.wssSubscription.unsubscribe()
+
     resetApp = async () => {
         const { web3 } = this
         if (web3 && web3.currentProvider && web3.currentProvider.close) {
@@ -216,7 +200,6 @@ Subscribe to blockchain event relating to my walletAddress HEX transactions
         }
         await this.web3Modal.clearCachedProvider()
         this.setState({ ...INITIAL_STATE })
-        console.log('NEW STATE: ', this.state)
         window.location.reload()
     }
 

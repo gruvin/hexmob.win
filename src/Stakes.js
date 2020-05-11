@@ -12,7 +12,6 @@ import {
     ProgressBar,
     Accordion
 } from 'react-bootstrap'
-import { FormattedDate } from 'react-intl';
 import './Stakes.css'
 import { BigNumber } from 'bignumber.js'
 import { format } from 'd3-format'
