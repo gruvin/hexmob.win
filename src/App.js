@@ -80,7 +80,6 @@ class App extends React.Component {
             await this.setState({ chainId, networkId })
             this.updateHEXBalance()
         })
-
     }
 
 /* TEMPORARY NOTE
@@ -191,6 +190,18 @@ Subscribe to blockchain event relating to my walletAddress HEX transactions
 
                         this.updateHEXBalance()
                         setInterval(this.updateHEXBalance, 30000) // a fallback, in case our wss feed breaks
+
+                        var subscription = this.web3.eth.subscribe('logs', {
+                            address: contractAddress,
+                            topics: [
+                                "0xddf252ad1be2c89b69c2b068fc378daa952ba7f163c4a11628f55a4df523b3ef", // Transfer
+                                '0x' + this.state.walletAddress.slice(2).toLowerCase().padStart(64, '0')
+                            ]
+                        }, function(error, result){
+                            if (error) return
+                            console.log(result);
+                            this.updateHEXBalance()
+                        });
                     })
                 }
             })
