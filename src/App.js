@@ -126,6 +126,7 @@ class App extends React.Component {
                             unclaimedSatoshisTotal: new BigNumber(c, 2)
                         }
 
+                        const START_DATE = new Date('2019-12-02 00:00:00 UTC')
                         const CLAIM_PHASE_START_DAY =  1
                         const CLAIM_PHASE_DAYS =  (7 * 50)
                         const CLAIM_PHASE_END_DAY =  CLAIM_PHASE_START_DAY + CLAIM_PHASE_DAYS
@@ -134,6 +135,7 @@ class App extends React.Component {
                         const CLAIMABLE_SATOSHIS_TOTAL =  new BigNumber('910087996911001')
                         const HEARTS_PER_SATOSHI =  10000
                         let contractData = { 
+                            START_DATE,
                             CLAIM_PHASE_START_DAY,
                             CLAIM_PHASE_DAYS,
                             CLAIM_PHASE_END_DAY,

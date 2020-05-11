@@ -176,7 +176,10 @@ class Stakes extends React.Component {
 
     render() {
 
-        const currentDay = this.state.contractData.currentDay
+        const { 
+            START_DATE,
+            currentDay
+        } = this.state.contractData
 
         const handleClose = () => this.setState({ showExitModal: false })
         const handleShow = (stakeData) => {
@@ -218,23 +221,43 @@ class Stakes extends React.Component {
                             { this.state.stakeList &&
                                 Object.keys(this.state.stakeList).map((key) => {
                                     const stakeData = this.state.stakeList[key]
+                                    
+                                    const startDay = stakeData.lockedDay
+                                    const endDay = startDay + stakeData.stakedDays
+                                    const startDate = new Date(START_DATE)
+                                    const endDate = new Date(START_DATE)
+                                    startDate.setDate(startDate.getDate() + startDay)
+                                    endDate.setDate(endDate.getDate() + endDay)
+
                                     return (typeof stakeData === 'object') ? 
                                     (
                                         <tr key={stakeData.stakeId}>
-                                            <td className="day-value">{stakeData.lockedDay + 1}</td>
-                                            <td className="day-value">{
+                                            <td className="day-value">
                                                 <OverlayTrigger
                                                     key={stakeData.stakeId}
                                                     placement="top"
                                                     overlay={
-                                                      <Tooltip id={'tooltip'+stakeData.stakeId}>
-                                                        Full term is
-                                                      </Tooltip>
+                                                        <Tooltip id={'tooltip'+stakeData.stakeId}>
+                                                            { startDate.toLocaleString() }
+                                                        </Tooltip>
                                                     }
                                                 >
-                                                <div>{stakeData.lockedDay + stakeData.stakedDays + 1}</div>
+                                                    <div>{ startDay }</div>
                                                 </OverlayTrigger>
-                                            }</td>
+                                            </td>
+                                            <td className="day-value">
+                                                <OverlayTrigger
+                                                    key={stakeData.stakeId}
+                                                    placement="top"
+                                                    overlay={
+                                                        <Tooltip id={'tooltip'+stakeData.stakeId}>
+                                                            { endDate.toLocaleString() }
+                                                        </Tooltip>
+                                                    }
+                                                >
+                                                    <div>{ endDay }</div>
+                                                </OverlayTrigger>
+                                            </td>
                                             <td className="day-value">{ stakeData.stakedDays }</td>
                                             <td className="day-value">
                                                 { hexFormat(stakeData.progress / 1000) }%
