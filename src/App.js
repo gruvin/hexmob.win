@@ -15,6 +15,7 @@ const INITIAL_STATE = {
     chainId: 1, // ETH mainnet
     walletConnected: false,
     walletAddress: null,
+    walletHEX: new BigNumber(0),
     contractReady: false,
     contractGlobals: null
 }
@@ -46,19 +47,24 @@ class App extends React.Component {
         if (!provider.on) {
             return
         }
-        provider.on("close", () => this.resetApp()) // not supported by MetaMask ...
-        // ... work around ...
+        provider.on("close", () => this.resetApp()) 
+
+        // onClose (above) not supported by MetaMask. Work around ...
         if (provider.isMetaMask) {
             window.ethereum.on('accountsChanged', async (accounts) => {
-                if (!accounts.length) this.resetApp() 
-                else this.setState({ walletAddress: accounts[0] })
+                if (!accounts.length) 
+                    this.resetApp() // logged out
+                else 
+                    await this.setState({ walletAddress: accounts[0] })
+                    this.updateHEXBalance()
             })
-            if (window.ethereum && window.ethereum.autoRefreshOnNetworkChange) window.ethereum.autoRefreshOnNetworkChange = false
+            if (window.ethereum && window.ethereum.autoRefreshOnNetworkChange) 
+                window.ethereum.autoRefreshOnNetworkChange = false
         } else {
 
             provider.on("accountsChanged", async (accounts) => {
                 await this.setState({ walletAddress: accounts[0] })
-                await this.getAccountAssets()
+                this.updateHEXBalance()
             })
         }
 
@@ -66,15 +72,43 @@ class App extends React.Component {
             const { web3 } = this
             const networkId = await web3.eth.net.getId()
             await this.setState({ chainId, networkId })
-            await this.getAccountAssets()
+            this.updateHEXBalance()
         })
 
         provider.on("networkChanged", async (networkId: number) => {
             const chainId = await this.web3.eth.chainId()
             await this.setState({ chainId, networkId })
-            await this.getAccountAssets()
+            this.updateHEXBalance()
         })
 
+    }
+
+/* TEMPORARY NOTE
+https://infura.io/docs/ethereum/wss/eth-subscribe
+Subscribe to blockchain event relating to my walletAddress HEX transactions
+{"jsonrpc":"2.0",
+    "id": 1,
+    "method": "eth_subscribe",
+    "params": [
+        "logs", {
+            "address": "0x2b591e99afE9f32eAA6214f7B7629768c40Eeb39", // HEX contract address
+            "topics":[
+                "0xddf252ad1be2c89b69c2b068fc378daa952ba7f163c4a11628f55a4df523b3ef", // keccak hash of the contract's Transfer event
+                this.state.walletAddress.toLower() // "0x000000000000000000000000d30542151ea34007c4c4ba9d653f4dc4707ad2d2"
+            ]
+        }
+    ]
+}
+*/
+    updateHEXBalance = () => {
+        return new Promise((resolve, reject) => {
+            if (!this.contract) return reject('contract not available')
+            this.contract.methods.balanceOf(this.state.walletAddress).call()
+            .then((bal) => {
+                this.setState({ walletHEX: new BigNumber(bal)})
+                resolve(bal)
+            })
+        })
     }
 
     componentDidMount = () => {
@@ -102,15 +136,18 @@ class App extends React.Component {
                     this.setState({
                         walletConnected: true 
                     })
+
                     
                     Promise.all([
                         this.contract.methods.allocatedSupply().call(),
-                        this.contract.methods.balanceOf(this.state.walletAddress).call(),
                         this.contract.methods.currentDay().call(),
                         this.contract.methods.globals().call()
                     ]).then((results) => {
-                        let globals = { }
-                        const rawGlobals = results[3]
+                        const allocatedSupply = new BigNumber(results[0])
+                        const currentDay = Number(results[1])
+                        const rawGlobals = results[2]
+                        
+                        const globals = { }
                         for (const k in rawGlobals) {
                             if (isNaN(k)) globals[k] = new BigNumber(rawGlobals[k]);
                         }
@@ -143,15 +180,17 @@ class App extends React.Component {
                             CLAIMABLE_BTC_ADDR_COUNT,
                             CLAIMABLE_SATOSHIS_TOTAL,
                             HEARTS_PER_SATOSHI,
-                            allocatedSupply:    new BigNumber(results[0]),
-                            accountBalance:     new BigNumber(results[1]),
-                            currentDay:         Number(results[2]),
-                            globals:            globals
+                            allocatedSupply,
+                            currentDay,
+                            globals,
                         }
                         this.setState({
                             contractData,
                             contractReady: true,
                         })
+
+                        this.updateHEXBalance()
+                        setInterval(this.updateHEXBalance, 30000) // a fallback, in case our wss feed breaks
                     })
                 }
             })
@@ -166,20 +205,19 @@ class App extends React.Component {
         }
         await this.web3Modal.clearCachedProvider()
         this.setState({ ...INITIAL_STATE })
+        console.log('NEW STATE: ', this.state)
         window.location.reload()
     }
 
     WalletStatus = () => {
-        const balanceHEX = this.state.contractReady
-            ? this.state.contractData.accountBalance.idiv(1e8).toString()
-            : null
+        const balanceHEX = this.state.walletHEX.idiv(1e8).toString()
         return (
             <Container fluid>
             <Row>
                 <Col md={{span: 2}}><Badge variant="success" className="small">mainnet</Badge></Col>
                 <Col md={{span: 2, offset: 3}} className="text-center"> 
                     <Badge variant="info" className="small"> 
-                        { balanceHEX ? format(',')(balanceHEX) : '...' }
+                        { format(',')(balanceHEX) }
                     </Badge>
                 </Col>
                 <Col md={{span: 3, offset: 2}} className="text-right">
