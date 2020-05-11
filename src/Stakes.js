@@ -1,4 +1,4 @@
-import React, { useState } from 'react'  // eslint-disable-line no-use-before-define
+import React from 'react'
 import 'bootstrap/dist/css/bootstrap.min.css'
 import { 
     Card,
@@ -12,8 +12,8 @@ import {
     ProgressBar,
     Accordion
 } from 'react-bootstrap'
-import { FormattedDate } from 'react-intl'; // eslint-disable-line no-use-before-define
-import styles from './Stakes.css' // eslint-disable-line no-use-before-define
+import { FormattedDate } from 'react-intl';
+import './Stakes.css'
 import { BigNumber } from 'bignumber.js'
 import { format } from 'd3-format'
 
@@ -91,16 +91,17 @@ class Stakes extends React.Component {
     }
 
     updateStakePayout(_stakeData) {
-        const CLAIM_PHASE_START_DAY = 1
-        const CLAIM_PHASE_DAYS = 7 * 50
-        const CLAIM_PHASE_END_DAY = CLAIM_PHASE_START_DAY + CLAIM_PHASE_DAYS
-        const BIG_PAY_DAY = CLAIM_PHASE_END_DAY + 1
-        const CLAIMABLE_BTC_ADDR_COUNT = new BigNumber('27997742')
-        const CLAIMABLE_SATOSHIS_TOTAL = new BigNumber('910087996911001')
-        const HEARTS_PER_SATOSHI = 10000
-
-        const { currentDay, allocatedSupply, globals } = this.state.contractData
-        const { claimedSatoshisTotal, claimedBtcAddrCount, stakeSharesTotal } = globals.claimStats
+        
+        const { 
+            CLAIMABLE_BTC_ADDR_COUNT, 
+            CLAIMABLE_SATOSHIS_TOTAL, 
+            HEARTS_PER_SATOSHI, 
+            BIG_PAY_DAY,
+            currentDay, 
+            allocatedSupply, 
+            globals 
+        } = this.state.contractData
+        const { claimedSatoshisTotal, claimedBtcAddrCount } = globals.claimStats
 
         const stakeData = { ..._stakeData }
         const startDay = stakeData.lockedDay

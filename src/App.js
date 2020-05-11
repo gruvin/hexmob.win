@@ -112,7 +112,6 @@ class App extends React.Component {
                         let globals = { }
                         const rawGlobals = results[3]
                         for (const k in rawGlobals) {
-                            const v = rawGlobals[k]
                             if (isNaN(k)) globals[k] = new BigNumber(rawGlobals[k]);
                         }
                         // decode claimstats
@@ -127,7 +126,21 @@ class App extends React.Component {
                             unclaimedSatoshisTotal: new BigNumber(c, 2)
                         }
 
+                        const CLAIM_PHASE_START_DAY =  1
+                        const CLAIM_PHASE_DAYS =  (7 * 50)
+                        const CLAIM_PHASE_END_DAY =  CLAIM_PHASE_START_DAY + CLAIM_PHASE_DAYS
+                        const BIG_PAY_DAY =  CLAIM_PHASE_END_DAY + 1
+                        const CLAIMABLE_BTC_ADDR_COUNT =  new BigNumber('27997742')
+                        const CLAIMABLE_SATOSHIS_TOTAL =  new BigNumber('910087996911001')
+                        const HEARTS_PER_SATOSHI =  10000
                         let contractData = { 
+                            CLAIM_PHASE_START_DAY,
+                            CLAIM_PHASE_DAYS,
+                            CLAIM_PHASE_END_DAY,
+                            BIG_PAY_DAY,
+                            CLAIMABLE_BTC_ADDR_COUNT,
+                            CLAIMABLE_SATOSHIS_TOTAL,
+                            HEARTS_PER_SATOSHI,
                             allocatedSupply:    new BigNumber(results[0]),
                             accountBalance:     new BigNumber(results[1]),
                             currentDay:         Number(results[2]),
