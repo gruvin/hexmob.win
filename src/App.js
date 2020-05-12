@@ -225,16 +225,17 @@ class App extends React.Component {
     }
 
     resetApp = async () => {
-        const { web3 } = this
-        /*
-        if (web3 && web3.currentProvider && web3.currentProvider.close) {
-            await web3.currentProvider.close()
-        }
-        */
         await this.unsubscribeTransfers()
         await this.web3Modal.clearCachedProvider()
         await this.setState({ ...INITIAL_STATE })
         window.location.reload()
+    }
+
+    disconnectWallet = async () => {
+        const { web3 } = this
+        if (web3 && web3.currentProvider && web3.currentProvider.close) {
+            await web3.currentProvider.close()
+        }
     }
 
     WalletStatus = () => {
@@ -250,7 +251,7 @@ class App extends React.Component {
                 </Col>
                 <Col md={{span: 3, offset: 2}} className="text-right">
                     <Badge className="text-info">{ this.state.walletAddress.slice(0,6)+'...'+this.state.walletAddress.slice(-4) }</Badge>
-                    <Badge variant="secondary" style={{cursor: "pointer"}} onClick={this.resetApp} className="small">
+                    <Badge variant="secondary" style={{ cursor: "pointer" }} onClick={ this.disconnectWallet } className="small">
                         disconnect</Badge>
                 </Col>
             </Row>
@@ -274,7 +275,7 @@ class App extends React.Component {
             return (
                 <>
                 {this.state.contractReady
-                    ? <Stakes contract={this.contract} contractData={this.state.contractData} walletAddress={this.state.walletAddress} />
+                    ? <Stakes contract={this.contract} context={this.state} />
                     : <ProgressBar animated now={60} label="initializing" />
                 }
                 </>
@@ -290,7 +291,17 @@ class App extends React.Component {
                 <this.AppContent />
             </Container>
             <Container className="overflow-auto p-3">
-                <a href="https://changelly.com/?ref_id=1b7z255j4rfbxsyd#buy" target="_blank" rel="noopener noreferrer">buy ETH</a>
+                <Button size="sm" variant="primary" href="https://changelly.com/?ref_id=1b7z255j4rfbxsyd#buy" target="_blank" rel="noopener noreferrer">
+                    buy ETH
+                </Button>
+                {' '}
+                <Button size="sm" variant="success" href="http://get.dogehex.win" target="_blank" rel="noopener noreferrer">
+                    Get HEX +10% Bonus
+                </Button>
+                {' '}
+                <Button size="sm" variant="info" href="https://hexdex.win/swap" target="_blank" rel="noopener noreferrer">
+                    Swap HEX
+                </Button>
             </Container>
             </>
         )

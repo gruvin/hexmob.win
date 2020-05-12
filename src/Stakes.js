@@ -9,7 +9,10 @@ import {
     OverlayTrigger,
     Tooltip,
     ProgressBar,
-    Accordion
+    Accordion,
+    Form,
+    Row,
+    Col
 } from 'react-bootstrap'
 import './Stakes.css'
 import { BigNumber } from 'bignumber.js'
@@ -24,8 +27,9 @@ class Stakes extends React.Component {
         super(props)
         this.contract = props.contract
         this.state = {
-            address: props.walletAddress,
-            contractData: props.contractData,
+            address: props.context.walletAddress,
+            contractData: props.context.contractData,
+            availableBalance: format(',')(props.context.walletHEX.idiv(1e8).toString()),
             stakeCount: null,
             stakeList:  null,
             stakedTotal: new BigNumber(0),
@@ -35,6 +39,13 @@ class Stakes extends React.Component {
             stakeContext: { }, // active UI stake context
             showExitModal: false,
         }
+    }
+    componentWillReceiveProps({context}) {
+        this.setState({ 
+            ...this.state, 
+            address: context.walletAddress,
+            availableBalance: format(',')(context.walletHEX.idiv(1e8).toString())
+        })
     }
 
     calcBigPayDaySlice = (shares, pool) => {
@@ -172,20 +183,221 @@ class Stakes extends React.Component {
         }
     }
 
-    render() {
-
+    CurrentStakesTable = () => {
         const { 
             START_DATE,
             currentDay
         } = this.state.contractData
 
-        const handleClose = () => this.setState({ showExitModal: false })
         const handleShow = (stakeData) => {
             this.setState({
                 stakeContext: stakeData,
                 showExitModal: true
             })
         }
+
+        return (
+            <Table variant="secondary" size="sm" striped borderless>
+                <thead>
+                    <tr>
+                        <th className="day-value">Start</th>
+                        <th className="day-value">End</th>
+                        <th className="day-value">Days</th>
+                        <th className="day-value">Progress</th>
+                        <th className="hex-value">Principal</th>
+                        <th className="shares-value">Shares</th>
+                        <th className="hex-value">BigPayDay</th> 
+                        <th className="hex-value">Interest</th>
+                        <th className="hex-value">Value</th>
+                        <th>{' '}</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    { this.state.stakeList &&
+                        Object.keys(this.state.stakeList).map((key) => {
+                            const stakeData = this.state.stakeList[key]
+                            
+                            const startDay = stakeData.lockedDay
+                            const endDay = startDay + stakeData.stakedDays
+                            const startDate = new Date(START_DATE)
+                            const endDate = new Date(START_DATE)
+                            startDate.setDate(startDate.getDate() + startDay)
+                            endDate.setDate(endDate.getDate() + endDay)
+
+                            return (typeof stakeData === 'object') ? 
+                            (
+                                <tr key={stakeData.stakeId}>
+                                    <td className="day-value">
+                                        <OverlayTrigger
+                                            key={stakeData.stakeId}
+                                            placement="top"
+                                            overlay={
+                                                <Tooltip id={'tooltip'+stakeData.stakeId}>
+                                                    { startDate.toLocaleString() }
+                                                </Tooltip>
+                                            }
+                                        >
+                                            <div>{ startDay }</div>
+                                        </OverlayTrigger>
+                                    </td>
+                                    <td className="day-value">
+                                        <OverlayTrigger
+                                            key={stakeData.stakeId}
+                                            placement="top"
+                                            overlay={
+                                                <Tooltip id={'tooltip'+stakeData.stakeId}>
+                                                    { endDate.toLocaleString() }
+                                                </Tooltip>
+                                            }
+                                        >
+                                            <div>{ endDay }</div>
+                                        </OverlayTrigger>
+                                    </td>
+                                    <td className="day-value">{ stakeData.stakedDays }</td>
+                                    <td className="day-value">
+                                        { hexFormat(stakeData.progress / 1000) }%
+                                    </td>
+                                    <td className="hex-value">
+                                        { hexFormat(stakeData.stakedHearts / 1e8)} 
+                                    </td>
+                                    <td className="shares-value">
+                                        {hexFormat(stakeData.stakeShares)} 
+                                    </td>
+                                    <td className="hex-value">
+                                        { hexFormat(stakeData.bigPayDay / 1e8) }
+                                    </td>
+                                    <td className="hex-value">
+                                        { hexFormat(stakeData.payout / 1e8) }
+                                    </td>
+                                    <td className="hex-value">
+                                        { hexFormat(stakeData.stakedHearts.plus(stakeData.payout) / 1e8) }
+                                    </td>
+                                    <td align="right">
+                                        <Button 
+                                            variant="outline-primary" size="sm" 
+                                            onClick={(e) => handleShow(stakeData, e)}
+                                            className={ 
+    currentDay < (stakeData.lockedDay + stakeData.stakedDays / 2) ? "earlyexit"
+        : currentDay < (stakeData.lockedDay + stakeData.stakedDays) ? "midexit"
+        : currentDay < (stakeData.lockedDay + stakeData.stakedDays + 7) ? "termexit"
+        : "lateexit"
+                                            }
+                                        >
+                                            Exit
+                                        </Button>
+                                    </td>
+                                </tr>
+                            ) : (
+                                <tr key={stakeData}><td colSpan="5">loading</td></tr>
+                            )
+                        })
+                    }
+                </tbody>
+                <tfoot>
+                    <tr>
+                        <td colSpan="4"></td>
+                        <td className="hex-value">
+                            { hexFormat(this.state.stakedTotal / 1e8)} 
+                        </td>
+                        <td className="shares-value">
+                            { hexFormat(this.state.sharesTotal) }
+                        </td>
+                        <td className="hex-value">
+                            { hexFormat(this.state.bpdTotal / 1e8) }
+                        </td>
+                        <td className="hex-value">
+                            { hexFormat(this.state.interestTotal / 1e8) }
+                        </td>
+                        <td className="hex-value">
+                            { hexFormat(this.state.stakedTotal.plus(this.state.interestTotal) / 1e8) }
+                        </td>
+                        <td>{' '}</td>
+                    </tr>
+                </tfoot>
+            </Table>
+        )
+    }
+
+    NewStakeForm = () => {
+        return (
+            <Row>
+                <Col>
+                    <Form>
+                        <Form.Group controlId="stakeAmount">
+                            <Form.Label>Stake Amount in HEX</Form.Label> 
+                            <div className="float-right">
+                                <Badge variant="info">{this.state.availableBalance.toString()} available</Badge>
+                                {' '}
+                                <Badge variant="secondary">max</Badge>
+                            </div>
+                            <Form.Control placeholder="0" />
+                            <Form.Text className="text-muted">
+                                Bigger pays better
+                            </Form.Text>
+                        </Form.Group>
+                        <Form.Group  controlId="stakeDays">
+                            <Form.Label>Stake Length in Days</Form.Label>
+                            <Form.Control placeholder="0" />
+                            <Form.Text className="text-muted">
+                                Longer pays better
+                            </Form.Text>
+                        </Form.Group>
+                        <Button variant="primary" type="submit">
+                            STAKE
+                        </Button>
+                    </Form>
+                </Col>
+                <Col>
+                    <h3>Bonuses</h3>
+                    <Row>
+                        <Col className="ml-3">Longer Pays Better:</Col>
+                        <Col className="text-right">{hexFormat(0)} HEX</Col>
+                    </Row>
+                    <Row>
+                        <Col className="ml-3">Bigger Pays Better:</Col>
+                        <Col className="text-right">{hexFormat(0)} HEX</Col>
+                    </Row>
+                    <Row>
+                        <Col className="ml-3"><strong>Total:</strong></Col>
+                        <Col className="text-right">{hexFormat(0)} HEX</Col>
+                    </Row>
+                    <Row>
+                        <Col><h5>Effective HEX:<sup><Badge variant="info">?</Badge></sup></h5></Col>
+                        <Col className="text-right"><h5>{hexFormat(0)} HEX</h5></Col>
+                    </Row>
+
+                    Share Rate:
+                    Stake Shares:
+
+                    BigPayDay HEX*:
+                    % Gain* :
+                    % APY* :
+
+                    + 0.000 HEX
+                    + 0.000 HEX
+                    0.000 HEX
+                    0.000 HEX
+
+                    97.149M / HEX
+                    0
+
+                    0.000 HEX
+                    0.000%
+                    0.000%
+                    * If stake is still open on BigPayDay.
+                </Col>
+            </Row>
+        )
+    }
+
+    render() {
+
+        const { 
+            currentDay
+        } = this.state.contractData
+        
+        const handleClose = () => this.setState({ showExitModal: false })
+
         const thisStake = this.state.stakeContext // if any
         const IsEarlyExit = (thisStake.stakeId && currentDay <= (thisStake.lockedDay + thisStake.stakedDays)) 
 
@@ -194,157 +406,29 @@ class Stakes extends React.Component {
                 ? <ProgressBar animated now={90} label="loading contract data" />
                 : <> 
             <Accordion defaultActiveKey="0">
-            <Card bg="primary" text="light" className="overflow-auto m-2">
-                <Accordion.Toggle as={Card.Header} eventKey="0">
-                    Current Stakes <Badge variant='info' className="float-right">Day {currentDay+1}</Badge>
-                </Accordion.Toggle>
-                <Accordion.Collapse eventKey="0">
-                <Card.Body className="p-3 pt-0">
-                    <Table variant="secondary" size="sm" striped borderless>
-                        <thead>
-                            <tr>
-                                <th className="day-value">Start</th>
-                                <th className="day-value">End</th>
-                                <th className="day-value">Days</th>
-                                <th className="day-value">Progress</th>
-                                <th className="hex-value">Principal</th>
-                                <th className="shares-value">Shares</th>
-                                <th className="hex-value">BigPayDay</th> 
-                                <th className="hex-value">Interest</th>
-                                <th className="hex-value">Value</th>
-                                <th>{' '}</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            { this.state.stakeList &&
-                                Object.keys(this.state.stakeList).map((key) => {
-                                    const stakeData = this.state.stakeList[key]
-                                    
-                                    const startDay = stakeData.lockedDay
-                                    const endDay = startDay + stakeData.stakedDays
-                                    const startDate = new Date(START_DATE)
-                                    const endDate = new Date(START_DATE)
-                                    startDate.setDate(startDate.getDate() + startDay)
-                                    endDate.setDate(endDate.getDate() + endDay)
-
-                                    return (typeof stakeData === 'object') ? 
-                                    (
-                                        <tr key={stakeData.stakeId}>
-                                            <td className="day-value">
-                                                <OverlayTrigger
-                                                    key={stakeData.stakeId}
-                                                    placement="top"
-                                                    overlay={
-                                                        <Tooltip id={'tooltip'+stakeData.stakeId}>
-                                                            { startDate.toLocaleString() }
-                                                        </Tooltip>
-                                                    }
-                                                >
-                                                    <div>{ startDay }</div>
-                                                </OverlayTrigger>
-                                            </td>
-                                            <td className="day-value">
-                                                <OverlayTrigger
-                                                    key={stakeData.stakeId}
-                                                    placement="top"
-                                                    overlay={
-                                                        <Tooltip id={'tooltip'+stakeData.stakeId}>
-                                                            { endDate.toLocaleString() }
-                                                        </Tooltip>
-                                                    }
-                                                >
-                                                    <div>{ endDay }</div>
-                                                </OverlayTrigger>
-                                            </td>
-                                            <td className="day-value">{ stakeData.stakedDays }</td>
-                                            <td className="day-value">
-                                                { hexFormat(stakeData.progress / 1000) }%
-                                            </td>
-                                            <td className="hex-value">
-                                                { hexFormat(stakeData.stakedHearts / 1e8)} 
-                                            </td>
-                                            <td className="shares-value">
-                                                {hexFormat(stakeData.stakeShares)} 
-                                            </td>
-                                            <td className="hex-value">
-                                                { hexFormat(stakeData.bigPayDay / 1e8) }
-                                            </td>
-                                            <td className="hex-value">
-                                                { hexFormat(stakeData.payout / 1e8) }
-                                            </td>
-                                            <td className="hex-value">
-                                                { hexFormat(stakeData.stakedHearts.plus(stakeData.payout) / 1e8) }
-                                            </td>
-                                            <td align="right">
-                                                <Button 
-                                                    variant="outline-primary" size="sm" 
-                                                    onClick={(e) => handleShow(stakeData, e)}
-                                                    className={ 
-            currentDay < (stakeData.lockedDay + stakeData.stakedDays / 2) ? "earlyexit"
-                : currentDay < (stakeData.lockedDay + stakeData.stakedDays) ? "midexit"
-                : currentDay < (stakeData.lockedDay + stakeData.stakedDays + 7) ? "termexit"
-                : "lateexit"
-                                                    }
-                                                >
-                                                    Exit
-                                                </Button>
-                                            </td>
-                                        </tr>
-                                    ) : (
-                                        <tr key={stakeData}><td colSpan="5">loading</td></tr>
-                                    )
-                                })
-                            }
-                        </tbody>
-                        <tfoot>
-                            <tr>
-                                <td colSpan="4"></td>
-                                <td className="hex-value">
-                                    { hexFormat(this.state.stakedTotal / 1e8)} 
-                                </td>
-                                <td className="shares-value">
-                                    { hexFormat(this.state.sharesTotal) }
-                                </td>
-                                <td className="hex-value">
-                                    { hexFormat(this.state.bpdTotal / 1e8) }
-                                </td>
-                                <td className="hex-value">
-                                    { hexFormat(this.state.interestTotal / 1e8) }
-                                </td>
-                                <td className="hex-value">
-                                    { hexFormat(this.state.stakedTotal.plus(this.state.interestTotal) / 1e8) }
-                                </td>
-                                <td>{' '}</td>
-                            </tr>
-                        </tfoot>
-                    </Table>
-                </Card.Body>
-            </Accordion.Collapse>
-            </Card>
-            <Card bg="primary" text="light" className="overflow-auto m-2">
-                <Accordion.Toggle as={Card.Header} eventKey="1">
-                    New Stake
-                </Accordion.Toggle>
-                <Accordion.Collapse eventKey="1">
-                <Card.Body className="p-3">
-                    Enter new stake data TODO
-                </Card.Body>
-                </Accordion.Collapse>
-            </Card>
-            <Card bg="primary" text="light" className="overflow-auto m-2">
-                <Accordion.Toggle as={Card.Header} eventKey="2">
-                    Stake History
-                </Accordion.Toggle>
-                <Accordion.Collapse eventKey="2">
-                <Card.Body className="p-3">
-                    <p>HISTORY TODO</p>
-                    <p>HISTORY TODO</p>
-                    <p>HISTORY TODO</p>
-                    <p>HISTORY TODO</p>
-                    <p>HISTORY TODO</p>
-                </Card.Body>
-                </Accordion.Collapse>
-            </Card>
+                <Card bg="primary" text="light" className="overflow-auto m-2">
+                    <Accordion.Toggle as={Card.Header} eventKey="0">
+                        Current Stakes <Badge variant='info' className="float-right">Day {currentDay+1}</Badge>
+                    </Accordion.Toggle>
+                    <Accordion.Collapse eventKey="0">
+                        <Card.Body className="p-3 pt-0">
+                            <this.CurrentStakesTable />
+                            <this.NewStakeForm />
+                        </Card.Body>
+                   </Accordion.Collapse>
+                </Card>
+                <Card bg="primary" text="light" className="overflow-auto m-2">
+                    <Accordion.Toggle as={Card.Header} eventKey="1">
+                        Stake History
+                    </Accordion.Toggle>
+                    <Accordion.Collapse eventKey="1">
+                        <Card.Body className="p-3">
+                            <p>HISTORY TODO</p>
+                            <p>HISTORY TODO</p>
+                            <p>HISTORY TODO</p>
+                        </Card.Body>
+                    </Accordion.Collapse>
+                </Card>
             </Accordion>
 
             <Modal show={this.state.showExitModal} onHide={handleClose} animation={false} variant="primary">

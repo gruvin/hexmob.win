@@ -19,7 +19,7 @@
 @import url('https://fonts.googleapis.com/css2?family=Happy+Monkey&family=Jura:wght@500;700&family=Nosifer&family=Press+Start+2P&display=swap');
 body { 
     font-family: Jura, sans-serif; 
-    background: url(/bg.jpg);
+    background: #111 url(/iron_texture1745.jpg);
     background-size: auto;
 }
 
@@ -30,3 +30,5 @@ body {
 .container, .container-md, .container-sm {
     max-width: 800px;
 }
+
+.accordion>.card .card-header { cursor: pointer; }
