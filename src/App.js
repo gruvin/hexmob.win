@@ -291,7 +291,10 @@ class App extends React.Component {
                 <this.AppContent />
             </Container>
             <Container className="overflow-auto p-3">
-                <Button size="sm" variant="primary" href="https://changelly.com/?ref_id=1b7z255j4rfbxsyd#buy" target="_blank" rel="noopener noreferrer">
+                <Button size="sm" variant="primary" 
+                    href="https://changelly.com/?ref_id=1b7z255j4rfbxsyd#buy"
+                    target="_blank" rel="noopener noreferrer"
+                >
                     buy ETH
                 </Button>
                 {' '}

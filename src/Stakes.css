@@ -1,18 +1,18 @@
-.card {
+.accordion > .card {
     border:none;
     border-radius: 3px;
 }
-.card-header {
+.accordion > .card .card-header {
     font-weight: bold;
     padding: .3rem .5rem!important
 }
-.card-header span.badge-info { 
+.accordion > .card .card-header span.badge-info { 
     color: #e3e7ff;
     background-color: #2d009a;
     font-size: 0.9em;
 }
-.card-body {
-    background-color: #110033;
+.accordion > .card > .collapse > .card-body {
+    background-color: #222;
 }
 
 .hex-value,

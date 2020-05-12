@@ -1,5 +1,6 @@
 import React from 'react'
 import { 
+    Container,
     Card,
     Table,
     Button,
@@ -11,6 +12,10 @@ import {
     ProgressBar,
     Accordion,
     Form,
+    InputGroup,
+    FormControl,
+    Dropdown,
+    DropdownButton,
     Row,
     Col
 } from 'react-bootstrap'
@@ -18,8 +23,24 @@ import './Stakes.css'
 import { BigNumber } from 'bignumber.js'
 import { format } from 'd3-format'
 
-function hexFormat(v) {
-    return format(v < 1e6 ? (v < 1e3 ? ",.3f" : ",.0f") : ",.5s")(v)
+function HexNum(props) {
+    const v = props.value
+    const s = format(v < 1e6 ? (v < 1e3 ? ",.3f" : ",.0f") : ",.5s")(v)
+    const r = s.match(/^(.*)(\.\d+)(.*)$/) 
+    console.log(props, v, r)
+
+    if (r && r.length > 1)
+        return ( 
+            <>
+                { r[1] } 
+                <span style={{ opacity: "0.5" }}>
+                    { r[2] }
+                </span>
+                { r[3] && r[3] }
+            </>
+        ) 
+        else 
+            return ( <>{s}</> )
 }
 
 class Stakes extends React.Component {
@@ -255,22 +276,22 @@ class Stakes extends React.Component {
                                     </td>
                                     <td className="day-value">{ stakeData.stakedDays }</td>
                                     <td className="day-value">
-                                        { hexFormat(stakeData.progress / 1000) }%
+                                        <HexNum value={stakeData.progress / 1000} />%
                                     </td>
                                     <td className="hex-value">
-                                        { hexFormat(stakeData.stakedHearts / 1e8)} 
+                                        <HexNum value={stakeData.stakedHearts / 1e8} /> 
                                     </td>
                                     <td className="shares-value">
-                                        {hexFormat(stakeData.stakeShares)} 
+                                        <HexNum value={stakeData.stakeShares} /> 
                                     </td>
                                     <td className="hex-value">
-                                        { hexFormat(stakeData.bigPayDay / 1e8) }
+                                        <HexNum value={stakeData.bigPayDay / 1e8} />
                                     </td>
                                     <td className="hex-value">
-                                        { hexFormat(stakeData.payout / 1e8) }
+                                        <HexNum value={stakeData.payout / 1e8} />
                                     </td>
                                     <td className="hex-value">
-                                        { hexFormat(stakeData.stakedHearts.plus(stakeData.payout) / 1e8) }
+                                        <HexNum value={stakeData.stakedHearts.plus(stakeData.payout) / 1e8} />
                                     </td>
                                     <td align="right">
                                         <Button 
@@ -297,19 +318,19 @@ class Stakes extends React.Component {
                     <tr>
                         <td colSpan="4"></td>
                         <td className="hex-value">
-                            { hexFormat(this.state.stakedTotal / 1e8)} 
+                            <HexNum value={this.state.stakedTotal / 1e8} /> 
                         </td>
                         <td className="shares-value">
-                            { hexFormat(this.state.sharesTotal) }
+                            <HexNum value={this.state.sharesTotal} />
                         </td>
                         <td className="hex-value">
-                            { hexFormat(this.state.bpdTotal / 1e8) }
+                            <HexNum value={this.state.bpdTotal / 1e8} />
                         </td>
                         <td className="hex-value">
-                            { hexFormat(this.state.interestTotal / 1e8) }
+                            <HexNum value={this.state.interestTotal / 1e8} />
                         </td>
                         <td className="hex-value">
-                            { hexFormat(this.state.stakedTotal.plus(this.state.interestTotal) / 1e8) }
+                            <HexNum value={this.state.stakedTotal.plus(this.state.interestTotal) / 1e8} />
                         </td>
                         <td>{' '}</td>
                     </tr>
@@ -327,18 +348,36 @@ class Stakes extends React.Component {
                             <Form.Label>Stake Amount in HEX</Form.Label> 
                             <div className="float-right">
                                 <Badge variant="info">{this.state.availableBalance.toString()} available</Badge>
-                                {' '}
-                                <Badge variant="secondary">max</Badge>
                             </div>
-                            <Form.Control placeholder="0" />
-                            <Form.Text className="text-muted">
+                            <InputGroup>
+                                <FormControl
+                                    placeholder="0"
+                                    aria-label="amount to stake"
+                                    aria-describedby="basic-addon1"
+                                />
+
+                                <DropdownButton
+                                    as={InputGroup.Append}
+                                    variant="secondary"
+                                    title="% BAL"
+                                    id="input-group-dropdown-1"
+                                >
+                                    <Dropdown.Item href="#">MAX</Dropdown.Item>
+                                    <Dropdown.Item href="#">75%</Dropdown.Item>
+                                    <Dropdown.Item href="#">50%</Dropdown.Item>
+                                    <Dropdown.Item href="#">25%</Dropdown.Item>
+                                    <Dropdown.Item href="#">10%</Dropdown.Item>
+                                    <Dropdown.Item href="#">5%</Dropdown.Item>
+                                </DropdownButton>
+                            </InputGroup>
+                            <Form.Text className="small">
                                 Bigger pays better
                             </Form.Text>
                         </Form.Group>
                         <Form.Group  controlId="stakeDays">
                             <Form.Label>Stake Length in Days</Form.Label>
                             <Form.Control placeholder="0" />
-                            <Form.Text className="text-muted">
+                            <Form.Text className="small">
                                 Longer pays better
                             </Form.Text>
                         </Form.Group>
@@ -348,35 +387,51 @@ class Stakes extends React.Component {
                     </Form>
                 </Col>
                 <Col>
-                    <h3>Bonuses</h3>
-                    <Row>
-                        <Col className="ml-3">Longer Pays Better:</Col>
-                        <Col className="text-right">{hexFormat(0)} HEX</Col>
-                    </Row>
-                    <Row>
-                        <Col className="ml-3">Bigger Pays Better:</Col>
-                        <Col className="text-right">{hexFormat(0)} HEX</Col>
-                    </Row>
-                    <Row>
-                        <Col className="ml-3"><strong>Total:</strong></Col>
-                        <Col className="text-right">{hexFormat(0)} HEX</Col>
-                    </Row>
-                    <Row className="mt-2">
-                        <Col><h5>Effective HEX:<sup><Badge variant="info">?</Badge></sup></h5></Col>
-                        <Col className="text-right"><h5>{hexFormat(0)} HEX</h5></Col>
-                    </Row>
+                    <Container>
+                        <h5>Bonuses</h5>
+                        <Row>
+                            <Col sm={7} className="ml-3">Longer Pays Better:</Col>
+                            <Col className="text-right">+ <HexNum value={0} /> HEX</Col>
+                        </Row>
+                        <Row>
+                            <Col sm={7} className="ml-3">Bigger Pays Better:</Col>
+                            <Col className="text-right">+ <HexNum value={0} /> HEX</Col>
+                        </Row>
+                        <Row>
+                            <Col sm={7} className="ml-3"><strong>Total:</strong></Col>
+                            <Col className="text-right"><HexNum value={0} /> HEX</Col>
+                        </Row>
+                        <Row className="mt-2">
+                            <Col sm={7}><strong>Effective HEX:</strong> <sup><Badge variant="info" pill>?</Badge></sup></Col>
+                            <Col className="text-right"><HexNum value={0} /> HEX</Col>
+                        </Row>
+                        <Row className="mt-3">
+                            <Col sm={7}><strong>Share Rate:</strong></Col>
+                            <Col className="text-right"><HexNum value={0} /> / HEX</Col>
+                        </Row>
+                        <Row>
+                            <Col sm={7}><strong>Stake Shares:</strong> <sup><Badge variant="info" pill>?</Badge></sup></Col>
+                            <Col className="text-right"><HexNum value={0} /></Col>
+                        </Row>
+                    </Container>
 
-                    Share Rate:
-                    Stake Shares:
-
-                    BigPayDay HEX*:
-                    % Gain* :
-                    % APY* :
-
-                    + 0.000 HEX
-                    + 0.000 HEX
-                    0.000 HEX
-                    0.000 HEX
+                    <Container className="bg-dark text-orange mt-2 pt-2 pb-2">
+                        <Row>
+                            <Col><strong>BigPayDay:</strong> <sup><Badge variant="info" pill>?</Badge></sup></Col>
+                            <Col className="text-right"><HexNum value={0} /> HEX</Col>
+                        </Row>
+                        <Row>
+                            <Col>% Gain<span className="text-warning">*</span>: <sup><Badge variant="info" pill>?</Badge></sup></Col>
+                            <Col className="text-right"><HexNum value={0} />%</Col>
+                        </Row>
+                        <Row>
+                            <Col>% APY<span className="text-warning">*</span>: <sup><Badge variant="info" pill>?</Badge></sup></Col>
+                            <Col className="text-right"><HexNum value={0} />%</Col>
+                        </Row>
+                        <Row>
+                            <Col className="pt-2"><span className="text-warning">*</span> <em>If stake still open on BigPayDay</em></Col>
+                        </Row>
+                    </Container>
 
                     97.149M / HEX
                     0
