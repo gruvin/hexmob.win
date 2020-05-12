@@ -361,7 +361,7 @@ class Stakes extends React.Component {
                         <Col className="ml-3"><strong>Total:</strong></Col>
                         <Col className="text-right">{hexFormat(0)} HEX</Col>
                     </Row>
-                    <Row>
+                    <Row className="mt-2">
                         <Col><h5>Effective HEX:<sup><Badge variant="info">?</Badge></sup></h5></Col>
                         <Col className="text-right"><h5>{hexFormat(0)} HEX</h5></Col>
                     </Row>
