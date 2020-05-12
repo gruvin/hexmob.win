@@ -1,12 +1,11 @@
 import React from 'react'
-import 'bootstrap/dist/css/bootstrap.min.css'
+import './App.css'
 import { BigNumber } from 'bignumber.js'
 import { format } from 'd3-format'
 import { Container, Card, Row, Col, Button, Badge, ProgressBar } from 'react-bootstrap'
 
 import Stakes from './Stakes.js'
 
-import './App.css'
 import Web3 from "web3";
 import Web3Modal from "web3modal";
 import WalletConnectProvider from "@walletconnect/web3-provider";
@@ -49,21 +48,28 @@ class App extends React.Component {
         if (!provider.on) {
             return
         }
-        provider.on("close", () => this.resetApp()) 
 
-        // onClose (above) not supported by MetaMask. Work around ...
+        // MetaMask has no 'close' or 'disconnect' event. Workaround ...
         if (provider.isMetaMask) {
             window.ethereum.on('accountsChanged', async (accounts) => {
-                if (!accounts.length) 
-                    this.resetApp() // logged out
-                else 
+                if (!accounts.length)                   // => event:"close" (logged out)
+                    this.resetApp()
+                else                                    // => event:"accountsChanged"
                     await this.setState({ walletAddress: accounts[0] })
                     this.updateHEXBalance()
             })
             if (window.ethereum && window.ethereum.autoRefreshOnNetworkChange) 
                 window.ethereum.autoRefreshOnNetworkChange = false
-        } else {
+        } else { // WalletConnect (and others?) ...
 
+            provider.on("close", () => {  
+                console.log('[Event] App:provider:close')
+            })
+
+            provider.on("stop", async (networkId: number) => { // WalletConnect: fires when remote wallet is disconnected
+                this.resetApp()
+            })
+            
             provider.on("accountsChanged", async (accounts) => {
                 await this.setState({ walletAddress: accounts[0] })
                 this.updateHEXBalance()
@@ -71,8 +77,7 @@ class App extends React.Component {
         }
 
         provider.on("chainChanged", async (chainId) => {
-            const { web3 } = this
-            const networkId = await web3.eth.net.getId()
+            const networkId = await this.web3.eth.net.getId()
             await this.setState({ chainId, networkId })
             this.updateHEXBalance()
         })
@@ -82,6 +87,7 @@ class App extends React.Component {
             await this.setState({ chainId, networkId })
             this.updateHEXBalance()
         })
+
     }
 
     subscribeTransfers = () => {
@@ -134,80 +140,81 @@ class App extends React.Component {
         });
         this.web3Modal.connect()
         .then((provider) => {
+            console.log(provider)
             this.provider = provider
+            this.subscribeProvider(this.provider)
             this.web3 = new Web3(provider)
             
-            const accounts = this.web3.eth.accounts
-            this.setState({ walletAddress: accounts.givenProvider.selectedAddress }, () => {
+            const walletAddress = provider.isMetaMask
+                ? this.web3.eth.accounts.givenProvider.selectedAddress // MetaMask
+                : this.web3.eth.accounts.currentProvider.accounts[0]   // everyone else
+            if (!walletAddress) return
 
-                //Check if Metamask is locked
-                if (this.state.walletAddress && this.state.walletAddress !== '') {
+            this.setState({ walletAddress }, () => {
+
+                this.contract = new this.web3.eth.Contract(ABI, ContractAddress)
+                this.setState({
+                    walletConnected: true 
+                })
+
+                
+                Promise.all([
+                    this.contract.methods.allocatedSupply().call(),
+                    this.contract.methods.currentDay().call(),
+                    this.contract.methods.globals().call()
+                ]).then((results) => {
+                    const allocatedSupply = new BigNumber(results[0])
+                    const currentDay = Number(results[1])
+                    const rawGlobals = results[2]
                     
-                    this.contract = new this.web3.eth.Contract(ABI, ContractAddress)
-                    this.subscribeProvider(this.provider)
+                    const globals = { }
+                    for (const k in rawGlobals) {
+                        if (isNaN(k)) globals[k] = new BigNumber(rawGlobals[k]);
+                    }
+                    // decode claimstats
+                    const SATOSHI_UINT_SIZE = 51 // bits
+                    let binaryClaimStats = globals.claimStats.toString(2).padStart(153, '0')
+                    let a = binaryClaimStats.slice(0, SATOSHI_UINT_SIZE)
+                    let b = binaryClaimStats.slice(SATOSHI_UINT_SIZE, SATOSHI_UINT_SIZE * 2)
+                    let c = binaryClaimStats.slice(SATOSHI_UINT_SIZE * 2)
+                    globals.claimStats = {
+                        claimedBtcAddrCount: new BigNumber(a, 2),
+                        claimedSatoshisTotal: new BigNumber(b, 2),
+                        unclaimedSatoshisTotal: new BigNumber(c, 2)
+                    }
+
+                    const START_DATE = new Date('2019-12-02 00:00:00 UTC')
+                    const CLAIM_PHASE_START_DAY =  1
+                    const CLAIM_PHASE_DAYS =  (7 * 50)
+                    const CLAIM_PHASE_END_DAY =  CLAIM_PHASE_START_DAY + CLAIM_PHASE_DAYS
+                    const BIG_PAY_DAY =  CLAIM_PHASE_END_DAY + 1
+                    const CLAIMABLE_BTC_ADDR_COUNT =  new BigNumber('27997742')
+                    const CLAIMABLE_SATOSHIS_TOTAL =  new BigNumber('910087996911001')
+                    const HEARTS_PER_SATOSHI =  10000
+                    const TOPIC_HASH_TRANSFER = "0xddf252ad1be2c89b69c2b068fc378daa952ba7f163c4a11628f55a4df523b3ef"
+                    let contractData = { 
+                        START_DATE,
+                        CLAIM_PHASE_START_DAY,
+                        CLAIM_PHASE_DAYS,
+                        CLAIM_PHASE_END_DAY,
+                        BIG_PAY_DAY,
+                        CLAIMABLE_BTC_ADDR_COUNT,
+                        CLAIMABLE_SATOSHIS_TOTAL,
+                        HEARTS_PER_SATOSHI,
+                        TOPIC_HASH_TRANSFER,
+                        allocatedSupply,
+                        currentDay,
+                        globals,
+                    }
                     this.setState({
-                        walletConnected: true 
+                        contractData,
+                        contractReady: true,
                     })
 
-                    
-                    Promise.all([
-                        this.contract.methods.allocatedSupply().call(),
-                        this.contract.methods.currentDay().call(),
-                        this.contract.methods.globals().call()
-                    ]).then((results) => {
-                        const allocatedSupply = new BigNumber(results[0])
-                        const currentDay = Number(results[1])
-                        const rawGlobals = results[2]
-                        
-                        const globals = { }
-                        for (const k in rawGlobals) {
-                            if (isNaN(k)) globals[k] = new BigNumber(rawGlobals[k]);
-                        }
-                        // decode claimstats
-                        const SATOSHI_UINT_SIZE = 51 // bits
-                        let binaryClaimStats = globals.claimStats.toString(2).padStart(153, '0')
-                        let a = binaryClaimStats.slice(0, SATOSHI_UINT_SIZE)
-                        let b = binaryClaimStats.slice(SATOSHI_UINT_SIZE, SATOSHI_UINT_SIZE * 2)
-                        let c = binaryClaimStats.slice(SATOSHI_UINT_SIZE * 2)
-                        globals.claimStats = {
-                            claimedBtcAddrCount: new BigNumber(a, 2),
-                            claimedSatoshisTotal: new BigNumber(b, 2),
-                            unclaimedSatoshisTotal: new BigNumber(c, 2)
-                        }
-
-                        const START_DATE = new Date('2019-12-02 00:00:00 UTC')
-                        const CLAIM_PHASE_START_DAY =  1
-                        const CLAIM_PHASE_DAYS =  (7 * 50)
-                        const CLAIM_PHASE_END_DAY =  CLAIM_PHASE_START_DAY + CLAIM_PHASE_DAYS
-                        const BIG_PAY_DAY =  CLAIM_PHASE_END_DAY + 1
-                        const CLAIMABLE_BTC_ADDR_COUNT =  new BigNumber('27997742')
-                        const CLAIMABLE_SATOSHIS_TOTAL =  new BigNumber('910087996911001')
-                        const HEARTS_PER_SATOSHI =  10000
-                        const TOPIC_HASH_TRANSFER = "0xddf252ad1be2c89b69c2b068fc378daa952ba7f163c4a11628f55a4df523b3ef"
-                        let contractData = { 
-                            START_DATE,
-                            CLAIM_PHASE_START_DAY,
-                            CLAIM_PHASE_DAYS,
-                            CLAIM_PHASE_END_DAY,
-                            BIG_PAY_DAY,
-                            CLAIMABLE_BTC_ADDR_COUNT,
-                            CLAIMABLE_SATOSHIS_TOTAL,
-                            HEARTS_PER_SATOSHI,
-                            TOPIC_HASH_TRANSFER,
-                            allocatedSupply,
-                            currentDay,
-                            globals,
-                        }
-                        this.setState({
-                            contractData,
-                            contractReady: true,
-                        })
-
-                        this.updateHEXBalance()
-                        this.subscribeTransfers()
-                        //setInterval(this.updateHEXBalance, 30000) // a fallback, in case our wss feed breaks
-                    })
-                }
+                    this.updateHEXBalance()
+                    this.subscribeTransfers()
+                    //setInterval(this.updateHEXBalance, 30000) // a fallback, in case our wss feed breaks
+                })
             })
         })
         .catch((e) => console.error('Wallet Connect ERROR: ', e))
@@ -219,11 +226,14 @@ class App extends React.Component {
 
     resetApp = async () => {
         const { web3 } = this
+        /*
         if (web3 && web3.currentProvider && web3.currentProvider.close) {
             await web3.currentProvider.close()
         }
+        */
+        await this.unsubscribeTransfers()
         await this.web3Modal.clearCachedProvider()
-        this.setState({ ...INITIAL_STATE })
+        await this.setState({ ...INITIAL_STATE })
         window.location.reload()
     }
 
@@ -255,7 +265,7 @@ class App extends React.Component {
                     <Card bg="primary" text="light" className="overflow-auto m-2">
                         <Card.Body className="p-2">
                             <Card.Title as="h5" className="m-0">Please Connect a Wallet (below)</Card.Title>
-                            <Button onClick={() => window.location.reload(false)} variant="primary">Reload</Button>
+                            <Button onClick={() => this.resetApp()} variant="primary">RESET</Button>
                         </Card.Body>
                     </Card>
                 </>
