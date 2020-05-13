@@ -91,7 +91,6 @@ class NewStakeForm extends React.Component {
             e.preventDefault()
             const tv = e.target.value
             const m = tv.match(/^[.0-9]+$/)
-            console.log(m)
             const v = m ? m[0] : 0
             this.setState({
                 stakeAmount: new BigNumber(1).times(v).times(1E8) 
