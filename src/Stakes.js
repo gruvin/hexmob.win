@@ -53,8 +53,8 @@ class NewStakeForm extends React.Component {
             contractData: props.context.contractData,
             stakeAmount: new BigNumber(0),
             stakeDays: 0,
-            lastFullDay: 0,
-            endDay: 0,
+            lastFullDay: '',
+            endDay: '',
             longerPaysBetter: new BigNumber(0), // Hearts
             biggerPaysBetter: new BigNumber(0),
             total: new BigNumber(0),
@@ -67,6 +67,13 @@ class NewStakeForm extends React.Component {
         }
     }
 
+    static getDerivedStateFromProps(newProps, prevState) {
+        return { 
+            availableBalance: new BigNumber(newProps.context.availableBalance),
+            contractData: newProps.context.contractData,
+        }
+    }
+    
     render() {
 
         const currentDay = this.state.contractData.currentDay + 1
@@ -75,7 +82,7 @@ class NewStakeForm extends React.Component {
             const { stakeAmount, stakeDays } = this.state
 
             this.setState({ 
-                longerPaysBetter: stakeAmount,
+                longerPaysBetter: stakeAmount.div(1e8),
                 biggerPaysBetter: stakeDays
             })
         }
@@ -83,10 +90,11 @@ class NewStakeForm extends React.Component {
         const handleAmountChange = (e) => {
             e.preventDefault()
             const tv = e.target.value
-            const m = tv.match(/^\d+$/)
+            const m = tv.match(/^[.0-9]+$/)
+            console.log(m)
             const v = m ? m[0] : 0
             this.setState({
-                stakeAmount: new BigNumber(v) 
+                stakeAmount: new BigNumber(1).times(v).times(1E8) 
             }, updateFigures)
         }
 
@@ -95,8 +103,8 @@ class NewStakeForm extends React.Component {
             const stakeDays = Number(parseInt(e.target.value) || 0)
             this.setState({
                 stakeDays,
-                lastFullDay: currentDay + stakeDays,
-                endDay: currentDay + stakeDays + 1,
+                lastFullDay: stakeDays > 0 ? currentDay + stakeDays : '',
+                endDay: stakeDays > 0 ? currentDay + stakeDays + 1 : '',
             }, updateFigures)
         }
         
@@ -104,23 +112,22 @@ class NewStakeForm extends React.Component {
             e.preventDefault()
             e.stopPropagation() // doesn't seem to work :( So, I set eventKey to 'current_stakes' to prevent Accordion from acting on the event. :/
             const portion = parseFloat(e.target.dataset.portion)
-            this.setState({ stakeAmount: new BigNumber(this.state.availableBalance.times(portion)) })
+            this.setState({ 
+                stakeAmount: new BigNumber(this.state.availableBalance.idiv(1e8).times(portion).times(1e8)) 
+            }, updateFigures)
         }
 
         return (
             <Row>
-                <Col>
+                <Col md={5}>
                     <Form>
                         <Form.Group controlId="stakeAmount">
                             <Form.Label>Stake Amount in HEX</Form.Label> 
-                            <div className="float-right">
-                                <Badge variant="info">{format(',')(this.state.availableBalance.idiv(1e8).toString())} HEX available</Badge>
-                            </div>
                             <InputGroup>
                                 <FormControl
                                     type="number"
-                                    placeholder="0"
-                                    value={this.state.stakeAmount.idiv(1e8).toString()}
+                                    placeholder="amount of HEX to stake"
+                                    value={this.state.stakeAmount.eq(0) ? 'amount of HEX to stake' : this.state.stakeAmount.div(1e8).toString()}
                                     aria-label="amount to stake"
                                     aria-describedby="basic-addon1"
                                     onChange={handleAmountChange}
@@ -129,7 +136,7 @@ class NewStakeForm extends React.Component {
                                     as={InputGroup.Append}
                                     variant="secondary"
                                     key="percent_balance_selector"
-                                    title="% BAL"
+                                    title="HEX"
                                     id="input-group-dropdown-1"
                                     onSelect={handleAmountSelector}
                                 >
@@ -141,33 +148,47 @@ class NewStakeForm extends React.Component {
                                     <Dropdown.Item as="button" eventKey="current_stakes" data-portion={0.05}>5%</Dropdown.Item>
                                 </DropdownButton>
                             </InputGroup>
-                            <Form.Text className="small">
-                                Bigger pays better
+                            <Form.Text>
+                                <span className="text-muted">Bigger pays better</span>
+                                <div className="float-right" variant="info" >
+                                    <HexNum value={this.state.availableBalance.div(1e8).toString()} /> HEX available
+                                </div>
                             </Form.Text>
                         </Form.Group>
-                        <Form.Group  controlId="stakeDays">
+                        <Form.Group controlId="stakeDays">
                             <Form.Label>Stake Length in Days</Form.Label>
-                            <Form.Control onChange={ handleDaysChange } type="number" placeholder="0" />
-                            <Form.Text className="small">
-                                Longer pays better
+                            <InputGroup>
+                                <Form.Control
+                                    type="number" 
+                                    placeholder="minimum one day" 
+                                    value={this.state.stakeDays <= 0 ? 'stake term in days' : this.state.stakeDays}
+                                    aria-label="number of days to stake"
+                                    onChange={handleDaysChange} 
+                                />
+                                <InputGroup.Append>
+                                    <InputGroup.Text id="basic-addon3">DAYS</InputGroup.Text>
+                                </InputGroup.Append>
+                            </InputGroup>
+                            <Form.Text className="text-muted">
+                                Longer pays better (max 5555)
                             </Form.Text>
                         </Form.Group>
                         <Row>
-                            <Col sm={7}>
+                            <Col>
                                 <Row>
                                     <Col>Start Day:</Col>
-                                    <Col sm={4} className="text-right">{ currentDay + 1 }</Col>
+                                    <Col md={4} className="text-right">{ currentDay + 1 }</Col>
                                 </Row>
                                 <Row>
                                     <Col>Last Full Day:</Col>
-                                    <Col sm={4} className="text-right">{ this.state.lastFullDay }</Col>
+                                    <Col md={4} className="text-right">{ this.state.lastFullDay }</Col>
                                 </Row>
                                 <Row>
                                     <Col>End Day:</Col>
-                                    <Col sm={4} className="text-right">{ this.state.endDay }</Col>
+                                    <Col md={4} className="text-right">{ this.state.endDay }</Col>
                                 </Row>
                             </Col>
-                            <Col sm={3}>
+                            <Col md={4}>
                                 <Button variant="primary" className="ml-3" type="submit">
                                     STAKE
                                 </Button>
@@ -244,12 +265,11 @@ class Stakes extends React.Component {
             showExitModal: false,
         }
     }
-    componentWillReceiveProps({context}) {
-        this.setState({ 
-            ...this.state, 
-            address: context.walletAddress,
-            availableBalance: context.walletHEX
-        })
+    static getDerivedStateFromProps(nextProps, prevState) {
+        return { 
+            address: nextProps.context.walletAddress,
+            availableBalance: new BigNumber(nextProps.context.walletHEX)
+        }
     }
 
     calcBigPayDaySlice = (shares, pool) => {
