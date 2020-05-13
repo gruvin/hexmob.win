@@ -23,11 +23,13 @@ import './Stakes.css'
 import { BigNumber } from 'bignumber.js'
 import { format } from 'd3-format'
 
+/*
+ * displays unitized .3 U formatted values (eg. 12.345 M) with 50% opacity for fractional part
+ */
 function HexNum(props) {
     const v = props.value
     const s = format(v < 1e6 ? (v < 1e3 ? ",.3f" : ",.0f") : ",.5s")(v)
     const r = s.match(/^(.*)(\.\d+)(.*)$/) 
-    console.log(props, v, r)
 
     if (r && r.length > 1)
         return ( 
@@ -43,6 +45,187 @@ function HexNum(props) {
             return ( <>{s}</> )
 }
 
+class NewStakeForm extends React.Component {
+    constructor(props) {
+        super(props)
+        this.state = {
+            availableBalance: new BigNumber(props.context.availableBalance),
+            contractData: props.context.contractData,
+            stakeAmount: new BigNumber(0),
+            stakeDays: 0,
+            lastFullDay: 0,
+            endDay: 0,
+            longerPaysBetter: new BigNumber(0), // Hearts
+            biggerPaysBetter: new BigNumber(0),
+            total: new BigNumber(0),
+            effectiveHEX: new BigNumber(0),
+            shareRate: new BigNumber(0),
+            stakeShares: new BigNumber(0),
+            bigPayDay: new BigNumber(0),
+            percentGain: 0.0,
+            percentAPY: 0.0
+        }
+    }
+
+    render() {
+
+        const currentDay = this.state.contractData.currentDay + 1
+
+        const updateFigures = () => {
+            const { stakeAmount, stakeDays } = this.state
+
+            this.setState({ 
+                longerPaysBetter: stakeAmount,
+                biggerPaysBetter: stakeDays
+            })
+        }
+
+        const handleAmountChange = (e) => {
+            e.preventDefault()
+            const tv = e.target.value
+            const m = tv.match(/^\d+$/)
+            const v = m ? m[0] : 0
+            this.setState({
+                stakeAmount: new BigNumber(v) 
+            }, updateFigures)
+        }
+
+        const handleDaysChange = (e) => {
+            e.preventDefault()
+            const stakeDays = Number(parseInt(e.target.value) || 0)
+            this.setState({
+                stakeDays,
+                lastFullDay: currentDay + stakeDays,
+                endDay: currentDay + stakeDays + 1,
+            }, updateFigures)
+        }
+        
+        const handleAmountSelector = (key, e) => {
+            e.preventDefault()
+            e.stopPropagation() // doesn't seem to work :( So, I set eventKey to 'current_stakes' to prevent Accordion from acting on the event. :/
+            const portion = parseFloat(e.target.dataset.portion)
+            this.setState({ stakeAmount: new BigNumber(this.state.availableBalance.times(portion)) })
+        }
+
+        return (
+            <Row>
+                <Col>
+                    <Form>
+                        <Form.Group controlId="stakeAmount">
+                            <Form.Label>Stake Amount in HEX</Form.Label> 
+                            <div className="float-right">
+                                <Badge variant="info">{format(',')(this.state.availableBalance.idiv(1e8).toString())} HEX available</Badge>
+                            </div>
+                            <InputGroup>
+                                <FormControl
+                                    type="number"
+                                    placeholder="0"
+                                    value={this.state.stakeAmount.idiv(1e8).toString()}
+                                    aria-label="amount to stake"
+                                    aria-describedby="basic-addon1"
+                                    onChange={handleAmountChange}
+                                />
+                                <DropdownButton
+                                    as={InputGroup.Append}
+                                    variant="secondary"
+                                    key="percent_balance_selector"
+                                    title="% BAL"
+                                    id="input-group-dropdown-1"
+                                    onSelect={handleAmountSelector}
+                                >
+                                    <Dropdown.Item as="button" eventKey="current_stakes" data-portion={1.00}>MAX</Dropdown.Item>
+                                    <Dropdown.Item as="button" eventKey="current_stakes" data-portion={0.75}>75%</Dropdown.Item>
+                                    <Dropdown.Item as="button" eventKey="current_stakes" data-portion={0.50}>50%</Dropdown.Item>
+                                    <Dropdown.Item as="button" eventKey="current_stakes" data-portion={0.25}>25%</Dropdown.Item>
+                                    <Dropdown.Item as="button" eventKey="current_stakes" data-portion={0.10}>10%</Dropdown.Item>
+                                    <Dropdown.Item as="button" eventKey="current_stakes" data-portion={0.05}>5%</Dropdown.Item>
+                                </DropdownButton>
+                            </InputGroup>
+                            <Form.Text className="small">
+                                Bigger pays better
+                            </Form.Text>
+                        </Form.Group>
+                        <Form.Group  controlId="stakeDays">
+                            <Form.Label>Stake Length in Days</Form.Label>
+                            <Form.Control onChange={ handleDaysChange } type="number" placeholder="0" />
+                            <Form.Text className="small">
+                                Longer pays better
+                            </Form.Text>
+                        </Form.Group>
+                        <Row>
+                            <Col sm={7}>
+                                <Row>
+                                    <Col>Start Day:</Col>
+                                    <Col sm={4} className="text-right">{ currentDay + 1 }</Col>
+                                </Row>
+                                <Row>
+                                    <Col>Last Full Day:</Col>
+                                    <Col sm={4} className="text-right">{ this.state.lastFullDay }</Col>
+                                </Row>
+                                <Row>
+                                    <Col>End Day:</Col>
+                                    <Col sm={4} className="text-right">{ this.state.endDay }</Col>
+                                </Row>
+                            </Col>
+                            <Col sm={3}>
+                                <Button variant="primary" className="ml-3" type="submit">
+                                    STAKE
+                                </Button>
+                            </Col>
+                        </Row>
+                    </Form>
+                </Col>
+                <Col>
+                    <Container>
+                        <h5>Bonuses</h5>
+                        <Row>
+                            <Col className="ml-3">Longer Pays Better:</Col>
+                            <Col sm={5} className="text-right">+ <HexNum value={this.state.longerPaysBetter.toString()} /> HEX</Col>
+                        </Row>
+                        <Row>
+                            <Col className="ml-3">Bigger Pays Better:</Col>
+                            <Col sm={5} className="text-right">+ <HexNum value={this.state.biggerPaysBetter.toString()} /> HEX</Col>
+                        </Row>
+                        <Row>
+                            <Col className="ml-3"><strong>Total:</strong></Col>
+                            <Col sm={5} className="text-right"><HexNum value={this.state.total.toString()} /> HEX</Col>
+                        </Row>
+                        <Row className="mt-2">
+                            <Col><strong>Effective HEX:</strong> <sup><Badge variant="info" pill>?</Badge></sup></Col>
+                            <Col sm={5} className="text-right"><HexNum value={this.state.effectiveHEX.toString()} /> HEX</Col>
+                        </Row>
+                        <Row className="mt-3">
+                            <Col><strong>Share Rate:</strong></Col>
+                            <Col sm={5} className="text-right"><HexNum value={this.state.shareRate.toString()} /> / HEX</Col>
+                        </Row>
+                        <Row>
+                            <Col><strong>Stake Shares:</strong> <sup><Badge variant="info" pill>?</Badge></sup></Col>
+                            <Col sm={5} className="text-right"><HexNum value={this.state.stakeShares.toString()} /></Col>
+                        </Row>
+                    </Container>
+
+                    <Container className="bg-dark text-orange mt-2 pt-2 pb-2">
+                        <Row>
+                            <Col><strong>BigPayDay:</strong> <sup><Badge variant="info" pill>?</Badge></sup></Col>
+                            <Col className="text-right"><HexNum value={this.state.bigPayDay.toString()} /> HEX</Col>
+                        </Row>
+                        <Row>
+                            <Col>% Gain<span className="text-warning">*</span>: <sup><Badge variant="info" pill>?</Badge></sup></Col>
+                            <Col className="text-right"><HexNum value={this.state.percentGain.toString()} />%</Col>
+                        </Row>
+                        <Row>
+                            <Col>% APY<span className="text-warning">*</span>: <sup><Badge variant="info" pill>?</Badge></sup></Col>
+                            <Col className="text-right"><HexNum value={this.state.percentAPY.toString()} />%</Col>
+                        </Row>
+                        <Row>
+                            <Col className="pt-2"><span className="text-warning">*</span> <em>If stake still open on BigPayDay</em></Col>
+                        </Row>
+                    </Container>
+                </Col>
+            </Row>
+        )
+    }
+}
 class Stakes extends React.Component {
     constructor(props) {
         super(props)
@@ -50,7 +233,7 @@ class Stakes extends React.Component {
         this.state = {
             address: props.context.walletAddress,
             contractData: props.context.contractData,
-            availableBalance: format(',')(props.context.walletHEX.idiv(1e8).toString()),
+            availableBalance: props.context.walletHEX,
             stakeCount: null,
             stakeList:  null,
             stakedTotal: new BigNumber(0),
@@ -65,7 +248,7 @@ class Stakes extends React.Component {
         this.setState({ 
             ...this.state, 
             address: context.walletAddress,
-            availableBalance: format(',')(context.walletHEX.idiv(1e8).toString())
+            availableBalance: context.walletHEX
         })
     }
 
@@ -339,113 +522,7 @@ class Stakes extends React.Component {
         )
     }
 
-    NewStakeForm = () => {
-        return (
-            <Row>
-                <Col>
-                    <Form>
-                        <Form.Group controlId="stakeAmount">
-                            <Form.Label>Stake Amount in HEX</Form.Label> 
-                            <div className="float-right">
-                                <Badge variant="info">{this.state.availableBalance.toString()} available</Badge>
-                            </div>
-                            <InputGroup>
-                                <FormControl
-                                    placeholder="0"
-                                    aria-label="amount to stake"
-                                    aria-describedby="basic-addon1"
-                                />
-
-                                <DropdownButton
-                                    as={InputGroup.Append}
-                                    variant="secondary"
-                                    title="% BAL"
-                                    id="input-group-dropdown-1"
-                                >
-                                    <Dropdown.Item href="#">MAX</Dropdown.Item>
-                                    <Dropdown.Item href="#">75%</Dropdown.Item>
-                                    <Dropdown.Item href="#">50%</Dropdown.Item>
-                                    <Dropdown.Item href="#">25%</Dropdown.Item>
-                                    <Dropdown.Item href="#">10%</Dropdown.Item>
-                                    <Dropdown.Item href="#">5%</Dropdown.Item>
-                                </DropdownButton>
-                            </InputGroup>
-                            <Form.Text className="small">
-                                Bigger pays better
-                            </Form.Text>
-                        </Form.Group>
-                        <Form.Group  controlId="stakeDays">
-                            <Form.Label>Stake Length in Days</Form.Label>
-                            <Form.Control placeholder="0" />
-                            <Form.Text className="small">
-                                Longer pays better
-                            </Form.Text>
-                        </Form.Group>
-                        <Button variant="primary" type="submit">
-                            STAKE
-                        </Button>
-                    </Form>
-                </Col>
-                <Col>
-                    <Container>
-                        <h5>Bonuses</h5>
-                        <Row>
-                            <Col sm={7} className="ml-3">Longer Pays Better:</Col>
-                            <Col className="text-right">+ <HexNum value={0} /> HEX</Col>
-                        </Row>
-                        <Row>
-                            <Col sm={7} className="ml-3">Bigger Pays Better:</Col>
-                            <Col className="text-right">+ <HexNum value={0} /> HEX</Col>
-                        </Row>
-                        <Row>
-                            <Col sm={7} className="ml-3"><strong>Total:</strong></Col>
-                            <Col className="text-right"><HexNum value={0} /> HEX</Col>
-                        </Row>
-                        <Row className="mt-2">
-                            <Col sm={7}><strong>Effective HEX:</strong> <sup><Badge variant="info" pill>?</Badge></sup></Col>
-                            <Col className="text-right"><HexNum value={0} /> HEX</Col>
-                        </Row>
-                        <Row className="mt-3">
-                            <Col sm={7}><strong>Share Rate:</strong></Col>
-                            <Col className="text-right"><HexNum value={0} /> / HEX</Col>
-                        </Row>
-                        <Row>
-                            <Col sm={7}><strong>Stake Shares:</strong> <sup><Badge variant="info" pill>?</Badge></sup></Col>
-                            <Col className="text-right"><HexNum value={0} /></Col>
-                        </Row>
-                    </Container>
-
-                    <Container className="bg-dark text-orange mt-2 pt-2 pb-2">
-                        <Row>
-                            <Col><strong>BigPayDay:</strong> <sup><Badge variant="info" pill>?</Badge></sup></Col>
-                            <Col className="text-right"><HexNum value={0} /> HEX</Col>
-                        </Row>
-                        <Row>
-                            <Col>% Gain<span className="text-warning">*</span>: <sup><Badge variant="info" pill>?</Badge></sup></Col>
-                            <Col className="text-right"><HexNum value={0} />%</Col>
-                        </Row>
-                        <Row>
-                            <Col>% APY<span className="text-warning">*</span>: <sup><Badge variant="info" pill>?</Badge></sup></Col>
-                            <Col className="text-right"><HexNum value={0} />%</Col>
-                        </Row>
-                        <Row>
-                            <Col className="pt-2"><span className="text-warning">*</span> <em>If stake still open on BigPayDay</em></Col>
-                        </Row>
-                    </Container>
-
-                    97.149M / HEX
-                    0
-
-                    0.000 HEX
-                    0.000%
-                    0.000%
-                    * If stake is still open on BigPayDay.
-                </Col>
-            </Row>
-        )
-    }
-
-    render() {
+    render() { // class Stakes
 
         const { 
             currentDay
@@ -460,23 +537,23 @@ class Stakes extends React.Component {
             !this.state.stakeList
                 ? <ProgressBar animated now={90} label="loading contract data" />
                 : <> 
-            <Accordion defaultActiveKey="0">
+            <Accordion defaultActiveKey="current_stakes">
                 <Card bg="primary" text="light" className="overflow-auto m-2">
-                    <Accordion.Toggle as={Card.Header} eventKey="0">
+                    <Accordion.Toggle as={Card.Header} eventKey="current_stakes">
                         Current Stakes <Badge variant='info' className="float-right">Day {currentDay+1}</Badge>
                     </Accordion.Toggle>
-                    <Accordion.Collapse eventKey="0">
+                    <Accordion.Collapse eventKey="current_stakes">
                         <Card.Body className="p-3 pt-0">
                             <this.CurrentStakesTable />
-                            <this.NewStakeForm />
+                            <NewStakeForm context={this.state}/>
                         </Card.Body>
                    </Accordion.Collapse>
                 </Card>
                 <Card bg="primary" text="light" className="overflow-auto m-2">
-                    <Accordion.Toggle as={Card.Header} eventKey="1">
+                    <Accordion.Toggle as={Card.Header} eventKey="stake_history">
                         Stake History
                     </Accordion.Toggle>
-                    <Accordion.Collapse eventKey="1">
+                    <Accordion.Collapse eventKey="stake_history">
                         <Card.Body className="p-3">
                             <p>HISTORY TODO</p>
                             <p>HISTORY TODO</p>
