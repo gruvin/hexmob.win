@@ -26,11 +26,23 @@ import { format } from 'd3-format'
 /*
  * displays unitized .3 U formatted values (eg. 12.345 M) with 50% opacity for fractional part
  */
-function HexNum(props) {
-    const v = props.value
-    const s = format(v < 1e6 ? (v < 1e3 ? ",.3f" : ",.0f") : ",.5s")(v)
-    const r = s.match(/^(.*)(\.\d+)(.*)$/) 
+const HexNum = (props) => {
+    let v = new BigNumber(props.value) 
+    if (isNaN(v)) return ( <>NaN</> )
 
+    let unit
+    let s
+    if (v.gte(1e6)) {
+        v = v.div(1e8)
+        s = format(v.lt(1e6) ? (v.lt(1e3) ? ",.3f" : ",.0f") : ",.5s")(v.toString())
+        unit = props.showUnit && ' HEX'
+    } else {
+        s = format(',')(v.toString())
+        unit = props.showUnit && ' Hearts'
+    }
+    
+    s = s.replace(/([-0-9]+)\.0+([^0-9])$/, '$1$2') // strip .000[0], leaving K/M/G... 
+    const r = s.match(/^(.*)(\.\d+)(.*)$/) 
     if (r && r.length > 1)
         return ( 
             <div className="numeric">
@@ -39,10 +51,11 @@ function HexNum(props) {
                     { r[2] }
                 </span>
                 { r[3] && r[3] }
+                { unit }
             </div>
         ) 
         else 
-            return ( <div className="numeric">{s}</div> )
+            return ( <div className="numeric">{s}{unit}</div> )
 }
 
 class NewStakeForm extends React.Component {
@@ -51,13 +64,13 @@ class NewStakeForm extends React.Component {
         this.state = {
             availableBalance: new BigNumber(props.context.availableBalance),
             contractData: props.context.contractData,
-            stakeAmount: new BigNumber(0),
-            stakeDays: 0,
+            stakeAmount: null,
+            stakeDays: null,
             lastFullDay: '',
             endDay: '',
             longerPaysBetter: new BigNumber(0), // Hearts
             biggerPaysBetter: new BigNumber(0),
-            total: new BigNumber(0),
+            bonusTotal: new BigNumber(0),
             effectiveHEX: new BigNumber(0),
             shareRate: new BigNumber(0),
             stakeShares: new BigNumber(0),
@@ -76,63 +89,53 @@ class NewStakeForm extends React.Component {
     
     render() {
 
-/*
-    uint256 private constant LPB_BONUS_PERCENT = 20;
-    uint256 private constant LPB_BONUS_MAX_PERCENT = 200;
-    uint256 internal constant LPB = 364 * 100 / LPB_BONUS_PERCENT;
-    uint256 internal constant LPB_MAX_DAYS = LPB * LPB_BONUS_MAX_PERCENT / 100;
+        const currentDay = this.state.contractData.currentDay + 1
+        const BigPayDay = this.state.contractData.BIG_PAY_DAY
 
-    uint256 private constant BPB_BONUS_PERCENT = 10;
-    uint256 private constant BPB_MAX_HEX = 150 * 1e6;
-    uint256 internal constant BPB_MAX_HEARTS = BPB_MAX_HEX * HEARTS_PER_HEX;
-    uint256 internal constant BPB = BPB_MAX_HEARTS * 100 / BPB_BONUS_PERCENT;
+        const updateFigures = () => {
+            const stakeDays = this.state.stakeDays || 0
+            const stakeAmount = this.state.stakeAmount || new BigNumber(0)
 
-    uint256 internal constant SHARE_RATE_SCALE = 1e5;
-
-    uint256 internal constant SHARE_RATE_UINT_SIZE = 40;
-    uint256 internal constant SHARE_RATE_MAX = (1 << SHARE_RATE_UINT_SIZE) - 1;
-*/
-        const calc_stakeStartBonusHearts = (newStakedDays, _newStakedHearts) => {
             const LPB_BONUS_PERCENT = 20
-            const LPB_BONUS_MAX_PERCENT = 200
+            const LPB_BONUS_MAX_PERCENT = new BigNumber(200)
             const LPB = new BigNumber(364).times(100).idiv(LPB_BONUS_PERCENT)
-            const LPB_MAX_DAYS = LPB * LPB_BONUS_MAX_PERCENT / 100
-
-            const HEARTS_PER_HEX = 10000
+            const LPB_MAX_DAYS = LPB.times(LPB_BONUS_MAX_PERCENT).idiv(100)
+            
+            const HEARTS_PER_HEX = 1e8
             const BPB_BONUS_PERCENT = 10
             const BPB_MAX_HEX = new BigNumber(150).times(1e6)
             const BPB_MAX_HEARTS = BPB_MAX_HEX.times(HEARTS_PER_HEX)
             const BPB = BPB_MAX_HEARTS.times(100).idiv(BPB_BONUS_PERCENT)
 
+            /*
+            console.log('stakeAmount: ', stakeAmount.toString())
+            console.log('stakeDays: ', stakeDays)
+            console.log('LPB: ', LPB.toString())
+            console.log('LPB_MAX_DAYS: ', LPB_MAX_DAYS.toString())
+            console.log('BPB: ', LPB.toString())
+            console.log('BPB_MAX_HEARTS: ', BPB_MAX_HEARTS.toString())
+            */
+
             let cappedExtraDays = 0;
-
-            /* Must be more than 1 day for Longer-Pays-Better */
-            if (newStakedDays > 1) {
-                cappedExtraDays = newStakedDays <= LPB_MAX_DAYS ? newStakedDays - 1 : LPB_MAX_DAYS;
+            if (stakeDays >  1) {
+                cappedExtraDays = stakeDays <= LPB_MAX_DAYS 
+                    ? stakeDays - 1 
+                    : LPB_MAX_DAYS;
             }
+            const LPB_bonusHearts = stakeAmount.times(cappedExtraDays)
+                                           .div(LPB)
 
-            const newStakedHearts = new BigNumber(_newStakedHearts)
+            const newStakedHearts = new BigNumber(stakeAmount)
             const cappedStakedHearts = newStakedHearts.lte(BPB_MAX_HEARTS)
                 ? newStakedHearts
                 : BPB_MAX_HEARTS
-
-            let bonusHearts = new BigNumber(cappedExtraDays).times(BPB).plus(cappedStakedHearts).times(LPB)
-            bonusHearts = newStakedHearts.times(bonusHearts).idiv(LPB.times(BPB))
-
-            return bonusHearts;
-        }
-
-        const currentDay = this.state.contractData.currentDay + 1
-        const BigPayDay = this.state.contractData.BIG_PAY_DAY
-
-        const updateFigures = () => {
-            const { stakeAmount, stakeDays } = this.state
-            
-            const BPB = calc_stakeStartBonusHearts(stakeDays, stakeAmount)
-
-            this.setState({ 
-                longerPaysBetter: BPB,
-                biggerPaysBetter: stakeDays
+            const BPB_bonusHearts = stakeAmount.times(cappedStakedHearts)
+                                                .idiv(BPB)
+            this.setState({
+                longerPaysBetter: LPB_bonusHearts,
+                biggerPaysBetter: BPB_bonusHearts,
+                bonusTotal: LPB_bonusHearts.plus(BPB_bonusHearts),
+                effectiveHEX: stakeAmount.plus(LPB_bonusHearts).plus(BPB_bonusHearts)
             })
         }
 
@@ -140,20 +143,20 @@ class NewStakeForm extends React.Component {
             e.preventDefault()
             const tv = e.target.value
             const m = tv.match(/^[.0-9]+$/)
-            const v = m ? m[0] : 0
+            const v = m ? new BigNumber(m[0]).times(1e8) : null
             this.setState({
-                stakeAmount: new BigNumber(v).times(1E8) 
+                stakeAmount: v
             }, updateFigures)
         }
 
         const handleDaysChange = (e) => {
             e.preventDefault()
-            let stakeDays = Number(parseInt(e.target.value) || 0)
-            if (stakeDays > 5555) stakeDays = 5555
+            let stakeDays = parseInt(e.target.value) || null
+            if (stakeDays && stakeDays > 5555) stakeDays = 5555
             this.setState({
                 stakeDays,
-                lastFullDay: stakeDays > 0 ? currentDay + stakeDays : '',
-                endDay: stakeDays > 0 ? currentDay + stakeDays + 1 : '',
+                lastFullDay: stakeDays ? currentDay + stakeDays : '',
+                endDay: stakeDays ? currentDay + stakeDays + 1 : '',
             }, updateFigures)
         }
         
@@ -176,7 +179,7 @@ class NewStakeForm extends React.Component {
                                 <FormControl
                                     type="text"
                                     placeholder="number of HEX to stake"
-                                    value={this.state.stakeAmount.eq(0) ? '' : this.state.stakeAmount.div(1e8).toString()}
+                                    value={this.state.stakeAmount ? this.state.stakeAmount.div(1e8).toString() : ''}
                                     aria-label="amount to stake"
                                     aria-describedby="basic-addon1"
                                     onChange={handleAmountChange}
@@ -201,7 +204,7 @@ class NewStakeForm extends React.Component {
                             <Form.Text>
                                 <span className="text-muted">Bigger pays better</span>
                                 <div className="float-right" variant="info" >
-                                    <HexNum value={this.state.availableBalance.div(1e8).toString()} /> HEX available
+                                    <HexNum value={this.state.availableBalance.div(1e8)} /> HEX available
                                 </div>
                             </Form.Text>
                         </Form.Group>
@@ -241,27 +244,27 @@ class NewStakeForm extends React.Component {
                             <h4>Bonuses</h4>
                             <Row>
                                 <Col className="ml-3">Longer Pays Better:</Col>
-                                <Col sm={5} className="text-right">+ <HexNum value={this.state.longerPaysBetter.toString()} /> HEX</Col>
+                                <Col sm={5} className="text-right">+ <HexNum value={this.state.longerPaysBetter.toFixed(0)} showUnit /></Col>
                             </Row>
                             <Row>
                                 <Col className="ml-3">Bigger Pays Better:</Col>
-                                <Col sm={5} className="text-right">+ <HexNum value={this.state.biggerPaysBetter.toString()} /> HEX</Col>
+                                <Col sm={5} className="text-right">+ <HexNum value={this.state.biggerPaysBetter} showUnit /></Col>
                             </Row>
                             <Row>
                                 <Col className="ml-3"><strong>Total:</strong></Col>
-                                <Col sm={5} className="text-right"><HexNum value={this.state.total.toString()} /> HEX</Col>
+                                <Col sm={5} className="text-right"><HexNum value={this.state.bonusTotal} /> HEX</Col>
                             </Row>
                             <Row className="mt-2">
                                 <Col><strong>Effective HEX:</strong> <sup><Badge variant="info" pill>?</Badge></sup></Col>
-                                <Col sm={5} className="text-right"><HexNum value={this.state.effectiveHEX.toString()} /> HEX</Col>
+                                <Col sm={5} className="text-right"><HexNum value={this.state.effectiveHEX} /> HEX</Col>
                             </Row>
                             <Row className="mt-3">
                                 <Col><strong>Share Rate:</strong></Col>
-                                <Col sm={5} className="text-right"><HexNum value={this.state.shareRate.toString()} /> / HEX</Col>
+                                <Col sm={5} className="text-right"><HexNum value={this.state.shareRate} /> / HEX</Col>
                             </Row>
                             <Row>
                                 <Col><strong>Stake Shares:</strong> <sup><Badge variant="info" pill>?</Badge></sup></Col>
-                                <Col sm={5} className="text-right"><HexNum value={this.state.stakeShares.toString()} /></Col>
+                                <Col sm={5} className="text-right"><HexNum value={this.state.stakeShares} /></Col>
                             </Row>
                         </Container>
 
@@ -269,15 +272,15 @@ class NewStakeForm extends React.Component {
                         <Container className="bg-secondary rounded mt-2 pt-2 pb-2">
                             <Row>
                                 <Col><strong className="text-info">BigPayDay:</strong> <sup><Badge variant="info" pill>?</Badge></sup></Col>
-                                <Col className="text-right"><HexNum value={this.state.bigPayDay.toString()} /> HEX</Col>
+                                <Col className="text-right"><HexNum value={this.state.bigPayDay} /> HEX</Col>
                             </Row>
                             <Row>
                                 <Col>% Gain<span className="text-warning">*</span>: <sup><Badge variant="info" pill>?</Badge></sup></Col>
-                                <Col className="text-right"><HexNum value={this.state.percentGain.toString()} />%</Col>
+                                <Col className="text-right"><HexNum value={this.state.percentGain} />%</Col>
                             </Row>
                             <Row>
                                 <Col>% APY<span className="text-warning">*</span>: <sup><Badge variant="info" pill>?</Badge></sup></Col>
-                                <Col className="text-right"><HexNum value={this.state.percentAPY.toString()} />%</Col>
+                                <Col className="text-right"><HexNum value={this.state.percentAPY} />%</Col>
                             </Row>
                             <Row>
                                 <Col className="pt-2"><span className="text-warning">*</span> <em>If stake still open on BigPayDay</em></Col>
@@ -527,19 +530,19 @@ class Stakes extends React.Component {
                                         <HexNum value={stakeData.progress / 1000} />%
                                     </td>
                                     <td className="text-right">
-                                        <HexNum value={stakeData.stakedHearts / 1e8} /> 
+                                        <HexNum value={stakeData.stakedHearts} /> 
                                     </td>
                                     <td className="text-right">
-                                        <HexNum value={stakeData.stakeShares} /> 
+                                        <HexNum value={stakeData.stakeShares.times(1e8)} /> 
                                     </td>
                                     <td className="text-right">
-                                        <HexNum value={stakeData.bigPayDay / 1e8} />
+                                        <HexNum value={stakeData.bigPayDay} />
                                     </td>
                                     <td className="text-right">
-                                        <HexNum value={stakeData.payout / 1e8} />
+                                        <HexNum value={stakeData.payout} />
                                     </td>
                                     <td className="text-right">
-                                        <HexNum value={stakeData.stakedHearts.plus(stakeData.payout) / 1e8} />
+                                        <HexNum value={stakeData.stakedHearts.plus(stakeData.payout)} />
                                     </td>
                                     <td align="right">
                                         <Button 
@@ -565,20 +568,20 @@ class Stakes extends React.Component {
                 <tfoot>
                     <tr>
                         <td colSpan="4"></td>
-                        <td className="hex-value">
-                            <HexNum value={this.state.stakedTotal / 1e8} /> 
+                        <td className="text-right">
+                            <HexNum value={this.state.stakedTotal} /> 
                         </td>
-                        <td className="shares-value">
-                            <HexNum value={this.state.sharesTotal} />
+                        <td className="text-right">
+                            <HexNum value={this.state.sharesTotal.times(1e8)} />
                         </td>
-                        <td className="hex-value">
-                            <HexNum value={this.state.bpdTotal / 1e8} />
+                        <td className="text-right">
+                            <HexNum value={this.state.bpdTotal} />
                         </td>
-                        <td className="hex-value">
-                            <HexNum value={this.state.interestTotal / 1e8} />
+                        <td className="text-right">
+                            <HexNum value={this.state.interestTotal} />
                         </td>
-                        <td className="hex-value">
-                            <HexNum value={this.state.stakedTotal.plus(this.state.interestTotal) / 1e8} />
+                        <td className="text-right">
+                            <HexNum value={this.state.stakedTotal.plus(this.state.interestTotal)} />
                         </td>
                         <td>{' '}</td>
                     </tr>
