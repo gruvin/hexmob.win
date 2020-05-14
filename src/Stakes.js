@@ -329,7 +329,7 @@ class Stakes extends React.Component {
     loadStakes() {
         this.contract.methods.stakeCount(this.state.address).call()
         .then((stakeCount) => {
-            const { currentDay, globals } = this.state.contractData
+            const { currentDay } = this.state.contractData
             this.setState({
                 stakeList: { },
                 stakeCount: Number(stakeCount),
@@ -350,7 +350,7 @@ class Stakes extends React.Component {
                         unlockedDay: Number(data.unlockedDay),
                         isAutoStake: Boolean(data.isAutoStakte),
                         progress: Math.trunc(Math.min((currentDay - data.lockedDay) / data.stakedDays * 100000, 100000)),
-                        bigPayDay: this.calcBigPayDaySlice(data.stakeShares, globals.stakeSharesTotal),
+                        bigPayDay: new BigNumber(0),
                         payout: new BigNumber(0)
                     }
                     const stakeList = { ...this.state.stakeList }
