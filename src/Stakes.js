@@ -76,14 +76,62 @@ class NewStakeForm extends React.Component {
     
     render() {
 
+/*
+    uint256 private constant LPB_BONUS_PERCENT = 20;
+    uint256 private constant LPB_BONUS_MAX_PERCENT = 200;
+    uint256 internal constant LPB = 364 * 100 / LPB_BONUS_PERCENT;
+    uint256 internal constant LPB_MAX_DAYS = LPB * LPB_BONUS_MAX_PERCENT / 100;
+
+    uint256 private constant BPB_BONUS_PERCENT = 10;
+    uint256 private constant BPB_MAX_HEX = 150 * 1e6;
+    uint256 internal constant BPB_MAX_HEARTS = BPB_MAX_HEX * HEARTS_PER_HEX;
+    uint256 internal constant BPB = BPB_MAX_HEARTS * 100 / BPB_BONUS_PERCENT;
+
+    uint256 internal constant SHARE_RATE_SCALE = 1e5;
+
+    uint256 internal constant SHARE_RATE_UINT_SIZE = 40;
+    uint256 internal constant SHARE_RATE_MAX = (1 << SHARE_RATE_UINT_SIZE) - 1;
+*/
+        const calc_stakeStartBonusHearts = (newStakedDays, _newStakedHearts) => {
+            const LPB_BONUS_PERCENT = 20
+            const LPB_BONUS_MAX_PERCENT = 200
+            const LPB = new BigNumber(364).times(100).idiv(LPB_BONUS_PERCENT)
+            const LPB_MAX_DAYS = LPB * LPB_BONUS_MAX_PERCENT / 100
+
+            const HEARTS_PER_HEX = 10000
+            const BPB_BONUS_PERCENT = 10
+            const BPB_MAX_HEX = new BigNumber(150).times(1e6)
+            const BPB_MAX_HEARTS = BPB_MAX_HEX.times(HEARTS_PER_HEX)
+            const BPB = BPB_MAX_HEARTS.times(100).idiv(BPB_BONUS_PERCENT)
+
+            let cappedExtraDays = 0;
+
+            /* Must be more than 1 day for Longer-Pays-Better */
+            if (newStakedDays > 1) {
+                cappedExtraDays = newStakedDays <= LPB_MAX_DAYS ? newStakedDays - 1 : LPB_MAX_DAYS;
+            }
+
+            const newStakedHearts = new BigNumber(_newStakedHearts)
+            const cappedStakedHearts = newStakedHearts.lte(BPB_MAX_HEARTS)
+                ? newStakedHearts
+                : BPB_MAX_HEARTS
+
+            let bonusHearts = new BigNumber(cappedExtraDays).times(BPB).plus(cappedStakedHearts).times(LPB)
+            bonusHearts = newStakedHearts.times(bonusHearts).idiv(LPB.times(BPB))
+
+            return bonusHearts;
+        }
+
         const currentDay = this.state.contractData.currentDay + 1
         const BigPayDay = this.state.contractData.BIG_PAY_DAY
 
         const updateFigures = () => {
             const { stakeAmount, stakeDays } = this.state
+            
+            const BPB = calc_stakeStartBonusHearts(stakeDays, stakeAmount)
 
             this.setState({ 
-                longerPaysBetter: stakeAmount.div(1e8),
+                longerPaysBetter: BPB,
                 biggerPaysBetter: stakeDays
             })
         }
@@ -127,7 +175,7 @@ class NewStakeForm extends React.Component {
                             <InputGroup>
                                 <FormControl
                                     type="text"
-                                    placeholder="amount of HEX to stake"
+                                    placeholder="number of HEX to stake"
                                     value={this.state.stakeAmount.eq(0) ? '' : this.state.stakeAmount.div(1e8).toString()}
                                     aria-label="amount to stake"
                                     aria-describedby="basic-addon1"
@@ -177,20 +225,20 @@ class NewStakeForm extends React.Component {
                         </Form.Group>
                         <Row>
                             <Col md={6} className="text-right">Start Day:</Col>
-                            <Col md={3} className="text-right numeric">{ currentDay + 1 }</Col>
+                            <Col md={3} className="text-right">{ currentDay + 1 }</Col>
                         </Row>
                         <Row>
                             <Col md={6} className="text-right">Last Full Day:</Col>
-                            <Col md={3} className="text-right numeric">{ this.state.lastFullDay }</Col>
+                            <Col md={3} className="text-right">{ this.state.lastFullDay }</Col>
                         </Row>
                         <Row>
                             <Col md={6} className="text-right">End Day:</Col>
-                            <Col md={3} className="text-right numeric">{ this.state.endDay }</Col>
+                            <Col md={3} className="text-right">{ this.state.endDay }</Col>
                         </Row>
                     </Col>
                     <Col>
                         <Container>
-                            <h5>Bonuses</h5>
+                            <h4>Bonuses</h4>
                             <Row>
                                 <Col className="ml-3">Longer Pays Better:</Col>
                                 <Col sm={5} className="text-right">+ <HexNum value={this.state.longerPaysBetter.toString()} /> HEX</Col>
@@ -217,10 +265,10 @@ class NewStakeForm extends React.Component {
                             </Row>
                         </Container>
 
-                        { (currentDay < BigPayDay) && (
+                        { (currentDay < (BigPayDay - 1)) && (
                         <Container className="bg-secondary rounded mt-2 pt-2 pb-2">
                             <Row>
-                                <Col><strong>BigPayDay:</strong> <sup><Badge variant="info" pill>?</Badge></sup></Col>
+                                <Col><strong className="text-info">BigPayDay:</strong> <sup><Badge variant="info" pill>?</Badge></sup></Col>
                                 <Col className="text-right"><HexNum value={this.state.bigPayDay.toString()} /> HEX</Col>
                             </Row>
                             <Row>
@@ -555,7 +603,7 @@ class Stakes extends React.Component {
                 ? <ProgressBar variant="secondary" animated now={90} label="loading contract data" />
                 : <> 
             <Accordion defaultActiveKey="new_stake">
-                <Card bg="primary" text="light" className="overflow-auto">
+                <Card bg="secondary" text="light" className="overflow-auto">
                     <Accordion.Toggle as={Card.Header} eventKey="new_stake">
                         <h3 className="float-left">New Stake</h3>
                         <div className="day-number float-right">Day {currentDay+1}</div>
@@ -566,7 +614,7 @@ class Stakes extends React.Component {
                         </Card.Body>
                    </Accordion.Collapse>
                 </Card>
-                <Card bg="primary" text="light" className="overflow-auto">
+                <Card bg="secondary" text="light" className="overflow-auto">
                     <Accordion.Toggle as={Card.Header} eventKey="current_stakes">
                         <h3 className="float-left">Current Stakes</h3>
                     </Accordion.Toggle>
@@ -576,7 +624,7 @@ class Stakes extends React.Component {
                         </Card.Body>
                    </Accordion.Collapse>
                 </Card>
-                <Card bg="primary" text="light" className="overflow-auto">
+                <Card bg="secondary" text="light" className="overflow-auto">
                     <Accordion.Toggle as={Card.Header} eventKey="stake_history">
                         <h3>Stake History</h3>
                     </Accordion.Toggle>
