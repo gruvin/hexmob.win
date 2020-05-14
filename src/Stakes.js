@@ -19,7 +19,7 @@ import {
     Row,
     Col
 } from 'react-bootstrap'
-import './Stakes.css'
+import './Stakes.scss'
 import { BigNumber } from 'bignumber.js'
 import { format } from 'd3-format'
 
@@ -33,16 +33,16 @@ function HexNum(props) {
 
     if (r && r.length > 1)
         return ( 
-            <>
+            <div className="numeric">
                 { r[1] } 
                 <span style={{ opacity: "0.5" }}>
                     { r[2] }
                 </span>
                 { r[3] && r[3] }
-            </>
+            </div>
         ) 
         else 
-            return ( <>{s}</> )
+            return ( <div className="numeric">{s}</div> )
 }
 
 class NewStakeForm extends React.Component {
@@ -77,6 +77,7 @@ class NewStakeForm extends React.Component {
     render() {
 
         const currentDay = this.state.contractData.currentDay + 1
+        const BigPayDay = this.state.contractData.BIG_PAY_DAY
 
         const updateFigures = () => {
             const { stakeAmount, stakeDays } = this.state
@@ -93,13 +94,14 @@ class NewStakeForm extends React.Component {
             const m = tv.match(/^[.0-9]+$/)
             const v = m ? m[0] : 0
             this.setState({
-                stakeAmount: new BigNumber(1).times(v).times(1E8) 
+                stakeAmount: new BigNumber(v).times(1E8) 
             }, updateFigures)
         }
 
         const handleDaysChange = (e) => {
             e.preventDefault()
-            const stakeDays = Number(parseInt(e.target.value) || 0)
+            let stakeDays = Number(parseInt(e.target.value) || 0)
+            if (stakeDays > 5555) stakeDays = 5555
             this.setState({
                 stakeDays,
                 lastFullDay: stakeDays > 0 ? currentDay + stakeDays : '',
@@ -117,16 +119,16 @@ class NewStakeForm extends React.Component {
         }
 
         return (
-            <Row>
-                <Col md={5}>
-                    <Form>
+            <Form>
+                <Row>
+                    <Col md={5}>
                         <Form.Group controlId="stakeAmount">
                             <Form.Label>Stake Amount in HEX</Form.Label> 
                             <InputGroup>
                                 <FormControl
-                                    type="number"
+                                    type="text"
                                     placeholder="amount of HEX to stake"
-                                    value={this.state.stakeAmount.eq(0) ? 'amount of HEX to stake' : this.state.stakeAmount.div(1e8).toString()}
+                                    value={this.state.stakeAmount.eq(0) ? '' : this.state.stakeAmount.div(1e8).toString()}
                                     aria-label="amount to stake"
                                     aria-describedby="basic-addon1"
                                     onChange={handleAmountChange}
@@ -138,6 +140,7 @@ class NewStakeForm extends React.Component {
                                     title="HEX"
                                     id="input-group-dropdown-1"
                                     onSelect={handleAmountSelector}
+                                    className="numeric"
                                 >
                                     <Dropdown.Item as="button" eventKey="current_stakes" data-portion={1.00}>MAX</Dropdown.Item>
                                     <Dropdown.Item as="button" eventKey="current_stakes" data-portion={0.75}>75%</Dropdown.Item>
@@ -157,15 +160,15 @@ class NewStakeForm extends React.Component {
                         <Form.Group controlId="stakeDays">
                             <Form.Label>Stake Length in Days</Form.Label>
                             <InputGroup>
-                                <Form.Control
-                                    type="number" 
+                                <FormControl
+                                    type="text" 
                                     placeholder="minimum one day" 
-                                    value={this.state.stakeDays <= 0 ? 'stake term in days' : this.state.stakeDays}
+                                    value={this.state.stakeDays <= 0 ? '' : this.state.stakeDays}
                                     aria-label="number of days to stake"
                                     onChange={handleDaysChange} 
                                 />
                                 <InputGroup.Append>
-                                    <InputGroup.Text id="basic-addon3">DAYS</InputGroup.Text>
+                                    <InputGroup.Text className="numeric">DAYS</InputGroup.Text>
                                 </InputGroup.Append>
                             </InputGroup>
                             <Form.Text className="text-muted">
@@ -173,76 +176,71 @@ class NewStakeForm extends React.Component {
                             </Form.Text>
                         </Form.Group>
                         <Row>
-                            <Col>
-                                <Row>
-                                    <Col>Start Day:</Col>
-                                    <Col md={4} className="text-right">{ currentDay + 1 }</Col>
-                                </Row>
-                                <Row>
-                                    <Col>Last Full Day:</Col>
-                                    <Col md={4} className="text-right">{ this.state.lastFullDay }</Col>
-                                </Row>
-                                <Row>
-                                    <Col>End Day:</Col>
-                                    <Col md={4} className="text-right">{ this.state.endDay }</Col>
-                                </Row>
-                            </Col>
-                            <Col md={4}>
-                                <Button variant="primary" className="ml-3" type="submit">
-                                    STAKE
-                                </Button>
-                            </Col>
-                        </Row>
-                    </Form>
-                </Col>
-                <Col>
-                    <Container>
-                        <h5>Bonuses</h5>
-                        <Row>
-                            <Col className="ml-3">Longer Pays Better:</Col>
-                            <Col sm={5} className="text-right">+ <HexNum value={this.state.longerPaysBetter.toString()} /> HEX</Col>
+                            <Col md={6} className="text-right">Start Day:</Col>
+                            <Col md={3} className="text-right numeric">{ currentDay + 1 }</Col>
                         </Row>
                         <Row>
-                            <Col className="ml-3">Bigger Pays Better:</Col>
-                            <Col sm={5} className="text-right">+ <HexNum value={this.state.biggerPaysBetter.toString()} /> HEX</Col>
+                            <Col md={6} className="text-right">Last Full Day:</Col>
+                            <Col md={3} className="text-right numeric">{ this.state.lastFullDay }</Col>
                         </Row>
                         <Row>
-                            <Col className="ml-3"><strong>Total:</strong></Col>
-                            <Col sm={5} className="text-right"><HexNum value={this.state.total.toString()} /> HEX</Col>
+                            <Col md={6} className="text-right">End Day:</Col>
+                            <Col md={3} className="text-right numeric">{ this.state.endDay }</Col>
                         </Row>
-                        <Row className="mt-2">
-                            <Col><strong>Effective HEX:</strong> <sup><Badge variant="info" pill>?</Badge></sup></Col>
-                            <Col sm={5} className="text-right"><HexNum value={this.state.effectiveHEX.toString()} /> HEX</Col>
-                        </Row>
-                        <Row className="mt-3">
-                            <Col><strong>Share Rate:</strong></Col>
-                            <Col sm={5} className="text-right"><HexNum value={this.state.shareRate.toString()} /> / HEX</Col>
-                        </Row>
-                        <Row>
-                            <Col><strong>Stake Shares:</strong> <sup><Badge variant="info" pill>?</Badge></sup></Col>
-                            <Col sm={5} className="text-right"><HexNum value={this.state.stakeShares.toString()} /></Col>
-                        </Row>
-                    </Container>
+                    </Col>
+                    <Col>
+                        <Container>
+                            <h5>Bonuses</h5>
+                            <Row>
+                                <Col className="ml-3">Longer Pays Better:</Col>
+                                <Col sm={5} className="text-right">+ <HexNum value={this.state.longerPaysBetter.toString()} /> HEX</Col>
+                            </Row>
+                            <Row>
+                                <Col className="ml-3">Bigger Pays Better:</Col>
+                                <Col sm={5} className="text-right">+ <HexNum value={this.state.biggerPaysBetter.toString()} /> HEX</Col>
+                            </Row>
+                            <Row>
+                                <Col className="ml-3"><strong>Total:</strong></Col>
+                                <Col sm={5} className="text-right"><HexNum value={this.state.total.toString()} /> HEX</Col>
+                            </Row>
+                            <Row className="mt-2">
+                                <Col><strong>Effective HEX:</strong> <sup><Badge variant="info" pill>?</Badge></sup></Col>
+                                <Col sm={5} className="text-right"><HexNum value={this.state.effectiveHEX.toString()} /> HEX</Col>
+                            </Row>
+                            <Row className="mt-3">
+                                <Col><strong>Share Rate:</strong></Col>
+                                <Col sm={5} className="text-right"><HexNum value={this.state.shareRate.toString()} /> / HEX</Col>
+                            </Row>
+                            <Row>
+                                <Col><strong>Stake Shares:</strong> <sup><Badge variant="info" pill>?</Badge></sup></Col>
+                                <Col sm={5} className="text-right"><HexNum value={this.state.stakeShares.toString()} /></Col>
+                            </Row>
+                        </Container>
 
-                    <Container className="bg-dark text-orange mt-2 pt-2 pb-2">
-                        <Row>
-                            <Col><strong>BigPayDay:</strong> <sup><Badge variant="info" pill>?</Badge></sup></Col>
-                            <Col className="text-right"><HexNum value={this.state.bigPayDay.toString()} /> HEX</Col>
-                        </Row>
-                        <Row>
-                            <Col>% Gain<span className="text-warning">*</span>: <sup><Badge variant="info" pill>?</Badge></sup></Col>
-                            <Col className="text-right"><HexNum value={this.state.percentGain.toString()} />%</Col>
-                        </Row>
-                        <Row>
-                            <Col>% APY<span className="text-warning">*</span>: <sup><Badge variant="info" pill>?</Badge></sup></Col>
-                            <Col className="text-right"><HexNum value={this.state.percentAPY.toString()} />%</Col>
-                        </Row>
-                        <Row>
-                            <Col className="pt-2"><span className="text-warning">*</span> <em>If stake still open on BigPayDay</em></Col>
-                        </Row>
-                    </Container>
-                </Col>
-            </Row>
+                        { (currentDay < BigPayDay) && (
+                        <Container className="bg-secondary rounded mt-2 pt-2 pb-2">
+                            <Row>
+                                <Col><strong>BigPayDay:</strong> <sup><Badge variant="info" pill>?</Badge></sup></Col>
+                                <Col className="text-right"><HexNum value={this.state.bigPayDay.toString()} /> HEX</Col>
+                            </Row>
+                            <Row>
+                                <Col>% Gain<span className="text-warning">*</span>: <sup><Badge variant="info" pill>?</Badge></sup></Col>
+                                <Col className="text-right"><HexNum value={this.state.percentGain.toString()} />%</Col>
+                            </Row>
+                            <Row>
+                                <Col>% APY<span className="text-warning">*</span>: <sup><Badge variant="info" pill>?</Badge></sup></Col>
+                                <Col className="text-right"><HexNum value={this.state.percentAPY.toString()} />%</Col>
+                            </Row>
+                            <Row>
+                                <Col className="pt-2"><span className="text-warning">*</span> <em>If stake still open on BigPayDay</em></Col>
+                            </Row>
+                        </Container>
+                        ) }
+
+                        <Container className="mt-3 text-right"><Button>BEGIN STAKE</Button></Container>
+                    </Col>
+                </Row>
+            </Form>
         )
     }
 }
@@ -423,15 +421,15 @@ class Stakes extends React.Component {
             <Table variant="secondary" size="sm" striped borderless>
                 <thead>
                     <tr>
-                        <th className="day-value">Start</th>
-                        <th className="day-value">End</th>
-                        <th className="day-value">Days</th>
-                        <th className="day-value">Progress</th>
-                        <th className="hex-value">Principal</th>
-                        <th className="shares-value">Shares</th>
-                        <th className="hex-value">BigPayDay</th> 
-                        <th className="hex-value">Interest</th>
-                        <th className="hex-value">Value</th>
+                        <th className="text-center">Start</th>
+                        <th className="text-center">End</th>
+                        <th className="text-center">Days</th>
+                        <th className="text-center">Progress</th>
+                        <th className="text-right">Principal</th>
+                        <th className="text-right">Shares</th>
+                        <th className="text-right">BigPayDay</th> 
+                        <th className="text-right">Interest</th>
+                        <th className="text-right">Value</th>
                         <th>{' '}</th>
                     </tr>
                 </thead>
@@ -450,7 +448,7 @@ class Stakes extends React.Component {
                             return (typeof stakeData === 'object') ? 
                             (
                                 <tr key={stakeData.stakeId}>
-                                    <td className="day-value">
+                                    <td className="text-center">
                                         <OverlayTrigger
                                             key={stakeData.stakeId}
                                             placement="top"
@@ -463,7 +461,7 @@ class Stakes extends React.Component {
                                             <div>{ startDay }</div>
                                         </OverlayTrigger>
                                     </td>
-                                    <td className="day-value">
+                                    <td className="text-center">
                                         <OverlayTrigger
                                             key={stakeData.stakeId}
                                             placement="top"
@@ -476,23 +474,23 @@ class Stakes extends React.Component {
                                             <div>{ endDay }</div>
                                         </OverlayTrigger>
                                     </td>
-                                    <td className="day-value">{ stakeData.stakedDays }</td>
-                                    <td className="day-value">
+                                    <td className="text-center">{ stakeData.stakedDays }</td>
+                                    <td className="text-center">
                                         <HexNum value={stakeData.progress / 1000} />%
                                     </td>
-                                    <td className="hex-value">
+                                    <td className="text-right">
                                         <HexNum value={stakeData.stakedHearts / 1e8} /> 
                                     </td>
-                                    <td className="shares-value">
+                                    <td className="text-right">
                                         <HexNum value={stakeData.stakeShares} /> 
                                     </td>
-                                    <td className="hex-value">
+                                    <td className="text-right">
                                         <HexNum value={stakeData.bigPayDay / 1e8} />
                                     </td>
-                                    <td className="hex-value">
+                                    <td className="text-right">
                                         <HexNum value={stakeData.payout / 1e8} />
                                     </td>
-                                    <td className="hex-value">
+                                    <td className="text-right">
                                         <HexNum value={stakeData.stakedHearts.plus(stakeData.payout) / 1e8} />
                                     </td>
                                     <td align="right">
@@ -500,10 +498,10 @@ class Stakes extends React.Component {
                                             variant="outline-primary" size="sm" 
                                             onClick={(e) => handleShow(stakeData, e)}
                                             className={ 
-    currentDay < (stakeData.lockedDay + stakeData.stakedDays / 2) ? "earlyexit"
-        : currentDay < (stakeData.lockedDay + stakeData.stakedDays) ? "midexit"
-        : currentDay < (stakeData.lockedDay + stakeData.stakedDays + 7) ? "termexit"
-        : "lateexit"
+                                                currentDay < (stakeData.lockedDay + stakeData.stakedDays / 2) ? "exitbtn earlyexit"
+                                                    : currentDay < (stakeData.lockedDay + stakeData.stakedDays) ? "exitbtn midexit"
+                                                    : currentDay < (stakeData.lockedDay + stakeData.stakedDays + 7) ? "exitbtn termexit"
+                                                    : "exitbtn lateexit"
                                             }
                                         >
                                             Exit
@@ -554,26 +552,36 @@ class Stakes extends React.Component {
 
         return (
             !this.state.stakeList
-                ? <ProgressBar animated now={90} label="loading contract data" />
+                ? <ProgressBar variant="secondary" animated now={90} label="loading contract data" />
                 : <> 
-            <Accordion defaultActiveKey="current_stakes">
-                <Card bg="primary" text="light" className="overflow-auto m-2">
-                    <Accordion.Toggle as={Card.Header} eventKey="current_stakes">
-                        Current Stakes <Badge variant='info' className="float-right">Day {currentDay+1}</Badge>
+            <Accordion defaultActiveKey="new_stake">
+                <Card bg="primary" text="light" className="overflow-auto">
+                    <Accordion.Toggle as={Card.Header} eventKey="new_stake">
+                        <h3 className="float-left">New Stake</h3>
+                        <div className="day-number float-right">Day {currentDay+1}</div>
                     </Accordion.Toggle>
-                    <Accordion.Collapse eventKey="current_stakes">
-                        <Card.Body className="p-3 pt-0">
-                            <this.CurrentStakesTable />
+                    <Accordion.Collapse eventKey="new_stake">
+                        <Card.Body className="bg-dark">
                             <NewStakeForm context={this.state}/>
                         </Card.Body>
                    </Accordion.Collapse>
                 </Card>
-                <Card bg="primary" text="light" className="overflow-auto m-2">
+                <Card bg="primary" text="light" className="overflow-auto">
+                    <Accordion.Toggle as={Card.Header} eventKey="current_stakes">
+                        <h3 className="float-left">Current Stakes</h3>
+                    </Accordion.Toggle>
+                    <Accordion.Collapse eventKey="current_stakes">
+                        <Card.Body className="bg-dark">
+                            <this.CurrentStakesTable />
+                        </Card.Body>
+                   </Accordion.Collapse>
+                </Card>
+                <Card bg="primary" text="light" className="overflow-auto">
                     <Accordion.Toggle as={Card.Header} eventKey="stake_history">
-                        Stake History
+                        <h3>Stake History</h3>
                     </Accordion.Toggle>
                     <Accordion.Collapse eventKey="stake_history">
-                        <Card.Body className="p-3">
+                        <Card.Body className="bg-dark">
                             <p>HISTORY TODO</p>
                             <p>HISTORY TODO</p>
                             <p>HISTORY TODO</p>

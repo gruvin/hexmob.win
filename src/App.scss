@@ -17,15 +17,27 @@
     and (-webkit-device-pixel-ratio: 3) { }
 
 @import url('https://fonts.googleapis.com/css2?family=Happy+Monkey&family=Jura:wght@500;700&family=Nosifer&family=Press+Start+2P&display=swap');
+
+$hex-crimson: #ff4136;
+$hex-orange: #d66f25;
+$hex-yellow: #e5c400;
+$theme-colors: (
+  "primary": $hex-orange,
+  "secondary": #333030,
+  "dark": #151010,
+  "success": #80d631,
+  "info": $hex-yellow,
+  "warning": $hex-orange,
+  "danger": $hex-crimson
+);
+@import "~bootstrap/scss/bootstrap";
+
 body { 
-    font-family: Jura, sans-serif; 
+    font-family: "Happy Monkey", sans-serif; 
     background: #111 url(/iron_texture1745.jpg);
     background-size: auto;
 }
-
-.bg-primary {
-    background-color: #2662e7!important;
-}
+.numeric { font-family: Jura, monospace }
 
 .container, .container-md, .container-sm {
     max-width: 800px;

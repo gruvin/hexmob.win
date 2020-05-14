@@ -1,0 +1,87 @@
+@import "./App.scss";
+
+.day-number {
+    background-color: map-get($theme-colors, dark);
+    color: map-get($theme-colors, info);
+    display: inline-block;
+    font-weight: bold;
+    padding: .3em .5em;
+    border-radius: 5px;
+}
+.form-label { font-weight: bold; }
+.accordion > .card {
+    border-width: 2px;
+    border-radius: 5px;
+}
+/*
+.accordion > .card > .collapse {
+    background-color: #222;
+}
+*/
+
+.numeric {
+    font-family: Jura, monospace;
+    display: inline-block;
+}
+thead, tfoot {
+    background: rgb(51,51,51);
+    background: linear-gradient(180deg, rgba(51,51,51,1) 0%, rgba(0,0,0,1) 48%, rgba(51,51,51,1) 100%);
+    color: #eee; font-weight: bold;
+}
+button.btn-sm { padding: 0.1rem .2rem; line-height: 1em; } 
+
+button.exitbtn {
+    width: 64px;
+    padding: 0; 
+    font-weight: bold;
+    font-size: 1.0em;
+    line-height: 20px;
+}
+/* EARLY EXIT BUTTON -- DANGER! */
+button.earlyexit { 
+    font-size: 0.95em;
+    font-weight: normal;
+    font-family: Nosifer, sans-serif; 
+    color: map-get($theme-colors, danger); 
+    border: 1px map-get($theme-colors, danger) solid; 
+}
+button.earlyexit.btn-outline-primary:hover {
+    color: map-get($theme-colors, light);
+    background-color: map-get($theme-colors, danger);
+}
+
+/* EARLY BUT PAST MID TERM EXIT BUTTON */
+button.midexit { 
+    color: map-get($theme-colors, warning); 
+    border-color: map-get($theme-colors, warning); 
+}
+button.midexit.btn-outline-primary:hover {
+    color: map-get($theme-colors, light);
+    background-color: map-get($theme-colors, warning); 
+}
+
+/* AT TERM PLUS UP TO ONE WEEK LATE EXIT BUTTON */
+button.termexit {
+    color: map-get($theme-colors, secondary); 
+    border-color: map-get($theme-colors, secondary); 
+    background-color: map-get($theme-colors, success); 
+}
+button.termexit.btn-outline-primary:hover {
+    color: map-get($theme-colors, light); 
+    border-color: map-get($theme-colors, success); 
+    background-color: map-get($theme-colors, success); 
+}
+
+/* LATER THAN TERM PLUS ONE WEEK EXIT BUTTON */
+button.lateexit {
+    color: map-get($theme-colors, secondary); 
+    border-color: map-get($theme-colors, warning); 
+    background: map-get($theme-colors, success) url(/exclamation-mark.gif) no-repeat 51px;
+    background-size: 9px 20px;
+}
+button.lateexit.btn-outline-primary:hover {
+    color: map-get($theme-colors, light); 
+    border-color: map-get($theme-colors, success); 
+    background-color: map-get($theme-colors, success); 
+}
+

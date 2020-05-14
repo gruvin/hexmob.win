@@ -1,9 +1,7 @@
 import React from 'react'
-import './App.css'
 import { BigNumber } from 'bignumber.js'
 import { format } from 'd3-format'
 import { Container, Card, Row, Col, Button, Badge, ProgressBar } from 'react-bootstrap'
-
 import Stakes from './Stakes.js'
 
 import Web3 from "web3";
@@ -11,6 +9,8 @@ import Web3Modal from "web3modal";
 import WalletConnectProvider from "@walletconnect/web3-provider";
 
 import { ContractAddress, ABI } from './hex_contract.js'
+
+import './App.scss'
 
 const INITIAL_STATE = {
     chainId: 1, // ETH mainnet
@@ -276,7 +276,7 @@ class App extends React.Component {
                 <>
                 {this.state.contractReady
                     ? <Stakes contract={this.contract} context={this.state} />
-                    : <ProgressBar animated now={60} label="initializing" />
+                    : <ProgressBar variant="secondary" animated now={60} label="initializing" />
                 }
                 </>
             )
