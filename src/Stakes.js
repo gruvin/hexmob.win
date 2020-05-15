@@ -22,6 +22,9 @@ import {
 import './Stakes.scss'
 import { BigNumber } from 'bignumber.js'
 import { format } from 'd3-format'
+import HEX from './hex_contract.js'
+
+const debug = require('debug')('Stakes')
 
 /*
  * displays unitized .3 U formatted values (eg. 12.345 M) with 50% opacity for fractional part
@@ -32,7 +35,7 @@ const HexNum = (props) => {
 
     let unit
     let s
-    if (v.gte(1e6)) {
+    if (v.gte(1e6) || v.isZero()) {
         v = v.div(1e8)
         s = format(v.lt(1e6) ? (v.lt(1e3) ? ",.3f" : ",.0f") : ",.5s")(v.toString())
         unit = props.showUnit && ' HEX'
@@ -41,7 +44,6 @@ const HexNum = (props) => {
         unit = props.showUnit && ' Hearts'
     }
     
-    s = s.replace(/([-0-9]+)\.0+([^0-9])$/, '$1$2') // strip .000[0], leaving K/M/G... 
     const r = s.match(/^(.*)(\.\d+)(.*)$/) 
     if (r && r.length > 1)
         return ( 
@@ -61,6 +63,8 @@ const HexNum = (props) => {
 class NewStakeForm extends React.Component {
     constructor(props) {
         super(props)
+        const _shareRate = props.context.contractData.globals.shareRate || 100000
+        const shareRate = new BigNumber('100000').div(_shareRate).times(1e8)
         this.state = {
             availableBalance: new BigNumber(props.context.availableBalance),
             contractData: props.context.contractData,
@@ -72,7 +76,7 @@ class NewStakeForm extends React.Component {
             biggerPaysBetter: new BigNumber(0),
             bonusTotal: new BigNumber(0),
             effectiveHEX: new BigNumber(0),
-            shareRate: new BigNumber(0),
+            shareRate,
             stakeShares: new BigNumber(0),
             bigPayDay: new BigNumber(0),
             percentGain: 0.0,
@@ -81,32 +85,30 @@ class NewStakeForm extends React.Component {
     }
 
     static getDerivedStateFromProps(newProps, prevState) {
+        const _shareRate = newProps.context.contractData.globals.shareRate || 100000
+        const shareRate = new BigNumber('100000').div(_shareRate).times(1e8)
         return { 
             availableBalance: new BigNumber(newProps.context.availableBalance),
             contractData: newProps.context.contractData,
+            shareRate
         }
     }
     
     render() {
 
         const currentDay = this.state.contractData.currentDay + 1
-        const BigPayDay = this.state.contractData.BIG_PAY_DAY
+        const BigPayDay = HEX.BIG_PAY_DAY
 
         const updateFigures = () => {
             const stakeDays = this.state.stakeDays || 0
             const stakeAmount = this.state.stakeAmount || new BigNumber(0)
 
-            const LPB_BONUS_PERCENT = 20
-            const LPB_BONUS_MAX_PERCENT = new BigNumber(200)
-            const LPB = new BigNumber(364).times(100).idiv(LPB_BONUS_PERCENT)
-            const LPB_MAX_DAYS = LPB.times(LPB_BONUS_MAX_PERCENT).idiv(100)
-            
-            const HEARTS_PER_HEX = 1e8
-            const BPB_BONUS_PERCENT = 10
-            const BPB_MAX_HEX = new BigNumber(150).times(1e6)
-            const BPB_MAX_HEARTS = BPB_MAX_HEX.times(HEARTS_PER_HEX)
-            const BPB = BPB_MAX_HEARTS.times(100).idiv(BPB_BONUS_PERCENT)
-
+            const { 
+                LPB_MAX_DAYS,
+                LPB,
+                BPB_MAX_HEARTS,
+                BPB
+            } = HEX
             /*
             console.log('stakeAmount: ', stakeAmount.toString())
             console.log('stakeDays: ', stakeDays)
@@ -122,20 +124,28 @@ class NewStakeForm extends React.Component {
                     ? stakeDays - 1 
                     : LPB_MAX_DAYS;
             }
-            const LPB_bonusHearts = stakeAmount.times(cappedExtraDays)
-                                           .div(LPB)
+            const longerPaysBetter = stakeAmount.times(cappedExtraDays)
+                                            .div(LPB)
 
             const newStakedHearts = new BigNumber(stakeAmount)
             const cappedStakedHearts = newStakedHearts.lte(BPB_MAX_HEARTS)
                 ? newStakedHearts
                 : BPB_MAX_HEARTS
-            const BPB_bonusHearts = stakeAmount.times(cappedStakedHearts)
-                                                .idiv(BPB)
+            const biggerPaysBetter = stakeAmount.times(cappedStakedHearts)
+                                            .idiv(BPB)
+
+            const bonusTotal = longerPaysBetter.plus(biggerPaysBetter)
+            const effectiveHEX = stakeAmount.plus(bonusTotal)
+            const _shareRate = this.state.contractData.globals.shareRate || 100000
+            const shareRate = new BigNumber('100000').div(_shareRate).times(1e8)
+            const stakeShares = effectiveHEX.times(shareRate)
             this.setState({
-                longerPaysBetter: LPB_bonusHearts,
-                biggerPaysBetter: BPB_bonusHearts,
-                bonusTotal: LPB_bonusHearts.plus(BPB_bonusHearts),
-                effectiveHEX: stakeAmount.plus(LPB_bonusHearts).plus(BPB_bonusHearts)
+                longerPaysBetter,
+                biggerPaysBetter,
+                bonusTotal,
+                effectiveHEX,
+                shareRate,
+                stakeShares
             })
         }
 
@@ -169,6 +179,43 @@ class NewStakeForm extends React.Component {
             }, updateFigures)
         }
 
+        const handleDaysSelector = (key, e) => {
+            function plusYears(years) {
+                    const n = new Date(Date.now())
+                    const d = new Date()
+                    d.setYear(n.getFullYear() + years)
+                    return Number((d.valueOf() - n.valueOf()) / 1000 / 3600 / 24).toFixed(0)
+            }
+            function plusMonths(months) {
+                    const n = new Date(Date.now())
+                    const d = new Date()
+                    d.setMonth(n.getMonth() + months)
+                    return Number((d.valueOf() - n.valueOf()) / 1000 / 3600 / 24).toFixed(0)
+            }
+
+            e.preventDefault()
+            e.stopPropagation() // doesn't seem to work :(
+            let days
+            switch (e.target.dataset.days) {
+                case 'max': days = 5555; break;
+                case '10y': days = plusYears(10); break;
+                case '5y': days = plusYears(5); break;
+                case '3y': days = plusYears(3); break;
+                case '2y': days = plusYears(2); break;
+                case '1y': days = plusYears(1); break;
+                case '6m': days = plusMonths(6); break;
+                case '3m': days = plusMonths(3); break;
+                case '1m': days = plusMonths(1); break;
+                case '1w': days = 7; break;
+                default: days = 1;
+            }
+
+            e.target.value = days
+            this.setState({ 
+                stakeDays: days
+            }, handleDaysChange(e))
+        }
+
         return (
             <Form>
                 <Row>
@@ -186,6 +233,7 @@ class NewStakeForm extends React.Component {
                                 />
                                 <DropdownButton
                                     as={InputGroup.Append}
+                                    drop="right"
                                     variant="secondary"
                                     key="percent_balance_selector"
                                     title="HEX"
@@ -193,18 +241,18 @@ class NewStakeForm extends React.Component {
                                     onSelect={handleAmountSelector}
                                     className="numeric"
                                 >
-                                    <Dropdown.Item as="button" eventKey="current_stakes" data-portion={1.00}>MAX</Dropdown.Item>
-                                    <Dropdown.Item as="button" eventKey="current_stakes" data-portion={0.75}>75%</Dropdown.Item>
-                                    <Dropdown.Item as="button" eventKey="current_stakes" data-portion={0.50}>50%</Dropdown.Item>
-                                    <Dropdown.Item as="button" eventKey="current_stakes" data-portion={0.25}>25%</Dropdown.Item>
-                                    <Dropdown.Item as="button" eventKey="current_stakes" data-portion={0.10}>10%</Dropdown.Item>
-                                    <Dropdown.Item as="button" eventKey="current_stakes" data-portion={0.05}>5%</Dropdown.Item>
+                                    <Dropdown.Item as="button" eventKey="new_stake" data-portion={1.00}>MAX</Dropdown.Item>
+                                    <Dropdown.Item as="button" eventKey="new_stake" data-portion={0.75}>75%</Dropdown.Item>
+                                    <Dropdown.Item as="button" eventKey="new_stake" data-portion={0.50}>50%</Dropdown.Item>
+                                    <Dropdown.Item as="button" eventKey="new_stake" data-portion={0.25}>25%</Dropdown.Item>
+                                    <Dropdown.Item as="button" eventKey="new_stake" data-portion={0.10}>10%</Dropdown.Item>
+                                    <Dropdown.Item as="button" eventKey="new_stake" data-portion={0.05}>5%</Dropdown.Item>
                                 </DropdownButton>
                             </InputGroup>
                             <Form.Text>
                                 <span className="text-muted">Bigger pays better</span>
                                 <div className="float-right" variant="info" >
-                                    <HexNum value={this.state.availableBalance.div(1e8)} /> HEX available
+                                    <HexNum value={this.state.availableBalance} showUnit /> available
                                 </div>
                             </Form.Text>
                         </Form.Group>
@@ -218,9 +266,28 @@ class NewStakeForm extends React.Component {
                                     aria-label="number of days to stake"
                                     onChange={handleDaysChange} 
                                 />
-                                <InputGroup.Append>
-                                    <InputGroup.Text className="numeric">DAYS</InputGroup.Text>
-                                </InputGroup.Append>
+                                <DropdownButton
+                                    as={InputGroup.Append}
+                                    drop="right"
+                                    variant="secondary"
+                                    key="days_selector"
+                                    title="DAYS"
+                                    id="input-group-dropdown-2"
+                                    onSelect={handleDaysSelector}
+                                    className="numeric"
+                                >
+                                    <Dropdown.Item as="button" eventKey="new_stake" data-days="max">MAX (about 15yrs & 11wks)</Dropdown.Item>
+                                    <Dropdown.Item as="button" eventKey="new_stake" data-days="10y">Ten Years</Dropdown.Item>
+                                    <Dropdown.Item as="button" eventKey="new_stake" data-days="5y">Five Years</Dropdown.Item>
+                                    <Dropdown.Item as="button" eventKey="new_stake" data-days="3y">Three Years</Dropdown.Item>
+                                    <Dropdown.Item as="button" eventKey="new_stake" data-days="2y">Two Years</Dropdown.Item>
+                                    <Dropdown.Item as="button" eventKey="new_stake" data-days="1y">One Year</Dropdown.Item>
+                                    <Dropdown.Item as="button" eventKey="new_stake" data-days="6m">Six Months</Dropdown.Item>
+                                    <Dropdown.Item as="button" eventKey="new_stake" data-days="3m">Three Months</Dropdown.Item>
+                                    <Dropdown.Item as="button" eventKey="new_stake" data-days="1m">One Month)</Dropdown.Item>
+                                    <Dropdown.Item as="button" eventKey="new_stake" data-days="1w">One Week</Dropdown.Item>
+                                    <Dropdown.Item as="button" eventKey="new_stake" data-days="min">MIN (one day)</Dropdown.Item>
+                                </DropdownButton>
                             </InputGroup>
                             <Form.Text className="text-muted">
                                 Longer pays better (max 5555)
@@ -228,27 +295,27 @@ class NewStakeForm extends React.Component {
                         </Form.Group>
                         <Row>
                             <Col md={6} className="text-right">Start Day:</Col>
-                            <Col md={3} className="text-right">{ currentDay + 1 }</Col>
+                            <Col md={3} className="text-right numeric">{ currentDay + 1 }</Col>
                         </Row>
                         <Row>
                             <Col md={6} className="text-right">Last Full Day:</Col>
-                            <Col md={3} className="text-right">{ this.state.lastFullDay }</Col>
+                            <Col md={3} className="text-right numeric">{ this.state.lastFullDay }</Col>
                         </Row>
                         <Row>
                             <Col md={6} className="text-right">End Day:</Col>
-                            <Col md={3} className="text-right">{ this.state.endDay }</Col>
+                            <Col md={3} className="text-right numeric">{ this.state.endDay }</Col>
                         </Row>
                     </Col>
                     <Col>
                         <Container>
                             <h4>Bonuses</h4>
                             <Row>
-                                <Col className="ml-3">Longer Pays Better:</Col>
-                                <Col sm={5} className="text-right">+ <HexNum value={this.state.longerPaysBetter.toFixed(0)} showUnit /></Col>
-                            </Row>
-                            <Row>
                                 <Col className="ml-3">Bigger Pays Better:</Col>
                                 <Col sm={5} className="text-right">+ <HexNum value={this.state.biggerPaysBetter} showUnit /></Col>
+                            </Row>
+                            <Row>
+                                <Col className="ml-3">Longer Pays Better:</Col>
+                                <Col sm={5} className="text-right">+ <HexNum value={this.state.longerPaysBetter.toFixed(0)} showUnit /></Col>
                             </Row>
                             <Row>
                                 <Col className="ml-3"><strong>Total:</strong></Col>
@@ -260,7 +327,7 @@ class NewStakeForm extends React.Component {
                             </Row>
                             <Row className="mt-3">
                                 <Col><strong>Share Rate:</strong></Col>
-                                <Col sm={5} className="text-right"><HexNum value={this.state.shareRate} /> / HEX</Col>
+                                <Col sm={5} className="text-right"><HexNum value={this.state.shareRate.times(1e8/*fudge non-HEX val for desired display*/)} /> / HEX</Col>
                             </Row>
                             <Row>
                                 <Col><strong>Stake Shares:</strong> <sup><Badge variant="info" pill>?</Badge></sup></Col>
@@ -271,19 +338,27 @@ class NewStakeForm extends React.Component {
                         { (currentDay < (BigPayDay - 1)) && (
                         <Container className="bg-secondary rounded mt-2 pt-2 pb-2">
                             <Row>
-                                <Col><strong className="text-info">BigPayDay:</strong> <sup><Badge variant="info" pill>?</Badge></sup></Col>
+                                <Col>
+                                    <strong>
+                                        <span className="text-info">Big</span>
+                                        <span className="text-warning">Pay</span>
+                                        <span className="text-danger">Day</span>
+                                    </strong> 
+                                    {' '}
+                                    <sup><Badge variant="info" pill>?</Badge></sup>
+                                </Col>
                                 <Col className="text-right"><HexNum value={this.state.bigPayDay} /> HEX</Col>
                             </Row>
                             <Row>
-                                <Col>% Gain<span className="text-warning">*</span>: <sup><Badge variant="info" pill>?</Badge></sup></Col>
+                                <Col>% Gain<span className="text-info">*</span>: <sup><Badge variant="info" pill>?</Badge></sup></Col>
                                 <Col className="text-right"><HexNum value={this.state.percentGain} />%</Col>
                             </Row>
                             <Row>
-                                <Col>% APY<span className="text-warning">*</span>: <sup><Badge variant="info" pill>?</Badge></sup></Col>
+                                <Col>% APY<span className="text-info">*</span>: <sup><Badge variant="info" pill>?</Badge></sup></Col>
                                 <Col className="text-right"><HexNum value={this.state.percentAPY} />%</Col>
                             </Row>
                             <Row>
-                                <Col className="pt-2"><span className="text-warning">*</span> <em>If stake still open on BigPayDay</em></Col>
+                                <Col className="pt-2"><span className="text-info">*</span> <em>If stake still open on BigPayDay</em></Col>
                             </Row>
                         </Container>
                         ) }
@@ -313,10 +388,11 @@ class Stakes extends React.Component {
             showExitModal: false,
         }
     }
-    static getDerivedStateFromProps(nextProps, prevState) {
+    static getDerivedStateFromProps(newProps, prevState) {
         return { 
-            address: nextProps.context.walletAddress,
-            availableBalance: new BigNumber(nextProps.context.walletHEX)
+            address: newProps.context.walletAddress,
+            availableBalance: new BigNumber(newProps.context.walletHEX),
+            contractData: newProps.context.contractData
         }
     }
 
@@ -373,11 +449,7 @@ class Stakes extends React.Component {
 
     updateStakePayout(_stakeData) {
         
-        const { 
-            CLAIMABLE_BTC_ADDR_COUNT, 
-            CLAIMABLE_SATOSHIS_TOTAL, 
-            HEARTS_PER_SATOSHI, 
-            BIG_PAY_DAY,
+        const {
             currentDay, 
             allocatedSupply, 
             globals 
@@ -393,8 +465,8 @@ class Stakes extends React.Component {
         .then((dailyData) => {
 
             const calcAdoptionBonus = (bigPayDaySlice) => {
-                const viral = bigPayDaySlice.times(claimedBtcAddrCount).idiv(CLAIMABLE_BTC_ADDR_COUNT)
-                const criticalMass = bigPayDaySlice.times(claimedSatoshisTotal).idiv(CLAIMABLE_SATOSHIS_TOTAL)
+                const viral = bigPayDaySlice.times(claimedBtcAddrCount).idiv(HEX.CLAIMABLE_BTC_ADDR_COUNT)
+                const criticalMass = bigPayDaySlice.times(claimedSatoshisTotal).idiv(HEX.CLAIMABLE_SATOSHIS_TOTAL)
                 const bonus = viral.plus(criticalMass)
                 return bonus
             }
@@ -421,11 +493,11 @@ class Stakes extends React.Component {
                 
                 stakeData.payout = stakeData.payout.plus(day.payoutTotal.times(stakeData.stakeShares).idiv(day.stakeSharesTotal))
 
-                if (startDay <= BIG_PAY_DAY && endDay > BIG_PAY_DAY) {
-                    const bigPaySlice = day.unclaimedSatoshisTotal.times(HEARTS_PER_SATOSHI).times(stakeData.stakeShares).idiv(globals.stakeSharesTotal)
+                if (startDay <= HEX.BIG_PAY_DAY && endDay > HEX.BIG_PAY_DAY) {
+                    const bigPaySlice = day.unclaimedSatoshisTotal.times(HEX.HEARTS_PER_SATOSHI).times(stakeData.stakeShares).idiv(globals.stakeSharesTotal)
                     const bonuses = calcAdoptionBonus(bigPaySlice)
                     stakeData.bigPayDay = bigPaySlice.plus(bonuses)
-                    if (startDay + dayNumber === BIG_PAY_DAY) stakeData.payout = stakeData.payout.plus(stakeData.bigPayDay.plus(bonuses))
+                    if (startDay + dayNumber === HEX.BIG_PAY_DAY) stakeData.payout = stakeData.payout.plus(stakeData.bigPayDay.plus(bonuses))
                 }
 
             })

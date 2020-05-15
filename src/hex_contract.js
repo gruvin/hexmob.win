@@ -1,5 +1,47 @@
-module.exports = {
+import { BigNumber } from 'bignumber.js'
+
+const START_DATE = new Date('2019-12-02 00:00:00 UTC')
+const CLAIM_PHASE_START_DAY =  1
+const CLAIM_PHASE_DAYS =  (7 * 50)
+const CLAIM_PHASE_END_DAY =  CLAIM_PHASE_START_DAY + CLAIM_PHASE_DAYS
+const BIG_PAY_DAY =  CLAIM_PHASE_END_DAY + 1
+const CLAIMABLE_BTC_ADDR_COUNT =  new BigNumber('27997742')
+const CLAIMABLE_SATOSHIS_TOTAL =  new BigNumber('910087996911001')
+const HEARTS_PER_SATOSHI =  10000
+const TOPIC_HASH_TRANSFER = "0xddf252ad1be2c89b69c2b068fc378daa952ba7f163c4a11628f55a4df523b3ef"
+
+const LPB_BONUS_PERCENT = 20
+const LPB_BONUS_MAX_PERCENT = new BigNumber(200)
+const LPB = new BigNumber(364).times(100).idiv(LPB_BONUS_PERCENT)
+const LPB_MAX_DAYS = LPB.times(LPB_BONUS_MAX_PERCENT).idiv(100)
+
+const HEARTS_PER_HEX = 1e8
+const BPB_BONUS_PERCENT = 10
+const BPB_MAX_HEX = new BigNumber(150).times(1e6)
+const BPB_MAX_HEARTS = BPB_MAX_HEX.times(HEARTS_PER_HEX)
+const BPB = BPB_MAX_HEARTS.times(100).idiv(BPB_BONUS_PERCENT)
+
+export default {
     ContractAddress: "0x2b591e99afe9f32eaa6214f7b7629768c40eeb39",
+    START_DATE,
+    CLAIM_PHASE_START_DAY,
+    CLAIM_PHASE_DAYS,
+    CLAIM_PHASE_END_DAY,
+    BIG_PAY_DAY,
+    CLAIMABLE_BTC_ADDR_COUNT,
+    CLAIMABLE_SATOSHIS_TOTAL,
+    HEARTS_PER_SATOSHI,
+    TOPIC_HASH_TRANSFER,
+    LPB_BONUS_PERCENT,
+    LPB_BONUS_MAX_PERCENT,
+    LPB,
+    LPB_MAX_DAYS,
+    HEARTS_PER_HEX,
+    BPB_BONUS_PERCENT,
+    BPB_MAX_HEX,
+    BPB_MAX_HEARTS,
+    BPB,
+
     ABI: [{
         "inputs": [],
         "payable": false,

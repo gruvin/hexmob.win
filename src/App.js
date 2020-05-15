@@ -8,7 +8,7 @@ import Web3 from "web3";
 import Web3Modal from "web3modal";
 import WalletConnectProvider from "@walletconnect/web3-provider";
 
-import { ContractAddress, ABI } from './hex_contract.js'
+import HEX from './hex_contract.js'
 
 import './App.scss'
 
@@ -92,7 +92,7 @@ class App extends React.Component {
 
     subscribeTransfers = () => {
         this.wssInSubscription = this.web3.eth.subscribe('logs', {
-            address: ContractAddress,
+            address: HEX.ContractAddress,
             topics: [
                 this.state.contractData.TOPIC_HASH_TRANSFER,
                 null,
@@ -104,7 +104,7 @@ class App extends React.Component {
             this.updateHEXBalance()
         });
         this.wssOutSubscription = this.web3.eth.subscribe('logs', {
-            address: ContractAddress,
+            address: HEX.ContractAddress,
             topics: [
                 this.state.contractData.TOPIC_HASH_TRANSFER,
                 '0x' + this.state.walletAddress.slice(2).toLowerCase().padStart(64, '0')
@@ -152,16 +152,16 @@ class App extends React.Component {
 
             this.setState({ walletAddress }, () => {
 
-                this.contract = new this.web3.eth.Contract(ABI, ContractAddress)
+                this.contract = new this.web3.eth.Contract(HEX.ABI, HEX.ContractAddress)
                 this.setState({
                     walletConnected: true 
                 })
 
                 
                 Promise.all([
-                    this.contract.methods.allocatedSupply().call(),
-                    this.contract.methods.currentDay().call(),
-                    this.contract.methods.globals().call()
+                    this.contract.methods.allocatedSupply().call(),  // [0]
+                    this.contract.methods.currentDay().call(),       // [1]
+                    this.contract.methods.globals().call()           // [2]
                 ]).then((results) => {
                     const allocatedSupply = new BigNumber(results[0])
                     const currentDay = Number(results[1])
@@ -171,6 +171,7 @@ class App extends React.Component {
                     for (const k in rawGlobals) {
                         if (isNaN(k)) globals[k] = new BigNumber(rawGlobals[k]);
                     }
+
                     // decode claimstats
                     const SATOSHI_UINT_SIZE = 51 // bits
                     let binaryClaimStats = globals.claimStats.toString(2).padStart(153, '0')
@@ -183,25 +184,7 @@ class App extends React.Component {
                         unclaimedSatoshisTotal: new BigNumber(c, 2)
                     }
 
-                    const START_DATE = new Date('2019-12-02 00:00:00 UTC')
-                    const CLAIM_PHASE_START_DAY =  1
-                    const CLAIM_PHASE_DAYS =  (7 * 50)
-                    const CLAIM_PHASE_END_DAY =  CLAIM_PHASE_START_DAY + CLAIM_PHASE_DAYS
-                    const BIG_PAY_DAY =  CLAIM_PHASE_END_DAY + 1
-                    const CLAIMABLE_BTC_ADDR_COUNT =  new BigNumber('27997742')
-                    const CLAIMABLE_SATOSHIS_TOTAL =  new BigNumber('910087996911001')
-                    const HEARTS_PER_SATOSHI =  10000
-                    const TOPIC_HASH_TRANSFER = "0xddf252ad1be2c89b69c2b068fc378daa952ba7f163c4a11628f55a4df523b3ef"
                     let contractData = { 
-                        START_DATE,
-                        CLAIM_PHASE_START_DAY,
-                        CLAIM_PHASE_DAYS,
-                        CLAIM_PHASE_END_DAY,
-                        BIG_PAY_DAY,
-                        CLAIMABLE_BTC_ADDR_COUNT,
-                        CLAIMABLE_SATOSHIS_TOTAL,
-                        HEARTS_PER_SATOSHI,
-                        TOPIC_HASH_TRANSFER,
                         allocatedSupply,
                         currentDay,
                         globals,

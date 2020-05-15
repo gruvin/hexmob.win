@@ -10,6 +10,7 @@
     "@walletconnect/web3-provider": "^1.0.0-beta.47",
     "bootstrap": "^4.5.0",
     "d3-format": "^1.4.4",
+    "debug": "^4.1.1",
     "intl": "^1.2.5",
     "node-sass": "^4.14.1",
     "prop-types": "^15.7.2",
