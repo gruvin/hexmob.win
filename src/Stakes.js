@@ -579,10 +579,7 @@ class Stakes extends React.Component {
     }
 
     CurrentStakesTable = () => {
-        const { 
-            START_DATE,
-            currentDay
-        } = this.state.contractData
+        const { currentDay } = this.state.contractData
 
         const handleShow = (stakeData) => {
             this.setState({
@@ -614,10 +611,10 @@ class Stakes extends React.Component {
                             
                             const startDay = stakeData.lockedDay
                             const endDay = startDay + stakeData.stakedDays
-                            const startDate = new Date(START_DATE)
-                            const endDate = new Date(START_DATE)
-                            startDate.setDate(startDate.getDate() + startDay)
-                            endDate.setDate(endDate.getDate() + endDay)
+                            const startDate = new Date(HEX.START_DATE) // UTC but is converted to local
+                            const endDate = new Date(HEX.START_DATE)
+                            startDate.setUTCDate(startDate.getUTCDate() + startDay)
+                            endDate.setUTCDate(endDate.getUTCDate() + endDay)
 
                             return (typeof stakeData === 'object') ? 
                             (
@@ -632,7 +629,7 @@ class Stakes extends React.Component {
                                                 </Tooltip>
                                             }
                                         >
-                                            <div>{ startDay }</div>
+                                            <div>{ startDay + 1 }</div>
                                         </OverlayTrigger>
                                     </td>
                                     <td className="text-center">
@@ -645,7 +642,7 @@ class Stakes extends React.Component {
                                                 </Tooltip>
                                             }
                                         >
-                                            <div>{ endDay }</div>
+                                            <div>{ endDay + 1 }</div>
                                         </OverlayTrigger>
                                     </td>
                                     <td className="text-center">{ stakeData.stakedDays }</td>
