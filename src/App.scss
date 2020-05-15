@@ -49,5 +49,12 @@ body {
     font-family: "Happy Monkey", Arial, sans-serif;
     font-size: 1.1em;
     font-weight: bold;
-    max-width: 30em
+    max-width: 30em;
+    padding: 1em;
+    border-radius: 5px;
+    color: map-get($theme-colors, info);
+    background-color: map-get($theme-colors, secondary);
+}
+.tooltip.show {
+    opacity: 0.95;
 }

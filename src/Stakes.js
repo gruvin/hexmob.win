@@ -322,15 +322,15 @@ class NewStakeForm extends React.Component {
                             </Form.Text>
                         </Form.Group>
                         <Row>
-                            <Col md={6} className="text-right">Start Day:</Col>
+                            <Col md={6} className="text-right">Start Day</Col>
                             <Col md={3} className="text-right numeric">{ format(',')(currentDay + 1) }</Col>
                         </Row>
                         <Row>
-                            <Col md={6} className="text-right">Last Full Day:</Col>
+                            <Col md={6} className="text-right">Last Full Day</Col>
                             <Col md={3} className="text-right numeric">{ isNaN(this.state.lastFullDay) ? '---' : format(',')(this.state.lastFullDay) }</Col>
                         </Row>
                         <Row>
-                            <Col md={6} className="text-right">End Day:</Col>
+                            <Col md={6} className="text-right">End Day</Col>
                             <Col md={3} className="text-right numeric">{ isNaN(this.state.endDay) ? '---' : format(',')(this.state.endDay) }</Col>
                         </Row>
                     </Col>
@@ -338,11 +338,11 @@ class NewStakeForm extends React.Component {
                         <Container>
                             <h4>Bonuses</h4>
                             <Row>
-                                <Col className="ml-3">Bigger Pays Better:</Col>
+                                <Col className="ml-3">Bigger Pays Better</Col>
                                 <Col sm={5} className="text-right">+ <HexNum value={this.state.biggerPaysBetter} showUnit /></Col>
                             </Row>
                             <Row>
-                                <Col className="ml-3">Longer Pays Better:</Col>
+                                <Col className="ml-3">Longer Pays Better</Col>
                                 <Col sm={5} className="text-right">+ <HexNum value={this.state.longerPaysBetter.toFixed(0)} showUnit /></Col>
                             </Row>
                             <Row>
@@ -363,7 +363,7 @@ class NewStakeForm extends React.Component {
                                 <Col sm={5} className="text-right"><HexNum value={this.state.effectiveHEX} /> HEX</Col>
                             </Row>
                             <Row className="mt-3">
-                                <Col><strong>Share Rate:</strong></Col>
+                                <Col><strong>Share Rate</strong></Col>
                                 <Col sm={5} className="text-right"><HexNum value={this.state.shareRate.times(1e8/*fudge non-HEX val for desired display*/)} /> / HEX</Col>
                             </Row>
                             <Row>
