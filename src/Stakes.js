@@ -36,7 +36,7 @@ const HexNum = (props) => {
     let unit = ' HEX'
     let s
     if (v.isZero())         s = '0.000'
-    else if (v.lt(1e6))     { unit = ' Hearts'; s = format(',')(v) }
+    else if (v.lt(1e5))     { unit = ' Hearts'; s = format(',')(v) }
     else if (v.lt(1e11))    s = format(',')(v.div( 1e08).toFixed(3, 1))
     else if (v.lt(1e14))    s = format(',')(v.div( 1e08).toFixed(0, 1))
     else if (v.lt(1e17))    s = format(',.3f')(v.div( 1e14).toFixed(3, 1))+'M'
