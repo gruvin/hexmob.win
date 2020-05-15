@@ -77,6 +77,22 @@ const HexNum = (props) => {
             return ( <div className="numeric">{s}{unit}</div> )
 }
 
+const WhatIsThis = (props) => {
+    return (
+        <OverlayTrigger
+            show={true}
+            placement="top"
+            overlay={
+                <Tooltip>
+                    {props.children}
+                </Tooltip>
+            }
+        >
+            <sup><Badge variant="info" pill>?</Badge></sup>
+        </OverlayTrigger>
+    )
+}
+
 class NewStakeForm extends React.Component {
     constructor(props) {
         super(props)
@@ -87,8 +103,8 @@ class NewStakeForm extends React.Component {
             contractData: props.context.contractData,
             stakeAmount: null,
             stakeDays: null,
-            lastFullDay: '',
-            endDay: '',
+            lastFullDay: '---',
+            endDay: '---',
             longerPaysBetter: new BigNumber(0), // Hearts
             biggerPaysBetter: new BigNumber(0),
             bonusTotal: new BigNumber(0),
@@ -177,8 +193,8 @@ class NewStakeForm extends React.Component {
             if (stakeDays && stakeDays > 5555) stakeDays = 5555
             this.setState({
                 stakeDays,
-                lastFullDay: stakeDays ? currentDay + stakeDays : '',
-                endDay: stakeDays ? currentDay + stakeDays + 1 : '',
+                lastFullDay: stakeDays ? currentDay + stakeDays : '---',
+                endDay: stakeDays ? currentDay + stakeDays + 1 : '---',
             }, updateFigures)
         }
         
@@ -307,15 +323,15 @@ class NewStakeForm extends React.Component {
                         </Form.Group>
                         <Row>
                             <Col md={6} className="text-right">Start Day:</Col>
-                            <Col md={3} className="text-right numeric" tooltip="days since contract launch (UTC)">{ currentDay + 1 }</Col>
+                            <Col md={3} className="text-right numeric">{ format(',')(currentDay + 1) }</Col>
                         </Row>
                         <Row>
                             <Col md={6} className="text-right">Last Full Day:</Col>
-                            <Col md={3} className="text-right numeric">{ this.state.lastFullDay }</Col>
+                            <Col md={3} className="text-right numeric">{ isNaN(this.state.lastFullDay) ? '---' : format(',')(this.state.lastFullDay) }</Col>
                         </Row>
                         <Row>
                             <Col md={6} className="text-right">End Day:</Col>
-                            <Col md={3} className="text-right numeric">{ this.state.endDay }</Col>
+                            <Col md={3} className="text-right numeric">{ isNaN(this.state.endDay) ? '---' : format(',')(this.state.endDay) }</Col>
                         </Row>
                     </Col>
                     <Col>
@@ -330,11 +346,20 @@ class NewStakeForm extends React.Component {
                                 <Col sm={5} className="text-right">+ <HexNum value={this.state.longerPaysBetter.toFixed(0)} showUnit /></Col>
                             </Row>
                             <Row>
-                                <Col className="ml-3"><strong>Total:</strong></Col>
+                                <Col className="ml-3"><strong>Total</strong></Col>
                                 <Col sm={5} className="text-right"><HexNum value={this.state.bonusTotal} /> HEX</Col>
                             </Row>
                             <Row className="mt-2">
-                                <Col><strong>Effective HEX:</strong> <sup><Badge variant="info" pill>?</Badge></sup></Col>
+                                <Col>
+                                    <strong>Effective HEX</strong>
+                                    <WhatIsThis>
+                                        Effective HEX
+                                        <span className="text-success"> = </span>
+                                        Stake Amount in HEX
+                                        <span className="text-success"> + </span>
+                                        Stake Bonuses
+                                    </WhatIsThis>
+                                    </Col>
                                 <Col sm={5} className="text-right"><HexNum value={this.state.effectiveHEX} /> HEX</Col>
                             </Row>
                             <Row className="mt-3">
@@ -342,7 +367,16 @@ class NewStakeForm extends React.Component {
                                 <Col sm={5} className="text-right"><HexNum value={this.state.shareRate.times(1e8/*fudge non-HEX val for desired display*/)} /> / HEX</Col>
                             </Row>
                             <Row>
-                                <Col><strong>Stake Shares:</strong> <sup><Badge variant="info" pill>?</Badge></sup></Col>
+                                <Col>
+                                    <strong>Stake Shares</strong>
+                                    <WhatIsThis>
+                                        Stake Shares
+                                        <span className="text-success"> = </span>
+                                        Effective HEX
+                                        <span className="text-success"> x </span>
+                                        Stake Bonuses
+                                    </WhatIsThis>{' '}
+                                </Col>
                                 <Col sm={5} className="text-right"><HexNum value={this.state.stakeShares} /></Col>
                             </Row>
                         </Container>
@@ -357,16 +391,19 @@ class NewStakeForm extends React.Component {
                                         <span className="text-danger">Day</span>
                                     </strong> 
                                     {' '}
-                                    <sup><Badge variant="info" pill>?</Badge></sup>
+                                    <WhatIsThis>
+                                        Reduces as others start new stakes.<br/>
+                                        Increases as others end their stakes.
+                                    </WhatIsThis>
                                 </Col>
                                 <Col className="text-right"><HexNum value={this.state.bigPayDay} /> HEX</Col>
                             </Row>
                             <Row>
-                                <Col>% Gain<span className="text-info">*</span>: <sup><Badge variant="info" pill>?</Badge></sup></Col>
+                                <Col>% Gain<span className="text-info">*</span> </Col>
                                 <Col className="text-right"><HexNum value={this.state.percentGain} />%</Col>
                             </Row>
                             <Row>
-                                <Col>% APY<span className="text-info">*</span>: <sup><Badge variant="info" pill>?</Badge></sup></Col>
+                                <Col>% APY<span className="text-info">*</span></Col>
                                 <Col className="text-right"><HexNum value={this.state.percentAPY} />%</Col>
                             </Row>
                             <Row>

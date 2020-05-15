@@ -44,3 +44,10 @@ body {
 }
 
 .accordion>.card .card-header { cursor: pointer; }
+
+.tooltip-inner {
+    font-family: "Happy Monkey", Arial, sans-serif;
+    font-size: 1.1em;
+    font-weight: bold;
+    max-width: 30em
+}
