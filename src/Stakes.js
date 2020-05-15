@@ -25,7 +25,6 @@ import { format } from 'd3-format'
 import HEX from './hex_contract.js'
 const debug = require('debug')('Stakes')
 debug('loading')
-window.BigNumber = BigNumber
 
 /*
  * displays unitized .3 U formatted values (eg. 12.345 M) with 50% opacity for fractional part
@@ -34,32 +33,20 @@ const HexNum = (props) => {
     let v = new BigNumber(props.value) 
     if (isNaN(v)) return ( <>NaN</> )
 
-    let unit
+    let unit = ''
+    if (props.showUnit) unit = v.lt(1e6) ? ' Hearts' : ' HEX'
+
     let s
-    if (v.lt(1e6) && !v.isZero()) {
-        s = format(',')(v.toString())
-        unit = props.showUnit && ' Hearts'
-    } else {
-        v = v.div(1e8)
-        unit = props.showUnit && ' HEX'
-        if (v.lt(1e3)) s = format(',.3f')(v.toFixed(3, 1)) // don't want Kilo
-        else if (v.lt(1e5)) s = format(',.0f')(v.toPrecision(5, 1))   // d3-format cannot be told to floor instead of round. *yawn*
-        else if (v.lt(1e6)) s = format(',.0f')(v.toPrecision(6, 1))
-        else if (v.lt(1e7)) s = format(',.5s')(v.toPrecision(5, 1))   // Mega  ...
-        else if (v.lt(1e8)) s = format(',.5s')(v.toPrecision(6, 1))
-        else if (v.lt(1e9)) s = format(',.5s')(v.toPrecision(7, 1))
-        else if (v.lt(1e10)) s = format(',.5s')(v.toPrecision(8, 1))  // Giga ...
-        else if (v.lt(1e11)) s = format(',.5s')(v.toPrecision(9, 1))
-        else if (v.lt(1e12)) s = format(',.5s')(v.toPrecision(10, 1))
-        else if (v.lt(1e13)) s = format(',.5s')(v.toPrecision(11, 1))  // Tera ...
-        else if (v.lt(1e14)) s = format(',.5s')(v.toPrecision(12, 1))
-        else if (v.lt(1e15)) s = format(',.5s')(v.toPrecision(13, 1))
-        else if (v.lt(1e16)) s = format(',.5s')(v.toPrecision(14, 1))  // Peta (enough for a Mellowpuff™)
-        else if (v.lt(1e17)) s = format(',.5s')(v.toPrecision(15, 1))
-        else if (v.lt(1e18)) s = format(',.5s')(v.toPrecision(16, 1))
-        else s = format(',.5s')(v.toString())
-    }
-    
+    if (v.lt(1e6))          s = format(',')(v)
+    else if (v.lt(1e11))    s = format(',')(v.div( 1e08).toFixed(3, 1))
+    else if (v.lt(1e14))    s = format(',')(v.div( 1e08).toFixed(0, 1))
+    else if (v.lt(1e17))    s = format(',.3f')(v.div( 1e14).toFixed(3, 1))+'M'
+    else if (v.lt(1e20))    s = format(',.3f')(v.div( 1e17).toFixed(3, 1))+'B'
+    else if (v.lt(1e23))    s = format(',.3f')(v.div( 1e20).toFixed(3, 1))+'T'
+    else if (v.lt(1e26))    s = format(',.3f')(v.div( 1e23).toFixed(3, 1))+'P'
+    else if (v.lt(1e29))    s = format(',.3f')(v.div( 1e26).toFixed(3, 1))+'P'
+    else s = 'OVF'
+
     // fade fractional part (including the period)
     const r = s.match(/^(.*)(\.\d+)(.*)$/) 
     if (r && r.length > 1)
@@ -75,6 +62,14 @@ const HexNum = (props) => {
         ) 
         else 
             return ( <div className="numeric">{s}{unit}</div> )
+}
+
+const calcAdoptionBonus = (bigPayDaySlice, _globals) => {
+    const { claimedSatoshisTotal, claimedBtcAddrCount } = _globals.claimStats
+    const viral = bigPayDaySlice.times(claimedBtcAddrCount).idiv(HEX.CLAIMABLE_BTC_ADDR_COUNT)
+    const criticalMass = bigPayDaySlice.times(claimedSatoshisTotal).idiv(HEX.CLAIMABLE_SATOSHIS_TOTAL)
+    const bonus = viral.plus(criticalMass)
+    return bonus
 }
 
 const WhatIsThis = (props) => {
@@ -165,15 +160,27 @@ class NewStakeForm extends React.Component {
             const bonusTotal = longerPaysBetter.plus(biggerPaysBetter)
             const effectiveHEX = stakeAmount.plus(bonusTotal)
             const _shareRate = this.state.contractData.globals.shareRate || 100000
-            const shareRate = new BigNumber('100000').div(_shareRate).times(1e8)
+            const shareRate = new BigNumber('100000').div(_shareRate)
             const stakeShares = effectiveHEX.times(shareRate)
+
+            const { globals } = this.state.contractData
+            const bigPaySlice = globals.claimStats.unclaimedSatoshisTotal.times(HEX.HEARTS_PER_SATOSHI).times(stakeShares).idiv(globals.stakeSharesTotal)
+            const bigPayDay = bigPaySlice.plus(calcAdoptionBonus(bigPaySlice, globals))
+            debug(bigPayDay.toString())
+
+            const percentGain = 100
+            const percentAPY = 100
+
             this.setState({
                 longerPaysBetter,
                 biggerPaysBetter,
                 bonusTotal,
                 effectiveHEX,
                 shareRate,
-                stakeShares
+                stakeShares,
+                bigPayDay,
+                percentGain,
+                percentAPY
             })
         }
 
@@ -364,7 +371,10 @@ class NewStakeForm extends React.Component {
                             </Row>
                             <Row className="mt-3">
                                 <Col><strong>Share Rate</strong></Col>
-                                <Col sm={5} className="text-right"><HexNum value={this.state.shareRate.times(1e8/*fudge non-HEX val for desired display*/)} /> / HEX</Col>
+                                <Col sm={5} className="text-right">
+                                    <HexNum value={this.state.shareRate.times(1e8/*fudge non-HEX unit for desired display*/)} />
+                                    {' '}/ HEX
+                                </Col>
                             </Row>
                             <Row>
                                 <Col>
@@ -377,7 +387,9 @@ class NewStakeForm extends React.Component {
                                         Stake Bonuses
                                     </WhatIsThis>{' '}
                                 </Col>
-                                <Col sm={5} className="text-right"><HexNum value={this.state.stakeShares} /></Col>
+                                <Col sm={5} className="text-right">
+                                    <HexNum value={this.state.stakeShares.times(1e8/*fudge non-HEX unit for desired display*/)} />
+                                </Col>
                             </Row>
                         </Container>
 
@@ -503,7 +515,6 @@ class Stakes extends React.Component {
             allocatedSupply, 
             globals 
         } = this.state.contractData
-        const { claimedSatoshisTotal, claimedBtcAddrCount } = globals.claimStats
 
         const stakeData = { ..._stakeData }
         const startDay = stakeData.lockedDay
@@ -513,17 +524,10 @@ class Stakes extends React.Component {
         this.contract.methods.dailyDataRange(startDay, Math.min(currentDay, endDay)).call()
         .then((dailyData) => {
 
-            const calcAdoptionBonus = (bigPayDaySlice) => {
-                const viral = bigPayDaySlice.times(claimedBtcAddrCount).idiv(HEX.CLAIMABLE_BTC_ADDR_COUNT)
-                const criticalMass = bigPayDaySlice.times(claimedSatoshisTotal).idiv(HEX.CLAIMABLE_SATOSHIS_TOTAL)
-                const bonus = viral.plus(criticalMass)
-                return bonus
-            }
-
             const calcDailyBonus = (shares, sharesTotal) => {
                 // HEX mints 0.009955% daily interest (3.69%pa) and statkers get adoption bonuses from that each day
                 const dailyInterest = allocatedSupply.times(10000).idiv(100448995) // .sol line: 1243 
-                const bonus = shares.times(dailyInterest.plus(calcAdoptionBonus(dailyInterest))).idiv(sharesTotal)
+                const bonus = shares.times(dailyInterest.plus(calcAdoptionBonus(dailyInterest, globals))).idiv(sharesTotal)
                 return bonus
             }
 
@@ -544,9 +548,9 @@ class Stakes extends React.Component {
 
                 if (startDay <= HEX.BIG_PAY_DAY && endDay > HEX.BIG_PAY_DAY) {
                     const bigPaySlice = day.unclaimedSatoshisTotal.times(HEX.HEARTS_PER_SATOSHI).times(stakeData.stakeShares).idiv(globals.stakeSharesTotal)
-                    const bonuses = calcAdoptionBonus(bigPaySlice)
-                    stakeData.bigPayDay = bigPaySlice.plus(bonuses)
-                    if (startDay + dayNumber === HEX.BIG_PAY_DAY) stakeData.payout = stakeData.payout.plus(stakeData.bigPayDay.plus(bonuses))
+                    const bonuses = calcAdoptionBonus(bigPaySlice, globals)
+                    stakeData.bigPayDay = bigPaySlice.plus(bonuses) // replace with this 'latest day so far' value
+                    if (startDay + dayNumber === HEX.BIG_PAY_DAY) stakeData.payout = stakeData.payout.plus(stakeData.bigPayDay)
                 }
 
             })
