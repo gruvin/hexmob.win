@@ -34,7 +34,7 @@ const HexNum = (props) => {
     if (isNaN(v)) return ( <>NaN</> )
 
     let unit = ''
-    if (props.showUnit) unit = v.lt(1e6) ? ' Hearts' : ' HEX'
+    if (props.showUnit) unit = (v.lt(1e6) && !v.isZero()) ? ' Hearts' : ' HEX'
 
     let s
     if (v.lt(1e6))          s = format(',')(v)
@@ -166,7 +166,6 @@ class NewStakeForm extends React.Component {
             const { globals } = this.state.contractData
             const bigPaySlice = globals.claimStats.unclaimedSatoshisTotal.times(HEX.HEARTS_PER_SATOSHI).times(stakeShares).idiv(globals.stakeSharesTotal)
             const bigPayDay = bigPaySlice.plus(calcAdoptionBonus(bigPaySlice, globals))
-            debug(bigPayDay.toString())
 
             const percentGain = 100
             const percentAPY = 100
