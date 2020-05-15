@@ -23,8 +23,9 @@ import './Stakes.scss'
 import { BigNumber } from 'bignumber.js'
 import { format } from 'd3-format'
 import HEX from './hex_contract.js'
-
 const debug = require('debug')('Stakes')
+debug('loading')
+window.BigNumber = BigNumber
 
 /*
  * displays unitized .3 U formatted values (eg. 12.345 M) with 50% opacity for fractional part
@@ -35,15 +36,31 @@ const HexNum = (props) => {
 
     let unit
     let s
-    if (v.gte(1e6) || v.isZero()) {
-        v = v.div(1e8)
-        s = format(v.lt(1e6) ? (v.lt(1e3) ? ",.3f" : ",.0f") : ",.5s")(v.toString())
-        unit = props.showUnit && ' HEX'
-    } else {
+    if (v.lt(1e6) && !v.isZero()) {
         s = format(',')(v.toString())
         unit = props.showUnit && ' Hearts'
+    } else {
+        v = v.div(1e8)
+        unit = props.showUnit && ' HEX'
+        if (v.lt(1e3)) s = format(',.3f')(v.toFixed(3, 1)) // don't want Kilo
+        else if (v.lt(1e5)) s = format(',.0f')(v.toPrecision(5, 1))   // d3-format cannot be told to floor instead of round. *yawn*
+        else if (v.lt(1e6)) s = format(',.0f')(v.toPrecision(6, 1))
+        else if (v.lt(1e7)) s = format(',.5s')(v.toPrecision(5, 1))   // Mega  ...
+        else if (v.lt(1e8)) s = format(',.5s')(v.toPrecision(6, 1))
+        else if (v.lt(1e9)) s = format(',.5s')(v.toPrecision(7, 1))
+        else if (v.lt(1e10)) s = format(',.5s')(v.toPrecision(8, 1))  // Giga ...
+        else if (v.lt(1e11)) s = format(',.5s')(v.toPrecision(9, 1))
+        else if (v.lt(1e12)) s = format(',.5s')(v.toPrecision(10, 1))
+        else if (v.lt(1e13)) s = format(',.5s')(v.toPrecision(11, 1))  // Tera ...
+        else if (v.lt(1e14)) s = format(',.5s')(v.toPrecision(12, 1))
+        else if (v.lt(1e15)) s = format(',.5s')(v.toPrecision(13, 1))
+        else if (v.lt(1e16)) s = format(',.5s')(v.toPrecision(14, 1))  // Peta (enough for a Mellowpuff™)
+        else if (v.lt(1e17)) s = format(',.5s')(v.toPrecision(15, 1))
+        else if (v.lt(1e18)) s = format(',.5s')(v.toPrecision(16, 1))
+        else s = format(',.5s')(v.toString())
     }
     
+    // fade fractional part (including the period)
     const r = s.match(/^(.*)(\.\d+)(.*)$/) 
     if (r && r.length > 1)
         return ( 
@@ -103,19 +120,14 @@ class NewStakeForm extends React.Component {
             const stakeDays = this.state.stakeDays || 0
             const stakeAmount = this.state.stakeAmount || new BigNumber(0)
 
-            const { 
-                LPB_MAX_DAYS,
-                LPB,
-                BPB_MAX_HEARTS,
-                BPB
-            } = HEX
+            const { LPB_MAX_DAYS, LPB, BPB_MAX_HEARTS, BPB } = HEX
             /*
-            console.log('stakeAmount: ', stakeAmount.toString())
-            console.log('stakeDays: ', stakeDays)
-            console.log('LPB: ', LPB.toString())
-            console.log('LPB_MAX_DAYS: ', LPB_MAX_DAYS.toString())
-            console.log('BPB: ', LPB.toString())
-            console.log('BPB_MAX_HEARTS: ', BPB_MAX_HEARTS.toString())
+            debug('stakeAmount: ', stakeAmount.toString())
+            debug('stakeDays: ', stakeDays)
+            debug('LPB: ', LPB.toString())
+            debug('LPB_MAX_DAYS: ', LPB_MAX_DAYS.toString())
+            debug('BPB: ', LPB.toString())
+            debug('BPB_MAX_HEARTS: ', BPB_MAX_HEARTS.toString())
             */
 
             let cappedExtraDays = 0;
@@ -295,7 +307,7 @@ class NewStakeForm extends React.Component {
                         </Form.Group>
                         <Row>
                             <Col md={6} className="text-right">Start Day:</Col>
-                            <Col md={3} className="text-right numeric">{ currentDay + 1 }</Col>
+                            <Col md={3} className="text-right numeric" tooltip="days since contract launch (UTC)">{ currentDay + 1 }</Col>
                         </Row>
                         <Row>
                             <Col md={6} className="text-right">Last Full Day:</Col>
