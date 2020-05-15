@@ -42,9 +42,7 @@ const HexNum = (props) => {
     else if (v.lt(1e17))    s = format(',.3f')(v.div( 1e14).toFixed(3, 1))+'M'
     else if (v.lt(1e20))    s = format(',.3f')(v.div( 1e17).toFixed(3, 1))+'B'
     else if (v.lt(1e23))    s = format(',.3f')(v.div( 1e20).toFixed(3, 1))+'T'
-    else if (v.lt(1e26))    s = format(',.3f')(v.div( 1e23).toFixed(3, 1))+'P'
-    else if (v.lt(1e29))    s = format(',.3f')(v.div( 1e26).toFixed(3, 1))+'P'
-    else s = 'OVF'
+    else                    s = format(',.0f')(v.div( 1e20).toFixed(0, 1))+'T'
 
     // fade fractional part (including the period)
     const r = s.match(/^(.*)(\.\d+)(.*)$/) 
@@ -61,6 +59,16 @@ const HexNum = (props) => {
         ) 
         else 
             return ( <div className="numeric">{s}{ props.showUnit && unit}</div> )
+}
+
+const calcBigPayDaySlice = (shares, sharePool, _globals, unclaimedSatoshis) => {
+    if (typeof unclaimedSatoshis === 'undefined') {
+        unclaimedSatoshis = Object.entries(_globals).length 
+            ? _globals.claimStats.unclaimedSatoshisTotal
+            : new BigNumber('fae0c6a6400dadc0', 16) // total claimable Satoshis
+    }
+    return new BigNumber(unclaimedSatoshis.times(HEX.HEARTS_PER_SATOSHI).times(shares))
+                                    .idiv(sharePool)
 }
 
 const calcAdoptionBonus = (bigPayDaySlice, _globals) => {
@@ -124,7 +132,6 @@ class NewStakeForm extends React.Component {
     render() {
 
         const currentDay = this.state.contractData.currentDay + 1
-        const BigPayDay = HEX.BIG_PAY_DAY
 
         const updateFigures = () => {
             const stakeDays = this.state.stakeDays || 0
@@ -162,12 +169,22 @@ class NewStakeForm extends React.Component {
             const shareRate = new BigNumber('100000').div(_shareRate)
             const stakeShares = effectiveHEX.times(shareRate)
 
-            const { globals } = this.state.contractData
-            const bigPaySlice = globals.claimStats.unclaimedSatoshisTotal.times(HEX.HEARTS_PER_SATOSHI).times(stakeShares).idiv(globals.stakeSharesTotal)
-            const bigPayDay = bigPaySlice.plus(calcAdoptionBonus(bigPaySlice, globals))
+            // Big Pay Day bonuses
 
-            const percentGain = 100
-            const percentAPY = 100
+            let bigPayDay = new BigNumber(0)
+            let percentGain = new BigNumber(0)
+            let percentAPY = new BigNumber(0)
+            if (this.state.endDay-1 > HEX.BIG_PAY_DAY) {
+                const { globals } = this.state.contractData
+                const BPD_sharePool = globals.stakeSharesTotal.plus(stakeShares)
+                const bigPaySlice = calcBigPayDaySlice(stakeShares, BPD_sharePool, globals)
+                const adoptionBonus = calcAdoptionBonus(bigPaySlice, globals)
+                bigPayDay = bigPaySlice.plus(adoptionBonus)
+
+                percentGain = bigPayDay.div(stakeAmount).times(100)
+                const startDay = this.state.contractData.currentDay + 1
+                percentAPY = new BigNumber(365).div(HEX.BIG_PAY_DAY - startDay + 1).times(percentGain)
+            }
 
             this.setState({
                 longerPaysBetter,
@@ -177,8 +194,8 @@ class NewStakeForm extends React.Component {
                 shareRate,
                 stakeShares,
                 bigPayDay,
-                percentGain,
-                percentAPY
+                percentGain: percentGain.toPrecision(6, 1),
+                percentAPY: percentAPY.toPrecision(6, 1)
             })
         }
 
@@ -391,7 +408,7 @@ class NewStakeForm extends React.Component {
                             </Row>
                         </Container>
 
-                        { (currentDay < (BigPayDay - 1)) && (
+                        { (currentDay < (HEX.BIG_PAY_DAY - 1)) && (
                         <Container className="bg-secondary rounded mt-2 pt-2 pb-2">
                             <Row>
                                 <Col>
@@ -453,12 +470,6 @@ class Stakes extends React.Component {
             availableBalance: new BigNumber(newProps.context.walletHEX),
             contractData: newProps.context.contractData
         }
-    }
-
-    calcBigPayDaySlice = (shares, pool) => {
-        return Object.entries(this.state.contractData.globals).length
-            ? new BigNumber(this.state.contractData.globals.claimStats.unclaimedSatoshisTotal).times(10000).times(shares).idiv(pool)
-            : new BigNumber('fae0c6a6400dadc0', 16) // total claimable Satoshis
     }
 
     loadStakes() {
@@ -539,13 +550,13 @@ class Stakes extends React.Component {
                 const day = {
                     payoutTotal: new BigNumber(hex.slice(46,64), 16),
                     stakeSharesTotal: new BigNumber(hex.slice(28,46), 16),
-                    unclaimedSatoshisTotal: BigNumber(hex.slice(12,28), 16)
+                    unclaimedSatoshisTotal: new BigNumber(hex.slice(12,28), 16)
                 }
                 
                 stakeData.payout = stakeData.payout.plus(day.payoutTotal.times(stakeData.stakeShares).idiv(day.stakeSharesTotal))
 
                 if (startDay <= HEX.BIG_PAY_DAY && endDay > HEX.BIG_PAY_DAY) {
-                    const bigPaySlice = day.unclaimedSatoshisTotal.times(HEX.HEARTS_PER_SATOSHI).times(stakeData.stakeShares).idiv(globals.stakeSharesTotal)
+                    const bigPaySlice = calcBigPayDaySlice(stakeData.stakeShares, day.stakeSharesTotal, globals, day.unclaimedSatoshisTotal)
                     const bonuses = calcAdoptionBonus(bigPaySlice, globals)
                     stakeData.bigPayDay = bigPaySlice.plus(bonuses) // replace with this 'latest day so far' value
                     if (startDay + dayNumber === HEX.BIG_PAY_DAY) stakeData.payout = stakeData.payout.plus(stakeData.bigPayDay)
