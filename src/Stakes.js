@@ -33,11 +33,10 @@ const HexNum = (props) => {
     let v = new BigNumber(props.value) 
     if (isNaN(v)) return ( <>NaN</> )
 
-    let unit = ''
-    if (props.showUnit) unit = (v.lt(1e6) && !v.isZero()) ? ' Hearts' : ' HEX'
-
+    let unit = ' HEX'
     let s
-    if (v.lt(1e6))          s = format(',')(v)
+    if (v.isZero())         s = '0.000'
+    else if (v.lt(1e6))     { unit = ' Hearts'; s = format(',')(v) }
     else if (v.lt(1e11))    s = format(',')(v.div( 1e08).toFixed(3, 1))
     else if (v.lt(1e14))    s = format(',')(v.div( 1e08).toFixed(0, 1))
     else if (v.lt(1e17))    s = format(',.3f')(v.div( 1e14).toFixed(3, 1))+'M'
@@ -57,11 +56,11 @@ const HexNum = (props) => {
                     { r[2] }
                 </span>
                 { r[3] && r[3] }
-                { unit }
+                { props.showUnit && unit }
             </div>
         ) 
         else 
-            return ( <div className="numeric">{s}{unit}</div> )
+            return ( <div className="numeric">{s}{ props.showUnit && unit}</div> )
 }
 
 const calcAdoptionBonus = (bigPayDaySlice, _globals) => {
