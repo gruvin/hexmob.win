@@ -61,12 +61,10 @@ const HexNum = (props) => {
             return ( <div className="numeric">{s}{ props.showUnit && unit}</div> )
 }
 
-const calcBigPayDaySlice = (shares, sharePool, _globals, unclaimedSatoshis) => {
-    if (typeof unclaimedSatoshis === 'undefined') {
-        unclaimedSatoshis = Object.entries(_globals).length 
+const calcBigPayDaySlice = (shares, sharePool, _globals) => {
+    const unclaimedSatoshis = Object.entries(_globals).length 
             ? _globals.claimStats.unclaimedSatoshisTotal
             : new BigNumber('fae0c6a6400dadc0', 16) // total claimable Satoshis
-    }
     return new BigNumber(unclaimedSatoshis.times(HEX.HEARTS_PER_SATOSHI).times(shares))
                                     .idiv(sharePool)
 }
@@ -533,13 +531,6 @@ class Stakes extends React.Component {
         this.contract.methods.dailyDataRange(startDay, Math.min(currentDay, endDay)).call()
         .then((dailyData) => {
 
-            const calcDailyBonus = (shares, sharesTotal) => {
-                // HEX mints 0.009955% daily interest (3.69%pa) and statkers get adoption bonuses from that each day
-                const dailyInterest = allocatedSupply.times(10000).idiv(100448995) // .sol line: 1243 
-                const bonus = shares.times(dailyInterest.plus(calcAdoptionBonus(dailyInterest, globals))).idiv(sharesTotal)
-                return bonus
-            }
-
             // iterate over daily payouts history
             stakeData.payout = new BigNumber(0)
             stakeData.bigPayDay = new BigNumber(0)
@@ -552,18 +543,29 @@ class Stakes extends React.Component {
                     stakeSharesTotal: new BigNumber(hex.slice(28,46), 16),
                     unclaimedSatoshisTotal: new BigNumber(hex.slice(12,28), 16)
                 }
-                
-                stakeData.payout = stakeData.payout.plus(day.payoutTotal.times(stakeData.stakeShares).idiv(day.stakeSharesTotal))
-
-                if (startDay <= HEX.BIG_PAY_DAY && endDay > HEX.BIG_PAY_DAY) {
-                    const bigPaySlice = calcBigPayDaySlice(stakeData.stakeShares, day.stakeSharesTotal, globals, day.unclaimedSatoshisTotal)
-                    const bonuses = calcAdoptionBonus(bigPaySlice, globals)
-                    stakeData.bigPayDay = bigPaySlice.plus(bonuses) // replace with this 'latest day so far' value
-                    if (startDay + dayNumber === HEX.BIG_PAY_DAY) stakeData.payout = stakeData.payout.plus(stakeData.bigPayDay)
-                }
-
+                const payout = day.payoutTotal.times(stakeData.stakeShares).idiv(day.stakeSharesTotal)
+                stakeData.payout = stakeData.payout.plus(payout)
             })
-            stakeData.payout = stakeData.payout.plus(calcDailyBonus(stakeData.stakeShares, globals.stakeSharesTotal))
+
+            // Calculate our share of Daily Interest (for the current day)
+
+            // HEX mints 0.009955% daily interest (3.69%pa) and stakers get adoption bonuses from that, each day
+            const dailyInterestTotal = allocatedSupply.times(10000).idiv(100448995) // .sol line: 1243 
+            const interestShare = stakeData.stakeShares.times(dailyInterestTotal).idiv(globals.stakeSharesTotal)
+
+            // add our doption Bonus
+            const interestBonus = calcAdoptionBonus(interestShare, globals)
+            
+            // add interest (with adoption bonus) to stake's payout total 
+            stakeData.payout = stakeData.payout.plus(interestShare).plus(interestBonus)
+
+            if (startDay <= HEX.BIG_PAY_DAY && endDay > HEX.BIG_PAY_DAY) {
+                const bigPaySlice = calcBigPayDaySlice(stakeData.stakeShares, globals.stakeSharesTotal, globals)
+                const bonuses = calcAdoptionBonus(bigPaySlice, globals)
+                stakeData.bigPayDay = bigPaySlice.plus(bonuses)
+                if ( currentDay >= HEX.BIG_PAY_DAY) stakeData.payout = stakeData.payout.plus(stakeData.bigPayDay)
+                // TODO: penalties have to come off for late End Stake
+            }
 
             const stakeList = { ...this.state.stakeList }
             stakeList[stakeData.stakeId] = stakeData
