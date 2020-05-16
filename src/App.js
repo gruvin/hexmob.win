@@ -2,7 +2,6 @@ import React from 'react'
 import { BigNumber } from 'bignumber.js'
 import { format } from 'd3-format'
 import { Container, Card, Row, Col, Button, Badge, ProgressBar } from 'react-bootstrap'
-import { Monitor } from './Monitor'
 import Stakes from './Stakes'
 
 import Web3 from "web3";
@@ -94,29 +93,12 @@ class App extends React.Component {
     }
 
     subscribeTransfers = () => {
-        this.wssInSubscription = this.web3.eth.subscribe('logs', {
-            address: HEX.ContractAddress,
-            topics: [
-                this.state.contractData.TOPIC_HASH_TRANSFER,
-                null,
-                '0x' + this.state.walletAddress.slice(2).toLowerCase().padStart(64, '0')
-            ]
-        }, (error, result) => {
-            if (error) return
-            console.log('EVENT: HEX [IN] from: 0x' + result.topics[1].match(/[^0x]+.+/)[0])
+        const eventCallback = (error, result) => {
+            debug('events.Transfer[error, result] => ', error, result.returnValues )
             this.updateHEXBalance()
-        });
-        this.wssOutSubscription = this.web3.eth.subscribe('logs', {
-            address: HEX.ContractAddress,
-            topics: [
-                this.state.contractData.TOPIC_HASH_TRANSFER,
-                '0x' + this.state.walletAddress.slice(2).toLowerCase().padStart(64, '0')
-            ]
-        }, (error, result) => {
-            if (error) return
-            console.log('EVENT: HEX [OUT] to: 0x' + result.topics[2].match(/[^0x]+.+/)[0])
-            this.updateHEXBalance()
-        });
+        }
+        this.contract.events.Transfer( {filter:{from:this.state.walletAddress.toLowerCase()}}, eventCallback).on('connected', (id) => debug('from:', id))
+        this.contract.events.Transfer( {filter:{to:this.state.walletAddress.toLowerCase()}}, eventCallback).on('connected', (id) => debug('to:', id))
     }
 
     unsubscribeTransfers = () => {
@@ -207,7 +189,7 @@ class App extends React.Component {
     }
 
     componentWillUnmount = () => {
-        this.unsubscribeTransfers()
+        this.web3.eth.clearSubscriptions()
     }
 
     resetApp = async () => {
@@ -265,7 +247,6 @@ class App extends React.Component {
             return (
                 <>
                     <Stakes contract={this.contract} context={this.state} />
-                    <Monitor context={this.state} web3={this.web3} contract={this.contract} />
                 </>
             )
         }
