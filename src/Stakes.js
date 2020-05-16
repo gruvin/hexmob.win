@@ -15,7 +15,7 @@ import { BigNumber } from 'bignumber.js'
 import HEX from './hex_contract'
 import { calcBigPayDaySlice, calcAdoptionBonus } from './util'
 import  NewStakeForm from './NewStakeForm' 
-import { HexNum } from './widgets' 
+import { HexNum } from './Widgets' 
 const debug = require('debug')('Stakes')
 debug('loading')
 
