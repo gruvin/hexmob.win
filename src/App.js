@@ -2,13 +2,13 @@ import React from 'react'
 import { BigNumber } from 'bignumber.js'
 import { format } from 'd3-format'
 import { Container, Card, Row, Col, Button, Badge, ProgressBar } from 'react-bootstrap'
-import Stakes from './Stakes.js'
+import Stakes from './Stakes'
 
 import Web3 from "web3";
 import Web3Modal from "web3modal";
 import WalletConnectProvider from "@walletconnect/web3-provider";
 
-import HEX from './hex_contract.js'
+import HEX from './hex_contract'
 
 import './App.scss'
 
