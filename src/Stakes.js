@@ -22,13 +22,13 @@ debug('loading')
 class Stakes extends React.Component {
     constructor(props) {
         super(props)
-        this.contract = props.contract
         this.state = {
             address: props.context.walletAddress,
+            contract: props.contract,
             contractData: props.context.contractData,
             availableBalance: props.context.walletHEX,
             stakeCount: null,
-            stakeList:  null,
+            stakeList: [ ],
             stakedTotal: new BigNumber(0),
             sharesTotal: new BigNumber(0),
             bpdTotal: new BigNumber(0),
@@ -37,133 +37,112 @@ class Stakes extends React.Component {
             showExitModal: false,
         }
     }
-    static getDerivedStateFromProps(newProps, prevState) {
-        return { 
-            address: newProps.context.walletAddress,
-            availableBalance: new BigNumber(newProps.context.walletHEX),
-            contractData: newProps.context.contractData
+
+    static getDerivedStateFromProps = (newProps, prevState) => {
+        //debug('newProps, prevState: ', newProps.context.walletAddress, prevState.address)
+        if (newProps.context.walletAddress !== prevState.address) {
+            return Stakes.loadStakes(newProps, prevState)
+        } else {
+            return { 
+                address: newProps.context.walletAddress,
+                availableBalance: new BigNumber(newProps.context.walletHEX),
+                contractData: newProps.context.contractData,
+            }
         }
     }
 
-    loadStakes() {
-        this.contract.methods.stakeCount(this.state.address).call()
-        .then((stakeCount) => {
-            const { currentDay } = this.state.contractData
-            this.setState({
-                stakeList: { },
-                stakeCount: Number(stakeCount),
-                stakedTotal: new BigNumber(0),
-                sharesTotal: new BigNumber(0),
-                bpdTotal: new BigNumber(0),
-                interestTotal: new BigNumber(0)
+    static async loadStakes(context) {
+        const { contract, address, contractData } = context
+        const stakeCount = await contract.methods.stakeCount(address).call()
+        const { currentDay } = contractData
+
+        // use Promise.all to load stake data in parallel
+        var promises = [ ]
+        var stakeList = [ ]
+        for (let index = 0; index < stakeCount; index++) {
+            promises[index] = new Promise(async (resolve, reject) => { /* see ***, below */ // eslint-disable-line
+                const data = await contract.methods.stakeLists(address, index).call()
+                let stakeData = {
+                    stakeId: data.stakeId,
+                    lockedDay: Number(data.lockedDay),
+                    stakedDays: Number(data.stakedDays),
+                    stakedHearts: new BigNumber(data.stakedHearts),
+                    stakeShares: new BigNumber(data.stakeShares),
+                    unlockedDay: Number(data.unlockedDay),
+                    isAutoStake: Boolean(data.isAutoStakte),
+                    progress: Math.trunc(Math.min((currentDay - data.lockedDay) / data.stakedDays * 100000, 100000)),
+                    bigPayDay: new BigNumber(0),
+                    payout: new BigNumber(0)
+                }
+                const payouts = await Stakes.getStakePayoutData(context, stakeData)
+                stakeData.payout = payouts.interest
+                stakeData.bigPayDay = payouts.bigPayDay
+
+                stakeList = stakeList.concat(stakeData) //*** ESLint complains but it's safe, due to use of non-mutating concat()
+                return resolve()
             })
-            for (let index = 0; index < this.state.stakeCount; index++) {
-                this.contract.methods.stakeLists(this.state.address, index).call()
-                .then((data) => {
-                    let stakeData = {
-                        stakeId: data.stakeId,
-                        lockedDay: Number(data.lockedDay),
-                        stakedDays: Number(data.stakedDays),
-                        stakedHearts: new BigNumber(data.stakedHearts),
-                        stakeShares: new BigNumber(data.stakeShares),
-                        unlockedDay: Number(data.unlockedDay),
-                        isAutoStake: Boolean(data.isAutoStakte),
-                        progress: Math.trunc(Math.min((currentDay - data.lockedDay) / data.stakedDays * 100000, 100000)),
-                        bigPayDay: new BigNumber(0),
-                        payout: new BigNumber(0)
-                    }
-                    const stakeList = { ...this.state.stakeList }
-                    stakeList[data.stakeId] = stakeData
-
-                    // update this.state
-                    this.setState({ 
-                        stakeList,
-                        stakedTotal: this.state.stakedTotal.plus(data.stakedHearts),
-                        sharesTotal: this.state.sharesTotal.plus(data.stakeShares),
-                    })
-
-                    this.updateStakePayout(stakeData)
-                })
-                .catch((e) => console.log(`Stakes::loadStakes:contract.methods.stakeLists(${this.state.address}, ${index}).call()`, e))
-            }
-        })
-        .catch((e) => console.log(`Stakes::loadStakes:contract.methods.stakeCount(${this.state.address}).call()`, e))
+        }
+        // Stakes.updateStakePayout(stakeData)
+        await Promise.all(promises)
+        return stakeList
     }
 
-    updateStakePayout(_stakeData) {
-        
+    static async getStakePayoutData(context, stakeData) {
+        const { contract } = context 
         const {
             currentDay, 
             allocatedSupply, 
             globals 
-        } = this.state.contractData
+        } = context.contractData
 
-        const stakeData = { ..._stakeData }
         const startDay = stakeData.lockedDay
         const endDay = startDay + stakeData.stakedDays
         if (currentDay === startDay) return
 
-        this.contract.methods.dailyDataRange(startDay, Math.min(currentDay, endDay)).call()
-        .then((dailyData) => {
+        const dailyData = await contract.methods.dailyDataRange(startDay, Math.min(currentDay, endDay)).call()
 
-            // iterate over daily payouts history
-            stakeData.payout = new BigNumber(0)
-            stakeData.bigPayDay = new BigNumber(0)
+        // iterate over daily payouts history
+        let interest = new BigNumber(0)
 
-            dailyData.forEach((mapped_dailyData, dayNumber) => {
-                // extract dailyData struct from uint256 mapping
-                const hex = new BigNumber(mapped_dailyData).toString(16).padStart(64, '0')
-                const day = {
-                    payoutTotal: new BigNumber(hex.slice(46,64), 16),
-                    stakeSharesTotal: new BigNumber(hex.slice(28,46), 16),
-                    unclaimedSatoshisTotal: new BigNumber(hex.slice(12,28), 16)
-                }
-                const payout = day.payoutTotal.times(stakeData.stakeShares).idiv(day.stakeSharesTotal)
-                stakeData.payout = stakeData.payout.plus(payout)
-            })
-
-            // Calculate our share of Daily Interest (for the current day)
-
-            // HEX mints 0.009955% daily interest (3.69%pa) and stakers get adoption bonuses from that, each day
-            const dailyInterestTotal = allocatedSupply.times(10000).idiv(100448995) // .sol line: 1243 
-            const interestShare = stakeData.stakeShares.times(dailyInterestTotal).idiv(globals.stakeSharesTotal)
-
-            // add our doption Bonus
-            const interestBonus = calcAdoptionBonus(interestShare, globals)
-            
-            // add interest (with adoption bonus) to stake's payout total 
-            stakeData.payout = stakeData.payout.plus(interestShare).plus(interestBonus)
-
-            if (startDay <= HEX.BIG_PAY_DAY && endDay > HEX.BIG_PAY_DAY) {
-                const bigPaySlice = calcBigPayDaySlice(stakeData.stakeShares, globals.stakeSharesTotal, globals)
-                const bonuses = calcAdoptionBonus(bigPaySlice, globals)
-                stakeData.bigPayDay = bigPaySlice.plus(bonuses)
-                if ( currentDay >= HEX.BIG_PAY_DAY) stakeData.payout = stakeData.payout.plus(stakeData.bigPayDay)
-                // TODO: penalties have to come off for late End Stake
+        // extract dailyData struct from uint256 mapping
+        dailyData.forEach((mapped_dailyData, dayNumber) => {
+            const hex = new BigNumber(mapped_dailyData).toString(16).padStart(64, '0')
+            const day = {
+                payoutTotal: new BigNumber(hex.slice(46,64), 16),
+                stakeSharesTotal: new BigNumber(hex.slice(28,46), 16),
+                unclaimedSatoshisTotal: new BigNumber(hex.slice(12,28), 16)
             }
-
-            const stakeList = { ...this.state.stakeList }
-            stakeList[stakeData.stakeId] = stakeData
-
-            this.setState({ 
-                bpdTotal: this.state.bpdTotal.plus(stakeData.bigPayDay),
-                interestTotal: this.state.interestTotal.plus(stakeData.payout),
-                stakeList
-            })
+            const payout = day.payoutTotal.times(stakeData.stakeShares).idiv(day.stakeSharesTotal)
+            interest = interest.plus(payout)
         })
-        .catch((e) => console.log(`Stakes::updateStakePayout:contract.methods.dailyDataRange(${startDay}, Math.min(${currentDay}, ${endDay}).call()`, e))
+
+        // Calculate our share of Daily Interest (for the current day)
+
+        // HEX mints 0.009955% daily interest (3.69%pa) and stakers get adoption bonuses from that, each day
+        const dailyInterestTotal = allocatedSupply.times(10000).idiv(100448995) // .sol line: 1243 
+        const interestShare = stakeData.stakeShares.times(dailyInterestTotal).idiv(globals.stakeSharesTotal)
+
+        // add our doption Bonus
+        const interestBonus = calcAdoptionBonus(interestShare, globals)
+        
+        // add interest (with adoption bonus) to stake's payout total 
+        interest = interest.plus(interestShare).plus(interestBonus)
+
+        let bigPayDay = new BigNumber(0)
+        if (startDay <= HEX.BIG_PAY_DAY && endDay > HEX.BIG_PAY_DAY) {
+            const bigPaySlice = calcBigPayDaySlice(stakeData.stakeShares, globals.stakeSharesTotal, globals)
+            const bonuses = calcAdoptionBonus(bigPaySlice, globals)
+            bigPayDay = bigPaySlice.plus(bonuses)
+            if ( currentDay >= HEX.BIG_PAY_DAY) stakeData.payout = stakeData.payout.plus(stakeData.bigPayDay)
+            // TODO: penalties have to come off for late End Stake
+        }
+
+        return { interest, bigPayDay }
     }
 
-    componentDidMount() {
-        if (this.contract) this.loadStakes()
-    }
-    componentDidUpdate = (prevProps, prevState) => {
-        if (prevProps.walletAddress !== this.props.walletAddress) {
-            this.setState(
-                { address: this.props.walletAddress },
-                this.loadStakes
-            )
-        }
+    componentDidMount = async () => {
+        const stakeList = await Stakes.loadStakes(this.state)
+        this.setState({ stakeList }) // : [ ...stakeList ] })
     }
 
     CurrentStakesTable = () => {
@@ -175,6 +154,10 @@ class Stakes extends React.Component {
                 showExitModal: true
             })
         }
+
+        const stakeList = this.state.stakeList.slice()
+        const sorted = stakeList.sort((a, b) => (a.progress < b.progress ? (a.progress !== b.progress ? 1 : 0) : -1 ))
+        debug('SORTED?: ', sorted)
 
         return (
             <Table variant="secondary" size="sm" striped borderless>
@@ -193,10 +176,8 @@ class Stakes extends React.Component {
                     </tr>
                 </thead>
                 <tbody>
-                    { this.state.stakeList &&
-                        Object.keys(this.state.stakeList).map((key) => {
-                            const stakeData = this.state.stakeList[key]
-                            
+                    { this.state.stakeList && 
+                        stakeList.map((stakeData) => {
                             const startDay = stakeData.lockedDay
                             const endDay = startDay + stakeData.stakedDays
                             const startDate = new Date(HEX.START_DATE) // UTC but is converted to local
@@ -268,7 +249,7 @@ class Stakes extends React.Component {
                                     </td>
                                 </tr>
                             ) : (
-                                <tr key={stakeData}><td colSpan="5">loading</td></tr>
+                                <tr key={stakeData.stakeId}><td colSpan="5">loading</td></tr>
                             )
                         })
                     }

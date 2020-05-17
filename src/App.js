@@ -51,17 +51,20 @@ class App extends React.Component {
             return
         }
 
-        // MetaMask has no 'close' or 'disconnect' event. Workaround ...
         if (provider.isMetaMask) {
-            window.ethereum.on('accountsChanged', async (accounts) => {
+            const ethereum = window.ethereum
+            if (ethereum && ethereum.autoRefreshOnNetworkChange) 
+                ethereum.autoRefreshOnNetworkChange = false // will be default behavour in new MM api
+
+            // MetaMask has no 'close' or 'disconnect' event. Workaround ...
+            ethereum.on('accountsChanged', (accounts) => {
                 if (!accounts.length)                   // => event:"close" (logged out)
                     this.resetApp()
                 else                                    // => event:"accountsChanged"
-                    await this.setState({ walletAddress: accounts[0] })
-                    this.updateHEXBalance()
+                    this.setState({ 
+                        walletAddress: accounts[0] 
+                    }, this.updateHEXBalance)
             })
-            if (window.ethereum && window.ethereum.autoRefreshOnNetworkChange) 
-                window.ethereum.autoRefreshOnNetworkChange = false
         } else { // WalletConnect (and others?) ...
 
             provider.on("close", () => {  
@@ -116,6 +119,7 @@ class App extends React.Component {
             })
         })
     }
+
 
     componentDidMount = () => {
         this.web3Modal = new Web3Modal({
@@ -190,6 +194,9 @@ class App extends React.Component {
 
     componentWillUnmount = () => {
         this.web3.eth.clearSubscriptions()
+    }
+
+    static getDerivedStateFromProps(newProps, prevState) {
     }
 
     resetApp = async () => {
