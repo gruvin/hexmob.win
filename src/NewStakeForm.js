@@ -93,7 +93,7 @@ class NewStakeForm extends React.Component {
                 const adoptionBonus = calcAdoptionBonus(bigPaySlice, globals)
                 bigPayDay = bigPaySlice.plus(adoptionBonus)
 
-                percentGain = bigPayDay.div(stakeAmount).times(100)
+                percentGain = stakeAmount.isZero() ? stakeAmount : bigPayDay.div(stakeAmount).times(100)
                 const startDay = this.props.contract.Data.currentDay + 1
                 percentAPY = new BigNumber(365).div(HEX.BIG_PAY_DAY - startDay + 1).times(percentGain)
             }
@@ -134,11 +134,12 @@ class NewStakeForm extends React.Component {
         
         const handleAmountSelector = (key, e) => {
             e.preventDefault()
-            e.stopPropagation() // doesn't seem to work :( So, I set eventKey to 'current_stakes' to prevent Accordion from acting on the event. :/
-            const portion = parseFloat(e.target.dataset.portion)
-            this.setState({ 
-                stakeAmount: new BigNumber(this.state.availableBalance.idiv(1e8).times(portion).times(1e8)) 
-            }, updateFigures)
+            const v=e.target.dataset.portion
+            const portion = parseFloat(v) || 1.0
+            const amount = (v === 'max')
+                ? this.props.balance.div(1e8)
+                : new BigNumber(this.props.balance.idiv(1e8).times(portion).toFixed(0, 1))
+            this.setState({ stakeAmount: new BigNumber(amount.times(1e8)) }, updateFigures)
         }
 
         const handleDaysSelector = (key, e) => {
@@ -156,7 +157,6 @@ class NewStakeForm extends React.Component {
             }
 
             e.preventDefault()
-            e.stopPropagation() // doesn't seem to work :(
             let days
             switch (e.target.dataset.days) {
                 case 'max': days = 5555; break;
@@ -199,22 +199,22 @@ class NewStakeForm extends React.Component {
                                     variant="secondary"
                                     key="percent_balance_selector"
                                     title="HEX"
-                                    id="input-group-dropdown-1"
-                                    onSelect={handleAmountSelector}
                                     className="numeric"
+                                    onSelect={handleAmountSelector}
                                 >
-                                    <Dropdown.Item as="button" eventKey="new_stake" data-portion={1.00}>MAX</Dropdown.Item>
-                                    <Dropdown.Item as="button" eventKey="new_stake" data-portion={0.75}>75%</Dropdown.Item>
-                                    <Dropdown.Item as="button" eventKey="new_stake" data-portion={0.50}>50%</Dropdown.Item>
-                                    <Dropdown.Item as="button" eventKey="new_stake" data-portion={0.25}>25%</Dropdown.Item>
-                                    <Dropdown.Item as="button" eventKey="new_stake" data-portion={0.10}>10%</Dropdown.Item>
-                                    <Dropdown.Item as="button" eventKey="new_stake" data-portion={0.05}>5%</Dropdown.Item>
+                                    <Dropdown.Item as="button" data-portion="max">MAX</Dropdown.Item>
+                                    <Dropdown.Item as="button" data-portion={1.00}>100%</Dropdown.Item>
+                                    <Dropdown.Item as="button" data-portion={0.75}>75%</Dropdown.Item>
+                                    <Dropdown.Item as="button" data-portion={0.50}>50%</Dropdown.Item>
+                                    <Dropdown.Item as="button" data-portion={0.25}>25%</Dropdown.Item>
+                                    <Dropdown.Item as="button" data-portion={0.10}>10%</Dropdown.Item>
+                                    <Dropdown.Item as="button" data-portion={0.05}>5%</Dropdown.Item>
                                 </DropdownButton>
                             </InputGroup>
                             <Form.Text>
                                 <span className="text-muted">Bigger pays better</span>
                                 <div className="float-right" variant="info" >
-                                    <HexNum value={this.state.availableBalance} showUnit /> available
+                                    <HexNum value={this.props.balance} showUnit /> available
                                 </div>
                             </Form.Text>
                         </Form.Group>
@@ -234,21 +234,20 @@ class NewStakeForm extends React.Component {
                                     variant="secondary"
                                     key="days_selector"
                                     title="DAYS"
-                                    id="input-group-dropdown-2"
                                     onSelect={handleDaysSelector}
                                     className="numeric"
                                 >
-                                    <Dropdown.Item as="button" eventKey="new_stake" data-days="max">MAX (about 15yrs & 11wks)</Dropdown.Item>
-                                    <Dropdown.Item as="button" eventKey="new_stake" data-days="10y">Ten Years</Dropdown.Item>
-                                    <Dropdown.Item as="button" eventKey="new_stake" data-days="5y">Five Years</Dropdown.Item>
-                                    <Dropdown.Item as="button" eventKey="new_stake" data-days="3y">Three Years</Dropdown.Item>
-                                    <Dropdown.Item as="button" eventKey="new_stake" data-days="2y">Two Years</Dropdown.Item>
-                                    <Dropdown.Item as="button" eventKey="new_stake" data-days="1y">One Year</Dropdown.Item>
-                                    <Dropdown.Item as="button" eventKey="new_stake" data-days="6m">Six Months</Dropdown.Item>
-                                    <Dropdown.Item as="button" eventKey="new_stake" data-days="3m">Three Months</Dropdown.Item>
-                                    <Dropdown.Item as="button" eventKey="new_stake" data-days="1m">One Month</Dropdown.Item>
-                                    <Dropdown.Item as="button" eventKey="new_stake" data-days="1w">One Week</Dropdown.Item>
-                                    <Dropdown.Item as="button" eventKey="new_stake" data-days="min">MIN (one day)</Dropdown.Item>
+                                    <Dropdown.Item as="button" data-days="max">MAX (about 15yrs & 11wks)</Dropdown.Item>
+                                    <Dropdown.Item as="button" data-days="10y">Ten Years</Dropdown.Item>
+                                    <Dropdown.Item as="button" data-days="5y">Five Years</Dropdown.Item>
+                                    <Dropdown.Item as="button" data-days="3y">Three Years</Dropdown.Item>
+                                    <Dropdown.Item as="button" data-days="2y">Two Years</Dropdown.Item>
+                                    <Dropdown.Item as="button" data-days="1y">One Year</Dropdown.Item>
+                                    <Dropdown.Item as="button" data-days="6m">Six Months</Dropdown.Item>
+                                    <Dropdown.Item as="button" data-days="3m">Three Months</Dropdown.Item>
+                                    <Dropdown.Item as="button" data-days="1m">One Month</Dropdown.Item>
+                                    <Dropdown.Item as="button" data-days="1w">One Week</Dropdown.Item>
+                                    <Dropdown.Item as="button" data-days="min">MIN (one day)</Dropdown.Item>
                                 </DropdownButton>
                             </InputGroup>
                             <Form.Text className="text-muted">
