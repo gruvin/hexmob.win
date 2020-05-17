@@ -17,8 +17,10 @@ debug('loading')
 const INITIAL_STATE = {
     chainId: 1, // ETH mainnet
     walletConnected: false,
-    walletAddress: null,
-    walletHEX: new BigNumber(0),
+    wallet: {
+        address: null,
+        hexBalance: new BigNumber(0)
+    },
     contractReady: false,
     contractGlobals: null
 }
@@ -28,6 +30,7 @@ class App extends React.Component {
         super(props)
 
         this.web3 = null
+        this.subscriptions = [ ]
         this.contract = null
         this.state = {
             ...INITIAL_STATE
@@ -62,7 +65,7 @@ class App extends React.Component {
                     this.resetApp()
                 else {                                  // => event:"accountsChanged"
                     this.setState({ 
-                        walletAddress: accounts[0] 
+                        wallet: { ...this.state.wallet, address: accounts[0] } 
                     }) // , this.updateHEXBalance)
                 }
             })
@@ -93,28 +96,28 @@ class App extends React.Component {
             await this.setState({ chainId, networkId })
             this.updateHEXBalance()
         })
-
     }
 
-    subscribeTransfers = () => {
+    subscribeEvents = () => {
         const eventCallback = (error, result) => {
             debug('events.Transfer[error, result] => ', error, result.returnValues )
             this.updateHEXBalance()
         }
-        this.contract.events.Transfer( {filter:{from:this.state.walletAddress.toLowerCase()}}, eventCallback).on('connected', (id) => debug('from:', id))
-        this.contract.events.Transfer( {filter:{to:this.state.walletAddress.toLowerCase()}}, eventCallback).on('connected', (id) => debug('to:', id))
+        this.subscriptions.concat(
+            this.contract.events.Transfer( {filter:{from:this.state.wallet.address}}, eventCallback).on('connected', (id) => debug('from:', id))
+        )
+        this.subscriptions.concat(
+            this.contract.events.Transfer( {filter:{to:this.state.wallet.address}}, eventCallback).on('connected', (id) => debug('to:', id))
+        )
     }
 
-    unsubscribeTransfers = () => {
-        this.wssInSubscription.unsubscribe()
-        this.wssOutSubscription.unsubscribe()
+    unsubscribeEvents = () => {
+        if (this.subscriptions.length) {
+            this.subscriptions = [ ]
+            this.web3.eth.clearSubscriptions()
+        }
     }
 
-    updateHEXBalance = async () => {
-        if (!this.contract) return
-        const bal = await this.contract.methods.balanceOf(this.state.walletAddress).call()
-        this.setState({ walletHEX: new BigNumber(bal)})
-    }
 
     componentDidMount = () => {
         this.web3Modal = new Web3Modal({
@@ -129,98 +132,98 @@ class App extends React.Component {
             this.subscribeProvider(this.provider)
             this.web3 = new Web3(provider)
             
-            const walletAddress = provider.isMetaMask
+            try {
+                this.contract = new this.web3.eth.Contract(HEX.ABI, HEX.ContractAddress)
+            } catch(e) {
+                throw new Error('Contract instantiation failed', e)
+            }
+
+            const address = provider.isMetaMask
                 ? this.web3.eth.accounts.givenProvider.selectedAddress // MetaMask
                 : this.web3.eth.accounts.currentProvider.accounts[0]   // everyone else
-            if (!walletAddress) return
+            if (!address) return // web3Modal will take it from here
+            this.setState({ walletConnected: true })
 
-            this.setState({ walletAddress }, () => {
-
-                this.contract = new this.web3.eth.Contract(HEX.ABI, HEX.ContractAddress)
-                this.setState({
-                    walletConnected: true 
-                })
-
+            Promise.all([
+                this.contract.methods.balanceOf(address).call(), // [0] HEX balance
+                this.contract.methods.allocatedSupply().call(),  // [1]
+                this.contract.methods.currentDay().call(),       // [2]
+                this.contract.methods.globals().call()           // [3]
+            ]).then((results) => {
+                const balance = new BigNumber(results[0])
+                const allocatedSupply = new BigNumber(results[1])
+                const currentDay = Number(results[2])
+                const rawGlobals = results[3]
                 
-                Promise.all([
-                    this.contract.methods.allocatedSupply().call(),  // [0]
-                    this.contract.methods.currentDay().call(),       // [1]
-                    this.contract.methods.globals().call()           // [2]
-                ]).then((results) => {
-                    const allocatedSupply = new BigNumber(results[0])
-                    const currentDay = Number(results[1])
-                    const rawGlobals = results[2]
-                    
-                    const globals = { }
-                    for (const k in rawGlobals) {
-                        if (isNaN(k)) globals[k] = new BigNumber(rawGlobals[k]);
-                    }
+                // parse globals
+                const globals = { }
+                for (const k in rawGlobals) if (isNaN(k)) globals[k] = new BigNumber(rawGlobals[k]);
 
-                    // decode claimstats
-                    const SATOSHI_UINT_SIZE = 51 // bits
-                    let binaryClaimStats = globals.claimStats.toString(2).padStart(153, '0')
-                    let a = binaryClaimStats.slice(0, SATOSHI_UINT_SIZE)
-                    let b = binaryClaimStats.slice(SATOSHI_UINT_SIZE, SATOSHI_UINT_SIZE * 2)
-                    let c = binaryClaimStats.slice(SATOSHI_UINT_SIZE * 2)
-                    globals.claimStats = {
-                        claimedBtcAddrCount: new BigNumber(a, 2),
-                        claimedSatoshisTotal: new BigNumber(b, 2),
-                        unclaimedSatoshisTotal: new BigNumber(c, 2)
-                    }
+                // decode globals.claimstats
+                const SATOSHI_UINT_SIZE = 51 // bits
+                let binaryClaimStats = globals.claimStats.toString(2).padStart(153, '0')
+                let a = binaryClaimStats.slice(0, SATOSHI_UINT_SIZE)
+                let b = binaryClaimStats.slice(SATOSHI_UINT_SIZE, SATOSHI_UINT_SIZE * 2)
+                let c = binaryClaimStats.slice(SATOSHI_UINT_SIZE * 2)
+                globals.claimStats = {
+                    claimedBtcAddrCount: new BigNumber(a, 2),
+                    claimedSatoshisTotal: new BigNumber(b, 2),
+                    unclaimedSatoshisTotal: new BigNumber(c, 2)
+                }
 
-                    let contractData = { 
-                        allocatedSupply,
-                        currentDay,
-                        globals,
-                    }
-                    this.setState({
-                        contractData,
-                        contractReady: true,
-                    })
+                // adding this to web3 contract for convenience down the road
+                this.contract.Data = { 
+                    allocatedSupply,
+                    currentDay,
+                    globals
+                }
 
-                    this.updateHEXBalance()
-                    this.subscribeTransfers()
-                    //setInterval(this.updateHEXBalance, 30000) // a fallback, in case our wss feed breaks
+                // setState doesn't handle > 1 level trees at all well but we like to live dangerously 
+                this.setState({
+                    wallet: {
+                        address: address.toLowerCase(),
+                        balance
+                    },
+                    contractReady: true
                 })
+
+                this.subscribeEvents()
             })
         })
-        .catch((e) => console.error('Wallet Connect ERROR: ', e))
+        .catch((e) => console.error('Provider connection failed: ', e))
     }
 
     componentWillUnmount = () => {
-        this.web3.eth.clearSubscriptions()
-    }
-
-    static getDerivedStateFromProps(newProps, prevState) {
+        try { this.web3.eth.clearSubscriptions() } catch(e) { }
     }
 
     resetApp = async () => {
-        await this.unsubscribeTransfers()
+        await this.unsubscribeEvents()
         await this.web3Modal.clearCachedProvider()
         await this.setState({ ...INITIAL_STATE })
         window.location.reload()
     }
 
     disconnectWallet = async () => {
-        const { web3 } = this
-        if (web3 && web3.currentProvider && web3.currentProvider.close) {
-            await web3.currentProvider.close()
-        }
+        const { provider } = this
+        provider && provider.close && await provider.close()
     }
 
     WalletStatus = () => {
-        const balanceHEX = this.state.walletHEX.idiv(1e8).toString()
+        const { address, balance } = this.state.wallet
+        const addressFragment = address && address !== ''
+            ? address.slice(0,6)+'...'+address.slice(-4) : 'unknown'
         return (
             <Container fluid>
             <Row>
                 <Col md={{span: 2}}><Badge variant="success" className="small">mainnet</Badge></Col>
                 <Col md={{span: 2, offset: 3}} className="text-center"> 
                     <Badge variant="info" className="small"> 
-                        { format(',')(balanceHEX) }
+                        { format(',')(balance) }
                     </Badge>
                 </Col>
                 <Col md={{span: 3, offset: 2}} className="text-right">
-                    <Badge className="text-info">{ this.state.walletAddress.slice(0,6)+'...'+this.state.walletAddress.slice(-4) }</Badge>
+                    <Badge className="text-info">{ addressFragment }</Badge>
                     <Badge variant="secondary" style={{ cursor: "pointer" }} onClick={ this.disconnectWallet } className="small">
                         disconnect</Badge>
                 </Col>
@@ -248,7 +251,7 @@ class App extends React.Component {
         } else {
             return (
                 <>
-                    <Stakes contract={this.contract} context={this.state} />
+                    <Stakes contract={this.contract} wallet={this.state.wallet} />
                 </>
             )
         }

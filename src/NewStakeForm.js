@@ -22,11 +22,9 @@ debug('loading')
 class NewStakeForm extends React.Component {
     constructor(props) {
         super(props)
-        const _shareRate = props.context.contractData.globals.shareRate || 100000
+        const _shareRate = props.contract.Data.globals.shareRate || 100000
         const shareRate = new BigNumber('100000').div(_shareRate).times(1e8)
         this.state = {
-            availableBalance: new BigNumber(props.context.availableBalance),
-            contractData: props.context.contractData,
             stakeAmount: null,
             stakeDays: null,
             lastFullDay: '---',
@@ -35,27 +33,17 @@ class NewStakeForm extends React.Component {
             biggerPaysBetter: new BigNumber(0),
             bonusTotal: new BigNumber(0),
             effectiveHEX: new BigNumber(0),
-            shareRate,
             stakeShares: new BigNumber(0),
+            shareRate,
             bigPayDay: new BigNumber(0),
             percentGain: 0.0,
             percentAPY: 0.0
         }
     }
 
-    static getDerivedStateFromProps(newProps, prevState) {
-        const _shareRate = newProps.context.contractData.globals.shareRate || 100000
-        const shareRate = new BigNumber('100000').div(_shareRate).times(1e8)
-        return { 
-            availableBalance: new BigNumber(newProps.context.availableBalance),
-            contractData: newProps.context.contractData,
-            shareRate
-        }
-    }
-    
     render() {
 
-        const currentDay = this.state.contractData.currentDay + 1
+        const currentDay = this.props.contract.Data.currentDay + 1
 
         const updateFigures = () => {
             const stakeDays = this.state.stakeDays || 0
@@ -89,7 +77,7 @@ class NewStakeForm extends React.Component {
 
             const bonusTotal = longerPaysBetter.plus(biggerPaysBetter)
             const effectiveHEX = stakeAmount.plus(bonusTotal)
-            const _shareRate = this.state.contractData.globals.shareRate || 100000
+            const _shareRate = this.props.contract.Data.globals.shareRate || 100000
             const shareRate = new BigNumber('100000').div(_shareRate)
             const stakeShares = effectiveHEX.times(shareRate)
 
@@ -99,14 +87,14 @@ class NewStakeForm extends React.Component {
             let percentGain = new BigNumber(0)
             let percentAPY = new BigNumber(0)
             if (this.state.endDay-1 > HEX.BIG_PAY_DAY) {
-                const { globals } = this.state.contractData
+                const { globals } = this.props.contract.Data
                 const BPD_sharePool = globals.stakeSharesTotal.plus(stakeShares)
                 const bigPaySlice = calcBigPayDaySlice(stakeShares, BPD_sharePool, globals)
                 const adoptionBonus = calcAdoptionBonus(bigPaySlice, globals)
                 bigPayDay = bigPaySlice.plus(adoptionBonus)
 
                 percentGain = bigPayDay.div(stakeAmount).times(100)
-                const startDay = this.state.contractData.currentDay + 1
+                const startDay = this.props.contract.Data.currentDay + 1
                 percentAPY = new BigNumber(365).div(HEX.BIG_PAY_DAY - startDay + 1).times(percentGain)
             }
 

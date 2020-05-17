@@ -24,10 +24,8 @@ class Stakes extends React.Component {
         super(props)
         this.state = {
             selectedCard: 'current_stakes',
-            address: props.context.walletAddress,
-            contract: props.contract,
-            contractData: props.context.contractData,
-            availableBalance: props.context.walletHEX,
+            address: props.wallet.address,
+            availableBalance: props.wallet.balance,
             stakeCount: null,
             stakeList: null,
             loadingStakes: true,
@@ -42,7 +40,7 @@ class Stakes extends React.Component {
             currentDay, 
             allocatedSupply, 
             globals 
-        } = context.contractData
+        } = contract.Data
 
         const startDay = stakeData.lockedDay
         const endDay = startDay + stakeData.stakedDays
@@ -90,9 +88,9 @@ class Stakes extends React.Component {
     }
 
     static async loadStakes(context) {
-        const { contract, address, contractData } = context
+        const { contract, address } = context
+        const { currentDay } = contract.Data
         const stakeCount = await contract.methods.stakeCount(address).call()
-        const { currentDay } = contractData
 
         // use Promise.all to load stake data in parallel
         var promises = [ ]
@@ -126,28 +124,38 @@ class Stakes extends React.Component {
     }
 
     static getDerivedStateFromProps(newProps, prevState) {
-        if (newProps.context.walletAddress !== prevState.address) {
-            return { address: newProps.context.walletAddress }
+        if (newProps.wallet.address !== prevState.address) {
+            return { 
+                address: newProps.wallet.address,
+                availableBalance: newProps.wallet.balance
+            }
         }
         return null
     }
     
+    getStaticContext = () => {
+       return {
+           contract: this.props.contract,
+           address: this.state.address
+       }
+    }
+
     componentDidMount = async () => {
-       const stakeList = await Stakes.loadStakes(this.state)
+       const stakeList = await Stakes.loadStakes(this.getStaticContext())
        this.setState({ stakeList, loadingStakes: false })
     }
 
     componentDidUpdate = async (prevProps, prevState) => {
-        if (prevProps.context.walletAddress !== this.state.address) {
+        if (prevProps.wallet.address !== this.state.address) {
             debug('Reloading stakeList for address: ', this.state.address)
             await this.setState({ loadingStakes: true })
-            const stakeList = await Stakes.loadStakes(this.state)
+            const stakeList = await Stakes.loadStakes(this.getStaticContext())
             this.setState({ stakeList, loadingStakes: false })
         }
     }
 
     CurrentStakesTable = () => {
-        const { currentDay } = this.state.contractData
+        const { currentDay } = this.props.contract.Data
 
         const handleShow = (stakeData) => {
             this.setState({
@@ -294,13 +302,12 @@ class Stakes extends React.Component {
     }
 
     render() { // class Stakes
-
-        const { currentDay } = this.state.contractData
+        const { currentDay } = this.props.contract.Data
         
         const handleClose = () => this.setState({ showExitModal: false })
 
         const thisStake = this.state.stakeContext // if any
-        const IsEarlyExit = (thisStake.stakeId && currentDay <= (thisStake.lockedDay + thisStake.stakedDays)) 
+        const IsEarlyExit = (thisStake.stakeId && currentDay < (thisStake.lockedDay + thisStake.stakedDays)) 
 
         const handleAccordionSelect = (selectedCard) => {
             selectedCard && this.setState({ selectedCard }, debug('SELECTED: ', this.state.selectedCard))
@@ -322,7 +329,7 @@ class Stakes extends React.Component {
                     </Accordion.Toggle>
                     <Accordion.Collapse eventKey="new_stake">
                         <Card.Body className="bg-dark">
-                            <NewStakeForm context={this.state}/>
+                            <NewStakeForm contract={this.props.contract} balance={this.state.balance} />
                         </Card.Body>
                    </Accordion.Collapse>
                 </Card>
