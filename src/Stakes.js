@@ -90,6 +90,7 @@ class Stakes extends React.Component {
     static async loadStakes(context) {
         const { contract, address } = context
         const { currentDay } = contract.Data
+        if (!address) return
         const stakeCount = await contract.methods.stakeCount(address).call()
 
         // use Promise.all to load stake data in parallel
