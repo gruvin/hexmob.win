@@ -60,10 +60,11 @@ class App extends React.Component {
             ethereum.on('accountsChanged', (accounts) => {
                 if (!accounts.length)                   // => event:"close" (logged out)
                     this.resetApp()
-                else                                    // => event:"accountsChanged"
+                else {                                  // => event:"accountsChanged"
                     this.setState({ 
                         walletAddress: accounts[0] 
-                    }, this.updateHEXBalance)
+                    }) // , this.updateHEXBalance)
+                }
             })
         } else { // WalletConnect (and others?) ...
 
@@ -109,17 +110,11 @@ class App extends React.Component {
         this.wssOutSubscription.unsubscribe()
     }
 
-    updateHEXBalance = () => {
-        return new Promise((resolve, reject) => {
-            if (!this.contract) return reject('contract not available')
-            this.contract.methods.balanceOf(this.state.walletAddress).call()
-            .then((bal) => {
-                this.setState({ walletHEX: new BigNumber(bal)})
-                resolve(bal)
-            })
-        })
+    updateHEXBalance = async () => {
+        if (!this.contract) return
+        const bal = await this.contract.methods.balanceOf(this.state.walletAddress).call()
+        this.setState({ walletHEX: new BigNumber(bal)})
     }
-
 
     componentDidMount = () => {
         this.web3Modal = new Web3Modal({

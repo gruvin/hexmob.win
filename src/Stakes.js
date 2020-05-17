@@ -23,68 +23,17 @@ class Stakes extends React.Component {
     constructor(props) {
         super(props)
         this.state = {
+            selectedCard: 'current_stakes',
             address: props.context.walletAddress,
             contract: props.contract,
             contractData: props.context.contractData,
             availableBalance: props.context.walletHEX,
             stakeCount: null,
-            stakeList: [ ],
-            stakedTotal: new BigNumber(0),
-            sharesTotal: new BigNumber(0),
-            bpdTotal: new BigNumber(0),
-            interestTotal: new BigNumber(0),
+            stakeList: null,
+            loadingStakes: true,
             stakeContext: { }, // active UI stake context
             showExitModal: false,
         }
-    }
-
-    static getDerivedStateFromProps = (newProps, prevState) => {
-        //debug('newProps, prevState: ', newProps.context.walletAddress, prevState.address)
-        if (newProps.context.walletAddress !== prevState.address) {
-            return Stakes.loadStakes(newProps, prevState)
-        } else {
-            return { 
-                address: newProps.context.walletAddress,
-                availableBalance: new BigNumber(newProps.context.walletHEX),
-                contractData: newProps.context.contractData,
-            }
-        }
-    }
-
-    static async loadStakes(context) {
-        const { contract, address, contractData } = context
-        const stakeCount = await contract.methods.stakeCount(address).call()
-        const { currentDay } = contractData
-
-        // use Promise.all to load stake data in parallel
-        var promises = [ ]
-        var stakeList = [ ]
-        for (let index = 0; index < stakeCount; index++) {
-            promises[index] = new Promise(async (resolve, reject) => { /* see ***, below */ // eslint-disable-line
-                const data = await contract.methods.stakeLists(address, index).call()
-                let stakeData = {
-                    stakeId: data.stakeId,
-                    lockedDay: Number(data.lockedDay),
-                    stakedDays: Number(data.stakedDays),
-                    stakedHearts: new BigNumber(data.stakedHearts),
-                    stakeShares: new BigNumber(data.stakeShares),
-                    unlockedDay: Number(data.unlockedDay),
-                    isAutoStake: Boolean(data.isAutoStakte),
-                    progress: Math.trunc(Math.min((currentDay - data.lockedDay) / data.stakedDays * 100000, 100000)),
-                    bigPayDay: new BigNumber(0),
-                    payout: new BigNumber(0)
-                }
-                const payouts = await Stakes.getStakePayoutData(context, stakeData)
-                stakeData.payout = payouts.interest
-                stakeData.bigPayDay = payouts.bigPayDay
-
-                stakeList = stakeList.concat(stakeData) //*** ESLint complains but it's safe, due to use of non-mutating concat()
-                return resolve()
-            })
-        }
-        // Stakes.updateStakePayout(stakeData)
-        await Promise.all(promises)
-        return stakeList
     }
 
     static async getStakePayoutData(context, stakeData) {
@@ -140,9 +89,61 @@ class Stakes extends React.Component {
         return { interest, bigPayDay }
     }
 
+    static async loadStakes(context) {
+        const { contract, address, contractData } = context
+        const stakeCount = await contract.methods.stakeCount(address).call()
+        const { currentDay } = contractData
+
+        // use Promise.all to load stake data in parallel
+        var promises = [ ]
+        var stakeList = [ ]
+        for (let index = 0; index < stakeCount; index++) {
+            promises[index] = new Promise(async (resolve, reject) => { /* see ***, below */ // eslint-disable-line
+                const data = await contract.methods.stakeLists(address, index).call()
+                let stakeData = {
+                    stakeId: data.stakeId,
+                    lockedDay: Number(data.lockedDay),
+                    stakedDays: Number(data.stakedDays),
+                    stakedHearts: new BigNumber(data.stakedHearts),
+                    stakeShares: new BigNumber(data.stakeShares),
+                    unlockedDay: Number(data.unlockedDay),
+                    isAutoStake: Boolean(data.isAutoStakte),
+                    progress: Math.trunc(Math.min((currentDay - data.lockedDay) / data.stakedDays * 100000, 100000)),
+                    bigPayDay: new BigNumber(0),
+                    payout: new BigNumber(0)
+                }
+                const payouts = await Stakes.getStakePayoutData(context, stakeData)
+                stakeData.payout = payouts.interest
+                stakeData.bigPayDay = payouts.bigPayDay
+
+                stakeList = stakeList.concat(stakeData) //*** ESLint complains but it's safe, due to use of non-mutating concat()
+                return resolve()
+            })
+        }
+        // Stakes.updateStakePayout(stakeData)
+        await Promise.all(promises)
+        return stakeList
+    }
+
+    static getDerivedStateFromProps(newProps, prevState) {
+        if (newProps.context.walletAddress !== prevState.address) {
+            return { address: newProps.context.walletAddress }
+        }
+        return null
+    }
+    
     componentDidMount = async () => {
-        const stakeList = await Stakes.loadStakes(this.state)
-        this.setState({ stakeList }) // : [ ...stakeList ] })
+       const stakeList = await Stakes.loadStakes(this.state)
+       this.setState({ stakeList, loadingStakes: false })
+    }
+
+    componentDidUpdate = async (prevProps, prevState) => {
+        if (prevProps.context.walletAddress !== this.state.address) {
+            debug('Reloading stakeList for address: ', this.state.address)
+            await this.setState({ loadingStakes: true })
+            const stakeList = await Stakes.loadStakes(this.state)
+            this.setState({ stakeList, loadingStakes: false })
+        }
     }
 
     CurrentStakesTable = () => {
@@ -155,9 +156,13 @@ class Stakes extends React.Component {
             })
         }
 
-        const stakeList = this.state.stakeList.slice()
-        const sorted = stakeList.sort((a, b) => (a.progress < b.progress ? (a.progress !== b.progress ? 1 : 0) : -1 ))
-        debug('SORTED?: ', sorted)
+        const stakeList = this.state.stakeList.slice() || null
+        stakeList && stakeList.sort((a, b) => (a.progress < b.progress ? (a.progress !== b.progress ? 1 : 0) : -1 ))
+
+        let stakedTotal = new BigNumber(0)
+        let sharesTotal = new BigNumber(0)
+        let bpdTotal = new BigNumber(0)
+        let interestTotal = new BigNumber(0)
 
         return (
             <Table variant="secondary" size="sm" striped borderless>
@@ -176,17 +181,27 @@ class Stakes extends React.Component {
                     </tr>
                 </thead>
                 <tbody>
-                    { this.state.stakeList && 
-                        stakeList.map((stakeData) => {
+                    { this.state.loadingStakes
+                        ? (
+                            <tr key="loading"><td colSpan="9" align="center">loading ...</td></tr>
+                        )
+                        : !stakeList.length
+                        ? (
+                            <tr key="loading"><td colSpan="9" align="center">no stake data found for this address</td></tr>
+                        )
+                        : stakeList.map((stakeData) => {
                             const startDay = stakeData.lockedDay
                             const endDay = startDay + stakeData.stakedDays
                             const startDate = new Date(HEX.START_DATE) // UTC but is converted to local
                             const endDate = new Date(HEX.START_DATE)
                             startDate.setUTCDate(startDate.getUTCDate() + startDay)
                             endDate.setUTCDate(endDate.getUTCDate() + endDay)
+                            stakedTotal = stakedTotal.plus(stakeData.stakedHearts)
+                            sharesTotal = sharesTotal.plus(stakeData.stakeShares)
+                            bpdTotal = bpdTotal.plus(stakeData.bigPayDay)
+                            interestTotal = interestTotal.plus(stakeData.payout)
 
-                            return (typeof stakeData === 'object') ? 
-                            (
+                            return (
                                 <tr key={stakeData.stakeId}>
                                     <td className="text-center">
                                         <OverlayTrigger
@@ -248,29 +263,28 @@ class Stakes extends React.Component {
                                         </Button>
                                     </td>
                                 </tr>
-                            ) : (
-                                <tr key={stakeData.stakeId}><td colSpan="5">loading</td></tr>
                             )
                         })
                     }
+
                 </tbody>
                 <tfoot>
                     <tr>
                         <td colSpan="4"></td>
                         <td className="text-right">
-                            <HexNum value={this.state.stakedTotal} /> 
+                            <HexNum value={stakedTotal} /> 
                         </td>
                         <td className="text-right">
-                            <HexNum value={this.state.sharesTotal.times(1e8)} />
+                            <HexNum value={sharesTotal.times(1e8)} />
                         </td>
                         <td className="text-right">
-                            <HexNum value={this.state.bpdTotal} />
+                            <HexNum value={bpdTotal} />
                         </td>
                         <td className="text-right">
-                            <HexNum value={this.state.interestTotal} />
+                            <HexNum value={interestTotal} />
                         </td>
                         <td className="text-right">
-                            <HexNum value={this.state.stakedTotal.plus(this.state.interestTotal)} />
+                            <HexNum value={stakedTotal.plus(interestTotal)} />
                         </td>
                         <td>{' '}</td>
                     </tr>
@@ -281,20 +295,26 @@ class Stakes extends React.Component {
 
     render() { // class Stakes
 
-        const { 
-            currentDay
-        } = this.state.contractData
+        const { currentDay } = this.state.contractData
         
         const handleClose = () => this.setState({ showExitModal: false })
 
         const thisStake = this.state.stakeContext // if any
         const IsEarlyExit = (thisStake.stakeId && currentDay <= (thisStake.lockedDay + thisStake.stakedDays)) 
 
+        const handleAccordionSelect = (selectedCard) => {
+            selectedCard && this.setState({ selectedCard }, debug('SELECTED: ', this.state.selectedCard))
+        }
+
         return (
             !this.state.stakeList
                 ? <ProgressBar variant="secondary" animated now={90} label="loading contract data" />
                 : <> 
-            <Accordion defaultActiveKey="new_stake">
+            <Accordion 
+                id='stakes_accordion'
+                activeKey={this.state.selectedCard}
+             onSelect={handleAccordionSelect}
+            >
                 <Card bg="secondary" text="light" className="overflow-auto">
                     <Accordion.Toggle as={Card.Header} eventKey="new_stake">
                         <h3 className="float-left">New Stake</h3>
