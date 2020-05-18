@@ -35,6 +35,7 @@ class App extends React.Component {
         this.state = {
             ...INITIAL_STATE
         }
+        window._APP = this // DEBUG REMOVE ME
     }
 
     getProviderOptions = () => {
@@ -64,9 +65,11 @@ class App extends React.Component {
                 if (!accounts.length)                   // => event:"close" (logged out)
                     this.resetApp()
                 else {                                  // => event:"accountsChanged"
+                    const newAddress = accounts[0]
+                    debug('***** ADDRESS CHANGE ***** %s(old) => %s', this.state.wallet.address, newAddress)
                     this.setState({ 
                         wallet: { ...this.state.wallet, address: accounts[0] } 
-                    }) // , this.updateHEXBalance)
+                    }, this.updateHEXBalance)
                 }
             })
         } else { // WalletConnect (and others?) ...
@@ -80,7 +83,9 @@ class App extends React.Component {
             })
             
             provider.on("accountsChanged", async (accounts) => {
-                await this.setState({ wallet: { address: accounts[0] } })
+                const newAddress = accounts[0]
+                debug('***** ADDRESS CHANGE [2] ***** %s(old) => %s', this.state.wallet.address, newAddress)
+                await this.setState({ wallet: { address: newAddress } })
                 this.updateHEXBalance()
             })
         }
@@ -104,10 +109,10 @@ class App extends React.Component {
             this.updateHEXBalance()
         }
         this.subscriptions.concat(
-            this.contract.events.Transfer( {filter:{from:this.state.wallet.address}}, eventCallback).on('connected', (id) => debug('from:', id))
+            this.contract.events.Transfer( {filter:{from:this.state.wallet.address}}, eventCallback).on('connected', (id) => debug('sub: HEX from:', id))
         )
         this.subscriptions.concat(
-            this.contract.events.Transfer( {filter:{to:this.state.wallet.address}}, eventCallback).on('connected', (id) => debug('to:', id))
+            this.contract.events.Transfer( {filter:{to:this.state.wallet.address}}, eventCallback).on('connected', (id) => debug('sub: HEX to:', id))
         )
     }
 
@@ -246,7 +251,6 @@ class App extends React.Component {
 
     WalletStatus = () => {
         const { address, balance } = this.state.wallet
-        debug('balance', balance)
         const addressFragment = address && address !== ''
             ? address.slice(0,6)+'...'+address.slice(-4) : 'unknown'
         return (
@@ -306,7 +310,7 @@ class App extends React.Component {
                             when you <strong>transform ETH to HEX</strong><br/>
                             using this app!
                         </div>
-                        <div className="small"><em>honors all existing referral cookies</em></div>
+                        <div className="small"><em>(steps back to honor any incoming ?r= referral link)</em></div>
                     </Card.Body>
                 </Container>
                 <Container className="p-1">

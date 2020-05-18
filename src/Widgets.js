@@ -56,3 +56,11 @@ export const WhatIsThis = (props) => {
     )
 }
 
+export const BurgerHeading = (props) => {
+    return (
+        <div className="burger" style={{ display: "inline-block" }}>
+            <img src="/hex-burger.png" alt="" style={{ height: "1.4em", display: "inline-block", verticalAlign: "middle", margin: "0 6px 0 0" }} />
+            <span style={{ verticalAlign: "middle", fontSize: "1.4em" }}>{props.children}</span>
+        </div>
+    )
+}

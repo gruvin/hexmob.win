@@ -13,24 +13,27 @@ import { BigNumber } from 'bignumber.js'
 import HEX from './hex_contract'
 import { calcBigPayDaySlice, calcAdoptionBonus } from './util'
 import  NewStakeForm from './NewStakeForm' 
-import { HexNum } from './Widgets' 
+import { HexNum, BurgerHeading } from './Widgets' 
 import { StakeInfo } from './StakeInfo'
+import crypto from 'crypto'
 const debug = require('debug')('Stakes')
 debug('loading')
 
 class Stakes extends React.Component {
     constructor(props) {
         super(props)
+        this.subscriptions = [ ]
+        this.loggedEvents = [ ]
         this.state = {
-            address: props.wallet.address,
-            // selectedCard: 'current_stakes',
-            selectedCard: 'new_stake',
+            selectedCard: 'current_stakes',
+            // selectedCard: 'new_stake',
             stakeCount: null,
             stakeList: null,
             loadingStakes: true,
             stakeContext: { }, // active UI stake context
-            showExitModal: false,
+            showExitModal: false
         }
+        window._STAKES = this // DEBUG REMOVE ME
     }
 
     static async getStakePayoutData(context, stakeData) {
@@ -86,10 +89,63 @@ class Stakes extends React.Component {
         return { interest, bigPayDay }
     }
 
+    addToEventLog = (s) => {
+        this.loggedEvents = this.loggedEvents.concat(crypto.createHash('sha1').update(s).digest('hex'))
+    }
+    existsInEventLog = (s) => {
+        return this.loggedEvents.includes(crypto.createHash('sha1').update(s).digest('hex'))
+    }
+
+    subscribeEvents = async () => {
+        this.subscriptions.concat(
+            await this.props.contract.events.StakeEnd( {filter:{stakerAddr:this.props.wallet.address}}, async (e, r) => {
+                if (e) { 
+                    debug('events.StakeEnd ERR:', e) 
+                    return
+                }
+                debug('events.StakeEnd[e, r]: ', e, r)
+
+                const { id, blockHash, removed, stakeId } = r.returnValues
+                if (this.existsInEventLog(id+blockHash+removed+stakeId)) return
+                this.addToEventLog(id+blockHash+removed+stakeId)
+
+                await this.loadAllStakes()
+            })
+            .on('connected', (id) => debug('sub: StakeEnd:', id))
+        )
+        this.subscriptions.concat(
+            await this.props.contract.events.StakeStart( {filter:{stakerAddr:this.props.wallet.address}}, async (e, r) => {
+                if (e) { 
+                    debug('events.StakeStart ERR: ', e) 
+                    return
+                }
+                debug('events.StakeStart[e, r]: ', e, r)
+
+                const { id, blockHash, removed, stakeId } = r.returnValues
+                if (this.existsInEventLog(id+blockHash+removed+stakeId)) return
+                this.addToEventLog(id+blockHash+removed+stakeId)
+
+                await this.loadAllStakes()
+            })
+            .on('connected', (id) => debug('sub: StakeStart:', id))
+        )
+    }
+
+    unsubscribeEvents = () => {
+        if (this.subscriptions.length) {
+            this.subscriptions = [ ]
+            this.web3.eth.clearSubscriptions()
+        }
+    }
+
     static async loadStakes(context) {
         const { contract, address } = context
         const { currentDay } = contract.Data
-        if (!address) return([ ])
+        if (!address) {
+            debug('******* loadStakes[] called with invalid address ********')
+            return null
+        }
+        debug('Loading stakes for address: ', address)
         const stakeCount = await contract.methods.stakeCount(address).call()
 
         // use Promise.all to load stake data in parallel
@@ -98,7 +154,13 @@ class Stakes extends React.Component {
         for (let index = 0; index < stakeCount; index++) {
             promises[index] = new Promise(async (resolve, reject) => { /* see ***, below */ // eslint-disable-line
                 const data = await contract.methods.stakeLists(address, index).call()
+
+                const progress = (currentDay < data.lockedDay) ? 0
+                    : Math.trunc(Math.min((currentDay - data.lockedDay) / data.stakedDays * 100000, 100000))
+
                 let stakeData = {
+                    stakeOwner: context.address,
+                    stakeIndex: index,
                     stakeId: data.stakeId,
                     lockedDay: Number(data.lockedDay),
                     stakedDays: Number(data.stakedDays),
@@ -106,15 +168,17 @@ class Stakes extends React.Component {
                     stakeShares: new BigNumber(data.stakeShares),
                     unlockedDay: Number(data.unlockedDay),
                     isAutoStake: Boolean(data.isAutoStakte),
-                    progress: Math.trunc(Math.min((currentDay - data.lockedDay) / data.stakedDays * 100000, 100000)),
+                    progress,
                     bigPayDay: new BigNumber(0),
                     payout: new BigNumber(0)
                 }
-                const payouts = await Stakes.getStakePayoutData(context, stakeData)
-                stakeData.payout = payouts.interest
-                stakeData.bigPayDay = payouts.bigPayDay
+                if (currentDay >= stakeData.lockedDay) {
+                    const payouts = await Stakes.getStakePayoutData(context, stakeData)
+                    stakeData.payout = payouts.interest
+                    stakeData.bigPayDay = payouts.bigPayDay
+                }
 
-                stakeList = stakeList.concat(stakeData) //*** ESLint complains but it's safe, due to use of non-mutating concat()
+                stakeList = stakeList.concat(stakeData) //*** ESLint complains but it's safe, because non-mutating concat()
                 return resolve()
             })
         }
@@ -130,18 +194,25 @@ class Stakes extends React.Component {
        }
     }
 
+    loadAllStakes = async () => {
+        await this.setState({ loadingStakes: true })
+        const stakeList = await Stakes.loadStakes(this.getStaticContext())
+        stakeList && this.setState({ stakeList, loadingStakes: false })
+    }
+
     componentDidMount = async () => {
-       const stakeList = await Stakes.loadStakes(this.getStaticContext())
-       this.setState({ stakeList, loadingStakes: false })
+       await this.loadAllStakes()
+       await this.subscribeEvents()
     }
 
     componentDidUpdate = async (prevProps, prevState) => {
         if (prevProps.wallet.address !== this.props.wallet.address) {
-            debug('Reloading stakeList for address: ', this.state.address)
-            await this.setState({ loadingStakes: true })
-            const stakeList = await Stakes.loadStakes(this.getStaticContext())
-            this.setState({ stakeList, loadingStakes: false })
+            await this.loadAllStakes()
         }
+    }
+
+    componentWillUnmount() {
+        this.unsubscribeEvents()
     }
 
     StakesList = () => {
@@ -184,9 +255,9 @@ class Stakes extends React.Component {
                         )
                     })
                 }
-                <Card xs={12} sm={6} bg="dark"className="m-1 p-1">
+                <Card xs={12} sm={6} bg="dark"className="m-2 p-1">
                     <Card.Header className="p-1 text-center"><strong>Stake Totals</strong></Card.Header>
-                    <Card.Body className="bg-secondary p-1">
+                    <Card.Body className="bg-secondary p-1 rounded">
                         <Row>
                             <Col className="text-right"><strong>Staked</strong></Col>
                             <Col><HexNum value={stakedTotal} showUnit /></Col>
@@ -232,7 +303,7 @@ class Stakes extends React.Component {
             >
                 <Card bg="secondary" text="light" className="overflow-auto">
                     <Accordion.Toggle as={Card.Header} eventKey="new_stake" className="p-2">
-                        <h4 className="float-left text-success">New Stake</h4>
+                        <BurgerHeading className="float-left">New Stake</BurgerHeading>
                         <div className="day-number float-right">Day {currentDay+1}</div>
                     </Accordion.Toggle>
                     <Accordion.Collapse eventKey="new_stake">
@@ -243,7 +314,7 @@ class Stakes extends React.Component {
                 </Card>
                 <Card bg="secondary" text="light" className="overflow-auto">
                     <Accordion.Toggle as={Card.Header} eventKey="current_stakes" className="p-2">
-                        <h4 className="text-warning">Current Stakes</h4>
+                        <BurgerHeading>Current Stakes</BurgerHeading>
                     </Accordion.Toggle>
                     <Accordion.Collapse eventKey="current_stakes">
                         <Card.Body className="bg-none p-1">
@@ -253,7 +324,7 @@ class Stakes extends React.Component {
                 </Card>
                 <Card bg="secondary" text="light" className="overflow-auto">
                     <Accordion.Toggle as={Card.Header} eventKey="stake_history" className="p-2">
-                        <h4 className="text-danger">Stake History</h4>
+                        <BurgerHeading>Stake History</BurgerHeading>
                     </Accordion.Toggle>
                     <Accordion.Collapse eventKey="stake_history">
                         <Card.Body className="bg-dark">

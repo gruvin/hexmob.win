@@ -16,7 +16,7 @@
     and (device-height: 896px) 
     and (-webkit-device-pixel-ratio: 3) { }
 
-@import url('https://fonts.googleapis.com/css2?family=Happy+Monkey&family=Jura:wght@500;700&family=Nosifer&family=Press+Start+2P&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Happy+Monkey&family=Jura:wght@500;700&family=Press+Start+2P&family=Titillium+Web:wght@400;700&display=swap');
 
 $hex-crimson: #ff4136;
 $hex-orange: #d66f25;
@@ -47,7 +47,14 @@ body {
     max-width: 800px;
 }
 
-.accordion>.card .card-header { cursor: pointer; }
+.card-header {
+    cursor: pointer; 
+}
+
+.burger { 
+    font-family: 'Titillium Web', sans-serif;
+    font-weight: bold;
+}
 
 .tooltip-inner {
     font-family: "Happy Monkey", Arial, sans-serif;

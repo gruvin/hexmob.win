@@ -4,7 +4,10 @@ import {
     ProgressBar,
     Accordion,
     Row,
-    Col
+    Col,
+    Button,
+    Spinner,
+    Badge
 } from 'react-bootstrap'
 import './Stakes.scss'
 import HEX from './hex_contract'
@@ -17,37 +20,61 @@ export class StakeInfo extends React.Component {
     constructor(props) {
         super(props)
         this.state = {
-
+            waitSpinner: false
         }
+    }
+
+    handleEndStake = (stake, e) => {
+        e.preventDefault();
+        const { contract } = this.props
+        e.currentTarget.classList.add('disabled')
+        this.setState({ waitSpinner: true })
+
+        contract.methods.stakeEnd(stake.stakeIndex, stake.stakeId).send({
+            from: stake.stakeOwner
+        }) // we'll lazily leave Stakes.js event listener to take care of business
     }
 
     render() {
         const { contract, stake } = this.props
         const { currentDay } = contract.Data
-        const progress = Math.min(currentDay - stake.startDay, stake.stakedDays) / stake.stakedDays * 100
-        const v = progress < 50 ? "danger" : progress < 100 ? "warning" : "success"
+        const { startDay, endDay } = stake
+        
+        const progress = parseFloat((stake.progress / 1000).toPrecision(3))
+        const v = progress === 0 ? "secondary" 
+            : progress < 50 ? "danger" 
+            : progress < 100 ? "warning"
+            : "success"
+
         const valueTotal = stake.stakedHearts.plus(stake.payout).plus(currentDay >= HEX.BIG_PAY_DAY ? stake.bigPayDay : 0)
-        const percentGain = valueTotal / stake.stakedHearts * 100
+        const percentGain = stake.payout / stake.stakedHearts * 100
         const daysServed = currentDay - stake.startDay
-        const percentAPY = currentDay < stake.endDay
-            ? 365 / Math.min(daysServed, 365) * percentGain
+        const percentAPY = currentDay < stake.startDay ? 0 
+            : currentDay < stake.endDay ? 365 / Math.min(daysServed, 365) * percentGain
             : percentGain / 365
+        const pending = (currentDay < stake.lockedDay)
         return (
-            <Accordion xs={12} sm={6} defaultActiveKey="0" key={stake.stakeId} className="m-1 mt-3">
+            <Accordion xs={12} sm={6} defaultActiveKey="0" key={stake.stakeId} className="m-1 my-2">
                 <Card bg="dark" className="m-1 p-1">
                     <Accordion.Toggle as={Card.Header} eventKey={0} className="p-1">
                         <Row>
                             <Col><strong>Day</strong></Col>
-                            <Col xs={7}className="text-right"><strong>Staked</strong>{' '}<HexNum value={stake.stakedHearts} showUnit /></Col>
+                            <Col xs={9}className="text-right">
+                                <strong>Principal</strong>
+                                {' '}<HexNum value={stake.stakedHearts} showUnit />
+                            </Col>
                         </Row>
-                        <Row>
-                            <Col>{stake.startDay} to {stake.endDay}</Col>
-                            <Col className="text-right">{progress.toPrecision(3)}%</Col>
+                        <Row className="mb-1">
+                            <Col>{startDay+1} to {endDay+1}</Col>
+                            <Col className="text-right numeric">{ pending ? <Badge variant="primary">PENDING</Badge> : progress+"%"}</Col>
                         </Row>
-                        <ProgressBar variant={v} now={Math.ceil(progress)} />
+                        { pending 
+                            ? <ProgressBar variant={v} now={100} striped />
+                            : <ProgressBar variant={v} now={Math.ceil(progress)}  />
+                        }
                     </Accordion.Toggle>
-                    <Accordion.Collapse eventKey={0} className="bg-secondary m-1 p-1 rounded">
-                        <Card.Body className="p-1">
+                    <Accordion.Collapse eventKey={0} className="bg-secondary mt-1 p-1 rounded">
+                        <Card.Body className="p-2">
                             <Row>
                                 <Col><strong>Start Day</strong></Col>
                                 <Col className="numeric">{stake.startDay}</Col>
@@ -91,6 +118,22 @@ export class StakeInfo extends React.Component {
                             <Row>
                                 <Col><strong>% APY</strong></Col>
                                 <Col className="numeric">{format(',')(percentAPY.toPrecision(5))}%</Col>
+                            </Row>
+                            <Row>
+                                <Col className="text-right">
+                                    <Button variant="primary" href="#end_stake" onClick={(e) => this.handleEndStake(stake, e)}>
+                                        { this.state.waitSpinner && <>
+                                            <Spinner
+                                                as="span"
+                                                animation="border"
+                                                size="sm"
+                                                role="status"
+                                                aria-hidden="true"
+                                            />{' '}</>
+                                        }
+                                        End Stake
+                                    </Button>
+                                </Col>
                             </Row>
 
                         </Card.Body>
