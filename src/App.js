@@ -1,6 +1,6 @@
 import React from 'react'
 import { BigNumber } from 'bignumber.js'
-import { format } from 'd3-format'
+import { HexNum } from './Widgets'
 import { Container, Card, Row, Col, Button, Badge, ProgressBar } from 'react-bootstrap'
 import Stakes from './Stakes'
 
@@ -252,14 +252,14 @@ class App extends React.Component {
         return (
             <Container fluid>
             <Row>
-                <Col md={{span: 2}}><Badge variant="success" className="small">mainnet</Badge></Col>
-                <Col md={{span: 2, offset: 3}} className="text-center"> 
+                <Col><Badge variant="success" className="small">mainnet</Badge></Col>
+                <Col className="text-center"> 
                     <Badge variant="info" className="small"> 
-                        { format(',')(balance.idiv(1e8).toString()) }
+                        <HexNum value={balance} showUnit />
                     </Badge>
                 </Col>
-                <Col md={{span: 3, offset: 2}} className="text-right">
-                    <Badge className="text-info">{ addressFragment }</Badge>
+                <Col className="text-right">
+                    <Badge className="text-info d-none d-md-inline">{ addressFragment }</Badge>
                     <Badge variant="secondary" style={{ cursor: "pointer" }} onClick={ this.disconnectWallet } className="small">
                         disconnect
                     </Badge>
@@ -292,26 +292,51 @@ class App extends React.Component {
 
     render() {
         return (
-            <Container>
+            <>
                 { this.state.walletConnected && <this.WalletStatus />}
                 <Container className="overflow-auto p-1">
                     <this.AppContent />
                 </Container>
-                <Container className="p-3">
-                    <Button size="sm" variant="primary" 
-                        href="https://changelly.com/?ref_id=1b7z255j4rfbxsyd#buy"
-                        target="_blank" rel="noopener noreferrer"
-                    >buy ETH</Button>
-                    {' '}
-                    <Button size="sm" variant="success" href="http://get.dogehex.win" target="_blank" rel="noopener noreferrer">
-                        Get HEX +10% Bonus
-                    </Button>
-                    {' '}
-                    <Button size="sm" variant="info" href="https://hexdex.win/swap" target="_blank" rel="noopener noreferrer">
-                        Swap HEX
-                    </Button>
+                <Container className="p-1 text-center">
+                    <Card.Body as={Button} variant="success" className="w-100" style={{ cursor: "pointer" }}
+                        href="http://get.dogehex.win" target="_blank" rel="noopener noreferrer"
+                    >
+                        <div><img src="/extra-bonus-10.png" alt="extra bonus 10%" /></div>
+                        <div>
+                            when you <strong>transform ETH to HEX</strong><br/>
+                            using this app!
+                        </div>
+                        <div className="small"><em>honors all existing referral cookies</em></div>
+                    </Card.Body>
                 </Container>
-            </Container>
+                <Container className="p-1">
+                    <Card.Body as={Button} variant="info" className="w-100" style={{ cursor: "pointer" }}
+                        href="https://changelly.com/?ref_id=1b7z255j4rfbxsyd#buy" target="_blank" rel="noopener noreferrer"
+                    >
+                        <div className="m-auto">
+                            <img className="d-inline-block" src="/buy-eth.png" alt="buy ethereum here" style={{ verticalAlign: "middle" }} />
+                            <div className="d-inline-block text-center" style={{ verticalAlign: "middle" }}>
+                                TAP HERE to<br/>
+                                <strong>buy Ethereum</strong><br/>
+                                using Credit Card
+                            </div>
+                        </div>
+                    </Card.Body>
+                </Container>
+                <Container className="p-1">
+                    <Card.Body as={Button} variant="warning" className="text-center w-100" style={{ cursor: "pointer" }}
+                        href="https://hexdex.win/swap" target="_blank" rel="noopener noreferrer"
+                    >
+                        <img className="d-inline-block" src="/holders.png" alt="swap HEX for USDC or DAI" style={{ verticalAlign: "middle", height: "97px" }} />
+                        <div className="text-right d-inline-block" style={{ verticalAlign: "middle", marginLeft: "28px" }}>
+                            <strong>Swap HEX</strong> with<br/>
+                            ERC20s including<br/>
+                            <strong>USDC</strong> & <strong>DAI</strong>
+                            <br/>
+                        </div>
+                    </Card.Body>
+                </Container>
+            </>
         )
     }
 }

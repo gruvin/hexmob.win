@@ -9,15 +9,10 @@
     border-radius: 5px;
 }
 .form-label { font-weight: bold; }
-.accordion > .card {
-    border-width: 2px;
-    border-radius: 5px;
+.accordion .accordion > .card {
+    border-width: 2px !important;
+    border-radius: 5px !important;
 }
-/*
-.accordion > .card > .collapse {
-    background-color: #222;
-}
-*/
 
 .numeric {
     font-family: Jura, monospace;

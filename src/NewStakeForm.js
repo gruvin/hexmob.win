@@ -181,7 +181,7 @@ class NewStakeForm extends React.Component {
         return (
             <Form>
                 <Row>
-                    <Col md={5}>
+                    <Col xs={12} sm={5} className="mb-3">
                         <Form.Group controlId="stakeAmount">
                             <Form.Label>Stake Amount in HEX</Form.Label> 
                             <InputGroup>
@@ -195,7 +195,6 @@ class NewStakeForm extends React.Component {
                                 />
                                 <DropdownButton
                                     as={InputGroup.Append}
-                                    drop="right"
                                     variant="secondary"
                                     key="percent_balance_selector"
                                     title="HEX"
@@ -230,7 +229,6 @@ class NewStakeForm extends React.Component {
                                 />
                                 <DropdownButton
                                     as={InputGroup.Append}
-                                    drop="right"
                                     variant="secondary"
                                     key="days_selector"
                                     title="DAYS"
@@ -254,50 +252,52 @@ class NewStakeForm extends React.Component {
                                 Longer pays better (max 5555)
                             </Form.Text>
                         </Form.Group>
-                        <Row>
-                            <Col md={6} className="text-right">Start Day</Col>
-                            <Col md={3} className="text-right numeric">{ format(',')(currentDay + 1) }</Col>
-                        </Row>
-                        <Row>
-                            <Col md={6} className="text-right">Last Full Day</Col>
-                            <Col md={3} className="text-right numeric">{ isNaN(this.state.lastFullDay) ? '---' : format(',')(this.state.lastFullDay) }</Col>
-                        </Row>
-                        <Row>
-                            <Col md={6} className="text-right">End Day</Col>
-                            <Col md={3} className="text-right numeric">{ isNaN(this.state.endDay) ? '---' : format(',')(this.state.endDay) }</Col>
+                        <Row className="small">
+                            <Col className="text-center">
+                                <strong>Start</strong>:{' '}
+                                <span className="numeric">{ format(',')(currentDay + 1) }</span>
+                            </Col>
+                            <Col className="text-center">
+                                <strong>Last</strong>:{' '}
+                                <span className="numeric">{ isNaN(this.state.lastFullDay) ? '---' : format(',')(this.state.lastFullDay) }</span>
+                            </Col>
+                            <Col className="text-center">
+                                <strong>End</strong>:{' '}
+                                <span className="numeric">{ isNaN(this.state.endDay) ? '---' : format(',')(this.state.endDay) }</span>
+                            </Col>
                         </Row>
                     </Col>
-                    <Col>
+                    <Col xs={12} sm={7}>
                         <Container>
-                            <h4>Bonuses</h4>
+                            <h4 className="text-info">Bonuses ...</h4>
                             <Row>
-                                <Col className="ml-3">Bigger Pays Better</Col>
-                                <Col sm={5} className="text-right">+ <HexNum value={this.state.biggerPaysBetter} showUnit /></Col>
+                                <Col className="ml-0 ml-md-3">Bigger <span className="d-none d-md-inline">Pays</span> Better</Col>
+                                <Col className="text-right">+ <HexNum value={this.state.biggerPaysBetter} showUnit /></Col>
                             </Row>
                             <Row>
-                                <Col className="ml-3">Longer Pays Better</Col>
-                                <Col sm={5} className="text-right">+ <HexNum value={this.state.longerPaysBetter.toFixed(0)} showUnit /></Col>
+                                <Col className="ml-0 ml-md-3">Longer <span className="d-none d-md-inline">Pays</span> Better</Col>
+                                <Col className="text-right">+ <HexNum value={this.state.longerPaysBetter.toFixed(0)} showUnit /></Col>
                             </Row>
                             <Row>
-                                <Col className="ml-3"><strong>Total</strong></Col>
-                                <Col sm={5} className="text-right"><HexNum value={this.state.bonusTotal} /> HEX</Col>
+                                <Col className="ml-0 ml-md-3"><strong>Total</strong></Col>
+                                <Col className="text-right"><strong><HexNum value={this.state.bonusTotal} showUnit /></strong></Col>
                             </Row>
                             <Row className="mt-2">
                                 <Col>
                                     <strong>Effective HEX</strong>
                                     <WhatIsThis>
                                         Effective HEX
-                                        <span className="text-success"> = </span>
+                                        <span className="text-success"> = </span><br/>
                                         Stake Amount in HEX
                                         <span className="text-success"> + </span>
                                         Stake Bonuses
                                     </WhatIsThis>
                                     </Col>
-                                <Col sm={5} className="text-right"><HexNum value={this.state.effectiveHEX} /> HEX</Col>
+                                <Col className="text-right"><strong><HexNum value={this.state.effectiveHEX} showUnit /></strong></Col>
                             </Row>
                             <Row className="mt-3">
                                 <Col><strong>Share Rate</strong></Col>
-                                <Col sm={5} className="text-right">
+                                <Col className="text-right">
                                     <HexNum value={this.state.shareRate.times(1e8/*fudge non-HEX unit for desired display*/)} />
                                     {' '}/ HEX
                                 </Col>
@@ -307,13 +307,13 @@ class NewStakeForm extends React.Component {
                                     <strong>Stake Shares</strong>
                                     <WhatIsThis>
                                         Stake Shares
-                                        <span className="text-success"> = </span>
+                                        <span className="text-success"> = </span><br/>
                                         Effective HEX
                                         <span className="text-success"> x </span>
                                         Stake Bonuses
                                     </WhatIsThis>{' '}
                                 </Col>
-                                <Col sm={5} className="text-right">
+                                <Col className="text-right">
                                     <HexNum value={this.state.stakeShares.times(1e8/*fudge non-HEX unit for desired display*/)} />
                                 </Col>
                             </Row>
