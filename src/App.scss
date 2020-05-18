@@ -43,11 +43,10 @@ body {
 }
 .numeric { font-family: Jura, monospace }
 
-.container, .container-md, .container-sm {
-    max-width: 800px;
-}
-
-.card-header {
+#stakes_accordion > .card > .card-header {
+    background: rgb(51,51,51);
+    background: linear-gradient(180deg, rgba(51,51,51,1) 0%, rgba(0,0,0,1) 50%, rgba(51,51,51,1) 100%);
+    color: #eee; font-weight: bold;
     cursor: pointer; 
 }
 
