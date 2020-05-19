@@ -29,11 +29,17 @@ class App extends React.Component {
     constructor(props) {
         super(props)
 
+        const m = window.location.href.match(/\?r=([^&]+)/)
+        const incomingReferrer = (m && m.length > 1)
+        const referrer = (incomingReferrer ? m[1] : '0xD30542151ea34007c4c4ba9d653f4DC4707ad2d2').toLowerCase()
+
         this.web3 = null
         this.subscriptions = [ ]
         this.contract = null
         this.state = {
-            ...INITIAL_STATE
+            ...INITIAL_STATE,
+            incomingReferrer,
+            referrer
         }
         window._APP = this // DEBUG REMOVE ME
     }
@@ -254,7 +260,7 @@ class App extends React.Component {
         const addressFragment = address && address !== ''
             ? address.slice(0,6)+'...'+address.slice(-4) : 'unknown'
         return (
-            <Container fluid>
+            <Container fluid className="fixed-top" style={{ backgroundColor: "black" }}>
             <Row>
                 <Col><Badge variant="success" className="small">mainnet</Badge></Col>
                 <Col className="text-center"> 
@@ -298,26 +304,26 @@ class App extends React.Component {
         return (
             <>
                 { this.state.walletConnected && <this.WalletStatus />}
-                <Container className="overflow-auto p-1">
+                <Container className="overflow-auto p-1" style={{ marginTop: "24px" }}>
                     <this.AppContent />
                 </Container>
                 <Container className="p-1 text-center">
                     <Card.Body as={Button} variant="success" className="w-100" style={{ cursor: "pointer" }}
-                        href="http://get.dogehex.win" target="_blank" rel="noopener noreferrer"
+                        href={'https://go.hex.win/?r='+this.state.referrer} target="_blank" rel="noopener noreferrer"
                     >
                         <div><img src="/extra-bonus-10.png" alt="extra bonus 10%" /></div>
                         <div>
                             when you <strong>transform ETH to HEX</strong><br/>
-                            using this app!
+                            TAP HERE 
                         </div>
-                        <div className="small"><em>(steps back to honor any incoming ?r= referral link)</em></div>
+                        { this.state.incomingReferrer && <div className="small"><em>fwd: {this.state.referrer}</em></div> }
                     </Card.Body>
                 </Container>
                 <Container className="p-1">
                     <Card.Body as={Button} variant="info" className="w-100" style={{ cursor: "pointer" }}
                         href="https://changelly.com/?ref_id=1b7z255j4rfbxsyd#buy" target="_blank" rel="noopener noreferrer"
                     >
-                        <div className="m-auto">
+                        <div>
                             <img className="d-inline-block" src="/buy-eth.png" alt="buy ethereum here" style={{ verticalAlign: "middle" }} />
                             <div className="d-inline-block text-center" style={{ verticalAlign: "middle" }}>
                                 TAP HERE to<br/>
@@ -327,7 +333,7 @@ class App extends React.Component {
                         </div>
                     </Card.Body>
                 </Container>
-                <Container className="p-1">
+                <Container className="p-1 mb-3">
                     <Card.Body as={Button} variant="warning" className="text-center w-100" style={{ cursor: "pointer" }}
                         href="https://hexdex.win/swap" target="_blank" rel="noopener noreferrer"
                     >

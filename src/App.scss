@@ -16,7 +16,7 @@
     and (device-height: 896px) 
     and (-webkit-device-pixel-ratio: 3) { }
 
-@import url('https://fonts.googleapis.com/css2?family=Happy+Monkey&family=Jura:wght@500;700&family=Press+Start+2P&family=Titillium+Web:wght@400;700&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Happy+Monkey&family=Jura:wght@500;700&family=Press+Start+2P&family=Titillium+Web:wght@400;700&family=Nosifer&display=swap');
 
 $hex-crimson: #ff4136;
 $hex-orange: #d66f25;
@@ -43,11 +43,15 @@ body {
 }
 .numeric { font-family: Jura, monospace }
 
+.card-header { cursor: pointer; }
 #stakes_accordion > .card > .card-header {
     background: rgb(51,51,51);
     background: linear-gradient(180deg, rgba(51,51,51,1) 0%, rgba(0,0,0,1) 50%, rgba(51,51,51,1) 100%);
     color: #eee; font-weight: bold;
-    cursor: pointer; 
+}
+
+.spinner-border {
+    vertical-align: middle;
 }
 
 .burger { 

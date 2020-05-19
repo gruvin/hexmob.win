@@ -256,7 +256,7 @@ class Stakes extends React.Component {
                     })
                 }
                 <Card xs={12} sm={6} bg="dark"className="m-2 p-1">
-                    <Card.Header className="p-1 text-center"><strong>Stake Totals</strong></Card.Header>
+                    <Card.Header className="p-1 text-center text-info"><strong>Stake Totals</strong></Card.Header>
                     <Card.Body className="bg-secondary p-1 rounded">
                         <Row>
                             <Col className="text-right"><strong>Staked</strong></Col>
@@ -304,7 +304,7 @@ class Stakes extends React.Component {
                 <Card bg="secondary" text="light" className="overflow-auto">
                     <Accordion.Toggle as={Card.Header} eventKey="new_stake" className="p-2">
                         <BurgerHeading className="float-left">New Stake</BurgerHeading>
-                        <div className="day-number float-right">Day {currentDay+1}</div>
+                        <div className="day-number float-right">Day <span className="numeric">{currentDay+1}</span></div>
                     </Accordion.Toggle>
                     <Accordion.Collapse eventKey="new_stake">
                         <Card.Body className="bg-dark p-2">

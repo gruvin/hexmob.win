@@ -1,11 +1,20 @@
 @import "./App.scss";
 
 .day-number {
-    background-color: map-get($theme-colors, dark);
-    color: map-get($theme-colors, info);
-    display: inline-block;
+    font-family: Jura, monospace;
+    color: map-get($theme-colors, secondary);
+    font-size: 1.0em;
+    line-height: 1.6em;
+    font-weight: normal;
+    text-transform: lowercase;
+}
+.day-number .numeric { 
+    font-size: 1.6em;
     font-weight: bold;
-    padding: .3em .5em;
+    vertical-align: middle;
+    color: map-get($theme-colors, info);
+    background-color: map-get($theme-colors, dark);
+    padding: 0 0.25em;
     border-radius: 5px;
 }
 .form-label { font-weight: bold; }
@@ -13,69 +22,81 @@
     border-width: 2px !important;
     border-radius: 5px !important;
 }
-
 .numeric {
     font-family: Jura, monospace;
     display: inline-block;
 }
-thead, tfoot {
-    background: rgb(51,51,51);
-    background: linear-gradient(180deg, rgba(51,51,51,1) 0%, rgba(0,0,0,1) 48%, rgba(51,51,51,1) 100%);
-    color: #eee; font-weight: bold;
+#stakes_accordion .btn {
+    font-family: 'Titillium Web', sans-serif; 
+    font-weight: bold;
+    border-style: outset;
 }
-button.btn-sm { padding: 0.1rem .2rem; line-height: 1em; } 
-
-button.exitbtn {
-    width: 64px;
+.btn-sm { padding: 0.1rem .2rem; line-height: 1em; } 
+.btn-exitbtn {
+    font-family: 'Titillium Web', sans-serif; 
+    font-weight: bold !important;
     padding: 0; 
     font-weight: bold;
     font-size: 1.0em;
     line-height: 20px;
 }
+/* PENDING EXIT BUTTON */
+.btn-exitbtn.pendingexit { 
+    color: map-get($theme-colors, warning); 
+    border: 2px map-get($theme-colors, dark) solid; 
+    background-color: map-get($theme-colors, secondary); 
+}
+.btn-exitbtn.pendingexit:hover {
+    color: map-get($theme-colors, warning); 
+    border-color: map-get($theme-colors, dark);
+    background-color: map-get($theme-colors, dark); 
+}
+
 /* EARLY EXIT BUTTON -- DANGER! */
-button.earlyexit { 
+.btn-exitbtn.earlyexit { 
     font-size: 0.95em;
     font-weight: normal;
     font-family: Nosifer, sans-serif; 
     color: map-get($theme-colors, danger); 
     border: 1px map-get($theme-colors, danger) solid; 
 }
-button.earlyexit.btn-outline-primary:hover {
+.btn-exitbtn.earlyexit:hover {
     color: map-get($theme-colors, light);
     background-color: map-get($theme-colors, danger);
 }
 
 /* EARLY BUT PAST MID TERM EXIT BUTTON */
-button.midexit { 
+.btn-exitbtn.midexit { 
     color: map-get($theme-colors, warning); 
-    border-color: map-get($theme-colors, warning); 
+    border: 2px map-get($theme-colors, warning) solid; 
 }
-button.midexit.btn-outline-primary:hover {
+.btn-exitbtn.midexit:hover {
     color: map-get($theme-colors, light);
     background-color: map-get($theme-colors, warning); 
 }
 
 /* AT TERM PLUS UP TO ONE WEEK LATE EXIT BUTTON */
-button.termexit {
-    color: map-get($theme-colors, secondary); 
-    border-color: map-get($theme-colors, secondary); 
-    background-color: map-get($theme-colors, success); 
+.btn-exitbtn.termexit {
+    color: map-get($theme-colors, success); 
+    border: 2px map-get($theme-colors, success) solid; 
+    background-color: map-get($theme-colors, secondary); 
 }
-button.termexit.btn-outline-primary:hover {
+.btn-exitbtn.termexit:hover {
     color: map-get($theme-colors, light); 
     border-color: map-get($theme-colors, success); 
     background-color: map-get($theme-colors, success); 
 }
 
 /* LATER THAN TERM PLUS ONE WEEK EXIT BUTTON */
-button.lateexit {
+.btn-exitbtn.lateexit {
     color: map-get($theme-colors, secondary); 
-    border-color: map-get($theme-colors, warning); 
-    background: map-get($theme-colors, success) url(/exclamation-mark.gif) no-repeat 51px;
-    background-size: 9px 20px;
+    padding-left: 22px;
+    border-color: map-get($theme-colors, info); 
+    background: map-get($theme-colors, info) url(/exclamation-mark.gif) no-repeat 7px 5px;
+    background-size: 10px 26px;
 }
-button.lateexit.btn-outline-primary:hover {
-    color: map-get($theme-colors, light); 
+.btn-exitbtn.lateexit:hover {
+    color: map-get($theme-colors, secondary); 
     border-color: map-get($theme-colors, success); 
     background-color: map-get($theme-colors, success); 
 }

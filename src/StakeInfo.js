@@ -27,12 +27,27 @@ export class StakeInfo extends React.Component {
     handleEndStake = (stake, e) => {
         e.preventDefault();
         const { contract } = this.props
-        e.currentTarget.classList.add('disabled')
-        this.setState({ waitSpinner: true })
+        var target = e.currentTarget // for closure access in .on(..) functions below
+        target.classList.add('disabled')
+        this.setState({ waitSpinner: 'secondary' })
 
         contract.methods.stakeEnd(stake.stakeIndex, stake.stakeId).send({
             from: stake.stakeOwner
-        }) // we'll lazily leave Stakes.js event listener to take care of business
+        })
+        .on('transactionHash', (hash) => {
+            this.setState({ waitSpinner: 'primary' })
+            debug('transactionHash: ', hash)
+        })
+        .on('confirmation', (confirmationNumber, receipt) => {
+            debug('confirmationNumber: %s, receipt: %O', confirmationNumber, receipt)
+        })
+        .on('receipt', (receipt) => {
+            debug('receipt: %O', receipt)
+        })
+        .on('error', (receipt) => { // eg. rejected or out of gas
+            target.classList.remove('disabled')
+            this.setState({ waitSpinner: false })
+        })
     }
 
     render() {
@@ -41,10 +56,19 @@ export class StakeInfo extends React.Component {
         const { startDay, endDay } = stake
         
         const progress = parseFloat((stake.progress / 1000).toPrecision(3))
-        const v = progress === 0 ? "secondary" 
-            : progress < 50 ? "danger" 
-            : progress < 100 ? "warning"
-            : "success"
+        const stakeDay = stake.lockedDay + stake.stakedDays // no. days into active stake
+        const exitClass = 
+                currentDay < startDay ? "pendingexit"
+                : currentDay < stakeDay/2 ? "earlyexit"
+                : currentDay < stakeDay ? "midexit"
+                : currentDay < stakeDay+7 ? "termexit"
+                : "lateexit"
+        const progressVariant = 
+            exitClass === "pendingexit" ? "secondary"
+            : exitClass === "earlyexit" ? "danger"
+            : exitClass === "midexit" ? "warning"
+            : exitClass === "termexit" ? "success"
+            : "info" // latexit
 
         const valueTotal = stake.stakedHearts.plus(stake.payout).plus(currentDay >= HEX.BIG_PAY_DAY ? stake.bigPayDay : 0)
         const percentGain = stake.payout / stake.stakedHearts * 100
@@ -58,19 +82,18 @@ export class StakeInfo extends React.Component {
                 <Card bg="dark" className="m-1 p-1">
                     <Accordion.Toggle as={Card.Header} eventKey={0} className="p-1">
                         <Row>
-                            <Col><strong>Day</strong></Col>
-                            <Col xs={9}className="text-right">
-                                <strong>Principal</strong>
-                                {' '}<HexNum value={stake.stakedHearts} showUnit />
+                            <Col><strong>days</strong></Col>
+                            <Col xs={9}className="text-right text-info">
+                                <strong><HexNum value={stake.stakedHearts} showUnit /></strong>
                             </Col>
                         </Row>
                         <Row className="mb-1">
-                            <Col>{startDay+1} to {endDay+1}</Col>
+                            <Col className="numeric">{startDay+1} to {endDay+1}</Col>
                             <Col className="text-right numeric">{ pending ? <Badge variant="primary">PENDING</Badge> : progress+"%"}</Col>
                         </Row>
                         { pending 
-                            ? <ProgressBar variant={v} now={100} striped />
-                            : <ProgressBar variant={v} now={Math.ceil(progress)}  />
+                            ? <ProgressBar variant={progressVariant} now={100} striped />
+                            : <ProgressBar variant={progressVariant} now={Math.ceil(progress)}  />
                         }
                     </Accordion.Toggle>
                     <Accordion.Collapse eventKey={0} className="bg-secondary mt-1 p-1 rounded">
@@ -120,10 +143,11 @@ export class StakeInfo extends React.Component {
                                 <Col className="numeric">{format(',')(percentAPY.toPrecision(5))}%</Col>
                             </Row>
                             <Row>
-                                <Col className="text-right">
-                                    <Button variant="primary" href="#end_stake" onClick={(e) => this.handleEndStake(stake, e)}>
+                                <Col className="text-right mt-3">
+                                    <Button variant={'exitbtn '+exitClass} href="#end_stake" onClick={(e) => this.handleEndStake(stake, e)}>
                                         { this.state.waitSpinner && <>
                                             <Spinner
+                                                variant={this.state.waitSpinner}
                                                 as="span"
                                                 animation="border"
                                                 size="sm"
