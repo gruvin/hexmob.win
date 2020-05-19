@@ -1,7 +1,6 @@
 import React from 'react'
 import { 
     Container,
-    Button,
     Form,
     FormControl,
     InputGroup,
@@ -9,14 +8,13 @@ import {
     DropdownButton,
     Row,
     Col,
-    Spinner
 } from 'react-bootstrap'
 import './Stakes.scss'
 import { BigNumber } from 'bignumber.js'
 import { format } from 'd3-format'
 import HEX from './hex_contract.js'
 import { calcBigPayDaySlice, calcAdoptionBonus } from './util.js'
-import { HexNum, WhatIsThis } from './Widgets.js' 
+import { HexNum, WhatIsThis, VoodooButton } from './Widgets.js' 
 const debug = require('debug')('NewStakeForm')
 debug('loading')
 
@@ -41,37 +39,6 @@ class NewStakeForm extends React.Component {
             percentAPY: 0.0,
             waitSpinner: false
         }
-    }
-
-    handleStartStake = (e) => {
-        e.preventDefault();
-        const { contract } = this.props
-        const { address } = this.props.wallet
-        if (!address) return debug('handleStartStake error: address is invalid: ', address)
-
-        var target = e.currentTarget // for closure access in .on(..) functions below
-
-        target.classList.add('disabled')
-        this.setState({ waitSpinner: 'secondary' })
-
-        const { stakeAmount, stakeDays } = this.state
-        contract.methods.stakeStart(stakeAmount, stakeDays).send({
-            from: address
-        })
-        .on('transactionHash', (hash) => {
-            this.setState({ waitSpinner: 'primary' })
-            debug('startStake::transactionHash: ', hash)
-        })
-        .on('confirmation', (confirmationNumber, receipt) => {
-            debug('startStake::confirmationNumber: %s, receipt: %O', confirmationNumber, receipt)
-        })
-        .on('receipt', (receipt) => {
-            debug('startStake::receipt: %O', receipt)
-        })
-        .on('error', (receipt) => { // eg. rejected or out of gas
-            target.classList.remove('disabled')
-            this.setState({ waitSpinner: false })
-        })
     }
 
     render() {
@@ -385,19 +352,16 @@ class NewStakeForm extends React.Component {
                         ) }
 
                         <Container className="mt-3 text-right">
-                            <Button variant={'stake btn-start'} href="#start_stake" onClick={this.handleStartStake}>
-                            { this.state.waitSpinner && <>
-                                <Spinner
-                                    variant={this.state.waitSpinner}
-                                    as="span"
-                                    animation="border"
-                                    size="sm"
-                                    role="status"
-                                    aria-hidden="true"
-                                />{' '}</>
-                            }
+                            <VoodooButton 
+                                contract={this.props.contract}
+                                method="stakeStart" 
+                                params={[this.state.stakeAmount, this.state.stakeDays]}
+                                from={this.props.wallet.address}
+                                variant={'stake btn-start'}
+                                simulate={false}
+                            >
                                 STAKE
-                            </Button>
+                            </VoodooButton>
                         </Container>
                     </Col>
                 </Row>

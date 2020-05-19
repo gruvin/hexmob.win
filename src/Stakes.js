@@ -110,7 +110,8 @@ class Stakes extends React.Component {
                 if (this.existsInEventLog(id+blockHash+removed+stakeId)) return
                 this.addToEventLog(id+blockHash+removed+stakeId)
 
-                await this.loadAllStakes(this.getStaticContext)
+                debug('CALLING loadAllStakes: this.props.wallet: %O', this.props.wallet)
+                await this.loadAllStakes()
             })
             .on('connected', (id) => debug('sub: StakeEnd:', id))
         )
@@ -126,7 +127,8 @@ class Stakes extends React.Component {
                 if (this.existsInEventLog(id+blockHash+removed+stakeId)) return
                 this.addToEventLog(id+blockHash+removed+stakeId)
 
-                await this.loadAllStakes(this.getStaticContext())
+                debug('CALLING loadAllStakes: this.props.wallet: %O', this.props.wallet)
+                await this.loadAllStakes()
             })
             .on('connected', (id) => debug('sub: StakeStart:', id))
         )

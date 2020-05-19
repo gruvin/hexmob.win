@@ -1,19 +1,16 @@
-import React, { useState } from 'react'
+import React from 'react'
 import { 
     Card,
     ProgressBar,
     Accordion,
     Row,
     Col,
-    Button,
-    Spinner,
     Badge
 } from 'react-bootstrap'
 import './Stakes.scss'
 import HEX from './hex_contract'
 import { format } from 'd3-format'
-import { HexNum } from './Widgets' 
-import { EventEmitter } from 'events';
+import { HexNum, VoodooButton } from './Widgets' 
 
 const debug = require('debug')('StakeInfo')
 debug('loading')
@@ -21,85 +18,6 @@ debug('loading')
 export class StakeInfo extends React.Component {
 
     // TODO: move to Widgets
-    ButtonExitStake = (props) => {
-        const { contract, exitClass, stake } = props.context
-        const [request, setRequest] = useState(false);
-        const [wait, setWait] = useState(false);
-        const [hash, setHash] = useState(null);
-
-        // eslint-disable-next-line
-        function simSend(stakeIndex, stakeId) {
-            var ee = new EventEmitter();
-            const delay = 1000
-            var count = 0
-            setTimeout(() => {
-                ee.emit('transactionHash', '0x5928acffbb00f86e055a3fb0ae85c87fefa86f0a72cdecca1fd6e4676460b206')
-                setInterval(() => (++ count < 4) && ee.emit('confirmation', count, '#simulated_recipt#'), delay*2)
-            }, delay)
-            setTimeout(() => ee.emit('receipt', '#simulated_receipt# !!!=> '+stake.stakeIndex+' / '+stake.stakeId), delay * 10 )
-            setTimeout(() => ee.emit('error', '#simulated_receipt#'), delay * 12.5)
-            return ee;
-        }
-
-        const handleClick = (context) => {
-            const { contract, stake } = context
-            setWait(true)
-            setRequest('sending')
-//            contract.methods.stakeEnd(stake.stakeIndex, stake.stakeId).send({
-//                from: stake.stakeOwner
-//            })
-            contract && simSend(stake.stakeIndex, stake.stakeId)
-            .once('transactionHash', (hash) => {
-                debug('endStake::transactionHash: ', hash)
-                setHash(hash)
-                setRequest('accepted')
-            })
-            .on('confirmation', (confirmationNumber, receipt) => {
-                debug('endStake::confirmationNumber: %s, receipt: %O', confirmationNumber, receipt)
-                setWait(false)
-                setRequest(confirmationNumber)
-            })
-            .once('receipt', (receipt) => {
-                debug('endStake::receipt: %O', receipt)
-            })
-            .once('error', (receipt) => { // eg. rejected or out of gas
-                debug('endStake::error: ', receipt)
-                setRequest('rejected')
-                setWait(false)
-            })
-        }
-
-        let response, variant, hashUI
-        if (request === false) { response = "EXIT"; variant = "primary" }
-        else if (parseInt(request)) { response = (<>CONFIRMED<sup>{request}</sup></>); variant = "success" }
-        else { response = request; variant = (response !== 'rejected') ? "info" : "danger" } 
-        if (hash) hashUI = hash.slice(0,6)+'....'+hash.slice(-6) 
-
-        return (
-            <>
-            <Button
-                variant={'exitbtn '+exitClass}
-                disabled={wait}
-                onClick={!wait ? () => handleClick(contract, stake) : null}
-            >
-                { wait && <> 
-                    <Spinner
-                        as="span"
-                        variant="light"
-                        animation="border"
-                        size="sm"
-                        role="status"
-                    />{' '}</>
-                }
-                <span className={'text-'+variant}>{response}</span>
-            </Button>
-            { hash && <div className="text-info small">TX Hash: <a href={'https://etherscan.io/tx/'+hash} 
-                    target="_blank" rel="noopener noreferrer">{hashUI}</a></div>
-            }
-            </>
-        );
-
-    }
 
     render() {
         const { contract, stake } = this.props
@@ -196,7 +114,16 @@ export class StakeInfo extends React.Component {
                             </Row>
                             <Row>
                                 <Col className="text-right mt-3">
-                                    <this.ButtonExitStake context={{contract, stake, exitClass}}/>
+                                    <VoodooButton 
+                                        contract={contract}
+                                        method="stakeEnd" 
+                                        params={[stake.stakeIndex, stake.stakeId]}
+                                        from={stake.stakeOwner}
+                                        variant={'exitbtn '+exitClass}
+                                        simulate={false}
+                                    >
+                                        EXIT
+                                    </VoodooButton>
                                 </Col>
                             </Row>
 
