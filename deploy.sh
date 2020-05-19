@@ -1,1 +1,1 @@
-yarn build && rsync -vr --delete build/* gruvin:~/hex.gruvin.me
+yarn build && rsync -vr --delete build/* hexmob:~/public_html

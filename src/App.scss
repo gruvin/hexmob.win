@@ -33,14 +33,60 @@ $theme-colors: (
 @import "~bootstrap/scss/bootstrap";
 
 body { 
-    position: absolute;
-    height: 100%;
-    width: 100%;
-    overflow: auto;
+    overflow: hidden;
     font-family: "Happy Monkey", sans-serif; 
     background: #111 url(/iron_texture1745.jpg);
     background-size: auto;
 }
+#hexmob_header {
+    position: fixed;
+    top: 0;
+    height: 36px;
+    background-color: black;
+    padding: 3px;
+    color: white;
+}
+#hexmob_header h1 {
+    position: absolute;
+    top: 0;
+    left: 3px;
+    line-height: 24px;
+    font-size: 16px;
+    font-weight: bold;
+    margin: 0px;
+    padding: 0px 0 0 84px;
+    display: block;
+    background: rgba(0, 0, 0, 0) url(/hex-logo-white.png) no-repeat 0 2px;
+    background-size: auto 30px;
+    vertical-align: super;
+    height: 36px;
+}
+#hexmob_header h2 {
+    position: absolute;
+    top: 0px;
+    right: 6px;
+    line-height: 44px;
+    font-size: 16px;
+    font-style: italic;
+    margin: 0;
+    padding: 0;
+    display: block;
+}
+#hexmob_body {
+    position: fixed;
+    top: 36px;
+    bottom: 24px;
+    overflow-y: scroll;
+}
+#wallet_status {
+    position: fixed;
+    bottom:0;
+    left:0;
+    height: 24px;
+    background-color: black;
+}
+
+
 .numeric { font-family: Jura, monospace }
 
 .card-header { cursor: pointer; }
