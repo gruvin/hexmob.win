@@ -328,11 +328,11 @@ class App extends React.Component {
         const isTrust = window.web3 && window.web3.currentProvider.isTrust
         return (
             <>
-            <Container id="hexmob_header">
-                <h1>Mobile</h1>
+            <Container id="hexmob_header" fluid>
+                <h1>Mobile <Badge variant="danger">v0.0.2 ALPHA</Badge></h1>
                 <h2> ...staking on the run</h2>
             </Container>
-            <Container id="hexmob_body" className="p-1">
+            <Container id="hexmob_body" className="p-1 m-auto">
                 <Container className="p-0">
                     <this.AppContent />
                 </Container>

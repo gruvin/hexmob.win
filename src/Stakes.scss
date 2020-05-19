@@ -29,10 +29,10 @@
 #stakes_accordion .btn {
     font-family: 'Titillium Web', sans-serif; 
     font-weight: bold;
-    border-style: outset;
 }
 .btn-sm { padding: 0.1rem .2rem; line-height: 1em; } 
-.btn-exitbtn {
+.btn-exitbtn,
+.btn-startbtn {
     font-family: 'Titillium Web', sans-serif; 
     font-weight: bold !important;
     padding: 0; 
@@ -40,6 +40,18 @@
     font-size: 1.0em;
     line-height: 20px;
 }
+/* START STAKE BUTTON */
+.btn-stake.btn-start { 
+    color: map-get($theme-colors, success); 
+    border: 2px map-get($theme-colors, success) solid; 
+    background-color: map-get($theme-colors, secondary); 
+}
+.btn-stakebtn.btn-start:hover {
+    color: map-get($theme-colors, light ); 
+    border-color: map-get($theme-colors, success);
+    background-color: map-get($theme-colors, success); 
+}
+
 /* PENDING EXIT BUTTON */
 .btn-exitbtn.pendingexit { 
     color: map-get($theme-colors, warning); 

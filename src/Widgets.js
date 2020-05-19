@@ -44,7 +44,7 @@ export const WhatIsThis = (props) => {
     return (
         <OverlayTrigger
             show={true}
-            placement="top"
+            placement={props.placement || "auto"}
             overlay={
                 <Tooltip>
                     {props.children}

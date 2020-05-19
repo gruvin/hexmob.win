@@ -8,7 +8,8 @@ import {
     Dropdown,
     DropdownButton,
     Row,
-    Col
+    Col,
+    Spinner
 } from 'react-bootstrap'
 import './Stakes.scss'
 import { BigNumber } from 'bignumber.js'
@@ -37,11 +38,44 @@ class NewStakeForm extends React.Component {
             shareRate,
             bigPayDay: new BigNumber(0),
             percentGain: 0.0,
-            percentAPY: 0.0
+            percentAPY: 0.0,
+            waitSpinner: false
         }
     }
 
+    handleStartStake = (e) => {
+        e.preventDefault();
+        const { contract } = this.props
+        const { address } = this.props.wallet
+        if (!address) return debug('handleStartStake error: address is invalid: ', address)
+
+        var target = e.currentTarget // for closure access in .on(..) functions below
+
+        target.classList.add('disabled')
+        this.setState({ waitSpinner: 'secondary' })
+
+        const { stakeAmount, stakeDays } = this.state
+        contract.methods.stakeStart(stakeAmount, stakeDays).send({
+            from: address
+        })
+        .on('transactionHash', (hash) => {
+            this.setState({ waitSpinner: 'primary' })
+            debug('startStake::transactionHash: ', hash)
+        })
+        .on('confirmation', (confirmationNumber, receipt) => {
+            debug('startStake::confirmationNumber: %s, receipt: %O', confirmationNumber, receipt)
+        })
+        .on('receipt', (receipt) => {
+            debug('startStake::receipt: %O', receipt)
+        })
+        .on('error', (receipt) => { // eg. rejected or out of gas
+            target.classList.remove('disabled')
+            this.setState({ waitSpinner: false })
+        })
+    }
+
     render() {
+        const { balance } = this.props.wallet
 
         const currentDay = this.props.contract.Data.currentDay + 1
 
@@ -137,8 +171,8 @@ class NewStakeForm extends React.Component {
             const v=e.target.dataset.portion
             const portion = parseFloat(v) || 1.0
             const amount = (v === 'max')
-                ? this.props.balance.div(1e8)
-                : new BigNumber(this.props.balance.idiv(1e8).times(portion).toFixed(0, 1))
+                ? balance.div(1e8)
+                : new BigNumber(balance.idiv(1e8).times(portion).toFixed(0, 1))
             this.setState({ stakeAmount: new BigNumber(amount.times(1e8)) }, updateFigures)
         }
 
@@ -213,7 +247,7 @@ class NewStakeForm extends React.Component {
                             <Form.Text>
                                 <span className="text-muted">Bigger pays better</span>
                                 <div className="float-right" variant="info" >
-                                    <HexNum value={this.props.balance} showUnit /> available
+                                    <HexNum value={balance} showUnit /> available
                                 </div>
                             </Form.Text>
                         </Form.Group>
@@ -350,7 +384,21 @@ class NewStakeForm extends React.Component {
                         </Container>
                         ) }
 
-                        <Container className="mt-3 text-right"><Button>BEGIN STAKE</Button></Container>
+                        <Container className="mt-3 text-right">
+                            <Button variant={'stake btn-start'} href="#start_stake" onClick={this.handleStartStake}>
+                            { this.state.waitSpinner && <>
+                                <Spinner
+                                    variant={this.state.waitSpinner}
+                                    as="span"
+                                    animation="border"
+                                    size="sm"
+                                    role="status"
+                                    aria-hidden="true"
+                                />{' '}</>
+                            }
+                                STAKE
+                            </Button>
+                        </Container>
                     </Col>
                 </Row>
             </Form>

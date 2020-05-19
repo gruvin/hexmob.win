@@ -1,6 +1,6 @@
 import { BigNumber } from 'bignumber.js'
 
-const START_DATE = new Date('2019-12-03 00:00:00Z')
+const START_DATE = new Date('2019-12-03 00:00:00 UTC')
 const CLAIM_PHASE_START_DAY =  1
 const CLAIM_PHASE_DAYS =  (7 * 50)
 const CLAIM_PHASE_END_DAY =  CLAIM_PHASE_START_DAY + CLAIM_PHASE_DAYS

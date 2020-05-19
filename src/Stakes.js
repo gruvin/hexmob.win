@@ -13,9 +13,10 @@ import { BigNumber } from 'bignumber.js'
 import HEX from './hex_contract'
 import { calcBigPayDaySlice, calcAdoptionBonus } from './util'
 import  NewStakeForm from './NewStakeForm' 
-import { HexNum, BurgerHeading } from './Widgets' 
+import { HexNum, WhatIsThis, BurgerHeading } from './Widgets' 
 import { StakeInfo } from './StakeInfo'
 import crypto from 'crypto'
+
 const debug = require('debug')('Stakes')
 debug('loading')
 
@@ -100,7 +101,7 @@ class Stakes extends React.Component {
         this.subscriptions.concat(
             await this.props.contract.events.StakeEnd( {filter:{stakerAddr:this.props.wallet.address}}, async (e, r) => {
                 if (e) { 
-                    debug('events.StakeEnd ERR:', e) 
+                    debug('ERR: events.StakeEnd:', e) 
                     return
                 }
                 debug('events.StakeEnd[e, r]: ', e, r)
@@ -109,14 +110,14 @@ class Stakes extends React.Component {
                 if (this.existsInEventLog(id+blockHash+removed+stakeId)) return
                 this.addToEventLog(id+blockHash+removed+stakeId)
 
-                await this.loadAllStakes()
+                await this.loadAllStakes(this.getStaticContext)
             })
             .on('connected', (id) => debug('sub: StakeEnd:', id))
         )
         this.subscriptions.concat(
             await this.props.contract.events.StakeStart( {filter:{stakerAddr:this.props.wallet.address}}, async (e, r) => {
                 if (e) { 
-                    debug('events.StakeStart ERR: ', e) 
+                    debug('ERR: events.StakeStart: ', e) 
                     return
                 }
                 debug('events.StakeStart[e, r]: ', e, r)
@@ -125,7 +126,7 @@ class Stakes extends React.Component {
                 if (this.existsInEventLog(id+blockHash+removed+stakeId)) return
                 this.addToEventLog(id+blockHash+removed+stakeId)
 
-                await this.loadAllStakes()
+                await this.loadAllStakes(this.getStaticContext())
             })
             .on('connected', (id) => debug('sub: StakeStart:', id))
         )
@@ -215,7 +216,12 @@ class Stakes extends React.Component {
         this.unsubscribeEvents()
     }
 
-    StakesList = () => {
+    // start/end stake event call come here from new_stakes or StakeInfo.js
+    eventCallback = (eventName, data) => {
+        debug('Stakes.js::eventCallback:', eventName, data)
+    }
+
+    StakesList = (props) => {
         const stakeList = this.state.stakeList.slice() || null
         stakeList && stakeList.sort((a, b) => (a.progress < b.progress ? (a.progress !== b.progress ? 1 : 0) : -1 ))
 
@@ -251,7 +257,7 @@ class Stakes extends React.Component {
                             endDate
                         }
                         return (
-                            <StakeInfo contract={this.props.contract} stake={stake} />
+                            <StakeInfo contract={this.props.contract} stake={stake} eventCallback={props.eventCallback}/>
                         )
                     })
                 }
@@ -292,6 +298,7 @@ class Stakes extends React.Component {
             selectedCard && this.setState({ selectedCard })
         }
 
+        const dayEpoc = HEX.START_DATE.toLocaleTimeString()
         return (
             !this.state.stakeList
                 ? <ProgressBar variant="secondary" animated now={90} label="loading contract data" />
@@ -304,11 +311,17 @@ class Stakes extends React.Component {
                 <Card bg="secondary" text="light" className="overflow-auto">
                     <Accordion.Toggle as={Card.Header} eventKey="new_stake" className="p-2">
                         <BurgerHeading className="float-left">New Stake</BurgerHeading>
-                        <div className="day-number float-right">Day <span className="numeric">{currentDay+1}</span></div>
+                            <div className="day-number float-right">day 
+                            <WhatIsThis placement="bottom">
+                                Day 1 was {HEX.START_DATE.toUTCString()}<br/>
+                                Each HEX day starts <span className="text-light">{dayEpoc}</span> local time.
+                            </WhatIsThis>
+                            <span className="numeric">{currentDay+1}</span>
+                        </div>
                     </Accordion.Toggle>
                     <Accordion.Collapse eventKey="new_stake">
                         <Card.Body className="bg-dark p-2">
-                            <NewStakeForm contract={this.props.contract} balance={this.props.wallet.balance} />
+                            <NewStakeForm contract={this.props.contract} wallet={this.props.wallet} />
                         </Card.Body>
                    </Accordion.Collapse>
                 </Card>
@@ -318,7 +331,7 @@ class Stakes extends React.Component {
                     </Accordion.Toggle>
                     <Accordion.Collapse eventKey="current_stakes">
                         <Card.Body className="bg-none p-1">
-                            <this.StakesList />
+                            <this.StakesList eventCallback={this.eventCallback}/>
                         </Card.Body>
                    </Accordion.Collapse>
                 </Card>
