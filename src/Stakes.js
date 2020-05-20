@@ -98,7 +98,7 @@ class Stakes extends React.Component {
     }
 
     subscribeEvents = async () => {
-        this.subscriptions.concat(
+        this.subscriptions.push(
             await this.props.contract.events.StakeEnd( {filter:{stakerAddr:this.props.wallet.address}}, async (e, r) => {
                 if (e) { 
                     debug('ERR: events.StakeEnd:', e) 
@@ -111,11 +111,11 @@ class Stakes extends React.Component {
                 this.addToEventLog(id+blockHash+removed+stakeId)
 
                 debug('CALLING loadAllStakes: this.props.wallet: %O', this.props.wallet)
-                await this.loadAllStakes()
+                await this.loadAllStakes(this)
             })
             .on('connected', (id) => debug('sub: StakeEnd:', id))
         )
-        this.subscriptions.concat(
+        this.subscriptions.push(
             await this.props.contract.events.StakeStart( {filter:{stakerAddr:this.props.wallet.address}}, async (e, r) => {
                 if (e) { 
                     debug('ERR: events.StakeStart: ', e) 
@@ -128,7 +128,8 @@ class Stakes extends React.Component {
                 this.addToEventLog(id+blockHash+removed+stakeId)
 
                 debug('CALLING loadAllStakes: this.props.wallet: %O', this.props.wallet)
-                await this.loadAllStakes()
+                await this.loadAllStakes(this)
+                this.setState({ selectedCard: 'current_stakes' })
             })
             .on('connected', (id) => debug('sub: StakeStart:', id))
         )
@@ -191,13 +192,14 @@ class Stakes extends React.Component {
     }
 
     getStaticContext = () => {
-       return {
-           contract: this.props.contract,
-           address: this.props.wallet.address
-       }
+        debug('getStaticContext::assert this === window._STAKES: ', (this === window._STAKES)) 
+        const { contract } = this.props
+        const { address } = this.props.wallet
+        return { contract, address }
     }
 
-    loadAllStakes = async () => {
+    loadAllStakes = async (context) => {
+        debug('loadAllStakes::assert this === window._STAKES: ', (this === window._STAKES)) 
         await this.setState({ loadingStakes: true })
         const stakeList = await Stakes.loadStakes(this.getStaticContext())
         stakeList && this.setState({ stakeList, loadingStakes: false })

@@ -99,7 +99,7 @@ class App extends React.Component {
             provider.on("accountsChanged", async (accounts) => {
                 const newAddress = accounts[0]
                 debug('***** ADDRESS CHANGE [2] ***** %s(old) => %s', this.state.wallet.address, newAddress)
-                await this.setState({ wallet: { address: newAddress } })
+                await this.setState({ wallet: { ...this.state.wallet, address: newAddress } })
                 this.updateHEXBalance()
             })
         }
@@ -122,10 +122,10 @@ class App extends React.Component {
             //debug('events.Transfer[error, result] => ', error, result.returnValues )
             this.updateHEXBalance()
         }
-        this.subscriptions.concat(
+        this.subscriptions.push(
             this.contract.events.Transfer( {filter:{from:this.state.wallet.address}}, eventCallback).on('connected', (id) => debug('sub: HEX from:', id))
         )
-        this.subscriptions.concat(
+        this.subscriptions.push(
             this.contract.events.Transfer( {filter:{to:this.state.wallet.address}}, eventCallback).on('connected', (id) => debug('sub: HEX to:', id))
         )
     }
@@ -208,6 +208,7 @@ class App extends React.Component {
 
         debug('wallet address: ', address)
         if (!address) return // web3Modal will take it from here
+
         this.setState({ 
             walletConnected: true }
         )
@@ -327,7 +328,7 @@ class App extends React.Component {
                                 <Col className="text-center">
                                     <p><small><small>COMPATIBLE WITH ...</small></small></p>
                                     <p>
-                                        <em><Image src="/mm-logo.png" alt="" height={64} /></em> <strong>MetaMask</strong>™ <em>on</em> <strong>Desktops</strong>
+                                        <em><Image src="/mm-logo.svg" alt="Metamask" height={56} /></em> <em>on</em> <strong>Desktops</strong>
                                     </p>
                                     <p>
                                         <Image src="/trustwallet-logo.png" alt="Trust Wallet" height={64} /><em> on </em><strong>Mobile</strong>
@@ -429,7 +430,7 @@ class App extends React.Component {
             <>
             <Container id="hexmob_header" fluid>
                 <h1>HEX<span>mobile</span></h1>
-                <h2> ...staking on the run</h2>
+                <h2> ...stake on the run</h2>
                 <h3>Open BETA <span>USE AT YOUR OWN RISK</span></h3>
             </Container>
             <Container id="hexmob_body" fluid className="p-1 text-center">

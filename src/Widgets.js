@@ -88,7 +88,7 @@ const sim = function(p0, p1) {
 }
 
 export const VoodooButton = (props) => {
-    const { contract, method, params, from, simulate, ...other } = props
+    const { contract, method, params, from, dataValid, simulate, confirmationCallback, ...other } = props
     const [data, setData] = useState(false);
     const [wait, setWait] = useState(false);
     const [hash, setHash] = useState(null);
@@ -104,12 +104,18 @@ export const VoodooButton = (props) => {
             .once('transactionHash', (hash) => {
                 debug('endStake::transactionHash: ', hash)
                 setHash(hash)
-                setData('accepted')
+                setData('confirming')
             })
             .on('confirmation', (confirmationNumber, receipt) => {
                 debug('endStake::confirmationNumber: %s, receipt: %O', confirmationNumber, receipt)
-                setWait(false)
-                setData(confirmationNumber)
+                if (typeof confirmationCallback === 'function') {
+                    setWait(false)
+                    setData(false)
+                    setHash(null)
+                    confirmationCallback()
+                } else {
+                    setData(confirmationNumber)
+                }
             })
             .once('receipt', (receipt) => {
                 debug('endStake::receipt: %O', receipt)
@@ -130,6 +136,7 @@ export const VoodooButton = (props) => {
     return (
         <>
         <Button {...other}
+            disabled={!dataValid}
             onClick={!wait ? (e) => handleClick(contract, method, params, from, e) : null}
         >
         { wait && <> 
@@ -143,7 +150,7 @@ export const VoodooButton = (props) => {
         }
         <span className={'text-'+variant}>{response}</span>
         </Button>
-        { hash && <div className="text-info small">TX Hash: <a href={'https://etherscan.io/tx/'+hash} 
+        { hash && <div className="text-info small mt-2">TX Hash: <a href={'https://etherscan.io/tx/'+hash} 
             target="_blank" rel="noopener noreferrer">{hashUI}</a></div>
         }
         </>

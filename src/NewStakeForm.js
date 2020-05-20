@@ -21,8 +21,6 @@ debug('loading')
 class NewStakeForm extends React.Component {
     constructor(props) {
         super(props)
-        const _shareRate = props.contract.Data.globals.shareRate || 100000
-        const shareRate = new BigNumber('100000').div(_shareRate).times(1e8)
         this.state = {
             stakeAmount: null,
             stakeDays: null,
@@ -33,84 +31,97 @@ class NewStakeForm extends React.Component {
             bonusTotal: new BigNumber(0),
             effectiveHEX: new BigNumber(0),
             stakeShares: new BigNumber(0),
-            shareRate,
+            shareRate: new BigNumber(100000),
             bigPayDay: new BigNumber(0),
             percentGain: 0.0,
             percentAPY: 0.0,
-            waitSpinner: false
         }
+        window._NEW = this // DEBUG remove me
+    }
+
+    componentDidMount() {
+        const _shareRate = this.props.contract.Data.globals.shareRate || 100000
+        const shareRate = new BigNumber('100000').div(_shareRate).times(1e8)
+        this.setState({ shareRate })
+    }
+
+    resetForm() {
+        document.getElementById('stake_amount').value = ''
+        document.getElementById('stake_days').value = ''
+        this.setState({ stakeAmount: null, stakeDays: null })
+        this.updateFigures()
+    }
+
+    updateFigures = () => {
+        const stakeDays = this.state.stakeDays || 0
+        const stakeAmount = this.state.stakeAmount || new BigNumber(0)
+
+        const { LPB_MAX_DAYS, LPB, BPB_MAX_HEARTS, BPB } = HEX
+        /*
+        debug('stakeAmount: ', stakeAmount.toString())
+        debug('stakeDays: ', stakeDays)
+        debug('LPB: ', LPB.toString())
+        debug('LPB_MAX_DAYS: ', LPB_MAX_DAYS.toString())
+        debug('BPB: ', LPB.toString())
+        debug('BPB_MAX_HEARTS: ', BPB_MAX_HEARTS.toString())
+        */
+
+        let cappedExtraDays = 0;
+        if (stakeDays >  1) {
+            cappedExtraDays = stakeDays <= LPB_MAX_DAYS 
+                ? stakeDays - 1 
+                : LPB_MAX_DAYS;
+        }
+        const longerPaysBetter = stakeAmount.times(cappedExtraDays)
+                                        .div(LPB)
+
+        const newStakedHearts = new BigNumber(stakeAmount)
+        const cappedStakedHearts = newStakedHearts.lte(BPB_MAX_HEARTS)
+            ? newStakedHearts
+            : BPB_MAX_HEARTS
+        const biggerPaysBetter = stakeAmount.times(cappedStakedHearts)
+                                        .idiv(BPB)
+
+        const bonusTotal = longerPaysBetter.plus(biggerPaysBetter)
+        const effectiveHEX = stakeAmount.plus(bonusTotal)
+        const _shareRate = this.props.contract.Data.globals.shareRate || 100000
+        const shareRate = new BigNumber('100000').div(_shareRate)
+        const stakeShares = effectiveHEX.times(shareRate)
+
+        // Big Pay Day bonuses
+
+        let bigPayDay = new BigNumber(0)
+        let percentGain = new BigNumber(0)
+        let percentAPY = new BigNumber(0)
+        if (this.state.endDay-1 > HEX.BIG_PAY_DAY) {
+            const { globals } = this.props.contract.Data
+            const BPD_sharePool = globals.stakeSharesTotal.plus(stakeShares)
+            const bigPaySlice = calcBigPayDaySlice(stakeShares, BPD_sharePool, globals)
+            const adoptionBonus = calcAdoptionBonus(bigPaySlice, globals)
+            bigPayDay = bigPaySlice.plus(adoptionBonus)
+
+            percentGain = stakeAmount.isZero() ? stakeAmount : bigPayDay.div(stakeAmount).times(100)
+            const startDay = this.props.contract.Data.currentDay + 1
+            percentAPY = new BigNumber(365).div(HEX.BIG_PAY_DAY - startDay + 1).times(percentGain)
+        }
+
+        this.setState({
+            longerPaysBetter,
+            biggerPaysBetter,
+            bonusTotal,
+            effectiveHEX,
+            shareRate,
+            stakeShares,
+            bigPayDay,
+            percentGain: percentGain.toPrecision(6, 1),
+            percentAPY: percentAPY.toPrecision(6, 1)
+        })
     }
 
     render() {
         const { balance } = this.props.wallet
 
         const currentDay = this.props.contract.Data.currentDay + 1
-
-        const updateFigures = () => {
-            const stakeDays = this.state.stakeDays || 0
-            const stakeAmount = this.state.stakeAmount || new BigNumber(0)
-
-            const { LPB_MAX_DAYS, LPB, BPB_MAX_HEARTS, BPB } = HEX
-            /*
-            debug('stakeAmount: ', stakeAmount.toString())
-            debug('stakeDays: ', stakeDays)
-            debug('LPB: ', LPB.toString())
-            debug('LPB_MAX_DAYS: ', LPB_MAX_DAYS.toString())
-            debug('BPB: ', LPB.toString())
-            debug('BPB_MAX_HEARTS: ', BPB_MAX_HEARTS.toString())
-            */
-
-            let cappedExtraDays = 0;
-            if (stakeDays >  1) {
-                cappedExtraDays = stakeDays <= LPB_MAX_DAYS 
-                    ? stakeDays - 1 
-                    : LPB_MAX_DAYS;
-            }
-            const longerPaysBetter = stakeAmount.times(cappedExtraDays)
-                                            .div(LPB)
-
-            const newStakedHearts = new BigNumber(stakeAmount)
-            const cappedStakedHearts = newStakedHearts.lte(BPB_MAX_HEARTS)
-                ? newStakedHearts
-                : BPB_MAX_HEARTS
-            const biggerPaysBetter = stakeAmount.times(cappedStakedHearts)
-                                            .idiv(BPB)
-
-            const bonusTotal = longerPaysBetter.plus(biggerPaysBetter)
-            const effectiveHEX = stakeAmount.plus(bonusTotal)
-            const _shareRate = this.props.contract.Data.globals.shareRate || 100000
-            const shareRate = new BigNumber('100000').div(_shareRate)
-            const stakeShares = effectiveHEX.times(shareRate)
-
-            // Big Pay Day bonuses
-
-            let bigPayDay = new BigNumber(0)
-            let percentGain = new BigNumber(0)
-            let percentAPY = new BigNumber(0)
-            if (this.state.endDay-1 > HEX.BIG_PAY_DAY) {
-                const { globals } = this.props.contract.Data
-                const BPD_sharePool = globals.stakeSharesTotal.plus(stakeShares)
-                const bigPaySlice = calcBigPayDaySlice(stakeShares, BPD_sharePool, globals)
-                const adoptionBonus = calcAdoptionBonus(bigPaySlice, globals)
-                bigPayDay = bigPaySlice.plus(adoptionBonus)
-
-                percentGain = stakeAmount.isZero() ? stakeAmount : bigPayDay.div(stakeAmount).times(100)
-                const startDay = this.props.contract.Data.currentDay + 1
-                percentAPY = new BigNumber(365).div(HEX.BIG_PAY_DAY - startDay + 1).times(percentGain)
-            }
-
-            this.setState({
-                longerPaysBetter,
-                biggerPaysBetter,
-                bonusTotal,
-                effectiveHEX,
-                shareRate,
-                stakeShares,
-                bigPayDay,
-                percentGain: percentGain.toPrecision(6, 1),
-                percentAPY: percentAPY.toPrecision(6, 1)
-            })
-        }
 
         const handleAmountChange = (e) => {
             e.preventDefault()
@@ -119,7 +130,7 @@ class NewStakeForm extends React.Component {
             const v = m ? new BigNumber(m[0]).times(1e8) : null
             this.setState({
                 stakeAmount: v
-            }, updateFigures)
+            }, this.updateFigures)
         }
 
         const handleDaysChange = (e) => {
@@ -130,7 +141,7 @@ class NewStakeForm extends React.Component {
                 stakeDays,
                 lastFullDay: stakeDays ? currentDay + stakeDays : '---',
                 endDay: stakeDays ? currentDay + stakeDays + 1 : '---',
-            }, updateFigures)
+            }, this.updateFigures)
         }
         
         const handleAmountSelector = (key, e) => {
@@ -140,7 +151,7 @@ class NewStakeForm extends React.Component {
             const amount = (v === 'max')
                 ? balance.div(1e8)
                 : new BigNumber(balance.idiv(1e8).times(portion).toFixed(0, 1))
-            this.setState({ stakeAmount: new BigNumber(amount.times(1e8)) }, updateFigures)
+            this.setState({ stakeAmount: new BigNumber(amount.times(1e8)) }, this.updateFigures)
         }
 
         const handleDaysSelector = (key, e) => {
@@ -187,6 +198,7 @@ class NewStakeForm extends React.Component {
                             <Form.Label>Stake Amount in HEX</Form.Label> 
                             <InputGroup>
                                 <FormControl
+                                    id="stake_amount"
                                     type="text"
                                     placeholder="number of HEX to stake"
                                     value={this.state.stakeAmount ? this.state.stakeAmount.div(1e8).toString() : ''}
@@ -222,6 +234,7 @@ class NewStakeForm extends React.Component {
                             <Form.Label>Stake Length in Days</Form.Label>
                             <InputGroup>
                                 <FormControl
+                                    id="stake_days"
                                     type="text" 
                                     placeholder="minimum one day" 
                                     value={this.state.stakeDays <= 0 ? '' : this.state.stakeDays}
@@ -355,10 +368,11 @@ class NewStakeForm extends React.Component {
                             <VoodooButton 
                                 contract={this.props.contract}
                                 method="stakeStart" 
-                                params={[this.state.stakeAmount, this.state.stakeDays]}
+                                params={[this.state.stakeAmount/*string*/, this.state.stakeDays]}
                                 from={this.props.wallet.address}
+                                dataValid={new BigNumber(this.state.stakeAmount).gt(0) && this.state.stakeDays > 0}
+                                confirmationCallback={this.resetForm}
                                 variant={'stake btn-start'}
-                                simulate={false}
                             >
                                 STAKE
                             </VoodooButton>
