@@ -20,13 +20,14 @@
     "react-dom": "^16.13.1",
     "react-intl": "^4.5.1",
     "react-scripts": "3.4.1",
+    "rewire": "^5.0.0",
     "styled-components": "^5.1.0",
     "web3": "^1.2.7",
     "web3modal": "^1.5.0"
   },
   "scripts": {
     "start": "react-scripts start",
-    "build": "react-scripts build",
+    "build": "GENERATE_SOURCEMAP=true react-scripts build",
     "test": "react-scripts test",
     "eject": "react-scripts eject"
   },
