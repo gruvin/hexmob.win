@@ -320,10 +320,16 @@ class App extends React.Component {
             <Container fluid id="mobile_devices" className="bg-light text-dark rounded p-3 my-3 overflow-hidden text-left">
                 <Container fluid className="my-3" id="mobile_trust_wallet">
                     <Row>
-                        <Col>
-                            <h2>Trust&nbsp;Wallet<sup><small>compatible</small></sup></h2>
+                        <Col className="text-center">
+                            <p><small><small>COMPATIBLE WITH ...</small></small></p>
                             <p>
-                                HEX<sup>mobile</sup> runs natively inside Trust Wallet's built-in dApp browser.
+                                <em><Image src="/mm-logo.png" alt="" height={64} /></em> <strong>MetaMask</strong>™ <em>on</em> <strong>Desktops</strong>
+                            </p>
+                            <p>
+                                <Image src="/trustwallet-logo.png" alt="Trust Wallet" height={64} /><em> on </em><strong>Mobile</strong>
+                                </p>
+                            <p>
+                                HEX<sup>mobile</sup> runs in TrustWallet's built-in dApp browser.
                             </p>
                         </Col>
                     </Row>
@@ -406,8 +412,11 @@ class App extends React.Component {
         if (!this.state.walletConnected) {
             return (
                 <Container fluid className="text-center mb-3">
+                    <Button id="connect_wallet" onClick={() => this.connectWeb3ModalWallet()} variant="info">
+                        <span className="d-none">Click to Connect a Wallet</span>
+                        <span className="sm-inline">Connect Wallet</span>
+                    </Button>
                     <this.DevicesShowcase />
-                    <Button onClick={() => this.connectWeb3ModalWallet()} variant="info">Click to Connect a Wallet</Button>
                 </Container>
             )
         } else if (!this.state.contractReady) {
@@ -427,11 +436,13 @@ class App extends React.Component {
         return (
             <>
             <Container id="hexmob_header" fluid>
-                <h1>mobile</h1>
+                <h1>mobile <Badge variant="danger"><small> BETA <small><sup>YOUR RISK</sup></small></small></Badge></h1>
                 <h2> ...staking on the run</h2>
             </Container>
             <Container id="hexmob_body" fluid className="p-1 text-center">
-                <this.AppContent />
+                <Container>
+                    <this.AppContent />
+                </Container>
                 <Container className="p-3 my-3 text-center">
                     <Card.Body as={Button} variant="success" className="w-100"
                         href={'https://go.hex.win/?r='+this.state.referrer} target="_blank" rel="noopener noreferrer"

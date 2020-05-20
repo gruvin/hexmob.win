@@ -36,7 +36,7 @@ body {
     overflow: hidden;
     font-family: "Happy Monkey", sans-serif; 
     background: #111 url(/iron_texture1745.jpg);
-    background-size: auto;
+    background-sizze: auto;
 }
 #hexmob_header {
     position: fixed;
@@ -86,7 +86,20 @@ body {
     height: 24px;
     background-color: black;
 }
+button#connect_wallet {
+    font-family: 'Titillium Web', Arial, sans-serif;
+    font-size: 1.6em;
+    font-weight: bold;
+    margin-top: 10px;
+    color: #ffffe7;
+    background-color: map-get($theme-colors, warning);
+    padding: 4px 18px;
+    border: 6px #ddbbaa outset;
+    border-radius: 14px;
+    text-transform: uppercase;
 
+}
+button#connect_wallet:hover { border-style: inset; border-color: #fec}
 
 .numeric { font-family: Jura, monospace }
 
@@ -102,7 +115,7 @@ body {
 }
 
 .burger { 
-    font-family: 'Titillium Web', sans-serif;
+    font-family: 'Titillium Web', Arial, sans-serif;
     font-weight: bold;
 }
 
