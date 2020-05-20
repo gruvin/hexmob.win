@@ -8,7 +8,6 @@ import { Container,
     Button,
     Badge,
     ProgressBar,
-    Figure,
     Image
 } from 'react-bootstrap'
 import Stakes from './Stakes'
@@ -374,7 +373,7 @@ class App extends React.Component {
                 <Container fluid className="my-3" id="mobile_wallet_connect">
                     <Row>
                         <Col>
-                            <h2 className="text-center text-sm-left"><img width={120} src="/walletconnect.svg" /> WalletConnect</h2>
+                            <h2 className="text-center text-sm-left"><img width={120} src="/walletconnect.svg" alt="" /> WalletConnect</h2>
                             <p>
                                 A WalletConnect mobile wallet allows us to use any browser — on any
                                 device — even if it's <em>physically separate</em>.
@@ -400,7 +399,7 @@ class App extends React.Component {
                             </p>
                         </Col>
                         <Col className="d-none d-sm-block">
-                            <img style={{ maxWidth: "60%", maxHeight: "300px", position: "absolute", bottom: 0 }} src="/wc-qr-example.png" />
+                            <img style={{ maxWidth: "60%", maxHeight: "300px", position: "absolute", bottom: 0 }} src="/wc-qr-example.png" alt="QR code example" />
                         </Col>
                     </Row>
                 </Container>
