@@ -1,15 +1,30 @@
 {
-  "short_name": "HEXmobile",
-  "name": "Mobile dApp for original HEX ERC20 Smart Contract",
-  "icons": [
-    {
-      "src": "favicon.ico",
-      "sizes": "64x64 32x32 24x24 16x16",
-      "type": "image/x-icon"
-    }
-  ],
-  "start_url": ".",
-  "display": "standalone",
-  "theme_color": "#000000",
-  "background_color": "#ffffff"
+    "short_name": "HEXmobile",
+    "name": "Mobile dApp for original HEX ERC20 Smart Contract",
+    "icons": [
+        {
+            "src": "favicon.ico",
+            "sizes": "96x96 32x32 16x16",
+            "type": "image/x-icon"
+        },
+        {
+            "src": "favicon-16x16.png",
+            "type": "image/png",
+            "sizes": "16x16"
+        },
+        {
+            "src": "favicon-32x32.png",
+            "type": "image/png",
+            "sizes": "32x32"
+        },
+        {
+            "src": "favicon-96x96.png",
+            "type": "image/png",
+            "sizes": "96x96"
+        }
+    ],
+    "start_url": ".",
+    "display": "standalone",
+    "theme_color": "#000000",
+    "background_color": "#ffffff"
 }

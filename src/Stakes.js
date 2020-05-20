@@ -307,6 +307,7 @@ class Stakes extends React.Component {
                 : <> 
             <Accordion 
                 id='stakes_accordion'
+                className="text-left"
                 activeKey={this.state.selectedCard}
                 onSelect={handleAccordionSelect}
             >

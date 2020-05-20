@@ -313,100 +313,6 @@ class App extends React.Component {
         )
     }
 
-    // called only if !this.state.walletConnected
-    DevicesShowcase = () => {
-        return (
-            <Container fluid id="mobile_devices" className="bg-light text-dark rounded p-3 my-3 overflow-hidden text-left">
-                <Container fluid className="my-3" id="mobile_trust_wallet">
-                    <Row>
-                        <Col className="text-center">
-                            <p><small><small>COMPATIBLE WITH ...</small></small></p>
-                            <p>
-                                <em><Image src="/mm-logo.png" alt="" height={64} /></em> <strong>MetaMask</strong>™ <em>on</em> <strong>Desktops</strong>
-                            </p>
-                            <p>
-                                <Image src="/trustwallet-logo.png" alt="Trust Wallet" height={64} /><em> on </em><strong>Mobile</strong>
-                                </p>
-                            <p>
-                                HEX<sup>mobile</sup> runs in TrustWallet's built-in dApp browser.
-                            </p>
-                        </Col>
-                    </Row>
-                    <Row className="h-100">
-                        <Col xs={12} sm={4}>
-                        <img className="d-none d-sm-block"
-                            style={{ maxWidth: "90%" }}
-                            alt="TrustWallet on iPhone11"
-                            src="/trustwallet-iphone11.png"
-                        />
-                        <img className="d-block d-sm-none"
-                            style={{ maxWidth: "100%" }}
-                            alt="TrustWallet on iPhone11"
-                            src="/trustwallet-iphone11-cropped.png"
-                        />
-                        </Col>
-                        <Col xs={12} sm={8} className="py-3 text-center text-sm-left m-auto allign-middle">
-                            <h3>Get&nbsp;Trust&nbsp;Wallet</h3>
-                            <p>
-                                <div className="m-3 d-inline-block">
-                                    <a href="https://apps.apple.com/app/trust-ethereum-wallet/id1288339409">
-                                        <Image src="/dltw-appstore.png" height={56} alt="Download on the App Store" />
-                                    </a>
-                                </div>
-                                <div className="m-3 d-inline-block">
-                                    <a href="https://play.google.com/store/apps/details?id=com.wallet.crypto.trustapp">
-                                        <Image src="/dltw-googleplay.png" height={56} alt="Get it at Google Play" />
-                                    </a>
-                                </div>
-                                <div className="m-3 d-inline-block">
-                                    <a href="https://trustwallet.com/dl/apk">
-                                        <Image src="/dltw-android.png" height={56} alt="Download for Android ARK" />
-                                    </a>
-                                </div>
-                            </p>
-                        </Col>
-                    </Row>
-                </Container>
-                <Container>
-                    <hr/>
-                </Container>
-                <Container fluid className="my-3" id="mobile_wallet_connect">
-                    <Row>
-                        <Col>
-                            <h2 className="text-center text-sm-left"><img width={120} src="/walletconnect.svg" alt="" /> WalletConnect</h2>
-                            <p>
-                                A WalletConnect mobile wallet allows us to use any browser — on any
-                                device — even if it's <em>physically separate</em>.
-                            </p>
-
-                        </Col>
-                    </Row>
-                    <Row className="h-100">
-                        <Col>
-                            <p>
-                                Once connected, simply use HEX<sup>mobile</sup> as usual, on your Desktop
-                                or other device. When you need to sign a transaction, your
-                                WalletConnect device handle the request, forwarding the results back to
-                                the browser. Tekanogikill!™
-                            </p>
-                            <hr/>
-                            <p>
-                                <h5>To use WalletConnect on the <em><strong>same device</strong></em> ...</h5>
-                                <ol>
-                                    <li>take a screenshot of the QR code</li>
-                                    <li>point WalletConnect wallet to that image</li>
-                                </ol>
-                            </p>
-                        </Col>
-                        <Col className="d-none d-sm-block">
-                            <img style={{ maxWidth: "60%", maxHeight: "300px", position: "absolute", bottom: 0 }} src="/wc-qr-example.png" alt="QR code example" />
-                        </Col>
-                    </Row>
-                </Container>
-            </Container>
-        )
-    }
-
     AppContent = () => {
         if (!this.state.walletConnected) {
             return (
@@ -415,7 +321,94 @@ class App extends React.Component {
                         <span className="d-none">Click to Connect a Wallet</span>
                         <span className="sm-inline">Connect Wallet</span>
                     </Button>
-                    <this.DevicesShowcase />
+                    <Container fluid id="mobile_devices" className="bg-light text-dark rounded p-3 my-3 overflow-hidden text-left">
+                        <Container fluid className="my-3" id="mobile_trust_wallet">
+                            <Row>
+                                <Col className="text-center">
+                                    <p><small><small>COMPATIBLE WITH ...</small></small></p>
+                                    <p>
+                                        <em><Image src="/mm-logo.png" alt="" height={64} /></em> <strong>MetaMask</strong>™ <em>on</em> <strong>Desktops</strong>
+                                    </p>
+                                    <p>
+                                        <Image src="/trustwallet-logo.png" alt="Trust Wallet" height={64} /><em> on </em><strong>Mobile</strong>
+                                        </p>
+                                    <p>
+                                        HEX<sup>mobile</sup> runs in TrustWallet's built-in dApp browser.
+                                    </p>
+                                </Col>
+                            </Row>
+                            <Row className="h-100">
+                                <Col xs={12} sm={4}>
+                                <img className="d-none d-sm-block"
+                                    style={{ maxWidth: "90%" }}
+                                    alt="TrustWallet on iPhone11"
+                                    src="/trustwallet-iphone11.png"
+                                />
+                                <img className="d-block d-sm-none"
+                                    style={{ maxWidth: "100%" }}
+                                    alt="TrustWallet on iPhone11"
+                                    src="/trustwallet-iphone11-cropped.png"
+                                />
+                                </Col>
+                                <Col xs={12} sm={8} className="py-3 text-center text-sm-left m-auto allign-middle">
+                                    <h3>Get&nbsp;Trust&nbsp;Wallet</h3>
+                                    <p>
+                                        <div className="m-3 d-inline-block">
+                                            <a href="https://apps.apple.com/app/trust-ethereum-wallet/id1288339409">
+                                                <Image src="/dltw-appstore.png" height={56} alt="Download on the App Store" />
+                                            </a>
+                                        </div>
+                                        <div className="m-3 d-inline-block">
+                                            <a href="https://play.google.com/store/apps/details?id=com.wallet.crypto.trustapp">
+                                                <Image src="/dltw-googleplay.png" height={56} alt="Get it at Google Play" />
+                                            </a>
+                                        </div>
+                                        <div className="m-3 d-inline-block">
+                                            <a href="https://trustwallet.com/dl/apk">
+                                                <Image src="/dltw-android.png" height={56} alt="Download for Android ARK" />
+                                            </a>
+                                        </div>
+                                    </p>
+                                </Col>
+                            </Row>
+                        </Container>
+                        <Container>
+                            <hr/>
+                        </Container>
+                        <Container fluid className="my-3" id="mobile_wallet_connect">
+                            <Row className="h-100">
+                                <Col>
+                                    <h2 className="text-center text-sm-left"><img width={120} src="/walletconnect.svg" alt="" /> WalletConnect</h2>
+                                    <p>
+                                        A WalletConnect mobile wallet allows us to use any browser — on any
+                                        device — even if it's <em>physically separate</em>.
+                                    </p>
+
+                                    <p>
+                                        Once connected, simply use HEX<sup>mobile</sup> as usual, on your Desktop
+                                        or other device. When you need to sign a transaction, your
+                                        WalletConnect device handle the request, forwarding the results back to
+                                        the browser. Tekanogikill!™
+                                    </p>
+                                    <hr/>
+                                </Col>
+                            </Row>
+                            <Row>
+                                <Col>
+                                    <p>
+                                        <h5>To use WalletConnect on the <em><strong>same device</strong></em> ...</h5>
+                                        <ol>
+                                            <li>take a screenshot of the QR code</li>
+                                            <li>point WalletConnect wallet to that image</li>
+                                        </ol>
+                                    </p>
+                                </Col>
+                                <Col xs={12} sm={3} className="text-center">
+                                    <img style={{ maxWidth: "90%", maxHeight: "300px" }} src="/wc-qr-example.png" alt="QR code example" />
+                                </Col>
+                            </Row>
+                        </Container>
+                    </Container>
                 </Container>
             )
         } else if (!this.state.contractReady) {
@@ -435,8 +428,9 @@ class App extends React.Component {
         return (
             <>
             <Container id="hexmob_header" fluid>
-                <h1>mobile <Badge variant="danger"><small> BETA <small><sup>YOUR RISK</sup></small></small></Badge></h1>
+                <h1>HEX<span>mobile</span></h1>
                 <h2> ...staking on the run</h2>
+                <h3>Open BETA <span>USE AT YOUR OWN RISK</span></h3>
             </Container>
             <Container id="hexmob_body" fluid className="p-1 text-center">
                 <Container>

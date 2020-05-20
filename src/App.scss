@@ -45,33 +45,55 @@ body {
     background-color: black;
     padding: 3px;
     color: white;
+    font-family: 'Titillium Web', Arial, sans-serif;
 }
 #hexmob_header h1 {
-    position: absolute;
-    top: 0;
-    left: 3px;
-    line-height: 24px;
-    font-size: 16px;
+    display: inline-block;
+    position: relative;
+    font-size: 24px;
     font-weight: bold;
-    margin: 0px;
-    padding: 0px 0 0 84px;
-    display: block;
-    background: rgba(0, 0, 0, 0) url(/hex-logo-white.png) no-repeat 0 2px;
+    margin: 0;
+    padding: 0 0 0 32px;
+    background: rgba(0, 0, 0, 0) url(/favicon-96x96.png) no-repeat top left;
     background-size: auto 30px;
+}
+#hexmob_header h1 span {
+    position: relative;
+    font-size: 14px;
+    margin-left: 0.1em;
     vertical-align: super;
-    height: 36px;
 }
 #hexmob_header h2 {
     position: absolute;
     top: 0px;
     right: 6px;
     line-height: 44px;
-    font-size: 16px;
+    font-size: 14px;
     font-style: italic;
     margin: 0;
     padding: 0;
     display: block;
 }
+#hexmob_header h3 {
+    position: absolute;
+    overflow: hidden;
+    display: block;
+    text-align: right;
+    top: 0px;
+    right: 0;
+    height: 1.2em;
+    font-size: 12px;
+    padding-left: 3px;
+    background-color: white;
+    color: map-get($theme-colors, danger);
+    border-radius: 3px 0 0 3px;
+}
+#hexmob_header h3 span {
+    padding: 0 6px;
+    color: white;
+    background-color: map-get($theme-colors, danger);
+}
+
 #hexmob_body {
     position: fixed;
     top: 36px;
