@@ -1,7 +1,16 @@
 import React from 'react'
 import { BigNumber } from 'bignumber.js'
 import { HexNum } from './Widgets'
-import { Container, Card, Row, Col, Button, Badge, ProgressBar } from 'react-bootstrap'
+import { Container,
+    Card,
+    Row,
+    Col,
+    Button,
+    Badge,
+    ProgressBar,
+    Figure,
+    Image
+} from 'react-bootstrap'
 import Stakes from './Stakes'
 
 import Web3 from "web3";
@@ -305,10 +314,99 @@ class App extends React.Component {
         )
     }
 
+    // called only if !this.state.walletConnected
+    DevicesShowcase = () => {
+        return (
+            <Container fluid id="mobile_devices" className="bg-light text-dark rounded p-3 my-3 overflow-hidden text-left">
+                <Container fluid className="my-3" id="mobile_trust_wallet">
+                    <Row>
+                        <Col>
+                            <h2>Trust&nbsp;Wallet<sup><small>compatible</small></sup></h2>
+                            <p>
+                                HEX<sup>mobile</sup> runs natively inside Trust Wallet's built-in dApp browser.
+                            </p>
+                        </Col>
+                    </Row>
+                    <Row className="h-100">
+                        <Col xs={12} sm={4}>
+                        <img className="d-none d-sm-block"
+                            style={{ maxWidth: "90%" }}
+                            alt="TrustWallet on iPhone11"
+                            src="/trustwallet-iphone11.png"
+                        />
+                        <img className="d-block d-sm-none"
+                            style={{ maxWidth: "100%" }}
+                            alt="TrustWallet on iPhone11"
+                            src="/trustwallet-iphone11-cropped.png"
+                        />
+                        </Col>
+                        <Col xs={12} sm={8} className="py-3 text-center text-sm-left m-auto allign-middle">
+                            <h3>Get&nbsp;Trust&nbsp;Wallet</h3>
+                            <p>
+                                <div className="m-3 d-inline-block">
+                                    <a href="https://apps.apple.com/app/trust-ethereum-wallet/id1288339409">
+                                        <Image src="/dltw-appstore.png" height={56} alt="Download on the App Store" />
+                                    </a>
+                                </div>
+                                <div className="m-3 d-inline-block">
+                                    <a href="https://play.google.com/store/apps/details?id=com.wallet.crypto.trustapp">
+                                        <Image src="/dltw-googleplay.png" height={56} alt="Get it at Google Play" />
+                                    </a>
+                                </div>
+                                <div className="m-3 d-inline-block">
+                                    <a href="https://trustwallet.com/dl/apk">
+                                        <Image src="/dltw-android.png" height={56} alt="Download for Android ARK" />
+                                    </a>
+                                </div>
+                            </p>
+                        </Col>
+                    </Row>
+                </Container>
+                <Container>
+                    <hr/>
+                </Container>
+                <Container fluid className="my-3" id="mobile_wallet_connect">
+                    <Row>
+                        <Col>
+                            <h2 className="text-center text-sm-left"><img width={120} src="/walletconnect.svg" /> WalletConnect</h2>
+                            <p>
+                                A WalletConnect mobile wallet allows us to use any browser — on any
+                                device — even if it's <em>physically separate</em>.
+                            </p>
+
+                        </Col>
+                    </Row>
+                    <Row className="h-100">
+                        <Col>
+                            <p>
+                                Once connected, simply use HEX<sup>mobile</sup> as usual, on your Desktop
+                                or other device. When you need to sign a transaction, your
+                                WalletConnect device handle the request, forwarding the results back to
+                                the browser. Tekanogikill!™
+                            </p>
+                            <hr/>
+                            <p>
+                                <h5>To use WalletConnect on the <em><strong>same device</strong></em> ...</h5>
+                                <ol>
+                                    <li>take a screenshot of the QR code</li>
+                                    <li>point WalletConnect wallet to that image</li>
+                                </ol>
+                            </p>
+                        </Col>
+                        <Col className="d-none d-sm-block">
+                            <img style={{ maxWidth: "60%", maxHeight: "300px", position: "absolute", bottom: 0 }} src="/wc-qr-example.png" />
+                        </Col>
+                    </Row>
+                </Container>
+            </Container>
+        )
+    }
+
     AppContent = () => {
         if (!this.state.walletConnected) {
             return (
-                <Container className="text-center mb-3">
+                <Container fluid className="text-center mb-3">
+                    <this.DevicesShowcase />
                     <Button onClick={() => this.connectWeb3ModalWallet()} variant="info">Click to Connect a Wallet</Button>
                 </Container>
             )
@@ -329,13 +427,11 @@ class App extends React.Component {
         return (
             <>
             <Container id="hexmob_header" fluid>
-                <h1>Mobile <Badge variant="danger">v0.0.2 ALPHA DO NOT USE!</Badge></h1>
+                <h1>mobile</h1>
                 <h2> ...staking on the run</h2>
             </Container>
-            <Container id="hexmob_body" className="p-1 m-auto">
-                <Container className="p-0">
-                    <this.AppContent />
-                </Container>
+            <Container id="hexmob_body" fluid className="p-1 text-center">
+                <this.AppContent />
                 <Container className="p-3 my-3 text-center">
                     <Card.Body as={Button} variant="success" className="w-100"
                         href={'https://go.hex.win/?r='+this.state.referrer} target="_blank" rel="noopener noreferrer"

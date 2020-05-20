@@ -1,3 +1,7 @@
+# Apple
+.DS_Store
+.Trashes
+
 # Logs
 logs
 *.log
