@@ -14,7 +14,7 @@ import Stakes from './Stakes'
 
 import Web3 from "web3";
 import Web3Modal from "web3modal";
-import WalletConnectProvider from "@walletconnect/web3-provider";
+import WalletConnectProvider from "@walletconnect/web3-provider"
 
 import HEX from './hex_contract'
 
@@ -49,7 +49,6 @@ class App extends React.Component {
             incomingReferrer,
             referrer
         }
-        window._APP = this // DEBUG REMOVE ME
     }
 
     getProviderOptions = () => {
@@ -59,7 +58,7 @@ class App extends React.Component {
                 options: {
                     infuraId: "ba82349aaccf4a448b43bf651e4d9145" // required
                 }
-            }
+            },
         }
         return providerOptions
     }
@@ -133,29 +132,13 @@ class App extends React.Component {
     unsubscribeEvents = () => {
         if (this.subscriptions.length) {
             this.subscriptions = [ ]
-            this.web3.eth.clearSubscriptions()
+            this.web3.shh.clearSubscriptions()
         }
     }
 
     updateHEXBalance = async () => {
         const balance = await this.contract.methods.balanceOf(this.state.wallet.address).call()
-        this.setState({ wallet: { balance: new BigNumber(balance) } })
-    }
-
-    connectWeb3ModalWallet = async () => {
-        this.web3Modal = new Web3Modal({
-            network: "mainnet",                         // optional
-            cacheProvider: true,                        // optional
-            providerOptions: this.getProviderOptions()  // required
-        });
-        this.provider = null
-        while (this.provider === null) {
-            this.provider = await this.web3Modal.connect()
-            .catch(() => {
-                debug('web3 provider connection cancelled')
-            })
-        }
-        if (this.provider) this.componentDidMount()
+        this.setState({ wallet: { ...this.state.wallet, balance: new BigNumber(balance) } })
     }
 
     componentDidMount = async () => {
@@ -166,19 +149,35 @@ class App extends React.Component {
                     chainId: 1,
                     rpcUrl: "https://mainnet.infura.io/v3/ba82349aaccf4a448b43bf651e4d9145"
                 };
-                this.provider = new window.Trust(mainnet)
-                this.web3 = new Web3(this.provider)
+                /* XXX: 
+                    Ancient legacy 0.5.x web3 code. provider.sendAync used only callback.
+                    It doesn't matter because TrustWallet (iOS) sends no response back to
+                    browser after signing (or not) a provider.sendAsync('send_Transaction')
+                    anyway. :'( More ominous even ...
 
+                    2020-05-21: Telegram::@hewig (Tao X) referring to [@trustwallet/trust-web3-provider]
+                        ................... unfortunately legacy trust provider
+                        is not fully eip1193 compatible, apple doesn’t like dapp
+                        browsers, we might have some difficult decision to make 
+                        in a few weeks
+
+                    0uc4
+                */
+                this.provider = new window.Trust(mainnet)
             } else {
                 return this.connectWeb3ModalWallet()
             }
         }
-        if (!this.provider) return // do nothing. user will need to click the button to connect
+        if (!this.provider) return // User will need to click the button to connect again
+        this.provider.enable()
         
         debug('web3 provider established')
 
         if (!this.web3) this.web3 = await new Web3(this.provider)
         debug('web3 provider connected')
+
+//        window._P = this.provider // DEBUG remove mer
+//        window._W3 = this.web3 // DEBUG remove me
 
         var address
         if (this.provider.isMetaMask) {
@@ -202,6 +201,7 @@ class App extends React.Component {
             if (!address) throw new Error("MetaMask failed to provide user's selected address")
         } else if (window.web3 && window.web3.currentProvider.isTrust) {
             address = this.web3.eth.givenProvider.address
+            this.provider.setAddress(address)
         }
         else 
             address = this.web3.eth.accounts.currentProvider.accounts[0]   // everyone else
@@ -209,7 +209,8 @@ class App extends React.Component {
         debug('wallet address: ', address)
         if (!address) return // web3Modal will take it from here
 
-        this.setState({ 
+        await this.setState({ 
+            wallet: { ...this.state.wallet, address },
             walletConnected: true }
         )
 
@@ -222,7 +223,7 @@ class App extends React.Component {
         }
 
         Promise.all([
-            this.contract.methods.balanceOf(address).call(), // [0] HEX balance
+            this.contract.methods.balanceOf(this.state.wallet.address).call(), // [0] HEX balance
             this.contract.methods.allocatedSupply().call(),  // [1]
             this.contract.methods.currentDay().call(),       // [2]
             this.contract.methods.globals().call()           // [3]
@@ -277,6 +278,23 @@ class App extends React.Component {
         await this.web3Modal.clearCachedProvider()
         await this.setState({ ...INITIAL_STATE })
         window.location.reload()
+    }
+
+    connectWeb3ModalWallet = async (reset) => {
+        this.web3Modal = new Web3Modal({
+            network: "mainnet",                         // optional
+            cacheProvider: true,                        // optional
+            providerOptions: this.getProviderOptions()  // required
+        });
+        if (reset) await this.web3Modal.clearCachedProvider()
+        this.provider = null
+        while (this.provider === null) {
+            this.provider = await this.web3Modal.connect()
+            .catch(() => {
+                debug('web3 provider connection cancelled')
+            })
+        }
+        if (this.provider) this.componentDidMount()
     }
 
     disconnectWallet = async () => {
@@ -353,7 +371,7 @@ class App extends React.Component {
                                 </Col>
                                 <Col xs={12} sm={8} className="py-3 text-center text-sm-left m-auto allign-middle">
                                     <h3>Get&nbsp;Trust&nbsp;Wallet</h3>
-                                    <p>
+                                    <div>
                                         <div className="m-3 d-inline-block">
                                             <a href="https://apps.apple.com/app/trust-ethereum-wallet/id1288339409">
                                                 <Image src="/dltw-appstore.png" height={56} alt="Download on the App Store" />
@@ -369,7 +387,7 @@ class App extends React.Component {
                                                 <Image src="/dltw-android.png" height={56} alt="Download for Android ARK" />
                                             </a>
                                         </div>
-                                    </p>
+                                    </div>
                                 </Col>
                             </Row>
                         </Container>
@@ -396,13 +414,11 @@ class App extends React.Component {
                             </Row>
                             <Row>
                                 <Col>
-                                    <p>
-                                        <h5>To use WalletConnect on the <em><strong>same device</strong></em> ...</h5>
-                                        <ol>
-                                            <li>take a screenshot of the QR code</li>
-                                            <li>point WalletConnect wallet to that image</li>
-                                        </ol>
-                                    </p>
+                                    <h5>To use WalletConnect on the <em><strong>same device</strong></em> ...</h5>
+                                    <ol>
+                                        <li>take a screenshot of the QR code</li>
+                                        <li>point WalletConnect wallet to that image</li>
+                                    </ol>
                                 </Col>
                                 <Col xs={12} sm={3} className="text-center">
                                     <img style={{ maxWidth: "90%", maxHeight: "300px" }} src="/wc-qr-example.png" alt="QR code example" />
@@ -437,6 +453,7 @@ class App extends React.Component {
                 <Container>
                     <this.AppContent />
                 </Container>
+            { "When AA Lobby gets here, if it ever gets here" === true &&  
                 <Container className="p-3 my-3 text-center">
                     <Card.Body as={Button} variant="success" className="w-100"
                         href={'https://go.hex.win/?r='+this.state.referrer} target="_blank" rel="noopener noreferrer"
@@ -449,6 +466,7 @@ class App extends React.Component {
                         { this.state.incomingReferrer && <div className="small"><em>fwd: {this.state.referrer}</em></div> }
                     </Card.Body>
                 </Container>
+            }
                 { !isTrust && 
                 <>
                     <Container className="p-3 my-3">

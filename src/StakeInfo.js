@@ -52,14 +52,20 @@ export class StakeInfo extends React.Component {
                 <Card bg="dark" className="m-1 p-1">
                     <Accordion.Toggle as={Card.Header} eventKey={0} className="p-1">
                         <Row>
-                            <Col><strong>days</strong></Col>
-                            <Col xs={9}className="text-right text-info">
+                            <Col sm={4} className="d-none d-sm-inline-block"><strong>days</strong></Col>
+                            <Col xs={5} sm={4}>#<strong className="numeric text-info text-center">{stake.stakeId}</strong></Col>
+                            <Col xs={7} sm={4} className="text-right text-info">
                                 <strong><HexNum value={stake.stakedHearts} showUnit /></strong>
                             </Col>
                         </Row>
                         <Row className="mb-1">
-                            <Col className="numeric">{startDay+1} to {endDay+1}</Col>
-                            <Col className="text-right numeric">{ pending ? <Badge variant="primary">PENDING</Badge> : progress+"%"}</Col>
+                            <Col xs={7} className="numeric">
+                                <span className="d-inline d-sm-none numeric text-muted small mr-1">
+                                    DAYS
+                                </span>
+                                {startDay+1} to {endDay+1}
+                            </Col>
+                            <Col xs={5} className="text-right numeric">{ pending ? <Badge variant="primary">PENDING</Badge> : progress+"%"}</Col>
                         </Row>
                         { pending 
                             ? <ProgressBar variant={progressVariant} now={100} striped />
@@ -120,7 +126,7 @@ export class StakeInfo extends React.Component {
                                         params={[stake.stakeIndex, stake.stakeId]}
                                         from={stake.stakeOwner}
                                         variant={'exitbtn '+exitClass}
-                                        simulate={false}
+                                        confirmationCallback={this.props.reloadStakes}
                                     >
                                         EXIT
                                     </VoodooButton>

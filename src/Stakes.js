@@ -34,6 +34,7 @@ class Stakes extends React.Component {
             stakeContext: { }, // active UI stake context
             showExitModal: false
         }
+
         window._STAKES = this // DEBUG REMOVE ME
     }
 
@@ -138,7 +139,7 @@ class Stakes extends React.Component {
     unsubscribeEvents = () => {
         if (this.subscriptions.length) {
             this.subscriptions = [ ]
-            this.web3.eth.clearSubscriptions()
+            this.web3.shh.clearSubscriptions()
         }
     }
 
@@ -176,10 +177,12 @@ class Stakes extends React.Component {
                     bigPayDay: new BigNumber(0),
                     payout: new BigNumber(0)
                 }
-                if (currentDay >= stakeData.lockedDay) {
+                if (currentDay >= stakeData.lockedDay + 1) { // no payouts when pending or until day 2 into term
                     const payouts = await Stakes.getStakePayoutData(context, stakeData)
-                    stakeData.payout = payouts.interest
-                    stakeData.bigPayDay = payouts.bigPayDay
+                    if (payouts) { // just in case
+                        stakeData.payout = payouts.interest
+                        stakeData.bigPayDay = payouts.bigPayDay
+                    }
                 }
 
                 stakeList = stakeList.concat(stakeData) //*** ESLint complains but it's safe, because non-mutating concat()
@@ -225,7 +228,7 @@ class Stakes extends React.Component {
         debug('Stakes.js::eventCallback:', eventName, data)
     }
 
-    StakesList = (props) => {
+    StakesList = (params) => {
         const stakeList = this.state.stakeList.slice() || null
         stakeList && stakeList.sort((a, b) => (a.progress < b.progress ? (a.progress !== b.progress ? 1 : 0) : -1 ))
 
@@ -261,7 +264,12 @@ class Stakes extends React.Component {
                             endDate
                         }
                         return (
-                            <StakeInfo contract={this.props.contract} stake={stake} eventCallback={props.eventCallback}/>
+                            <StakeInfo 
+                                contract={this.props.contract} 
+                                stake={stake} 
+                                eventCallback={params.eventCallback} 
+                                reloadStakes={this.loadAllStakes}
+                            />
                         )
                     })
                 }
@@ -326,7 +334,11 @@ class Stakes extends React.Component {
                     </Accordion.Toggle>
                     <Accordion.Collapse eventKey="new_stake">
                         <Card.Body className="bg-dark p-2">
-                            <NewStakeForm contract={this.props.contract} wallet={this.props.wallet} />
+                            <NewStakeForm 
+                                contract={this.props.contract} 
+                                wallet={this.props.wallet} 
+                                reloadStakes={this.loadAllStakes}
+                            />
                         </Card.Body>
                    </Accordion.Collapse>
                 </Card>
@@ -358,8 +370,8 @@ class Stakes extends React.Component {
                 <Modal.Header closeButton>
                     <Modal.Title>End Stake</Modal.Title>
                 </Modal.Header>
-               <Modal.Body>
-                    {IsEarlyExit 
+                <Modal.Body>
+                    { IsEarlyExit 
                         ?  
                             <Alert variant="danger">
                                 <Alert.Heading>LOSSES AHEAD</Alert.Heading>
@@ -382,7 +394,7 @@ class Stakes extends React.Component {
                     }
                 </Modal.Body>
                 <Modal.Footer>
-                    {IsEarlyExit 
+                    { IsEarlyExit 
                         ? <div>
                             <Button variant="secondary" onClick={handleClose}>
                                 Accept Penalty

@@ -36,7 +36,7 @@ class NewStakeForm extends React.Component {
             percentGain: 0.0,
             percentAPY: 0.0,
         }
-        window._NEW = this // DEBUG remove me
+//        window._NEW = this // DEBUG remove me
     }
 
     componentDidMount() {
@@ -45,7 +45,7 @@ class NewStakeForm extends React.Component {
         this.setState({ shareRate })
     }
 
-    resetForm() {
+    resetForm = () => {
         document.getElementById('stake_amount').value = ''
         document.getElementById('stake_days').value = ''
         this.setState({ stakeAmount: null, stakeDays: null })
@@ -116,6 +116,11 @@ class NewStakeForm extends React.Component {
             percentGain: percentGain.toPrecision(6, 1),
             percentAPY: percentAPY.toPrecision(6, 1)
         })
+    }
+
+    resetFormAndReloadStakes = () => { 
+        this.resetForm()
+        this.props.reloadStakes()
     }
 
     render() {
@@ -371,7 +376,7 @@ class NewStakeForm extends React.Component {
                                 params={[this.state.stakeAmount/*string*/, this.state.stakeDays]}
                                 from={this.props.wallet.address}
                                 dataValid={new BigNumber(this.state.stakeAmount).gt(0) && this.state.stakeDays > 0}
-                                confirmationCallback={this.resetForm}
+                                confirmationCallback={this.resetFormAndReloadStakes}
                                 variant={'stake btn-start'}
                             >
                                 STAKE
