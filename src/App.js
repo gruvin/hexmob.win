@@ -15,6 +15,7 @@ import Stakes from './Stakes'
 import Web3 from "web3";
 import Web3Modal from "web3modal";
 import WalletConnectProvider from "@walletconnect/web3-provider"
+import Portis from "@portis/web3";
 
 import HEX from './hex_contract'
 
@@ -49,6 +50,7 @@ class App extends React.Component {
             incomingReferrer,
             referrer
         }
+        window._APP = this // DEBUG remove me
     }
 
     getProviderOptions = () => {
@@ -59,6 +61,12 @@ class App extends React.Component {
                     infuraId: "ba82349aaccf4a448b43bf651e4d9145" // required
                 }
             },
+            portis: {
+                package: Portis, // required
+                options: {
+                    id: "e55eff64-770e-4b93-9377-fb42791b5738" // required
+                }
+            }
         }
         return providerOptions
     }
@@ -144,7 +152,7 @@ class App extends React.Component {
     componentDidMount = async () => {
         if (!this.provider) {
             // check first for Mobile TrustWallet
-            if (window.web3.currentProvider.isTrust) {
+            if (window.web3 && window.web3.currentProvider.isTrust) {
                 const mainnet = {
                     chainId: 1,
                     rpcUrl: "https://mainnet.infura.io/v3/ba82349aaccf4a448b43bf651e4d9145"
@@ -202,9 +210,11 @@ class App extends React.Component {
         } else if (window.web3 && window.web3.currentProvider.isTrust) {
             address = this.web3.eth.givenProvider.address
             this.provider.setAddress(address)
-        }
-        else 
-            address = this.web3.eth.accounts.currentProvider.accounts[0]   // everyone else
+        } else if (this.provider.isPortis) {
+            const accounts = await this.web3.eth.getAccounts()
+            address = accounts[0]
+        } else 
+            address = this.web3.eth.accounts.currentProvider.accounts[0]   // everyone else ... maybe
 
         debug('wallet address: ', address)
         if (!address) return // web3Modal will take it from here
@@ -213,7 +223,7 @@ class App extends React.Component {
             wallet: { ...this.state.wallet, address },
             walletConnected: true }
         )
-
+console.log('ADD', address)
         // WARNING: do not move this to before address establishment, because race conditionsi re MM selectedAddress
         try {
             this.contract = new this.web3.eth.Contract(HEX.ABI, HEX.ContractAddress)
@@ -336,7 +346,7 @@ class App extends React.Component {
         if (!this.state.walletConnected) {
             return (
                 <Container fluid className="text-center mb-3">
-                    <Button id="connect_wallet" onClick={() => this.connectWeb3ModalWallet()} variant="info">
+                    <Button id="connect_wallet" onClick={() => this.connectWeb3ModalWallet(true)} variant="info">
                         <span className="d-none">Click to Connect a Wallet</span>
                         <span className="sm-inline">Connect Wallet</span>
                     </Button>
