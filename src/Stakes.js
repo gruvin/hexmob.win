@@ -265,6 +265,7 @@ class Stakes extends React.Component {
                         }
                         return (
                             <StakeInfo 
+                                key={stakeData.stakeId}
                                 contract={this.props.contract} 
                                 stake={stake} 
                                 eventCallback={params.eventCallback} 
@@ -273,7 +274,7 @@ class Stakes extends React.Component {
                         )
                     })
                 }
-                <Card xs={12} sm={6} bg="dark"className="m-2 p-1">
+                <Card xs={12} sm={6} bg="dark" className="m-2 p-1">
                     <Card.Header className="p-1 text-center text-info"><strong>Stake Totals</strong></Card.Header>
                     <Card.Body className="bg-secondary p-1 rounded">
                         <Row>
@@ -321,7 +322,7 @@ class Stakes extends React.Component {
                 activeKey={this.state.selectedCard}
                 onSelect={handleAccordionSelect}
             >
-                <Card bg="secondary" text="light" className="overflow-auto">
+                <Card bg="secondary" text="light">
                     <Accordion.Toggle as={Card.Header} eventKey="new_stake" className="p-2">
                         <BurgerHeading className="float-left">New Stake</BurgerHeading>
                             <div className="day-number float-right">day 
@@ -333,7 +334,7 @@ class Stakes extends React.Component {
                         </div>
                     </Accordion.Toggle>
                     <Accordion.Collapse eventKey="new_stake">
-                        <Card.Body className="bg-dark p-2">
+                        <Card.Body bg="dark" className="p-2 overflow-hidden">
                             <NewStakeForm 
                                 contract={this.props.contract} 
                                 wallet={this.props.wallet} 

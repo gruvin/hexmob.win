@@ -11,6 +11,7 @@ import { Container,
     Image
 } from 'react-bootstrap'
 import Stakes from './Stakes'
+import Lobby from './Lobby'
 
 import Web3 from "web3";
 import Web3Modal from "web3modal";
@@ -223,7 +224,6 @@ class App extends React.Component {
             wallet: { ...this.state.wallet, address },
             walletConnected: true }
         )
-console.log('ADD', address)
         // WARNING: do not move this to before address establishment, because race conditionsi re MM selectedAddress
         try {
             this.contract = new this.web3.eth.Contract(HEX.ABI, HEX.ContractAddress)
@@ -356,7 +356,7 @@ console.log('ADD', address)
                                 <Col className="text-center">
                                     <p><small><small>COMPATIBLE WITH ...</small></small></p>
                                     <p>
-                                        <em><Image src="/mm-logo.svg" alt="Metamask" height={56} /></em> <em>on</em> <strong>Desktops</strong>
+                                        <em><Image src="/mm-wordmark.svg" alt="Metamask" height={56} /></em> <em>on</em> <strong>Desktops</strong>
                                     </p>
                                     <p>
                                         <Image src="/trustwallet-logo.png" alt="Trust Wallet" height={64} /><em> on </em><strong>Mobile</strong>
@@ -409,8 +409,8 @@ console.log('ADD', address)
                                 <Col>
                                     <h2 className="text-center text-sm-left"><img width={120} src="/walletconnect.svg" alt="" /> WalletConnect</h2>
                                     <p>
-                                        A WalletConnect mobile wallet allows us to use any browser — on any
-                                        device — even if it's <em>physically separate</em>.
+                                        A WalletConnect mobile wallet allows us to use any browser -- on any
+                                        device -- even if it's <em>physically separate</em>.
                                     </p>
 
                                     <p>
@@ -444,7 +444,10 @@ console.log('ADD', address)
             )
         } else {
             return (
-                <Stakes contract={this.contract} wallet={this.state.wallet} />
+                <>
+                    <Lobby contract={this.contract} wallet={this.state.wallet} />
+                    <Stakes contract={this.contract} wallet={this.state.wallet} />
+                </>
             )
         }
     }
@@ -454,64 +457,64 @@ console.log('ADD', address)
         const isTrust = window.web3 && window.web3.currentProvider.isTrust
         return (
             <>
-            <Container id="hexmob_header" fluid>
-                <h1>HEX<span>mobile</span></h1>
-                <h2> ...stake on the run</h2>
-                <h3>Open BETA <span>USE AT YOUR OWN RISK</span></h3>
-            </Container>
-            <Container id="hexmob_body" fluid className="p-1 text-center">
-                <Container>
-                    <this.AppContent />
+                <Container id="hexmob_header" fluid>
+                    <h1>HEX<span>mobile</span></h1>
+                    <h2> ...stake on the run</h2>
+                    <h3>Open BETA <span>USE AT YOUR OWN RISK</span></h3>
                 </Container>
-            { "When AA Lobby gets here, if it ever gets here" === true &&  
-                <Container className="p-3 my-3 text-center">
-                    <Card.Body as={Button} variant="success" className="w-100"
-                        href={'https://go.hex.win/?r='+this.state.referrer} target="_blank" rel="noopener noreferrer"
-                    >
-                        <div><img src="/extra-bonus-10.png" alt="extra bonus 10%" /></div>
-                        <div>
-                            when you <strong>transform ETH to HEX</strong><br/>
-                            using this app! 
-                        </div>
-                        { this.state.incomingReferrer && <div className="small"><em>fwd: {this.state.referrer}</em></div> }
-                    </Card.Body>
-                </Container>
-            }
-                { !isTrust && 
-                <>
-                    <Container className="p-3 my-3">
-                        <Card.Body as={Button} variant="info" className="w-100" style={{ cursor: "pointer" }}
-                            href="https://changelly.com/?ref_id=1b7z255j4rfbxsyd#buy" target="_blank" rel="noopener noreferrer"
+                <Container id="hexmob_body" fluid className="p-1 text-center">
+                    <Container>
+                        <this.AppContent />
+                    </Container>
+                { "When AA Lobby gets here, if it ever gets here" === true &&  
+                    <Container className="p-3 my-3 text-center">
+                        <Card.Body as={Button} variant="success" className="w-100"
+                            href={'https://go.hex.win/?r='+this.state.referrer} target="_blank" rel="noopener noreferrer"
                         >
+                            <div><img src="/extra-bonus-10.png" alt="extra bonus 10%" /></div>
                             <div>
-                                <img className="d-inline-block" src="/buy-eth.png" alt="buy ethereum here" style={{ verticalAlign: "middle" }} />
-                                <div className="d-inline-block text-center" style={{ verticalAlign: "middle" }}>
-                                    Click HERE to<br/>
-                                    <strong>buy Ethereum</strong><br/>
-                                    using Credit Card
+                                when you <strong>transform ETH to HEX</strong><br/>
+                                using this app! 
+                            </div>
+                            { this.state.incomingReferrer && <div className="small"><em>fwd: {this.state.referrer}</em></div> }
+                        </Card.Body>
+                    </Container>
+                }
+                    { !isTrust && 
+                    <>
+                        <Container className="p-3 my-3">
+                            <Card.Body as={Button} variant="info" className="w-100" style={{ cursor: "pointer" }}
+                                href="https://changelly.com/?ref_id=1b7z255j4rfbxsyd#buy" target="_blank" rel="noopener noreferrer"
+                            >
+                                <div>
+                                    <img className="d-inline-block" src="/buy-eth.png" alt="buy ethereum here" style={{ verticalAlign: "middle" }} />
+                                    <div className="d-inline-block text-center" style={{ verticalAlign: "middle" }}>
+                                        Click HERE to<br/>
+                                        <strong>buy Ethereum</strong><br/>
+                                        using Credit Card
+                                    </div>
                                 </div>
-                            </div>
-                        </Card.Body>
-                    </Container>
-                    <Container className="p-3 my-3">
-                        <Card.Body as={Button} variant="warning" className="text-center w-100" style={{ cursor: "pointer" }}
-                            href="https://hexdex.win/swap" target="_blank" rel="noopener noreferrer"
-                        >
-                            <img className="d-inline-block" src="/holders.png" alt="swap HEX for USDC or DAI" style={{ verticalAlign: "middle", height: "97px" }} />
-                            <div className="text-right d-inline-block" style={{ verticalAlign: "middle", marginLeft: "28px" }}>
-                                <strong>Swap HEX</strong> with<br/>
-                                ERC20s including<br/>
-                                <strong>USDC</strong> & <strong>DAI</strong>
-                                <br/>
-                            </div>
-                        </Card.Body>
-                    </Container>
-                </> 
-                } 
-            </Container>
-            <Container>
-                { this.state.walletConnected && <this.WalletStatus />}
-            </Container>
+                            </Card.Body>
+                        </Container>
+                        <Container className="p-3 my-3">
+                            <Card.Body as={Button} variant="warning" className="text-center w-100" style={{ cursor: "pointer" }}
+                                href="https://hexdex.win/swap" target="_blank" rel="noopener noreferrer"
+                            >
+                                <img className="d-inline-block" src="/holders.png" alt="swap HEX for USDC or DAI" style={{ verticalAlign: "middle", height: "97px" }} />
+                                <div className="text-right d-inline-block" style={{ verticalAlign: "middle", marginLeft: "28px" }}>
+                                    <strong>Swap HEX</strong> with<br/>
+                                    ERC20s including<br/>
+                                    <strong>USDC</strong> & <strong>DAI</strong>
+                                    <br/>
+                                </div>
+                            </Card.Body>
+                        </Container>
+                    </> 
+                    } 
+                </Container>
+                <Container>
+                    { this.state.walletConnected && <this.WalletStatus />}
+                </Container>
             </>
         )
     }

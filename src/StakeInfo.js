@@ -49,7 +49,7 @@ export class StakeInfo extends React.Component {
 
         return (
             <Accordion xs={12} sm={6} defaultActiveKey="0" key={stake.stakeId} className="m-1 my-2">
-                <Card bg="dark" className="m-1 p-1">
+                <Card bg="dark" className="m-1 p-1 overflow-hidden">
                     <Accordion.Toggle as={Card.Header} eventKey={0} className="p-1">
                         <Row>
                             <Col sm={4} className="d-none d-sm-inline-block"><strong>days</strong></Col>

@@ -130,18 +130,15 @@ class NewStakeForm extends React.Component {
 
         const handleAmountChange = (e) => {
             e.preventDefault()
-            const tv = e.target.value
-            const m = tv.match(/^[.0-9]+$/)
-            const v = m ? new BigNumber(m[0]).times(1e8) : null
+            const value = new BigNumber(e.target.value).times(1e8) 
             this.setState({
-                stakeAmount: v
+                stakeAmount: isNaN(value) ? null : value
             }, this.updateFigures)
         }
 
         const handleDaysChange = (e) => {
             e.preventDefault()
-            let stakeDays = parseInt(e.target.value) || null
-            if (stakeDays && stakeDays > 5555) stakeDays = 5555
+            let stakeDays = Math.min(5555, parseInt(e.target.value)) || null
             this.setState({
                 stakeDays,
                 lastFullDay: stakeDays ? currentDay + stakeDays : '---',
@@ -199,12 +196,11 @@ class NewStakeForm extends React.Component {
             <Form>
                 <Row>
                     <Col xs={12} sm={5} className="mb-3">
-                        <Form.Group controlId="stakeAmount">
+                        <Form.Group controlId="stake_amount">
                             <Form.Label>Stake Amount in HEX</Form.Label> 
                             <InputGroup>
                                 <FormControl
-                                    id="stake_amount"
-                                    type="text"
+                                    type="number" novalidate
                                     placeholder="number of HEX to stake"
                                     value={this.state.stakeAmount ? this.state.stakeAmount.div(1e8).toString() : ''}
                                     aria-label="amount to stake"
@@ -235,12 +231,11 @@ class NewStakeForm extends React.Component {
                                 </div>
                             </Form.Text>
                         </Form.Group>
-                        <Form.Group controlId="stakeDays">
+                        <Form.Group controlId="stake_days" className="mb-0">
                             <Form.Label>Stake Length in Days</Form.Label>
                             <InputGroup>
                                 <FormControl
-                                    id="stake_days"
-                                    type="text" 
+                                    type="number" novalidate
                                     placeholder="minimum one day" 
                                     value={this.state.stakeDays <= 0 ? '' : this.state.stakeDays}
                                     aria-label="number of days to stake"
@@ -271,7 +266,7 @@ class NewStakeForm extends React.Component {
                                 Longer pays better (max 5555)
                             </Form.Text>
                         </Form.Group>
-                        <Row className="small">
+                        <Row className="small mb-3">
                             <Col className="text-center">
                                 <strong>Start</strong>:{' '}
                                 <span className="numeric">{ format(',')(currentDay + 1) }</span>
@@ -283,6 +278,21 @@ class NewStakeForm extends React.Component {
                             <Col className="text-center">
                                 <strong>End</strong>:{' '}
                                 <span className="numeric">{ isNaN(this.state.endDay) ? '---' : format(',')(this.state.endDay) }</span>
+                            </Col>
+                        </Row>
+                        <Row comment="*** STAKE button ****">
+                            <Col className='text-right'>
+                                <VoodooButton 
+                                    contract={this.props.contract}
+                                    method="stakeStart" 
+                                    params={[this.state.stakeAmount/*string*/, this.state.stakeDays]}
+                                    from={this.props.wallet.address}
+                                    dataValid={new BigNumber(this.state.stakeAmount).gt(0) && this.state.stakeDays > 0}
+                                    confirmationCallback={this.resetFormAndReloadStakes}
+                                    variant="outline-success"
+                                >
+                                    STAKE
+                                </VoodooButton>
                             </Col>
                         </Row>
                     </Col>
@@ -368,20 +378,6 @@ class NewStakeForm extends React.Component {
                             </Row>
                         </Container>
                         ) }
-
-                        <Container className="mt-3 text-right">
-                            <VoodooButton 
-                                contract={this.props.contract}
-                                method="stakeStart" 
-                                params={[this.state.stakeAmount/*string*/, this.state.stakeDays]}
-                                from={this.props.wallet.address}
-                                dataValid={new BigNumber(this.state.stakeAmount).gt(0) && this.state.stakeDays > 0}
-                                confirmationCallback={this.resetFormAndReloadStakes}
-                                variant={'stake btn-start'}
-                            >
-                                STAKE
-                            </VoodooButton>
-                        </Container>
                     </Col>
                 </Row>
             </Form>

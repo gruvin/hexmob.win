@@ -119,14 +119,34 @@ button#connect_wallet {
     border: 6px #ddbbaa outset;
     border-radius: 14px;
     text-transform: uppercase;
-
 }
 button#connect_wallet:hover { border-style: inset; border-color: #fec}
 
-.numeric { font-family: Jura, monospace }
+.day-number {
+    font-family: Jura, 'Courier New', monospace;
+    color: map-get($theme-colors, secondary);
+    font-size: 1.0em;
+    line-height: 1.6em;
+    font-weight: normal;
+    text-transform: lowercase;
+}
+.day-number .numeric { 
+    font-size: 1.6em;
+    font-weight: bold;
+    vertical-align: middle;
+    color: map-get($theme-colors, info);
+    background-color: map-get($theme-colors, dark);
+    padding: 0 0.25em;
+    border-radius: 5px;
+}
+.numeric { font-family: Jura, "Courier New", monospace; display: inline-block; }
 
-.card-header { cursor: pointer; }
-#stakes_accordion > .card > .card-header {
+.accordion .accordion > .card {
+    border-width: 2px !important;
+    border-radius: 5px !important;
+}
+.card-header { 
+    cursor: pointer;
     background: rgb(51,51,51);
     background: linear-gradient(180deg, rgba(51,51,51,1) 0%, rgba(0,0,0,1) 50%, rgba(51,51,51,1) 100%);
     color: #eee; font-weight: bold;
@@ -134,6 +154,7 @@ button#connect_wallet:hover { border-style: inset; border-color: #fec}
 
 .spinner-border {
     vertical-align: middle;
+    margin-right: 0.2em;
 }
 
 .burger { 

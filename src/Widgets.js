@@ -186,32 +186,35 @@ export class VoodooButton extends React.Component {
         }
 
         const { data, wait, hash } = this.state
-        let response, variant, hashUI
-        if (data === false) { response = this.props.children; variant = "primary" }
-        else if (parseInt(data)) { response = (<><span style={{fontSize: "0.9em"}}>CONFIRMED</span><sup>{data}</sup></>); variant = "success" }
-        else { response = data; variant = (response !== 'rejected') ? "info" : "danger" } 
+        let _RESPONSE, _color, hashUI
+        if (data === false) { _RESPONSE = this.props.children; _color = '' }
+        else if (parseInt(data)) { _RESPONSE = (<><span style={{fontSize: '0.9em'}}>CONFIRMED</span><sup>{data}</sup></>); _color = 'text-success' }
+        else { _RESPONSE = data; _color = (_RESPONSE !== 'rejected') ? 'text-info' : 'text-danger' } 
         if (hash) hashUI = data === 'REQUESTED' ? hash : hash.slice(0,6)+'....'+hash.slice(-6) 
+        const _className = `${other.className} ${_color}` || ''
 
         return (
             <>
-            <Button {...other}
-                disabled={!dataValid}
-                onClick={!wait ? (e) => handleClick(contract, method, params, from, e) : null}
-            >
-            { wait && <> 
-                <Spinner
-                as="span"
-                variant="light"
-                animation="border"
-                size="sm"
-                role="status"
-                />{' '}</>
-            }
-            <span className={'text-'+variant}>{response}</span>
-            </Button>
-            { hash && <div className="text-info small mt-2">TX Hash: <a href={'https://etherscan.io/tx/'+hash} 
-                target="_blank" rel="noopener noreferrer">{hashUI}</a></div>
-            }
+                <Button {...other}
+                    variant={other.variant}
+                    className={_className}
+                    disabled={!dataValid}
+                    onClick={!wait ? (e) => handleClick(contract, method, params, from, e) : null}
+                >
+                { wait && <> 
+                    <Spinner
+                        as="span"
+                        variant="light"
+                        animation="border"
+                        size="sm"
+                        role="status"
+                    />{' '}</>
+                }
+                    <span className={_className}>{_RESPONSE}</span>
+                </Button>
+                { hash && <div className="text-info small mt-2">TX Hash: <a href={'https://etherscan.io/tx/'+hash} 
+                    target="_blank" rel="noopener noreferrer">{hashUI}</a></div>
+                }
             </>
         )
     }
