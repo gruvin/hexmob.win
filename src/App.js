@@ -462,7 +462,7 @@ class App extends React.Component {
                     <h2> ...stake on the run</h2>
                     <h3>Open BETA <span>USE AT YOUR OWN RISK</span></h3>
                 </Container>
-                <Container id="hexmob_body" fluid className="p-1 text-center">
+                <Container id="hexmob_body" fluid className="p-1">
                     <Container>
                         <this.AppContent />
                     </Container>
