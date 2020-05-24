@@ -204,21 +204,23 @@ class Lobby extends React.Component {
         const { currentDay } = this.props.contract.Data
         return (
             <Accordion id="lobby_accordion" className="text.left my-3" >
-                <Card bg="dark" text="light rounded">
-                    <Accordion.Toggle bg="dark" as={Card.Header} eventKey="0" className="p-0">
+                <Card bg="secondary" text="light rounded">
+                    <Accordion.Toggle as={Card.Header} eventKey="0">
                         <BurgerHeading>ETH => HEX Transform</BurgerHeading>
-                        <ProgressBar id="lobby" 
-                            min="0" max="350" 
-                            now={currentDay+1}
-                            label={`Day ${currentDay+1} of 351`}
-                            className="mb-3"
-                            style={{ color: "black" }}
-                            variant="info"
-                        />
-                        <HeaderDetail />
+                        <Container>
+                            <ProgressBar id="lobby" 
+                                min="0" max="350" 
+                                now={currentDay+1}
+                                label={`Day ${currentDay+1} of 351`}
+                                className="mb-1"
+                                style={{ color: "black" }}
+                                variant="info"
+                            />
+                            <HeaderDetail />
+                        </Container>
                     </Accordion.Toggle>
                     <Accordion.Collapse eventKey="0">
-                        <Card.Body className="text-right p-0"> 
+                        <Card.Body className="bg-dark text-right"> 
                             <LobbyDays />
                         </Card.Body>
                     </Accordion.Collapse>

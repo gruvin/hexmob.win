@@ -317,11 +317,11 @@ class Stakes extends React.Component {
                 onSelect={handleAccordionSelect}
             >
                 <Card bg="secondary" text="light">
-                    <Accordion.Toggle as={Card.Header} eventKey="new_stake" className="p-0">
+                    <Accordion.Toggle as={Card.Header} eventKey="new_stake">
                         <BurgerHeading className="float-left">New Stake </BurgerHeading>
                     </Accordion.Toggle>
                     <Accordion.Collapse eventKey="new_stake">
-                        <Card.Body bg="dark" className="p-2 overflow-hidden">
+                        <Card.Body>
                             <NewStakeForm 
                                 contract={this.props.contract} 
                                 wallet={this.props.wallet} 
@@ -330,22 +330,22 @@ class Stakes extends React.Component {
                         </Card.Body>
                    </Accordion.Collapse>
                 </Card>
-                <Card bg="secondary" text="light" className="overflow-auto">
-                    <Accordion.Toggle as={Card.Header} eventKey="current_stakes" className="p-0">
+                <Card bg="secondary" text="light">
+                    <Accordion.Toggle as={Card.Header} eventKey="current_stakes">
                         <BurgerHeading>Current Stakes</BurgerHeading>
                     </Accordion.Toggle>
                     <Accordion.Collapse eventKey="current_stakes">
-                        <Card.Body className="bg-none p-2">
+                        <Card.Body>
                             <this.StakesList eventCallback={this.eventCallback}/>
                         </Card.Body>
                    </Accordion.Collapse>
                 </Card>
-                <Card bg="secondary" text="light" className="overflow-auto">
-                    <Accordion.Toggle as={Card.Header} eventKey="stake_history" className="p-0">
+                <Card bg="secondary" text="light">
+                    <Accordion.Toggle as={Card.Header} eventKey="stake_history">
                         <BurgerHeading>Stake History</BurgerHeading>
                     </Accordion.Toggle>
                     <Accordion.Collapse eventKey="stake_history">
-                        <Card.Body className="bg-dark">
+                        <Card.Body>
                             <p>HISTORY TODO</p>
                             <p>HISTORY TODO</p>
                             <p>HISTORY TODO</p>

@@ -463,7 +463,7 @@ class App extends React.Component {
                     <h3>Open BETA <span>USE AT YOUR OWN RISK</span></h3>
                 </Container>
                 <Container id="hexmob_body" fluid className="p-1">
-                    <Container>
+                    <Container className="p-1">
                         <this.AppContent />
                     </Container>
                 { "When AA Lobby gets here, if it ever gets here" === true &&  

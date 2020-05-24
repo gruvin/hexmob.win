@@ -1,5 +1,6 @@
 import React from 'react'
 import { 
+    Container,
     Card,
     ProgressBar,
     Accordion,
@@ -49,31 +50,33 @@ export class StakeInfo extends React.Component {
 
         return (
             <Accordion xs={12} sm={6} defaultActiveKey="0" key={stake.stakeId} className="my-2">
-                <Card bg="dark" className="m-0 p-1 overflow-hidden">
-                    <Accordion.Toggle as={Card.Header} eventKey={0} className="p-1 m-0 bg-dark">
-                        <Row>
-                            <Col sm={4} className="d-none d-sm-inline-block"><strong>days</strong></Col>
-                            <Col xs={5} sm={4}>#<strong className="numeric text-info text-center">{stake.stakeId}</strong></Col>
-                            <Col xs={7} sm={4} className="text-right text-info">
-                                <strong><CryptoVal value={stake.stakedHearts} showUnit /></strong>
-                            </Col>
-                        </Row>
-                        <Row className="mb-1">
-                            <Col xs={7} className="numeric">
-                                <span className="d-inline d-sm-none numeric text-muted small mr-1">
-                                    DAYS
-                                </span>
-                                {startDay+1} to {endDay+1}
-                            </Col>
-                            <Col xs={5} className="text-right numeric">{ pending ? <Badge variant="primary">PENDING</Badge> : progress+"%"}</Col>
-                        </Row>
-                        { pending 
-                            ? <ProgressBar variant={progressVariant} now={100} striped />
-                            : <ProgressBar variant={progressVariant} now={Math.ceil(progress)}  />
-                        }
+                <Card bg="dark">
+                    <Accordion.Toggle as={Card.Header} eventKey={0}>
+                        <Container>
+                            <Row>
+                                <Col sm={4} className="d-none d-sm-inline-block"><strong>days</strong></Col>
+                                <Col xs={5} sm={4}>#<strong className="numeric text-info text-center">{stake.stakeId}</strong></Col>
+                                <Col xs={7} sm={4} className="text-right text-info">
+                                    <strong><CryptoVal value={stake.stakedHearts} showUnit /></strong>
+                                </Col>
+                            </Row>
+                            <Row className="mb-1">
+                                <Col xs={7} className="numeric">
+                                    <span className="d-inline d-sm-none numeric text-muted small mr-1">
+                                        DAYS
+                                    </span>
+                                    {startDay+1} to {endDay+1}
+                                </Col>
+                                <Col xs={5} className="text-right numeric">{ pending ? <Badge variant="primary">PENDING</Badge> : progress+"%"}</Col>
+                            </Row>
+                            { pending 
+                                ? <ProgressBar variant={progressVariant} now={100} striped />
+                                : <ProgressBar variant={progressVariant} now={Math.ceil(progress)}  />
+                            }
+                        </Container>
                     </Accordion.Toggle>
-                    <Accordion.Collapse eventKey={0} className="bg-secondary mt-1 p-1 rounded">
-                        <Card.Body className="p-2">
+                    <Accordion.Collapse eventKey={0} bg="secondary">
+                        <Card.Body>
                             <Row>
                                 <Col><strong>Start Day</strong></Col>
                                 <Col className="numeric">{stake.startDay}</Col>

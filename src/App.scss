@@ -38,7 +38,7 @@ $theme-colors: (
 body { 
     overflow: hidden;
     font-family: "Happy Monkey", sans-serif; 
-    background: #111;
+    background: #171515;
     background-size: auto;
 }
 #hexmob_header {
@@ -148,20 +148,39 @@ button#connect_wallet:hover { border-style: inset; border-color: #fec}
     border-width: 2px !important;
     border-radius: 5px !important;
 }
+.card {
+    padding-bottom: 0.25em;
+}
 .card-header { 
     cursor: pointer;
-    background: rgb(51,51,51);
+    background: map-get($theme-colors, secondary);
     color: #eee; font-weight: bold;
+    margin: 0;
+    padding: 0;
+    background: linear-gradient(180deg, rgba(20,20,20,1) 0, rgba(0,0,0,1) 18px, rgba(50,50,50,1) 36px);
+    border: 0;
+    border-radius: 3px !important;
 }
-.card-header .burger-heading {
+.card-body,
+.card-header > .container {
+    padding: .25em;
+}
+.burger-heading {
+    display: inline-block;
     font-family: 'Titillium Web', Arial, sans-serif;
     font-weight: bold;
-    height: 40px;
-    line-height: 32px;
+    padding-bottom: .25em;
     width:100%;
-    margin: 0;
-    padding-left: 3px;
-    background: linear-gradient(180deg, rgba(51,51,51,1) 0%, rgba(0,0,0,1) 50%, rgba(51,51,51,1) 100%);
+}
+.burger-heading > img:first-child {
+    display: inline-block;
+    height: 1.4em;
+    vertical-align: middle;
+    margin: 0 6px 0 0
+}
+.burger-heading > span:first-child {
+    vertical-align: middle;
+    font-size: 1.4em
 }
 
 .spinner-border {
