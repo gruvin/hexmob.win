@@ -23,7 +23,6 @@ debug('loading')
 class Stakes extends React.Component {
     constructor(props) {
         super(props)
-        this.subscriptions = [ ]
         this.loggedEvents = [ ]
         this.state = {
             selectedCard: 'current_stakes',
@@ -99,48 +98,42 @@ class Stakes extends React.Component {
     }
 
     subscribeEvents = async () => {
-        this.subscriptions.push(
-            await this.props.contract.events.StakeEnd( {filter:{stakerAddr:this.props.wallet.address}}, async (e, r) => {
-                if (e) { 
-                    debug('ERR: events.StakeEnd:', e) 
-                    return
-                }
-                debug('events.StakeEnd[e, r]: ', e, r)
+        await this.props.contract.events.StakeEnd( {filter:{stakerAddr:this.props.wallet.address}}, async (e, r) => {
+            if (e) { 
+                debug('ERR: events.StakeEnd:', e) 
+                return
+            }
+            debug('events.StakeEnd[e, r]: ', e, r)
 
-                const { id, blockHash, removed, stakeId } = r.returnValues
-                if (this.existsInEventLog(id+blockHash+removed+stakeId)) return
-                this.addToEventLog(id+blockHash+removed+stakeId)
+            const { id, blockHash, removed, stakeId } = r.returnValues
+            if (this.existsInEventLog(id+blockHash+removed+stakeId)) return
+            this.addToEventLog(id+blockHash+removed+stakeId)
 
-                debug('CALLING loadAllStakes: this.props.wallet: %O', this.props.wallet)
-                await this.loadAllStakes(this)
-            })
-            .on('connected', (id) => debug('sub: StakeEnd:', id))
-        )
-        this.subscriptions.push(
-            await this.props.contract.events.StakeStart( {filter:{stakerAddr:this.props.wallet.address}}, async (e, r) => {
-                if (e) { 
-                    debug('ERR: events.StakeStart: ', e) 
-                    return
-                }
-                debug('events.StakeStart[e, r]: ', e, r)
+            debug('CALLING loadAllStakes: this.props.wallet: %O', this.props.wallet)
+            await this.loadAllStakes(this)
+        })
+        .on('connected', (id) => debug('sub: StakeEnd:', id))
+        await this.props.contract.events.StakeStart( {filter:{stakerAddr:this.props.wallet.address}}, async (e, r) => {
+            if (e) { 
+                debug('ERR: events.StakeStart: ', e) 
+                return
+            }
+            debug('events.StakeStart[e, r]: ', e, r)
 
-                const { id, blockHash, removed, stakeId } = r.returnValues
-                if (this.existsInEventLog(id+blockHash+removed+stakeId)) return
-                this.addToEventLog(id+blockHash+removed+stakeId)
+            const { id, blockHash, removed, stakeId } = r.returnValues
+            if (this.existsInEventLog(id+blockHash+removed+stakeId)) return
+            this.addToEventLog(id+blockHash+removed+stakeId)
 
-                debug('CALLING loadAllStakes: this.props.wallet: %O', this.props.wallet)
-                await this.loadAllStakes(this)
-                this.setState({ selectedCard: 'current_stakes' })
-            })
-            .on('connected', (id) => debug('sub: StakeStart:', id))
-        )
+            debug('CALLING loadAllStakes: this.props.wallet: %O', this.props.wallet)
+            await this.loadAllStakes(this)
+            this.setState({ selectedCard: 'current_stakes' })
+        })
+        .on('connected', (id) => debug('sub: StakeStart:', id))
     }
 
     unsubscribeEvents = () => {
-        if (this.subscriptions.length) {
-            this.subscriptions = [ ]
-            this.web3.shh.clearSubscriptions()
-        }
+        this.web3 && this.web3.shh && this.web3.shh.clearSubscriptions()
+        this.web3 && this.web3.eth && this.web3.eth.clearSubscriptions()
     }
 
     static async loadStakes(context) {
@@ -274,9 +267,9 @@ class Stakes extends React.Component {
                         )
                     })
                 }
-                <Card xs={12} sm={6} bg="dark" className="m-2 p-1">
-                    <Card.Header className="p-1 text-center text-info"><strong>Stake Totals</strong></Card.Header>
-                    <Card.Body className="bg-secondary p-1 rounded">
+                <Card xs={12} sm={6} bg="dark" className="m-0 p-1">
+                    <Card.Header className="bg-dark p-1 text-center text-info"><strong>Stake Totals</strong></Card.Header>
+                    <Card.Body className="bg-dark p-1 rounded">
                         <Row>
                             <Col className="text-right"><strong>Staked</strong></Col>
                             <Col><CryptoVal value={stakedTotal} showUnit /></Col>
@@ -308,7 +301,8 @@ class Stakes extends React.Component {
         const IsEarlyExit = (thisStake.stakeId && currentDay < (thisStake.lockedDay + thisStake.stakedDays)) 
 
         const handleAccordionSelect = (selectedCard) => {
-            selectedCard && this.setState({ selectedCard })
+//            selectedCard && this.setState({ selectedCard })
+        //    this.setState({ selectedCard })
         }
 
         const dayEpoc = HEX.START_DATE.toLocaleTimeString()
@@ -319,19 +313,12 @@ class Stakes extends React.Component {
             <Accordion 
                 id='stakes_accordion'
                 className="text-left"
-                activeKey={this.state.selectedCard}
+                defaultActiveKey={this.state.selectedCard}
                 onSelect={handleAccordionSelect}
             >
                 <Card bg="secondary" text="light">
-                    <Accordion.Toggle as={Card.Header} eventKey="new_stake" className="p-2">
-                        <BurgerHeading className="float-left">New Stake</BurgerHeading>
-                            <div className="day-number float-right">day 
-                            <WhatIsThis placement="bottom">
-                                Day 1 was {HEX.START_DATE.toUTCString()}<br/>
-                                Each HEX day starts <span className="text-light">{dayEpoc}</span> local time.
-                            </WhatIsThis>
-                            <span className="numeric">{currentDay+1}</span>
-                        </div>
+                    <Accordion.Toggle as={Card.Header} eventKey="new_stake" className="p-0">
+                        <BurgerHeading className="float-left">New Stake </BurgerHeading>
                     </Accordion.Toggle>
                     <Accordion.Collapse eventKey="new_stake">
                         <Card.Body bg="dark" className="p-2 overflow-hidden">
@@ -344,17 +331,17 @@ class Stakes extends React.Component {
                    </Accordion.Collapse>
                 </Card>
                 <Card bg="secondary" text="light" className="overflow-auto">
-                    <Accordion.Toggle as={Card.Header} eventKey="current_stakes" className="p-2">
+                    <Accordion.Toggle as={Card.Header} eventKey="current_stakes" className="p-0">
                         <BurgerHeading>Current Stakes</BurgerHeading>
                     </Accordion.Toggle>
                     <Accordion.Collapse eventKey="current_stakes">
-                        <Card.Body className="bg-none p-1">
+                        <Card.Body className="bg-none p-2">
                             <this.StakesList eventCallback={this.eventCallback}/>
                         </Card.Body>
                    </Accordion.Collapse>
                 </Card>
                 <Card bg="secondary" text="light" className="overflow-auto">
-                    <Accordion.Toggle as={Card.Header} eventKey="stake_history" className="p-2">
+                    <Accordion.Toggle as={Card.Header} eventKey="stake_history" className="p-0">
                         <BurgerHeading>Stake History</BurgerHeading>
                     </Accordion.Toggle>
                     <Accordion.Collapse eventKey="stake_history">

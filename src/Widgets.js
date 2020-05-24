@@ -29,7 +29,7 @@ export const CryptoVal = (props) => {
             else if (v.lt(1e15))    s = format(',.3f')(v.div( 1e12).toFixed(3, 1))+'μ'
             else if (v.lt(1e18))    s = format(',.3f')(v.div( 1e15).toFixed(3, 1))+'m'
             else if (v.lt(1e21))    s = format(',.3f')(v.div( 1e18).toFixed(3, 1))
-            else if (v.lt(1e24))    s = format(',.0f')(v.div( 1e18).toFixed(3, 1))+''
+            else if (v.lt(1e24))    s = format(',.0f')(v.div( 1e18).toFixed(0, 1))
             else if (v.lt(1e27))    s = format(',.3f')(v.div( 1e21).toFixed(3, 1))+'M'
             else                    s = format(',.0f')(v.div( 1e21).toFixed(0, 1))+'M'
             break
@@ -79,7 +79,7 @@ export const WhatIsThis = (props) => {
 
 export const BurgerHeading = (props) => {
     return (
-        <div className="burger" style={{ display: "inline-block" }}>
+        <div className="burger-heading" style={{ display: "inline-block" }}>
             <img src="/hex-burger.png" alt="" style={{ height: "1.4em", display: "inline-block", verticalAlign: "middle", margin: "0 6px 0 0" }} />
             <span style={{ verticalAlign: "middle", fontSize: "1.4em" }}>{props.children}</span>
         </div>

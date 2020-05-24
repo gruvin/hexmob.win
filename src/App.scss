@@ -16,6 +16,9 @@
     and (device-height: 896px) 
     and (-webkit-device-pixel-ratio: 3) { }
 
+@media (max-width: 400px){
+    .xs-small { font-size: 0.85em }
+}
 @import url('https://fonts.googleapis.com/css2?family=Happy+Monkey&family=Jura:wght@500;700&family=Press+Start+2P&family=Titillium+Web:wght@400;700&family=Nosifer&display=swap');
 
 $hex-crimson: #ff4136;
@@ -126,7 +129,7 @@ button#connect_wallet:hover { border-style: inset; border-color: #fec}
 .day-number {
     font-family: Jura, 'Courier New', monospace;
     color: map-get($theme-colors, secondary);
-    font-size: 1.0em;
+    font-size: 0.65em;
     line-height: 1.6em;
     font-weight: normal;
     text-transform: lowercase;
@@ -148,8 +151,17 @@ button#connect_wallet:hover { border-style: inset; border-color: #fec}
 .card-header { 
     cursor: pointer;
     background: rgb(51,51,51);
-    background: linear-gradient(180deg, rgba(51,51,51,1) 0%, rgba(0,0,0,1) 50%, rgba(51,51,51,1) 100%);
     color: #eee; font-weight: bold;
+}
+.card-header .burger-heading {
+    font-family: 'Titillium Web', Arial, sans-serif;
+    font-weight: bold;
+    height: 40px;
+    line-height: 32px;
+    width:100%;
+    margin: 0;
+    padding-left: 3px;
+    background: linear-gradient(180deg, rgba(51,51,51,1) 0%, rgba(0,0,0,1) 50%, rgba(51,51,51,1) 100%);
 }
 
 .spinner-border {
@@ -157,10 +169,6 @@ button#connect_wallet:hover { border-style: inset; border-color: #fec}
     margin-right: 0.2em;
 }
 
-.burger { 
-    font-family: 'Titillium Web', Arial, sans-serif;
-    font-weight: bold;
-}
 
 .tooltip-inner {
     font-family: "Happy Monkey", Arial, sans-serif;
