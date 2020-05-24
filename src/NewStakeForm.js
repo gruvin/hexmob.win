@@ -14,7 +14,7 @@ import { BigNumber } from 'bignumber.js'
 import { format } from 'd3-format'
 import HEX from './hex_contract.js'
 import { calcBigPayDaySlice, calcAdoptionBonus } from './util.js'
-import { HexNum, WhatIsThis, VoodooButton } from './Widgets.js' 
+import { CryptoVal, WhatIsThis, VoodooButton } from './Widgets.js' 
 const debug = require('debug')('NewStakeForm')
 debug('loading')
 
@@ -227,7 +227,7 @@ class NewStakeForm extends React.Component {
                             <Form.Text>
                                 <span className="text-muted">Bigger pays better</span>
                                 <div className="float-right" variant="info" >
-                                    <HexNum value={balance} showUnit /> available
+                                    <CryptoVal value={balance} showUnit /> available
                                 </div>
                             </Form.Text>
                         </Form.Group>
@@ -301,15 +301,15 @@ class NewStakeForm extends React.Component {
                             <h4 className="text-info">Bonuses ...</h4>
                             <Row>
                                 <Col className="ml-0 ml-md-3">Bigger <span className="d-none d-md-inline">Pays</span> Better</Col>
-                                <Col className="text-right">+ <HexNum value={this.state.biggerPaysBetter} showUnit /></Col>
+                                <Col className="text-right">+ <CryptoVal value={this.state.biggerPaysBetter} showUnit /></Col>
                             </Row>
                             <Row>
                                 <Col className="ml-0 ml-md-3">Longer <span className="d-none d-md-inline">Pays</span> Better</Col>
-                                <Col className="text-right">+ <HexNum value={this.state.longerPaysBetter.toFixed(0)} showUnit /></Col>
+                                <Col className="text-right">+ <CryptoVal value={this.state.longerPaysBetter.toFixed(0)} showUnit /></Col>
                             </Row>
                             <Row>
                                 <Col className="ml-0 ml-md-3"><strong>Total</strong></Col>
-                                <Col className="text-right"><strong><HexNum value={this.state.bonusTotal} showUnit /></strong></Col>
+                                <Col className="text-right"><strong><CryptoVal value={this.state.bonusTotal} showUnit /></strong></Col>
                             </Row>
                             <Row className="mt-2">
                                 <Col>
@@ -322,12 +322,12 @@ class NewStakeForm extends React.Component {
                                         Stake Bonuses
                                     </WhatIsThis>
                                     </Col>
-                                <Col className="text-right"><strong><HexNum value={this.state.effectiveHEX} showUnit /></strong></Col>
+                                <Col className="text-right"><strong><CryptoVal value={this.state.effectiveHEX} showUnit /></strong></Col>
                             </Row>
                             <Row className="mt-3">
                                 <Col><strong>Share Rate</strong></Col>
                                 <Col className="text-right">
-                                    <HexNum value={this.state.shareRate.times(1e8/*fudge non-HEX unit for desired display*/)} />
+                                    <CryptoVal value={this.state.shareRate.times(1e8/*fudge non-HEX unit for desired display*/)} />
                                     {' '}/ HEX
                                 </Col>
                             </Row>
@@ -343,7 +343,7 @@ class NewStakeForm extends React.Component {
                                     </WhatIsThis>{' '}
                                 </Col>
                                 <Col className="text-right">
-                                    <HexNum value={this.state.stakeShares.times(1e8/*fudge non-HEX unit for desired display*/)} />
+                                    <CryptoVal value={this.state.stakeShares.times(1e8/*fudge non-HEX unit for desired display*/)} />
                                 </Col>
                             </Row>
                         </Container>
@@ -363,15 +363,15 @@ class NewStakeForm extends React.Component {
                                         Increases as others end their stakes.
                                     </WhatIsThis>
                                 </Col>
-                                <Col className="text-right"><HexNum value={this.state.bigPayDay} /> HEX</Col>
+                                <Col className="text-right"><CryptoVal value={this.state.bigPayDay} /> HEX</Col>
                             </Row>
                             <Row>
                                 <Col>% Gain<span className="text-info">*</span> </Col>
-                                <Col className="text-right"><HexNum value={this.state.percentGain} />%</Col>
+                                <Col className="text-right"><CryptoVal value={this.state.percentGain} />%</Col>
                             </Row>
                             <Row>
                                 <Col>% APY<span className="text-info">*</span></Col>
-                                <Col className="text-right"><HexNum value={this.state.percentAPY} />%</Col>
+                                <Col className="text-right"><CryptoVal value={this.state.percentAPY} />%</Col>
                             </Row>
                             <Row>
                                 <Col className="pt-2"><span className="text-info">*</span> <em>If stake still open on BigPayDay</em></Col>

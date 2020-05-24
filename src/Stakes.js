@@ -13,7 +13,7 @@ import { BigNumber } from 'bignumber.js'
 import HEX from './hex_contract'
 import { calcBigPayDaySlice, calcAdoptionBonus } from './util'
 import  NewStakeForm from './NewStakeForm' 
-import { HexNum, WhatIsThis, BurgerHeading } from './Widgets' 
+import { CryptoVal, WhatIsThis, BurgerHeading } from './Widgets' 
 import { StakeInfo } from './StakeInfo'
 import crypto from 'crypto'
 
@@ -279,19 +279,19 @@ class Stakes extends React.Component {
                     <Card.Body className="bg-secondary p-1 rounded">
                         <Row>
                             <Col className="text-right"><strong>Staked</strong></Col>
-                            <Col><HexNum value={stakedTotal} showUnit /></Col>
+                            <Col><CryptoVal value={stakedTotal} showUnit /></Col>
                         </Row>
                         <Row>
                             <Col className="text-right"><strong>Shares</strong></Col>
-                            <Col><HexNum value={sharesTotal.times(1e8)} /></Col>
+                            <Col><CryptoVal value={sharesTotal.times(1e8)} /></Col>
                         </Row>
                         <Row>
                             <Col className="text-right"><strong>BigPayDay</strong></Col>
-                            <Col><HexNum value={bpdTotal} showUnit /></Col>
+                            <Col><CryptoVal value={bpdTotal} showUnit /></Col>
                         </Row>
                         <Row>
                             <Col className="text-right"><strong>Interest</strong></Col>
-                            <Col><HexNum value={interestTotal} showUnit /></Col>
+                            <Col><CryptoVal value={interestTotal} showUnit /></Col>
                         </Row>
                     </Card.Body>
                 </Card>

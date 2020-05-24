@@ -3283,6 +3283,11 @@ bip66@^1.1.5:
   dependencies:
     safe-buffer "^5.0.1"
 
+bitset@^5.1.1:
+  version "5.1.1"
+  resolved "https://registry.yarnpkg.com/bitset/-/bitset-5.1.1.tgz#b1908bd48db92b2c00ca136ec0188827e84d9b58"
+  integrity sha512-oKaRp6mzXedJ1Npo86PKhWfDelI6HxxJo+it9nAcBB0HLVvYVp+5i6yj6DT5hfFgo+TS5T57MRWtw8zhwdTs3g==
+
 block-stream@*:
   version "0.0.9"
   resolved "https://registry.yarnpkg.com/block-stream/-/block-stream-0.0.9.tgz#13ebfe778a03205cfe03751481ebb4b3300c126a"

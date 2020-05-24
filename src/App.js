@@ -1,6 +1,6 @@
 import React from 'react'
 import { BigNumber } from 'bignumber.js'
-import { HexNum } from './Widgets'
+import { CryptoVal } from './Widgets'
 import { Container,
     Card,
     Row,
@@ -328,7 +328,7 @@ class App extends React.Component {
                 <Col><Badge variant="success" className="small">mainnet</Badge></Col>
                 <Col className="text-center"> 
                     <Badge variant="info" className="small"> 
-                        <HexNum value={balance} showUnit />
+                        <CryptoVal value={balance} showUnit />
                     </Badge>
                 </Col>
                 <Col className="text-right">

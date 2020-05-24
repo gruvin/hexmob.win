@@ -10,7 +10,7 @@ import {
 import './Stakes.scss'
 import HEX from './hex_contract'
 import { format } from 'd3-format'
-import { HexNum, VoodooButton } from './Widgets' 
+import { CryptoVal, VoodooButton } from './Widgets' 
 
 const debug = require('debug')('StakeInfo')
 debug('loading')
@@ -55,7 +55,7 @@ export class StakeInfo extends React.Component {
                             <Col sm={4} className="d-none d-sm-inline-block"><strong>days</strong></Col>
                             <Col xs={5} sm={4}>#<strong className="numeric text-info text-center">{stake.stakeId}</strong></Col>
                             <Col xs={7} sm={4} className="text-right text-info">
-                                <strong><HexNum value={stake.stakedHearts} showUnit /></strong>
+                                <strong><CryptoVal value={stake.stakedHearts} showUnit /></strong>
                             </Col>
                         </Row>
                         <Row className="mb-1">
@@ -88,11 +88,11 @@ export class StakeInfo extends React.Component {
                             </Row>
                             <Row>
                                 <Col><strong>Principal</strong></Col>
-                                <Col className="numeric"><HexNum value={stake.stakedHearts} showUnit /></Col>
+                                <Col className="numeric"><CryptoVal value={stake.stakedHearts} showUnit /></Col>
                             </Row>
                             <Row>
                                 <Col><strong>Shares</strong></Col>
-                                <Col className="numeric"><HexNum value={stake.stakeShares.times(1e8)} /></Col>
+                                <Col className="numeric"><CryptoVal value={stake.stakeShares.times(1e8)} /></Col>
                             </Row>
                             <Row>
                                 <Col><strong>
@@ -100,15 +100,15 @@ export class StakeInfo extends React.Component {
                                     <span className="text-warning">Pay</span>
                                     <span className="text-danger">Day</span>
                                 </strong></Col>
-                                <Col className="numeric"><HexNum value={stake.bigPayDay} showUnit /></Col>
+                                <Col className="numeric"><CryptoVal value={stake.bigPayDay} showUnit /></Col>
                             </Row>
                             <Row>
                                 <Col><strong>Interest</strong></Col>
-                                <Col className="numeric"><HexNum value={stake.payout} showUnit /></Col>
+                                <Col className="numeric"><CryptoVal value={stake.payout} showUnit /></Col>
                             </Row>
                             <Row>
                                 <Col><strong>Value</strong></Col>
-                                <Col className="numeric"><strong><HexNum value={valueTotal} showUnit /></strong></Col>
+                                <Col className="numeric"><strong><CryptoVal value={valueTotal} showUnit /></strong></Col>
                             </Row>
                             <Row>
                                 <Col><strong>% Gain</strong></Col>

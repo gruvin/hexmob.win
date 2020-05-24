@@ -12,20 +12,37 @@ import { format } from 'd3-format' // gives us Intl for free
 import { EventEmitter } from 'events'
 const debug = require('debug')('Widgets')
 
-export const HexNum = (props) => {
+export const CryptoVal = (props) => {
     let v = new BigNumber(props.value) 
     if (isNaN(v)) return ( <>NaN</> )
 
     let unit = ' HEX'
     let s
-    if (v.isZero())         s = '0.000'
-    else if (v.lt(1e5))     { unit = ' Hearts'; s = format(',')(v) }
-    else if (v.lt(1e11))    s = format(',')(v.div( 1e08).toFixed(3, 1))
-    else if (v.lt(1e14))    s = format(',')(v.div( 1e08).toFixed(0, 1))
-    else if (v.lt(1e17))    s = format(',.3f')(v.div( 1e14).toFixed(3, 1))+'M'
-    else if (v.lt(1e20))    s = format(',.3f')(v.div( 1e17).toFixed(3, 1))+'B'
-    else if (v.lt(1e23))    s = format(',.3f')(v.div( 1e20).toFixed(3, 1))+'T'
-    else                    s = format(',.0f')(v.div( 1e20).toFixed(0, 1))+'T'
+    switch (props.currency) {
+        case 'ETH':
+            unit = ' ETH'
+            if (v.isZero())         s = '0.000'
+            else if (v.lt( 1e3))    { unit = ' wei'; s = format(',')(v) }
+            else if (v.lt( 1e6))    { unit = ' wei'; s = format(',.0f')(v) }
+            else if (v.lt( 1e9))    { unit = ' Gwei'; s = format(',.3f')(v.div( 1e09).toFixed(3, 1)) }
+            else if (v.lt(1e12))    { unit = ' Gwei'; s = format(',.0f')(v.div( 1e09).toFixed(0, 1)) }
+            else if (v.lt(1e15))    s = format(',.3f')(v.div( 1e12).toFixed(3, 1))+'μ'
+            else if (v.lt(1e18))    s = format(',.3f')(v.div( 1e15).toFixed(3, 1))+'m'
+            else if (v.lt(1e21))    s = format(',.3f')(v.div( 1e18).toFixed(3, 1))
+            else if (v.lt(1e24))    s = format(',.0f')(v.div( 1e18).toFixed(3, 1))+''
+            else if (v.lt(1e27))    s = format(',.3f')(v.div( 1e21).toFixed(3, 1))+'M'
+            else                    s = format(',.0f')(v.div( 1e21).toFixed(0, 1))+'M'
+            break
+        default:
+            if (v.isZero())         s = '0.000'
+            else if (v.lt(1e5))     { unit = ' Hearts'; s = format(',')(v) }
+            else if (v.lt(1e11))    s = format(',')(v.div( 1e08).toFixed(3, 1))
+            else if (v.lt(1e14))    s = format(',')(v.div( 1e08).toFixed(0, 1))
+            else if (v.lt(1e17))    s = format(',.3f')(v.div( 1e14).toFixed(3, 1))+'M'
+            else if (v.lt(1e20))    s = format(',.3f')(v.div( 1e17).toFixed(3, 1))+'B'
+            else if (v.lt(1e23))    s = format(',.3f')(v.div( 1e20).toFixed(3, 1))+'T'
+            else                    s = format(',.0f')(v.div( 1e20).toFixed(0, 1))+'T'
+    }
 
     // fade fractional part (including the period)
     const r = s.match(/^(.*)(\.\d+)(.*)$/) 

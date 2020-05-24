@@ -122,6 +122,7 @@ button#connect_wallet {
 }
 button#connect_wallet:hover { border-style: inset; border-color: #fec}
 
+.numeric { font-family: Jura, "Courier New", monospace; display: inline-block; }
 .day-number {
     font-family: Jura, 'Courier New', monospace;
     color: map-get($theme-colors, secondary);
@@ -139,7 +140,6 @@ button#connect_wallet:hover { border-style: inset; border-color: #fec}
     padding: 0 0.25em;
     border-radius: 5px;
 }
-.numeric { font-family: Jura, "Courier New", monospace; display: inline-block; }
 
 .accordion .accordion > .card {
     border-width: 2px !important;
@@ -175,3 +175,4 @@ button#connect_wallet:hover { border-style: inset; border-color: #fec}
 .tooltip.show {
     opacity: 0.95;
 }
+#lobby.progress .progress-bar { color: black; }
