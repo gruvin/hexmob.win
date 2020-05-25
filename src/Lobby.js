@@ -277,9 +277,8 @@ class Lobby extends React.Component {
         const handleAmountChange = (e) => {
             e.preventDefault()
             e.stopPropagation()
-            const value = BigNumber(e.target.value)
             this.setState({
-                entryETH: isNaN(value) ? '' : value.toString()
+                entryETH: e.target.value
             })
         }
 
@@ -304,6 +303,7 @@ class Lobby extends React.Component {
                                     <Form.Control
                                         type="number" novalidate
                                         placeholder="ETH amount"
+                                        value={this.state.entryETH}
                                         aria-label="amount of ETH forthis lobby entry"
                                         aria-describedby="basic-addon1"
                                         onChange={ handleAmountChange }
