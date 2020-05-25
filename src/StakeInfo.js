@@ -127,7 +127,7 @@ export class StakeInfo extends React.Component {
                                         contract={contract}
                                         method="stakeEnd" 
                                         params={[stake.stakeIndex, stake.stakeId]}
-                                        from={stake.stakeOwner}
+                                        options={{ from: stake.stakeOwner }}
                                         variant={'exitbtn '+exitClass}
                                         confirmationCallback={this.props.reloadStakes}
                                     >

@@ -3,6 +3,7 @@ import {
     Container,
     Row, Col,
     Card,
+    Form,
     Button,
     Modal,
     Alert,
@@ -12,7 +13,7 @@ import {
 import './Stakes.scss'
 import { BigNumber } from 'bignumber.js'
 import HEX from './hex_contract'
-import { CryptoVal, WhatIsThis, BurgerHeading } from './Widgets' 
+import { CryptoVal, WhatIsThis, BurgerHeading, VoodooButton } from './Widgets' 
 import BitSet from 'bitset'
 import Timer from 'react-compound-timer'
 
@@ -24,66 +25,82 @@ class Lobby extends React.Component {
         super(props)
         this.state = {
             dataReady: false,
+            error: null,
             dailyDataCount: 0,
             lobbyData: null,
+            entryETH: null
         }
         window._LOBBY = this // DEBUG REMOVE ME
     }
     
+    getDayEntries = (day, address) => {
+        const { contract } = this.props
+        return new Promise((resolveEntries, reject) => {
+            contract.methods.xfLobbyMembers(day, address).call()
+            .then(entryIndexes => {
+                const { headIndex, tailIndex } = entryIndexes
+                const promiseQueue = [ ]
+                for (let entryIndex = 0; entryIndex < tailIndex; entryIndex++) {
+                    const entryId = BigNumber(day).times(BigNumber(2).pow(40)).plus(entryIndex)
+                    promiseQueue.push(
+                        contract.methods.xfLobbyEntry(address, entryId.toString()).call()
+                    )
+                }
+                Promise.all(promiseQueue).then(entriesResult => {
+                    const entries = entriesResult.map(entry => {
+                        return {
+                            rawAmount: BigNumber(entry.rawAmount),
+                            referrerAddr: entry.referrerAddr
+                        }
+                    })
+                    resolveEntries(entries)
+                })
+                .catch(e => reject(e))
+            })
+        })
+    }
+
     componentDidMount = () => {
         const { contract, wallet } = this.props
         const dailyDataCount  = contract.Data.globals.dailyDataCount.toNumber()
         if (!wallet.address || wallet.address == '') return debug('Lobby::address invalid')
         Promise.all([
-            contract.methods.xfLobby(dailyDataCount).call(),            // [0]
-            contract.methods.dailyDataRange(0, dailyDataCount).call(),  // [1]
-            contract.methods.xfLobbyRange(0, dailyDataCount).call(),    // [2]
-            contract.methods.xfLobbyPendingDays(wallet.address).call()  // [3]
+            contract.methods.xfLobby(dailyDataCount).call(),            // [0] global ETH entered today (total pending)
+            this.getDayEntries(dailyDataCount, wallet.address),         // [1] our ETH entries for current day (total no. pending)
+            contract.methods.dailyDataRange(0, dailyDataCount).call(),  // [2] for unclaimedSatoshisTotal from each day in range
+            contract.methods.xfLobbyRange(0, dailyDataCount).call(),    // [3] total ETH from each day in range
+            contract.methods.xfLobbyPendingDays(wallet.address).call(), // [4] bit vector of days; 1 == we have entires that day
         ]).then(results => {
-            const lobbyPendingDayETH = results[0]
-            const lobbyDaysHEX = results[1]
-            const lobbyDaysETH = results[2]
-            const hasEntryThisDay = new BitSet(
-                BigNumber(results[3][1]).toString(2) +
-                BigNumber(results[3][0]).toString(2)
+            const lobbyTodayPendingETH  = BigNumber(results[0])
+            const lobbyTodayYourEntries = results[1]
+            const lobbyDailyData        = results[2]
+            const lobbyDailyETH         = results[3]
+            const totalUnclaimedSatoshis = contract.Data.globals.claimStats.unclaimedSatoshisTotal
+            const lobbyTodayAvailableHEX = totalUnclaimedSatoshis.div(350).times(HEX.HEARTS_PER_SATOSHI) 
+
+           const hasEntryThisDay = new BitSet(
+                BigNumber(results[4][1]).toString(2) +
+                BigNumber(results[4][0]).toString(2)
             )
 
             new Promise((resolveLobby, reject) => {
-                Promise.all(lobbyDaysHEX.map((mappedDayData, day) => { // returns array of lobby day promises
+                Promise.all(lobbyDailyData.map((mappedDayData, day) => { // returns array of lobby day promises
                     return new Promise((resolveDay, reject) => {
                         const hexa = BigNumber(mappedDayData).toString(16).padStart(64, '0')
                         const unclaimedSatoshisTotal = BigNumber(hexa.slice(12,28), 16)
                         const availableHEX = (day === 0) ? BigNumber(1e13) : unclaimedSatoshisTotal.div(350).times(HEX.HEARTS_PER_SATOSHI)
-                        const totalETH = lobbyDaysETH[day]
+                        const totalETH = lobbyDailyETH[day]
 
                         if (hasEntryThisDay.get(day)) {
-                            contract.methods.xfLobbyMembers(day, wallet.address).call()
-                            .then(entryIndexes => {
-                                const { headIndex, tailIndex } = entryIndexes
-                                debug('HT: ', day, headIndex, tailIndex)
-                                const promiseQueue = [ ]
-                                for (let entryIndex = 0; entryIndex < tailIndex; entryIndex++) {
-                                    const entryId = BigNumber(day).times(BigNumber(2).pow(40)).plus(entryIndex)
-                                    promiseQueue.push(
-                                        contract.methods.xfLobbyEntry(wallet.address, entryId.toString()).call()
-                                    )
-                                }
-                                Promise.all(promiseQueue)
-                                .then(entriesResult => {
-                                    const entries = entriesResult.map(entry => {
-                                        return {
-                                            rawAmount: BigNumber(entry.rawAmount),
-                                            referralAddr: entry.referralAddr
-                                        }
-                                    })
-                                    resolveDay({
-                                        day,
-                                        availableHEX,
-                                        totalETH,
-                                        entries
-                                    })
+                            this.getDayEntries(day, wallet.address).then(entries => {
+                                resolveDay({
+                                    day,
+                                    availableHEX,
+                                    totalETH,
+                                    entries
                                 })
                             })
+                            .catch(e => reject(e))
                         } else {
                             resolveDay({
                                 day,
@@ -95,23 +112,36 @@ class Lobby extends React.Component {
                     })
                 }))
                 .then(days => resolveLobby(days))
+                .catch(e => reject(e))
             })
             .then(lobbyData => {
                 debug('lobbyData: %O', lobbyData)
                 this.setState({
                     dailyDataCount,
                     lobbyData,
+                    lobbyTodayAvailableHEX,
+                    lobbyTodayPendingETH,
+                    lobbyTodayYourEntries,
                     dataReady: true
                 })
             })
+            .catch(e => { this.setState({ error: e }) })
         })
+    }
+
+    resetFormAndReload = () => {
+        /* TODO */
     }
 
     render() {
 
-        const LobbyDays = (props) => {
-            if (!this.state.dataReady)
-                return ( <div className="text-center">loading ...</div> )
+        const LobbyDays = () => {
+            if (!this.state.dataReady) {
+                if (this.state.error)
+                    return ( <div className="text-center">error :/</div> )
+                else
+                    return ( <div className="text-center">loading ...</div> )
+            }
 
             const lobbyData = [...this.state.lobbyData].reverse()
             return (
@@ -142,13 +172,32 @@ class Lobby extends React.Component {
         const HeaderDetail = () => {
             if (!this.state.dataReady)
                 return ( <div className="text-center">loading ...</div> )
-            const { dailyDataCount, lobbyData } = this.state
-            const { day, availableHEX:currentHEXTotal, totalETH:currentETHTotal, entries } = lobbyData[dailyDataCount-1]
-            let currentEntryTotal = BigNumber(0)
-            entries && entries.forEach(entry => { 
-                currentEntryTotal = currentEntryTotal.plus(entry.rawAmount)
+
+            const { 
+                dailyDataCount,
+                lobbyData,
+                lobbyTodayAvailableHEX,
+                lobbyTodayPendingETH,
+                lobbyTodayYourEntries
+            } = this.state
+
+            const { day, yesterdayHEXTotal, yesterdayETHTotal, yesterdayYourEntries } = lobbyData[dailyDataCount - 1]
+
+            let todayYourEntriesRawTotal = BigNumber(0)
+            let todayYourEntriesTotal = BigNumber(0)
+            lobbyTodayYourEntries && lobbyTodayYourEntries.forEach(entry => { 
+                let amount = entry.rawAmount
+                todayYourEntriesRawTotal = todayYourEntriesRawTotal.plus(amount)
+                if (entry.referrerAddr.slice(0, 2) === '0x') {
+                    amount = amount.times(1.10)
+                    if (entry.referrerAddr.toLowerCase() === this.props.wallet.address.toLowerCase())
+                        amount = amount.times(1.20) // clever person in the house! :p
+                }
+                todayYourEntriesTotal = todayYourEntriesTotal.plus(amount)
             })
-            const currentHEXPending = BigNumber(currentEntryTotal)
+            const HEXperETH = lobbyTodayAvailableHEX.div(lobbyTodayPendingETH)
+            const todayYourHEXPending = todayYourEntriesTotal.div(lobbyTodayPendingETH).times(lobbyTodayAvailableHEX)
+
             const epocHour = new Date(HEX.START_DATE).getUTCHours() // should convert to local time
             const now = new Date(Date.now())
             const nowHour = now.getUTCHours()
@@ -187,36 +236,81 @@ class Lobby extends React.Component {
                         </Col>
                     </Row>
                     <Row>
-                        <Col className="text-right"> <strong>Available HEX</strong> </Col>
-                        <Col> <CryptoVal value={currentHEXTotal} /> </Col>
+                        <Col className="text-right"><strong>Available HEX</strong> </Col>
+                        <Col> <CryptoVal value={lobbyTodayAvailableHEX} /> </Col>
                     </Row>
                     <Row>
-                        <Col className="text-right"> <strong>Your HEX</strong> </Col>
-                        <Col> <CryptoVal value={BigNumber(currentHEXPending)} /> </Col>
+                        <Col className="text-right"><strong>Total ETH</strong> </Col>
+                        <Col> <CryptoVal value={lobbyTodayPendingETH} currency="ETH" /> </Col>
                     </Row>
                     <Row>
-                        <Col className="text-right"> <strong>Your ETH</strong> </Col>
-                        <Col> <CryptoVal value={BigNumber(currentEntryTotal)} currency="ETH" /> </Col>
+                        <Col className="text-right"><strong>HEX/ETH</strong> </Col>
+                        <Col> <CryptoVal value={HEXperETH.times(1e18)} showUnit /> </Col>
+                    </Row>
+                    <Row>
+                        <Col className="text-right"><strong>Your HEX</strong> </Col>
+                        <Col> <CryptoVal value={BigNumber(todayYourHEXPending)} /> </Col>
+                    </Row>
+                    <Row>
+                        <Col className="text-right"><strong>Your ETH</strong> </Col>
+                        <Col> <CryptoVal value={BigNumber(todayYourEntriesRawTotal)} currency="ETH" /> </Col>
                     </Row>
                 </>
             )
         }
         const { currentDay } = this.props.contract.Data
+        const handleAmountChange = (e) => {
+            e.preventDefault()
+            const value = BigNumber(e.target.value).times(1e18)
+            this.setState({
+                entryETH: isNaN(value) ? null : value
+            })
+        }
+
         return (
             <Accordion id="lobby_accordion" className="text.left my-3" >
                 <Card bg="secondary" text="light rounded">
                     <Accordion.Toggle as={Card.Header} eventKey="0">
-                        <BurgerHeading>ETH => HEX Transform</BurgerHeading>
+                        <BurgerHeading>Transform (AA Lobby)</BurgerHeading>
                         <Container>
                             <ProgressBar id="lobby" 
                                 min="0" max="350" 
                                 now={currentDay+1}
-                                label={`Day ${currentDay+1} of 351`}
                                 className="mb-1"
-                                style={{ color: "black" }}
-                                variant="info"
+                                style={{ height: "6px" }}
+                                variant={currentDay > 263 ? "danger" : currentDay > 125 ? "warning" : currentDay > 88 ? "info" : "success"}
                             />
                             <HeaderDetail />
+                            <Form>
+                                <Row>
+                                <Col xs={{ span:5, offset:1 }} sm={{ span:4, offset: 2 }} md={{ span:3, offset: 3 }} className="text-right">
+                                    <Form.Control
+                                        type="number" novalidate
+                                        placeholder="ETH amount"
+                                        aria-label="amount of ETH forthis lobby entry"
+                                        aria-describedby="basic-addon1"
+                                        onChange={ handleAmountChange }
+                                        onClick={(e) => e.stopPropagation()} 
+                                    />
+                                </Col>
+                                <Col xs={6}>
+                                    <VoodooButton
+                                        contract={ this.props.contract }
+                                        method="xfLobbyEnter" 
+                                        params={['0xD30542151ea34007c4c4ba9d653f4DC4707ad2d2'/*referrerAddr*/ ]}
+                                        options={{ 
+                                            from:this.props.wallet.address, 
+                                            value: this.state.entryETH/*null||BN*/ 
+                                        }}
+                                        dataValid={ this.state.entryETH && this.state.entryETH.gt(0) }
+                                        confirmationCallback={ this.resetFormAndReload }
+                                        variant="outline-success"
+                                    >
+                                        Enter
+                                    </VoodooButton>
+                                </Col>
+                            </Row>
+                            </Form>
                         </Container>
                     </Accordion.Toggle>
                     <Accordion.Collapse eventKey="0">

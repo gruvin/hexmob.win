@@ -35,7 +35,7 @@ export const CryptoVal = (props) => {
             break
         default:
             if (v.isZero())         s = '0.000'
-            else if (v.lt(1e5))     { unit = ' Hearts'; s = format(',')(v) }
+            else if (v.lt(1e5))     { unit = ' Hearts'; s = format(',.0f')(v.toFixed(0, 1)) }
             else if (v.lt(1e11))    s = format(',')(v.div( 1e08).toFixed(3, 1))
             else if (v.lt(1e14))    s = format(',')(v.div( 1e08).toFixed(0, 1))
             else if (v.lt(1e17))    s = format(',.3f')(v.div( 1e14).toFixed(3, 1))+'M'
@@ -129,11 +129,13 @@ export class VoodooButton extends React.Component {
     }
 
     render() {
-        const { contract, method, params, from, simulate, confirmationCallback, ...other } = this.props
+        const { contract, method, params, options, simulate, confirmationCallback, ...other } = this.props
         const dataValid = this.props.hasOwnProperty('dataValid') ? this.props.dataValid : true
 
-        const handleClick = async (contract, method, params, from, e ) => {
+        const handleClick = async (contract, method, params, options, e ) => {
             e.preventDefault()
+            e.stopPropagation()
+            if (!dataValid) return
 
             await this.setState({
                 wait: true,
@@ -144,7 +146,7 @@ export class VoodooButton extends React.Component {
             if (window.web3.currentProvider.isTrust) {
                 // TrustWallet returns immediately, with nothing and 
                 // never again :/ (See XXX notes in App.js)
-                func(...params).send({from: from })
+                func(...params).send(options)
                 setTimeout(async ()=>{
                     await this.setState({
                         data: 'REQUESTED',
@@ -155,9 +157,9 @@ export class VoodooButton extends React.Component {
                         typeof confirmationCallback === 'function' && confirmationCallback()
                     }, 18008)
                 }, 2000)
-                return // that's all folks
+                return false // that's all folks
             }
-            func(...params).send({from: from })
+            func(...params).send(options)
                 .once('transactionHash', (hash) => {
                     debug('endStake::transactionHash: ', hash)
                     this.setState({ 
@@ -200,6 +202,7 @@ export class VoodooButton extends React.Component {
                         wait: false, data: false, hash: null
                     }), 3000) 
                 })
+            return false
         }
 
         const { data, wait, hash } = this.state
@@ -208,27 +211,30 @@ export class VoodooButton extends React.Component {
         else if (parseInt(data)) { _RESPONSE = (<><span style={{fontSize: '0.9em'}}>CONFIRMED</span><sup>{data}</sup></>); _color = 'text-success' }
         else { _RESPONSE = data; _color = (_RESPONSE !== 'rejected') ? 'text-info' : 'text-danger' } 
         if (hash) hashUI = data === 'REQUESTED' ? hash : hash.slice(0,6)+'....'+hash.slice(-6) 
-        const _className = `${other.className} ${_color}` || ''
+        const _className = `${typeof other.className !== 'undefined' ? other.className+' ' : ''}${_color}` || ''
 
         return (
             <>
-                <Button {...other}
-                    variant={other.variant}
-                    className={_className}
-                    disabled={!dataValid}
-                    onClick={!wait ? (e) => handleClick(contract, method, params, from, e) : null}
-                >
-                { wait && <> 
-                    <Spinner
-                        as="span"
-                        variant="light"
-                        animation="border"
-                        size="sm"
-                        role="status"
-                    />{' '}</>
-                }
-                    <span className={_className}>{_RESPONSE}</span>
-                </Button>
+                <div style={{ display: "inline-block" }} onClick={(e) => e.stopPropagation()} >
+                    <Button {...other}
+                        variant={other.variant}
+                        className={_className}
+                        disabled={!dataValid}
+                        style={ dataValid ? { pointer: "hand"} : {} }
+                        onClick={(e) => handleClick(contract, method, params, options, e)}
+                    >
+                    { wait && <> 
+                        <Spinner
+                            as="span"
+                            variant="light"
+                            animation="border"
+                            size="sm"
+                            role="status"
+                        />{' '}</>
+                    }
+                        <span className={_className}>{_RESPONSE}</span>
+                    </Button>
+                </div>
                 { hash && <div className="text-info small mt-2">TX Hash: <a href={'https://etherscan.io/tx/'+hash} 
                     target="_blank" rel="noopener noreferrer">{hashUI}</a></div>
                 }

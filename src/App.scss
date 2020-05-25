@@ -40,6 +40,7 @@ body {
     font-family: "Happy Monkey", sans-serif; 
     background: #171515;
     background-size: auto;
+    line-height: 1.5em; /* factory bootstrap has 1.5; with no siffix */
 }
 #hexmob_header {
     position: fixed;
@@ -168,6 +169,7 @@ button#connect_wallet:hover { border-style: inset; border-color: #fec}
 .burger-heading {
     display: inline-block;
     font-family: 'Titillium Web', Arial, sans-serif;
+    font-size: 1.35rem;
     font-weight: bold;
     padding-bottom: .25em;
     width:100%;
