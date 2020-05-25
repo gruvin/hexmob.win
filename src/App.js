@@ -513,6 +513,7 @@ class App extends React.Component {
                     </> 
                     } 
                 </Container>
+
                 <Container>
                     { this.state.walletConnected && <this.WalletStatus />}
                 </Container>
@@ -521,4 +522,4 @@ class App extends React.Component {
     }
 }
 
-export default App;
+export default App

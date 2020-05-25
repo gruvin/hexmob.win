@@ -4,16 +4,13 @@ import {
     Row, Col,
     Card,
     Form,
-    Button,
-    Modal,
-    Alert,
     ProgressBar,
     Accordion,
 } from 'react-bootstrap'
 import './Stakes.scss'
 import { BigNumber } from 'bignumber.js'
 import HEX from './hex_contract'
-import { CryptoVal, WhatIsThis, BurgerHeading, VoodooButton } from './Widgets' 
+import { CryptoVal, BurgerHeading, VoodooButton } from './Widgets' 
 import BitSet from 'bitset'
 import Timer from 'react-compound-timer'
 
@@ -64,7 +61,7 @@ class Lobby extends React.Component {
         const { contract, wallet } = this.props
         const dailyDataCount  = Math.min(HEX.CLAIM_PHASE_END_DAY, contract.Data.globals.dailyDataCount.toNumber())
 
-        if (!wallet.address || wallet.address == '') return debug('Lobby::address invalid')
+        if (!wallet.address || wallet.address === '') return debug('Lobby::address invalid')
         Promise.all([
             contract.methods.xfLobby(dailyDataCount).call(),            // [0] global ETH entered today (total pending)
             this.getDayEntries(dailyDataCount, wallet.address),         // [1] our ETH entries for current day (total no. pending)
@@ -196,13 +193,12 @@ class Lobby extends React.Component {
 
             const { 
                 dailyDataCount,
-                lobbyData,
                 lobbyTodayAvailableHEX,
                 lobbyTodayPendingETH,
                 lobbyTodayYourEntries
             } = this.state
 
-            const { day, yesterdayHEXTotal, yesterdayETHTotal, yesterdayYourEntries } = lobbyData[dailyDataCount - 1]
+//            const { day, yesterdayHEXTotal, yesterdayETHTotal, yesterdayYourEntries } = lobbyData[dailyDataCount - 1]
 
             let todayYourEntriesRawTotal = BigNumber(0)
             let todayYourEntriesTotal = BigNumber(0)
@@ -221,8 +217,6 @@ class Lobby extends React.Component {
 
             const epocHour = new Date(HEX.START_DATE).getUTCHours() // should convert to local time
             const now = new Date(Date.now())
-            const nowHour = now.getUTCHours()
-            const hourDiff = epocHour - nowHour + 24 * (epocHour < nowHour)
             const nextEpoc = new Date(now)
             nextEpoc.setUTCHours(epocHour)
             nextEpoc.setMinutes(0)

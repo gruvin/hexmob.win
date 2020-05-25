@@ -13,7 +13,7 @@ import { BigNumber } from 'bignumber.js'
 import HEX from './hex_contract'
 import { calcBigPayDaySlice, calcAdoptionBonus } from './util'
 import  NewStakeForm from './NewStakeForm' 
-import { CryptoVal, WhatIsThis, BurgerHeading } from './Widgets' 
+import { CryptoVal, BurgerHeading } from './Widgets' 
 import { StakeInfo } from './StakeInfo'
 import crypto from 'crypto'
 
@@ -305,7 +305,6 @@ class Stakes extends React.Component {
         //    this.setState({ selectedCard })
         }
 
-        const dayEpoc = HEX.START_DATE.toLocaleTimeString()
         return (
             !this.state.stakeList
                 ? <ProgressBar variant="secondary" animated now={90} label="loading contract data" />
