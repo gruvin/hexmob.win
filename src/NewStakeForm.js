@@ -284,7 +284,7 @@ class NewStakeForm extends React.Component {
                                 <VoodooButton 
                                     contract={this.props.contract}
                                     method="stakeStart" 
-                                    params={[BigNumber(this.state.stakeAmount).times(1e8), this.state.stakeDays/*string*/]}
+                                    params={[BigNumber(this.state.stakeAmount).times(1e8).toString(), this.state.stakeDays/*string*/]}
                                     options={{ from: this.props.wallet.address }}
                                     dataValid={BigNumber(this.state.stakeAmount).gt(0) && this.state.stakeDays > 0}
                                     confirmationCallback={this.resetFormAndReloadStakes}
