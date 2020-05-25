@@ -10,42 +10,35 @@
 .btn-lobby {
     padding: 0 12px; 
     font-weight: bold !important;
-    font-size: 1.6em;
+    font-size: 1.4em;
     border-radius: 5px;
 }
 
 /* START STAKE BUTTON */
 .btn-stake.btn-start { 
     color: map-get($theme-colors, success); 
-    border: 2px map-get($theme-colors, success) solid; 
-    background-color: map-get($theme-colors, secondary); 
+    border: 2px map-get($theme-colors, dark) solid; 
 }
 .btn-stake.btn-start:hover:enabled {
-    color: map-get($theme-colors, dark ); 
-    background-color: map-get($theme-colors, success); 
+    border-color: map-get($theme-colors, success); 
 }
 
 /* LOBBY ENTER BUTTON */
 .btn-lobby.btn-enter { 
     color: map-get($theme-colors, success); 
-    border: 2px map-get($theme-colors, success) solid; 
-    background-color: map-get($theme-colors, secondary); 
+    border: 2px map-get($theme-colors, dark) solid; 
 }
 .btn-lobby.btn-enter:hover:enabled {
-    color: map-get($theme-colors, dark ); 
-    background-color: map-get($theme-colors, success); 
+    border-color: map-get($theme-colors, success); 
 }
 
 /* PENDING EXIT BUTTON */
-.btn-exitbtn.pendingexit, 
-.btn-exitbtn.pendingexit.active { 
+.btn-exitbtn.pendingexit { 
     color: map-get($theme-colors, info); 
-    border: 2px map-get($theme-colors, info) solid; 
-    background-color: map-get($theme-colors, dark); 
+    border: 2px map-get($theme-colors, secondary) solid; 
 }
 .btn-exitbtn.pendingexit:hover {
-    color: map-get($theme-colors, light); 
-    background-color: map-get($theme-colors, secondary); 
+    border-color: map-get($theme-colors, info); 
 }
 
 /* EARLY EXIT BUTTON -- DANGER! */
@@ -54,45 +47,38 @@
     font-weight: normal;
     font-family: Nosifer, Alial, sans-serif !important;
     color: map-get($theme-colors, danger); 
-    border: 2px map-get($theme-colors, danger) solid; 
+    border: 2px map-get($theme-colors, secondary) solid; 
 }
 .btn-exitbtn.earlyexit:hover {
-    color: #770000;
-    background-color: map-get($theme-colors, danger);
+    border-color: map-get($theme-colors, danger); 
 }
 
 /* EARLY BUT PAST MID TERM EXIT BUTTON */
 .btn-exitbtn.midexit { 
     color: map-get($theme-colors, warning); 
-    border: 2px map-get($theme-colors, warning) solid; 
+    border: 2px map-get($theme-colors, secondary) solid; 
 }
 .btn-exitbtn.midexit:hover {
-    color: map-get($theme-colors, light);
-    background-color: map-get($theme-colors, warning); 
+    border-color: map-get($theme-colors, warning); 
 }
 
 /* AT TERM PLUS UP TO ONE WEEK LATE EXIT BUTTON */
 .btn-exitbtn.termexit {
     color: map-get($theme-colors, success); 
-    border: 2px map-get($theme-colors, success) solid; 
-    background-color: map-get($theme-colors, secondary); 
+    border: 2px map-get($theme-colors, secondary) solid; 
 }
 .btn-exitbtn.termexit:hover {
-    color: map-get($theme-colors, light); 
     border-color: map-get($theme-colors, success); 
-    background-color: map-get($theme-colors, success); 
 }
 
 /* LATER THAN TERM PLUS ONE WEEK EXIT BUTTON */
 .btn-exitbtn.lateexit {
     color: map-get($theme-colors, success); 
     padding-left: 22px;
-    border-color: map-get($theme-colors, success); 
-    background: map-get($theme-colors, dark) url(/exclamation-mark.gif) no-repeat 7px 12px;
+    border-color: map-get($theme-colors, secondary); 
     background-size: 10px 26px;
 }
 .btn-exitbtn.lateexit:hover {
-    color: map-get($theme-colors, secondary); 
-    background-color: map-get($theme-colors, success); 
+    border-color: map-get($theme-colors, success); 
 }
 

@@ -7,6 +7,7 @@ import {
     Alert,
     ProgressBar,
     Accordion,
+    Badge
 } from 'react-bootstrap'
 import './Stakes.scss'
 import { BigNumber } from 'bignumber.js'
@@ -317,7 +318,13 @@ class Stakes extends React.Component {
             >
                 <Card bg="secondary" text="light">
                     <Accordion.Toggle as={Card.Header} eventKey="new_stake">
-                        <BurgerHeading className="float-left">New Stake </BurgerHeading>
+                        <BurgerHeading className="float-left">New Stake</BurgerHeading>
+                        <div className="float-right">
+                            <small><small>available </small> </small>
+                            <Badge variant="success" >
+                                <CryptoVal value={this.props.wallet.balance} showUnit />
+                            </Badge>
+                        </div>
                     </Accordion.Toggle>
                     <Accordion.Collapse eventKey="new_stake">
                         <Card.Body>

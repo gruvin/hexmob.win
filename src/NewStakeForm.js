@@ -8,6 +8,7 @@ import {
     DropdownButton,
     Row,
     Col,
+    Badge
 } from 'react-bootstrap'
 import './Stakes.scss'
 import { BigNumber } from 'bignumber.js'
@@ -24,8 +25,6 @@ class NewStakeForm extends React.Component {
         this.state = {
             stakeAmount: '',
             stakeDays: '',
-            lastFullDay: '---',
-            endDay: '---',
             longerPaysBetter: BigNumber(0), // Hearts
             biggerPaysBetter: BigNumber(0),
             bonusTotal: BigNumber(0),
@@ -130,44 +129,42 @@ class NewStakeForm extends React.Component {
 
         const handleAmountChange = (e) => {
             e.preventDefault()
-            const value = BigNumber(e.target.value)
             this.setState({
-                stakeAmount: isNaN(value) ? '' : value.toString()
+                stakeAmount: e.target.value
             }, this.updateFigures)
         }
 
         const handleDaysChange = (e) => {
             e.preventDefault()
-            const stakeDays = parseInt(e.target.value) || null
+            const stakeDays = parseInt(e.target.value) || 0
             this.setState({
-                stakeDays: stakeDays ? Math.min(5555, stakeDays).toString() : '',
-                lastFullDay: stakeDays ? currentDay + stakeDays : '---',
-                endDay: stakeDays ? currentDay + stakeDays + 1 : '---',
+                stakeDays: stakeDays > 5555 ? '5555' : stakeDays.toString(),
             }, this.updateFigures)
         }
         
         const handleAmountSelector = (key, e) => {
             e.preventDefault()
+            debug('balance', balance)
             const v=e.target.dataset.portion
             const portion = parseFloat(v) || 1.0
             const amount = (v === 'max')
                 ? balance.div(1e8)
-                : BigNumber(balance.idiv(1e8).times(portion).toFixed(0, 1))
-            this.setState({ stakeAmount: BigNumber(amount).toString() }, this.updateFigures)
+                : balance.idiv(1e8).times(portion).toFixed(0, 1)
+            this.setState({ stakeAmount: amount.toString() }, this.updateFigures)
         }
 
         const handleDaysSelector = (key, e) => {
             function plusYears(years) {
-                    const n = new Date(Date.now())
-                    const d = new Date()
-                    d.setYear(n.getFullYear() + years)
-                    return Number((d.valueOf() - n.valueOf()) / 1000 / 3600 / 24).toFixed(0)
+                const n = new Date(Date.now())
+                const d = new Date()
+                d.setYear(n.getFullYear() + years)
+                return Number((d.valueOf() - n.valueOf()) / 1000 / 3600 / 24).toFixed(0)
             }
             function plusMonths(months) {
-                    const n = new Date(Date.now())
-                    const d = new Date()
-                    d.setMonth(n.getMonth() + months)
-                    return Number((d.valueOf() - n.valueOf()) / 1000 / 3600 / 24).toFixed(0)
+                const n = new Date(Date.now())
+                const d = new Date()
+                d.setMonth(n.getMonth() + months)
+                return Number((d.valueOf() - n.valueOf()) / 1000 / 3600 / 24).toFixed(0)
             }
 
             e.preventDefault()
@@ -188,7 +185,7 @@ class NewStakeForm extends React.Component {
 
             e.target.value = days
             this.setState({ 
-                stakeDays: days
+                stakeDays: days.toString()
             }, handleDaysChange(e))
         }
 
@@ -197,18 +194,21 @@ class NewStakeForm extends React.Component {
                 <Row>
                     <Col xs={12} sm={5} className="mb-3">
                         <Form.Group controlId="stake_amount">
-                            <Form.Label>Stake Amount in HEX</Form.Label> 
-                            <InputGroup>
+                            <Form.Label className="w-100 my-0">
+                                Stake Amount in HEX
+                            </Form.Label> 
+                            <InputGroup className="p-1 col-7 col-sm-10">
                                 <FormControl
                                     type="number" novalidate
-                                    placeholder="number of HEX to stake"
-                                    aria-label="amount to stake"
+                                    value={this.state.stakeAmount}
+                                    placeholder="amount in HEX"
+                                    aria-label="amount to stake in HEX"
                                     aria-describedby="basic-addon1"
                                     onChange={handleAmountChange}
                                 />
                                 <DropdownButton
                                     as={InputGroup.Append}
-                                    variant="secondary"
+                                    variant="dark"
                                     key="percent_balance_selector"
                                     title="HEX"
                                     className="numeric"
@@ -225,24 +225,21 @@ class NewStakeForm extends React.Component {
                             </InputGroup>
                             <Form.Text>
                                 <span className="text-muted">Bigger pays better</span>
-                                <div className="float-right" variant="info" >
-                                    <CryptoVal value={balance} showUnit /> available
-                                </div>
                             </Form.Text>
                         </Form.Group>
                         <Form.Group controlId="stake_days" className="mb-0">
                             <Form.Label>Stake Length in Days</Form.Label>
-                            <InputGroup>
+                            <InputGroup className="p-1 col-5 col-sm-9">
                                 <FormControl
                                     type="number" novalidate
-                                    placeholder="minimum one day" 
+                                    placeholder="min one day" 
                                     value={this.state.stakeDays <= 0 ? '' : this.state.stakeDays}
-                                    aria-label="number of days to stake"
+                                    aria-label="number of days to stake min one day"
                                     onChange={handleDaysChange} 
                                 />
                                 <DropdownButton
                                     as={InputGroup.Append}
-                                    variant="secondary"
+                                    variant="dark"
                                     key="days_selector"
                                     title="DAYS"
                                     onSelect={handleDaysSelector}
@@ -265,22 +262,8 @@ class NewStakeForm extends React.Component {
                                 Longer pays better (max 5555)
                             </Form.Text>
                         </Form.Group>
-                        <Row className="small mb-3">
-                            <Col className="text-center">
-                                <strong>Start</strong>:{' '}
-                                <span className="numeric">{ format(',')(currentDay + 1) }</span>
-                            </Col>
-                            <Col className="text-center">
-                                <strong>Last</strong>:{' '}
-                                <span className="numeric">{ isNaN(this.state.lastFullDay) ? '---' : format(',')(this.state.lastFullDay) }</span>
-                            </Col>
-                            <Col className="text-center">
-                                <strong>End</strong>:{' '}
-                                <span className="numeric">{ isNaN(this.state.endDay) ? '---' : format(',')(this.state.endDay) }</span>
-                            </Col>
-                        </Row>
-                        <Row comment="*** STAKE button ****">
-                            <Col className='text-right'>
+                        <Row>
+                            <Col className='text-center'>
                                 <VoodooButton 
                                     contract={this.props.contract}
                                     method="stakeStart" 
