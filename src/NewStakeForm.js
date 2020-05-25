@@ -22,17 +22,17 @@ class NewStakeForm extends React.Component {
     constructor(props) {
         super(props)
         this.state = {
-            stakeAmount: null,
-            stakeDays: null,
+            stakeAmount: '',
+            stakeDays: '',
             lastFullDay: '---',
             endDay: '---',
-            longerPaysBetter: new BigNumber(0), // Hearts
-            biggerPaysBetter: new BigNumber(0),
-            bonusTotal: new BigNumber(0),
-            effectiveHEX: new BigNumber(0),
-            stakeShares: new BigNumber(0),
-            shareRate: new BigNumber(100000),
-            bigPayDay: new BigNumber(0),
+            longerPaysBetter: BigNumber(0), // Hearts
+            biggerPaysBetter: BigNumber(0),
+            bonusTotal: BigNumber(0),
+            effectiveHEX: BigNumber(0),
+            stakeShares: BigNumber(0),
+            shareRate: BigNumber(100000),
+            bigPayDay: BigNumber(0),
             percentGain: 0.0,
             percentAPY: 0.0,
         }
@@ -41,7 +41,7 @@ class NewStakeForm extends React.Component {
 
     componentDidMount() {
         const _shareRate = this.props.contract.Data.globals.shareRate || 100000
-        const shareRate = new BigNumber('100000').div(_shareRate).times(1e8)
+        const shareRate = BigNumber('100000').div(_shareRate).times(1e8)
         this.setState({ shareRate })
     }
 
@@ -53,8 +53,8 @@ class NewStakeForm extends React.Component {
     }
 
     updateFigures = () => {
-        const stakeDays = this.state.stakeDays || 0
-        const stakeAmount = this.state.stakeAmount || new BigNumber(0)
+        const stakeDays = parseInt(this.state.stakeDays) || 0
+        const stakeAmount = BigNumber(this.state.stakeAmount).times(1e8) || BigNumber(0)
 
         const { LPB_MAX_DAYS, LPB, BPB_MAX_HEARTS, BPB } = HEX
         /*
@@ -75,7 +75,7 @@ class NewStakeForm extends React.Component {
         const longerPaysBetter = stakeAmount.times(cappedExtraDays)
                                         .div(LPB)
 
-        const newStakedHearts = new BigNumber(stakeAmount)
+        const newStakedHearts = BigNumber(stakeAmount)
         const cappedStakedHearts = newStakedHearts.lte(BPB_MAX_HEARTS)
             ? newStakedHearts
             : BPB_MAX_HEARTS
@@ -85,14 +85,14 @@ class NewStakeForm extends React.Component {
         const bonusTotal = longerPaysBetter.plus(biggerPaysBetter)
         const effectiveHEX = stakeAmount.plus(bonusTotal)
         const _shareRate = this.props.contract.Data.globals.shareRate || 100000
-        const shareRate = new BigNumber('100000').div(_shareRate)
+        const shareRate = BigNumber('100000').div(_shareRate)
         const stakeShares = effectiveHEX.times(shareRate)
 
         // Big Pay Day bonuses
 
-        let bigPayDay = new BigNumber(0)
-        let percentGain = new BigNumber(0)
-        let percentAPY = new BigNumber(0)
+        let bigPayDay = BigNumber(0)
+        let percentGain = BigNumber(0)
+        let percentAPY = BigNumber(0)
         if (this.state.endDay-1 > HEX.BIG_PAY_DAY) {
             const { globals } = this.props.contract.Data
             const BPD_sharePool = globals.stakeSharesTotal.plus(stakeShares)
@@ -102,7 +102,7 @@ class NewStakeForm extends React.Component {
 
             percentGain = stakeAmount.isZero() ? stakeAmount : bigPayDay.div(stakeAmount).times(100)
             const startDay = this.props.contract.Data.currentDay + 1
-            percentAPY = new BigNumber(365).div(HEX.BIG_PAY_DAY - startDay + 1).times(percentGain)
+            percentAPY = BigNumber(365).div(HEX.BIG_PAY_DAY - startDay + 1).times(percentGain)
         }
 
         this.setState({
@@ -130,17 +130,17 @@ class NewStakeForm extends React.Component {
 
         const handleAmountChange = (e) => {
             e.preventDefault()
-            const value = new BigNumber(e.target.value).times(1e8) 
+            const value = BigNumber(e.target.value)
             this.setState({
-                stakeAmount: isNaN(value) ? null : value
+                stakeAmount: isNaN(value) ? '' : value.toString()
             }, this.updateFigures)
         }
 
         const handleDaysChange = (e) => {
             e.preventDefault()
-            let stakeDays = Math.min(5555, parseInt(e.target.value)) || null
+            const stakeDays = parseInt(e.target.value) || null
             this.setState({
-                stakeDays,
+                stakeDays: stakeDays ? Math.min(5555, stakeDays).toString() : '',
                 lastFullDay: stakeDays ? currentDay + stakeDays : '---',
                 endDay: stakeDays ? currentDay + stakeDays + 1 : '---',
             }, this.updateFigures)
@@ -152,8 +152,8 @@ class NewStakeForm extends React.Component {
             const portion = parseFloat(v) || 1.0
             const amount = (v === 'max')
                 ? balance.div(1e8)
-                : new BigNumber(balance.idiv(1e8).times(portion).toFixed(0, 1))
-            this.setState({ stakeAmount: new BigNumber(amount.times(1e8)) }, this.updateFigures)
+                : BigNumber(balance.idiv(1e8).times(portion).toFixed(0, 1))
+            this.setState({ stakeAmount: BigNumber(amount).toString() }, this.updateFigures)
         }
 
         const handleDaysSelector = (key, e) => {
@@ -202,7 +202,6 @@ class NewStakeForm extends React.Component {
                                 <FormControl
                                     type="number" novalidate
                                     placeholder="number of HEX to stake"
-                                    value={this.state.stakeAmount ? this.state.stakeAmount.div(1e8).toString() : ''}
                                     aria-label="amount to stake"
                                     aria-describedby="basic-addon1"
                                     onChange={handleAmountChange}
@@ -215,13 +214,13 @@ class NewStakeForm extends React.Component {
                                     className="numeric"
                                     onSelect={handleAmountSelector}
                                 >
-                                    <Dropdown.Item as="button" data-portion="max">MAX</Dropdown.Item>
-                                    <Dropdown.Item as="button" data-portion={1.00}>100%</Dropdown.Item>
-                                    <Dropdown.Item as="button" data-portion={0.75}>75%</Dropdown.Item>
-                                    <Dropdown.Item as="button" data-portion={0.50}>50%</Dropdown.Item>
-                                    <Dropdown.Item as="button" data-portion={0.25}>25%</Dropdown.Item>
-                                    <Dropdown.Item as="button" data-portion={0.10}>10%</Dropdown.Item>
-                                    <Dropdown.Item as="button" data-portion={0.05}>5%</Dropdown.Item>
+                                    <Dropdown.Item as="button" eventKey="new_stake" data-portion="max">MAX</Dropdown.Item>
+                                    <Dropdown.Item as="button" eventKey="new_stake" data-portion={1.00}>100%</Dropdown.Item>
+                                    <Dropdown.Item as="button" eventKey="new_stake" data-portion={0.75}>75%</Dropdown.Item>
+                                    <Dropdown.Item as="button" eventKey="new_stake" data-portion={0.50}>50%</Dropdown.Item>
+                                    <Dropdown.Item as="button" eventKey="new_stake" data-portion={0.25}>25%</Dropdown.Item>
+                                    <Dropdown.Item as="button" eventKey="new_stake" data-portion={0.10}>10%</Dropdown.Item>
+                                    <Dropdown.Item as="button" eventKey="new_stake" data-portion={0.05}>5%</Dropdown.Item>
                                 </DropdownButton>
                             </InputGroup>
                             <Form.Text>
@@ -249,17 +248,17 @@ class NewStakeForm extends React.Component {
                                     onSelect={handleDaysSelector}
                                     className="numeric"
                                 >
-                                    <Dropdown.Item as="button" data-days="max">MAX (about 15yrs & 11wks)</Dropdown.Item>
-                                    <Dropdown.Item as="button" data-days="10y">Ten Years</Dropdown.Item>
-                                    <Dropdown.Item as="button" data-days="5y">Five Years</Dropdown.Item>
-                                    <Dropdown.Item as="button" data-days="3y">Three Years</Dropdown.Item>
-                                    <Dropdown.Item as="button" data-days="2y">Two Years</Dropdown.Item>
-                                    <Dropdown.Item as="button" data-days="1y">One Year</Dropdown.Item>
-                                    <Dropdown.Item as="button" data-days="6m">Six Months</Dropdown.Item>
-                                    <Dropdown.Item as="button" data-days="3m">Three Months</Dropdown.Item>
-                                    <Dropdown.Item as="button" data-days="1m">One Month</Dropdown.Item>
-                                    <Dropdown.Item as="button" data-days="1w">One Week</Dropdown.Item>
-                                    <Dropdown.Item as="button" data-days="min">MIN (one day)</Dropdown.Item>
+                                    <Dropdown.Item as="button" eventKey="new_stake" data-days="max">MAX (about 15yrs & 11wks)</Dropdown.Item>
+                                    <Dropdown.Item as="button" eventKey="new_stake" data-days="10y">Ten Years</Dropdown.Item>
+                                    <Dropdown.Item as="button" eventKey="new_stake" data-days="5y">Five Years</Dropdown.Item>
+                                    <Dropdown.Item as="button" eventKey="new_stake" data-days="3y">Three Years</Dropdown.Item>
+                                    <Dropdown.Item as="button" eventKey="new_stake" data-days="2y">Two Years</Dropdown.Item>
+                                    <Dropdown.Item as="button" eventKey="new_stake" data-days="1y">One Year</Dropdown.Item>
+                                    <Dropdown.Item as="button" eventKey="new_stake" data-days="6m">Six Months</Dropdown.Item>
+                                    <Dropdown.Item as="button" eventKey="new_stake" data-days="3m">Three Months</Dropdown.Item>
+                                    <Dropdown.Item as="button" eventKey="new_stake" data-days="1m">One Month</Dropdown.Item>
+                                    <Dropdown.Item as="button" eventKey="new_stake" data-days="1w">One Week</Dropdown.Item>
+                                    <Dropdown.Item as="button" eventKey="new_stake" data-days="min">MIN (one day)</Dropdown.Item>
                                 </DropdownButton>
                             </InputGroup>
                             <Form.Text className="text-muted">
@@ -285,11 +284,11 @@ class NewStakeForm extends React.Component {
                                 <VoodooButton 
                                     contract={this.props.contract}
                                     method="stakeStart" 
-                                    params={[this.state.stakeAmount/*null||BN*/, this.state.stakeDays]}
+                                    params={[BigNumber(this.state.stakeAmount).times(1e8), this.state.stakeDays/*string*/]}
                                     options={{ from: this.props.wallet.address }}
-                                    dataValid={new BigNumber(this.state.stakeAmount).gt(0) && this.state.stakeDays > 0}
+                                    dataValid={BigNumber(this.state.stakeAmount).gt(0) && this.state.stakeDays > 0}
                                     confirmationCallback={this.resetFormAndReloadStakes}
-                                    variant="outline-success"
+                                    variant="stake btn-start"
                                 >
                                     STAKE
                                 </VoodooButton>

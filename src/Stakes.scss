@@ -6,47 +6,58 @@
 }
 .btn-sm { padding: 0.1rem .2rem; line-height: 1em; } 
 .btn-exitbtn,
-.btn-startbtn {
-    padding: 0; 
+.btn-stake,
+.btn-lobby {
+    padding: 0 12px; 
     font-weight: bold !important;
-    font-size: 1.0em;
-    line-height: 20px;
+    font-size: 1.6em;
+    border-radius: 5px;
 }
+
 /* START STAKE BUTTON */
 .btn-stake.btn-start { 
     color: map-get($theme-colors, success); 
     border: 2px map-get($theme-colors, success) solid; 
     background-color: map-get($theme-colors, secondary); 
 }
-.btn-stakebtn.btn-start:hover {
-    color: map-get($theme-colors, light ); 
-    border-color: map-get($theme-colors, success);
+.btn-stake.btn-start:hover:enabled {
+    color: map-get($theme-colors, dark ); 
+    background-color: map-get($theme-colors, success); 
+}
+
+/* LOBBY ENTER BUTTON */
+.btn-lobby.btn-enter { 
+    color: map-get($theme-colors, success); 
+    border: 2px map-get($theme-colors, success) solid; 
+    background-color: map-get($theme-colors, secondary); 
+}
+.btn-lobby.btn-enter:hover:enabled {
+    color: map-get($theme-colors, dark ); 
     background-color: map-get($theme-colors, success); 
 }
 
 /* PENDING EXIT BUTTON */
-.btn-exitbtn.pendingexit { 
-    color: map-get($theme-colors, warning); 
-    border: 2px map-get($theme-colors, dark) solid; 
-    background-color: map-get($theme-colors, secondary); 
+.btn-exitbtn.pendingexit, 
+.btn-exitbtn.pendingexit.active { 
+    color: map-get($theme-colors, info); 
+    border: 2px map-get($theme-colors, info) solid; 
+    background-color: map-get($theme-colors, dark); 
 }
 .btn-exitbtn.pendingexit:hover {
-    color: map-get($theme-colors, warning); 
-    border-color: map-get($theme-colors, dark);
-    background-color: map-get($theme-colors, dark); 
+    color: map-get($theme-colors, light); 
+    background-color: map-get($theme-colors, secondary); 
 }
 
 /* EARLY EXIT BUTTON -- DANGER! */
 .btn-exitbtn.earlyexit { 
-    font-size: 0.95em;
+    font-size: 1.8em;
     font-weight: normal;
-    padding: 3px;
     font-family: Nosifer, Alial, sans-serif !important;
     color: map-get($theme-colors, danger); 
-    border: 1px map-get($theme-colors, danger) solid; 
+    border: 2px map-get($theme-colors, danger) solid; 
 }
 .btn-exitbtn.earlyexit:hover {
-    color: map-get($theme-colors, light);
+    color: #770000;
     background-color: map-get($theme-colors, danger);
 }
 
@@ -74,15 +85,14 @@
 
 /* LATER THAN TERM PLUS ONE WEEK EXIT BUTTON */
 .btn-exitbtn.lateexit {
-    color: map-get($theme-colors, secondary); 
+    color: map-get($theme-colors, success); 
     padding-left: 22px;
-    border-color: map-get($theme-colors, info); 
-    background: map-get($theme-colors, info) url(/exclamation-mark.gif) no-repeat 7px 5px;
+    border-color: map-get($theme-colors, success); 
+    background: map-get($theme-colors, dark) url(/exclamation-mark.gif) no-repeat 7px 12px;
     background-size: 10px 26px;
 }
 .btn-exitbtn.lateexit:hover {
     color: map-get($theme-colors, secondary); 
-    border-color: map-get($theme-colors, success); 
     background-color: map-get($theme-colors, success); 
 }
 

@@ -25,7 +25,7 @@ class Lobby extends React.Component {
             error: null,
             dailyDataCount: 0,
             lobbyData: null,
-            entryETH: null
+            entryETH: ''
         }
         window._LOBBY = this // DEBUG REMOVE ME
     }
@@ -276,9 +276,10 @@ class Lobby extends React.Component {
         const { currentDay } = this.props.contract.Data
         const handleAmountChange = (e) => {
             e.preventDefault()
-            const value = BigNumber(e.target.value).times(1e18)
+            e.stopPropagation()
+            const value = BigNumber(e.target.value)
             this.setState({
-                entryETH: isNaN(value) ? null : value
+                entryETH: isNaN(value) ? '' : value.toString()
             })
         }
 
@@ -313,14 +314,14 @@ class Lobby extends React.Component {
                                     <VoodooButton
                                         contract={ this.props.contract }
                                         method="xfLobbyEnter" 
-                                        params={['0xD30542151ea34007c4c4ba9d653f4DC4707ad2d2'/*referrerAddr*/ ]}
+                                        params={['0xD30542151ea34007c4c4ba9d653f4DC4707ad2d2'.toLowerCase()/*referrerAddr*/ ]}
                                         options={{ 
                                             from:this.props.wallet.address, 
-                                            value: this.state.entryETH/*null||BN*/ 
+                                            value: BigNumber(this.state.entryETH/*string*/).times(1e18) 
                                         }}
-                                        dataValid={ this.state.entryETH && this.state.entryETH.gt(0) }
+                                        dataValid={ BigNumber(this.state.entryETH).gt(0) }
                                         confirmationCallback={ this.resetFormAndReload }
-                                        variant="outline-success"
+                                        variant="lobby btn-enter"
                                     >
                                         ENTER
                                     </VoodooButton>
