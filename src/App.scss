@@ -19,6 +19,9 @@
 @media (max-width: 400px){
     .xs-small { font-size: 0.85em }
 }
+@media (max-width: 320px){
+    .xxs-small { font-size: 0.77em }
+}
 @import url('https://fonts.googleapis.com/css2?family=Happy+Monkey&family=Jura:wght@500;700&family=Press+Start+2P&family=Titillium+Web:wght@400;700&family=Nosifer&display=swap');
 
 $hex-crimson: #ff4136;

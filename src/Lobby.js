@@ -62,7 +62,8 @@ class Lobby extends React.Component {
 
     componentDidMount = () => {
         const { contract, wallet } = this.props
-        const dailyDataCount  = contract.Data.globals.dailyDataCount.toNumber()
+        const dailyDataCount  = Math.min(HEX.CLAIM_PHASE_END_DAY, contract.Data.globals.dailyDataCount.toNumber())
+
         if (!wallet.address || wallet.address == '') return debug('Lobby::address invalid')
         Promise.all([
             contract.methods.xfLobby(dailyDataCount).call(),            // [0] global ETH entered today (total pending)
@@ -146,22 +147,42 @@ class Lobby extends React.Component {
             const lobbyData = [...this.state.lobbyData].reverse()
             return (
                 <>
-                    <Row key="header" className="py-0 xs-small">
-                        <Col xs={2} className="pl-1 pr-1"><a href="#sort_day">Day</a></Col>
-                        <Col xs={3} className="pr-1"><a href="#sort_available">Available</a></Col>
-                        <Col xs={3} className="pr-1"><a href="#sort_eth">ETH</a></Col>
-                        <Col xs={3} className="pr-1"><a href="#sort_youreth">Your ETH</a></Col>
+                    <Row key="header" className="py-0 mx-0 xs-small xxs-small align-items-end">
+                        <Col xs={2} sm={1} className="pl-1 pr-1"><a href="#sort_day">Day</a></Col>
+                        <Col xs={3} sm={2} className="pr-1"><a href="#sort_available">Available</a></Col>
+
+                        <Col        sm={2} className="pr-1 d-none d-sm-inline"><a href="#sort_eth">ETH</a></Col>
+                        <Col        sm={2} className="pr-1 d-none d-sm-inline"><a href="#sort_available">HEX/ETH</a></Col>
+
+                        <Col xs={3} sm={2} className="pr-1"><a href="#sort_available">Your HEX</a></Col>        
+                        <Col xs={3} sm={2} className="pr-1"><a href="#sort_youreth">Your ETH</a></Col>
                     </Row>
                     { lobbyData.map(dayData => { 
                         const { day, availableHEX, totalETH, entries } = dayData
+                        let entriesRawTotal = BigNumber(0)
                         let entriesTotal = BigNumber(0)
-                        entries && entries.forEach(entry => { entriesTotal = entriesTotal.plus(entry.rawAmount) })
+                        entries && entries.forEach(entry => { 
+                            let amount = entry.rawAmount
+                            entriesRawTotal = entriesTotal.plus(amount)
+                            if (entry.referrerAddr.slice(0,2) === '0x') {
+                                amount = amount.times(1.10)
+                                if (entry.referrerAddr.toLowerCase() === this.props.wallet.address.toLowerCase())
+                                    amount = amount.times(1.20)
+                            }
+                            entriesTotal = entriesTotal.plus(amount)
+                        })
+                        const HEXperETH = 0
+                        const yourHEX = 0 
                         return (
-                            <Row key={day} className="py-0 xs-small">
-                                <Col xs={2} className="pl-1 pr-1">{day+1}</Col>
-                                <Col xs={3} className="pr-1"><CryptoVal value={BigNumber(availableHEX)} /></Col>
-                                <Col xs={3} className="pr-1"><CryptoVal value={BigNumber(totalETH)} currency="ETH" /></Col>
-                                <Col xs={3} className="pr-1"><CryptoVal value={BigNumber(entriesTotal)} currency="ETH" /></Col>
+                            <Row key={day} className="py-0 mx-0 xs-small xxs-small">
+                                <Col xs={2} sm={1} className="pl-1 pr-1">{day+1}</Col>
+                                <Col xs={3} sm={2} className="pr-1"><CryptoVal value={BigNumber(availableHEX)} /></Col>
+
+                                <Col        sm={2} className="pr-1 d-none d-sm-inline"><CryptoVal value={BigNumber(totalETH)} currency="ETH" /></Col>
+                                <Col        sm={2} className="pr-1 d-none d-sm-inline"><CryptoVal value={BigNumber(HEXperETH)} /></Col>
+
+                                <Col xs={3} sm={2} className="pr-1"><CryptoVal value={BigNumber(yourHEX)} /></Col>
+                                <Col xs={3} sm={2} className="pr-1"><CryptoVal value={BigNumber(entriesRawTotal)} currency="ETH" /></Col>
                             </Row>
                         )
                     }) }
@@ -236,24 +257,24 @@ class Lobby extends React.Component {
                         </Col>
                     </Row>
                     <Row>
-                        <Col className="text-right"><strong>Available HEX</strong> </Col>
-                        <Col> <CryptoVal value={lobbyTodayAvailableHEX} /> </Col>
+                        <Col className="text-right"><strong>Available </strong></Col>
+                        <Col> <CryptoVal value={lobbyTodayAvailableHEX} showUnit /></Col>
                     </Row>
                     <Row>
-                        <Col className="text-right"><strong>Total ETH</strong> </Col>
-                        <Col> <CryptoVal value={lobbyTodayPendingETH} currency="ETH" /> </Col>
+                        <Col className="text-right"><strong>Total Entries</strong></Col>
+                        <Col> <CryptoVal value={lobbyTodayPendingETH} currency="ETH" showUnit /> </Col>
                     </Row>
                     <Row>
-                        <Col className="text-right"><strong>HEX/ETH</strong> </Col>
+                        <Col className="text-right"><strong>HEX/ETH</strong></Col>
                         <Col> <CryptoVal value={HEXperETH.times(1e18)} showUnit /> </Col>
                     </Row>
                     <Row>
-                        <Col className="text-right"><strong>Your HEX</strong> </Col>
-                        <Col> <CryptoVal value={BigNumber(todayYourHEXPending)} /> </Col>
+                        <Col className="text-right"><strong>Your HEX</strong></Col>
+                        <Col> <CryptoVal value={BigNumber(todayYourHEXPending)} showUnit /></Col>
                     </Row>
                     <Row>
-                        <Col className="text-right"><strong>Your ETH</strong> </Col>
-                        <Col> <CryptoVal value={BigNumber(todayYourEntriesRawTotal)} currency="ETH" /> </Col>
+                        <Col className="text-right"><strong>Your ETH</strong></Col>
+                        <Col> <CryptoVal value={BigNumber(todayYourEntriesRawTotal)} currency="ETH" showUnit /></Col>
                     </Row>
                 </>
             )
@@ -280,9 +301,10 @@ class Lobby extends React.Component {
                                 style={{ height: "6px" }}
                                 variant={currentDay > 263 ? "danger" : currentDay > 125 ? "warning" : currentDay > 88 ? "info" : "success"}
                             />
+                { HEX.lobbyIsActive() && <>
                             <HeaderDetail />
                             <Form>
-                                <Row>
+                                <Row className="my-2">
                                 <Col xs={{ span:5, offset:1 }} sm={{ span:4, offset: 2 }} md={{ span:3, offset: 3 }} className="text-right">
                                     <Form.Control
                                         type="number" novalidate
@@ -306,11 +328,12 @@ class Lobby extends React.Component {
                                         confirmationCallback={ this.resetFormAndReload }
                                         variant="outline-success"
                                     >
-                                        Enter
+                                        ENTER
                                     </VoodooButton>
                                 </Col>
                             </Row>
                             </Form>
+                </> }
                         </Container>
                     </Accordion.Toggle>
                     <Accordion.Collapse eventKey="0">

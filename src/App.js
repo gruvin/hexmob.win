@@ -139,9 +139,9 @@ class App extends React.Component {
     }
 
     unsubscribeEvents = () => {
-        if (this.subscriptions.length) {
-            this.subscriptions = [ ]
-            this.web3.shh.clearSubscriptions()
+        if (this.scrubscriptions && this.scrubscriptions.length) { 
+            this.web3 && this.web3.eth && this.web3.eth.clearSubscriptions()
+            this.web3 && this.web3.shh && this.web3.shh.clearSubscriptions()
         }
     }
 
@@ -272,9 +272,8 @@ class App extends React.Component {
                     address: address.toLowerCase(),
                     balance
                 },
-                contractReady: true
+                contractReady: true,
             })
-
             this.subscribeEvents()
         })
     }
@@ -354,6 +353,7 @@ class App extends React.Component {
                         <Container fluid className="my-3" id="mobile_trust_wallet">
                             <Row>
                                 <Col className="text-center">
+                                    <h3>It's like <a href="https://go.hex.win?r=0xd30542151ea34007c4c4ba9d653f4dc4707ad2d2">go.hex.win</a> but on your mobile!</h3>
                                     <p><small><small>COMPATIBLE WITH ...</small></small></p>
                                     <p>
                                         <em><Image src="/mm-wordmark.svg" alt="Metamask" height={56} /></em> <em>on</em> <strong>Desktops</strong>
@@ -445,8 +445,8 @@ class App extends React.Component {
         } else {
             return (
                 <>
-                    <Lobby contract={this.contract} wallet={this.state.wallet} />
                     <Stakes contract={this.contract} wallet={this.state.wallet} />
+                    <Lobby contract={this.contract} wallet={this.state.wallet} />
                 </>
             )
         }
@@ -465,22 +465,23 @@ class App extends React.Component {
                 <Container id="hexmob_body" fluid className="p-1">
                     <Container className="p-1">
                         <this.AppContent />
+                        { HEX.lobbyIsActive() &&
+                            <Container className="p-3 my-3 text-center">
+                                <Card.Body as={Button} variant="success" className="w-100"
+                                    href={'https://go.hex.win/?r='+this.state.referrer} target="_blank" rel="noopener noreferrer"
+                                >
+                                    <div><img src="/extra-bonus-10.png" alt="extra bonus 10%" /></div>
+                                    <div>
+                                        Receive an extra <b>10%&nbsp;FREE&nbsp;BONUS&nbsp;HEX</b> just for <b>using&nbsp;this&nbsp;App </b> 
+                                        to TRANSFORM&nbsp;ETH in the <b>AA&nbsp;Lobby</b>&nbsp;(above)<br/>
+                                        <small>standard 10% bonus from Dev's referral addr</small>
+                                    </div>
+                                    { this.state.incomingReferrer && <div className="small"><em>fwd: {this.state.referrer}</em></div> }
+                                </Card.Body>
+                            </Container>
+                        }
                     </Container>
-                { "When AA Lobby gets here, if it ever gets here" === true &&  
-                    <Container className="p-3 my-3 text-center">
-                        <Card.Body as={Button} variant="success" className="w-100"
-                            href={'https://go.hex.win/?r='+this.state.referrer} target="_blank" rel="noopener noreferrer"
-                        >
-                            <div><img src="/extra-bonus-10.png" alt="extra bonus 10%" /></div>
-                            <div>
-                                when you <strong>transform ETH to HEX</strong><br/>
-                                using this app! 
-                            </div>
-                            { this.state.incomingReferrer && <div className="small"><em>fwd: {this.state.referrer}</em></div> }
-                        </Card.Body>
-                    </Container>
-                }
-                    { !isTrust && 
+                { !isTrust && 
                     <>
                         <Container className="p-3 my-3">
                             <Card.Body as={Button} variant="info" className="w-100" style={{ cursor: "pointer" }}

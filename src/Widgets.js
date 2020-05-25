@@ -6,10 +6,13 @@ import {
     Tooltip,
     Badge
 } from 'react-bootstrap'
-import './Stakes.scss'
+import './App.scss'
 import { BigNumber } from 'bignumber.js'
 import { format } from 'd3-format' // gives us Intl for free
 import { EventEmitter } from 'events'
+import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
+import { faCopy } from '@fortawesome/free-solid-svg-icons'
+import { CopyToClipboard } from 'react-copy-to-clipboard'
 const debug = require('debug')('Widgets')
 
 export const CryptoVal = (props) => {
@@ -22,11 +25,11 @@ export const CryptoVal = (props) => {
         case 'ETH':
             unit = ' ETH'
             if (v.isZero())         s = '0.000'
-            else if (v.lt( 1e3))    { unit = ' wei'; s = format(',')(v) }
-            else if (v.lt( 1e6))    { unit = ' wei'; s = format(',.0f')(v) }
-            else if (v.lt( 1e9))    { unit = ' Gwei'; s = format(',.3f')(v.div( 1e09).toFixed(3, 1)) }
-            else if (v.lt(1e12))    { unit = ' Gwei'; s = format(',.0f')(v.div( 1e09).toFixed(0, 1)) }
-            else if (v.lt(1e15))    s = format(',.3f')(v.div( 1e12).toFixed(3, 1))+'μ'
+            else if (v.lt( 1e3))    { unit = ' Wei'; s = format(',')(v.toFixed(0)) }
+            else if (v.lt( 1e6))    { unit = ' Wei'; s = format(',.0f')(v.toFixed(0)) }
+            else if (v.lt( 1e9))    { unit = ' Wei'; s = format(',.3f')(v.div( 1e09).toFixed(3, 1))+'G' }
+            else if (v.lt(1e12))    { unit = ' Wei'; s = format(',.0f')(v.div( 1e09).toFixed(0, 1))+'G' }
+            else if (v.lt(1e15))    { unit = ' Wei'; s = format(',.3f')(v.div( 1e12).toFixed(3, 1))+'T' }
             else if (v.lt(1e18))    s = format(',.3f')(v.div( 1e15).toFixed(3, 1))+'m'
             else if (v.lt(1e21))    s = format(',.3f')(v.div( 1e18).toFixed(3, 1))
             else if (v.lt(1e24))    s = format(',.0f')(v.div( 1e18).toFixed(0, 1))
@@ -210,12 +213,13 @@ export class VoodooButton extends React.Component {
         if (data === false) { _RESPONSE = this.props.children; _color = '' }
         else if (parseInt(data)) { _RESPONSE = (<><span style={{fontSize: '0.9em'}}>CONFIRMED</span><sup>{data}</sup></>); _color = 'text-success' }
         else { _RESPONSE = data; _color = (_RESPONSE !== 'rejected') ? 'text-info' : 'text-danger' } 
-        if (hash) hashUI = data === 'REQUESTED' ? hash : hash.slice(0,6)+'....'+hash.slice(-6) 
         const _className = `${typeof other.className !== 'undefined' ? other.className+' ' : ''}${_color}` || ''
+        if (hash) hashUI = data === 'REQUESTED' 
+            ? hash 
+            : hash.slice(0,6)+'....'+hash.slice(-6)
 
         return (
-            <>
-                <div style={{ display: "inline-block" }} onClick={(e) => e.stopPropagation()} >
+            <div style={{ display: "inline-block" }} onClick={(e) => e.stopPropagation()} >
                     <Button {...other}
                         variant={other.variant}
                         className={_className}
@@ -234,11 +238,15 @@ export class VoodooButton extends React.Component {
                     }
                         <span className={_className}>{_RESPONSE}</span>
                     </Button>
-                </div>
-                { hash && <div className="text-info small mt-2">TX Hash: <a href={'https://etherscan.io/tx/'+hash} 
-                    target="_blank" rel="noopener noreferrer">{hashUI}</a></div>
+                { hash &&
+                    <div className="text-info small mt-2">TX Hash: <a href={'https://etherscan.io/tx/'+hash} 
+                        target="_blank" rel="noopener noreferrer">{hashUI}</a>{' '}
+                        <CopyToClipboard text={hash}>
+                            <FontAwesomeIcon icon={faCopy} />
+                        </CopyToClipboard>
+                    </div>
                 }
-            </>
+            </div>
         )
     }
 }

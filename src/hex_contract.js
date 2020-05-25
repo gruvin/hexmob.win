@@ -39,6 +39,10 @@ export default {
     BPB_MAX_HEX,
     BPB_MAX_HEARTS,
     BPB,
+            
+    lobbyIsActive: function() { 
+        return Date.now() < (START_DATE.getTime() + (CLAIM_PHASE_END_DAY * 24 * 3600000))
+    },
 
     ABI: [{
         "inputs": [],
