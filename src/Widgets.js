@@ -120,7 +120,7 @@ export class VoodooButton extends React.Component {
             })
 
             const func = simulate ? sim : contract.methods[method]
-            if (window.web3.currentProvider.isTrust) {
+            if (window.web3 && window.web3.currentProvider && window.web3.currentProvider.isTrust) {
                 // TrustWallet returns immediately, with nothing and 
                 // never again :/ (See XXX notes in App.js)
                 func(...params).send(options)

@@ -50,6 +50,7 @@ class App extends React.Component {
             referrer
         }
         window._APP = this // DEBUG remove me
+        debug('process.env: ', process.env)
     }
 
     subscribeProvider = async (provider) => {
@@ -136,7 +137,7 @@ class App extends React.Component {
             if (window.web3 && window.web3.currentProvider.isTrust) {
                 const mainnet = {
                     chainId: 1,
-                    rpcUrl: "https://mainnet.infura.io/v3/ba82349aaccf4a448b43bf651e4d9145"
+                    rpcUrl: `https://mainnet.infura.io/v3/${process.env.REACT_APP_INFURA_ID}`
                 };
                 /* XXX: 
                     Ancient legacy 0.5.x web3 code. provider.sendAync used only callback.
@@ -274,13 +275,13 @@ class App extends React.Component {
             walletconnect: {
                 package: WalletConnectProvider, // required
                 options: {
-                    infuraId: process.env.INFURA_ID // required
+                    infuraId: process.env.REACT_APP_INFURA_ID // required
                 }
             },
 //            portis: {
 //                package: Portis, // required
 //                options: {
-//                    id: process.env.PORTIS_ID // required
+//                    id: process.env.REACT_APP_PORTIS_ID // required
 //                }
 //            }
         }

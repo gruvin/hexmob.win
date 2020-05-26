@@ -58,6 +58,10 @@ class Lobby extends React.Component {
         })
     }
 
+    lobbyGetToday = () => {
+    
+    }
+
     componentDidMount = () => {
         const { contract, wallet } = this.props
         const dailyDataCount  = Math.min(HEX.CLAIM_PHASE_END_DAY, contract.Data.globals.dailyDataCount.toNumber())
@@ -77,7 +81,7 @@ class Lobby extends React.Component {
             const totalUnclaimedSatoshis = contract.Data.globals.claimStats.unclaimedSatoshisTotal
             const lobbyTodayAvailableHEX = totalUnclaimedSatoshis.div(350).times(HEX.HEARTS_PER_SATOSHI) 
 
-           const hasEntryThisDay = new BitSet(
+            const hasEntryThisDay = new BitSet(
                 BigNumber(results[4][1]).toString(2) +
                 BigNumber(results[4][0]).toString(2)
             )
