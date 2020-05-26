@@ -8,7 +8,6 @@ import {
     DropdownButton,
     Row,
     Col,
-    Badge
 } from 'react-bootstrap'
 import './Stakes.scss'
 import { BigNumber } from 'bignumber.js'

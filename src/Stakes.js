@@ -101,7 +101,6 @@ class Stakes extends React.Component {
         // iterate over daily payouts history
         let interest = new BigNumber(0)
 
-        debugger
         // extract dailyData struct from uint256 mapping
         dailyData.forEach((mapped_dailyData, dayNumber) => {
             const hex = new BigNumber(mapped_dailyData).toString(16).padStart(64, '0')
