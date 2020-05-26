@@ -197,7 +197,7 @@ export class NewStakeForm extends React.Component {
                             </Form.Label> 
                             <InputGroup className="p-1 col-7 col-sm-10">
                                 <FormControl
-                                    type="number" novalidate
+                                    type="number"
                                     value={this.state.stakeAmount}
                                     placeholder="amount in HEX"
                                     aria-label="amount to stake in HEX"
@@ -229,7 +229,7 @@ export class NewStakeForm extends React.Component {
                             <Form.Label>Stake Length in Days</Form.Label>
                             <InputGroup className="p-1 col-5 col-sm-9">
                                 <FormControl
-                                    type="number" novalidate
+                                    type="number"
                                     placeholder="min one day" 
                                     value={this.state.stakeDays <= 0 ? '' : this.state.stakeDays}
                                     aria-label="number of days to stake min one day"
@@ -267,7 +267,7 @@ export class NewStakeForm extends React.Component {
                                     method="stakeStart" 
                                     params={[BigNumber(this.state.stakeAmount).times(1e8).toString(), this.state.stakeDays/*string*/]}
                                     options={{ from: this.props.wallet.address }}
-                                    dataValid={BigNumber(this.state.stakeAmount).gt(0) && this.state.stakeDays > 0}
+                                    inputValid={ (BigNumber(this.state.stakeAmount).gt(0) && this.state.stakeDays > 0) }
                                     confirmationCallback={this.resetFormAndReloadStakes}
                                     variant="stake btn-start"
                                 >

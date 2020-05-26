@@ -124,7 +124,7 @@ export class StakeInfo extends React.Component {
                                 <Col className="numeric">{format(',')(percentAPY.toPrecision(5))}%</Col>
                             </Row>
                             <Row>
-                                <Col className="text-right mt-3">
+                                <Col className="text-center mt-3">
                                     <VoodooButton 
                                         contract={contract}
                                         method="stakeEnd" 
@@ -137,7 +137,6 @@ export class StakeInfo extends React.Component {
                                     </VoodooButton>
                                 </Col>
                             </Row>
-
                         </Card.Body>
                     </Accordion.Collapse>
                 </Card>

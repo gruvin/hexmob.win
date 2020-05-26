@@ -106,8 +106,8 @@ export class VoodooButton extends React.Component {
     }
 
     render() {
-        const { contract, method, params, options, simulate, confirmationCallback, ...other } = this.props
-        const dataValid = this.props.hasOwnProperty('dataValid') ? this.props.dataValid : true
+        const { contract, method, params, options, inputValid, simulate, confirmationCallback, ...other } = this.props
+        const dataValid = (typeof inputValid === 'undefined') ? true : inputValid
 
         const handleClick = async (contract, method, params, options, e ) => {
             e.preventDefault()

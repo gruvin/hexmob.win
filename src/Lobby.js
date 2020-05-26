@@ -302,7 +302,7 @@ class Lobby extends React.Component {
                                 <Row className="my-2">
                                 <Col xs={{ span:5, offset:1 }} sm={{ span:4, offset: 2 }} md={{ span:3, offset: 3 }} className="text-right">
                                     <Form.Control
-                                        type="number" novalidate
+                                        type="number"
                                         placeholder="ETH amount"
                                         value={this.state.entryETH}
                                         aria-label="amount of ETH forthis lobby entry"
@@ -320,7 +320,7 @@ class Lobby extends React.Component {
                                             from:this.props.wallet.address, 
                                             value: BigNumber(this.state.entryETH/*string*/).times(1e18) 
                                         }}
-                                        dataValid={ BigNumber(this.state.entryETH).gt(0) }
+                                        inputValid={ BigNumber(this.state.entryETH).gt(0) }
                                         confirmationCallback={ this.resetFormAndReload }
                                         variant="lobby btn-enter"
                                     >

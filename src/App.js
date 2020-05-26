@@ -16,7 +16,7 @@ import HEX from './hex_contract'
 import Web3 from "web3";
 import Web3Modal from "web3modal";
 import WalletConnectProvider from "@walletconnect/web3-provider"
-import Portis from "@portis/web3";
+//import Portis from "@portis/web3";
 import './App.scss'
 
 const debug = require('debug')('App')
@@ -50,24 +50,6 @@ class App extends React.Component {
             referrer
         }
         window._APP = this // DEBUG remove me
-    }
-
-    getProviderOptions = () => {
-        const providerOptions = {
-            walletconnect: {
-                package: WalletConnectProvider, // required
-                options: {
-                    infuraId: "ba82349aaccf4a448b43bf651e4d9145" // required
-                }
-            },
-            portis: {
-                package: Portis, // required
-                options: {
-                    id: "e55eff64-770e-4b93-9377-fb42791b5738" // required
-                }
-            }
-        }
-        return providerOptions
     }
 
     subscribeProvider = async (provider) => {
@@ -183,7 +165,7 @@ class App extends React.Component {
         if (!this.web3) this.web3 = await new Web3(this.provider)
         debug('web3 provider connected')
 
-//        window._P = this.provider // DEBUG remove me
+        window._P = this.provider // DEBUG remove me
         window._W3 = this.web3 // DEBUG remove me
 
         var address
@@ -287,6 +269,24 @@ class App extends React.Component {
         window.location.reload()
     }
 
+    getProviderOptions = () => {
+        const providerOptions = {
+            walletconnect: {
+                package: WalletConnectProvider, // required
+                options: {
+                    infuraId: process.env.INFURA_ID // required
+                }
+            },
+//            portis: {
+//                package: Portis, // required
+//                options: {
+//                    id: process.env.PORTIS_ID // required
+//                }
+//            }
+        }
+        return providerOptions
+    }
+
     connectWeb3ModalWallet = async (reset) => {
         this.web3Modal = new Web3Modal({
             network: "mainnet",                         // optional
@@ -305,7 +305,7 @@ class App extends React.Component {
     }
 
     disconnectWallet = async () => {
-        const { provider } = this.web3
+        const provider = this.web3 || null
         if (provider && provider.close) {
             await this.unsubscribeEvents()
             await this.web3Modal.clearCachedProvider()
@@ -329,10 +329,7 @@ class App extends React.Component {
                     </Badge>
                 </Col>
                 <Col className="text-right">
-                    <Badge className="text-info d-none d-md-inline">{ addressFragment }</Badge>
-                    <Badge variant="secondary" style={{ cursor: "pointer" }} onClick={ this.disconnectWallet } className="small">
-                        disconnect
-                    </Badge>
+                    <Badge className="text-info">{ addressFragment }</Badge>
                 </Col>
             </Row>
             </Container>
@@ -344,8 +341,8 @@ class App extends React.Component {
             return (
                 <Container fluid className="text-center mb-3">
                     <Button id="connect_wallet" onClick={() => this.connectWeb3ModalWallet(true)} variant="info">
-                        <span className="d-none">Click to Connect a Wallet</span>
-                        <span className="sm-inline">Connect Wallet</span>
+                        <span className="d-none d-sm-inline">Click to Connect a Wallet</span>
+                        <span className="d-inline d-sm-none">Connect Wallet</span>
                     </Button>
                     <Container fluid id="mobile_devices" className="bg-light text-dark rounded p-3 my-3 overflow-hidden text-left">
                         <Container fluid className="my-3" id="mobile_trust_wallet">
@@ -479,6 +476,7 @@ class App extends React.Component {
                             </Container>
                         }
                     </Container>
+
                 { !isTrust && 
                     <>
                         <Container className="p-3 my-3">
@@ -509,7 +507,15 @@ class App extends React.Component {
                             </Card.Body>
                         </Container>
                     </> 
-                    } 
+                } 
+
+                    <Container>
+                        <div className="text-center m-3">
+                            <Button variant="secondary" onClick={ this.disconnectWallet } >
+                                DISCONNECT WALLET
+                            </Button>
+                        </div>
+                    </Container>
                 </Container>
 
                 <Container>
