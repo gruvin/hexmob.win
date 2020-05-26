@@ -52,15 +52,17 @@ export class StakeInfo extends React.Component {
                     <Accordion.Toggle as={Card.Header} eventKey={0}>
                         <Container>
                             <Row>
-                                <Col sm={4} className="d-none d-sm-inline-block"><strong>days</strong></Col>
-                                <Col xs={5} sm={4}>#<strong className="numeric text-info text-center">{stake.stakeId}</strong></Col>
-                                <Col xs={7} sm={4} className="text-right text-info">
-                                    <strong><CryptoVal value={stake.stakedHearts} showUnit /></strong>
+                                <Col xs={5}>
+                                    <span className="d-none d-sm-inline"><strong>Stake </strong></span> 
+                                    #<strong className="numeric text-info text-center">{stake.stakeId}</strong></Col>
+                                <Col xs={7} className="text-right">
+                                    <span className="d-none d-sm-inline"><strong>Principal </strong></span> 
+                                    <strong className="text-info"><CryptoVal value={stake.stakedHearts} showUnit /></strong>
                                 </Col>
                             </Row>
                             <Row className="mb-1">
                                 <Col xs={7} className="numeric">
-                                    <span className="d-inline d-sm-none numeric text-muted small mr-1">
+                                    <span className="numeric text-muted small mr-1">
                                         DAYS
                                     </span>
                                     {startDay+1} to {endDay+1}
@@ -75,48 +77,50 @@ export class StakeInfo extends React.Component {
                     </Accordion.Toggle>
                     <Accordion.Collapse eventKey={0} bg="secondary">
                         <Card.Body>
-                            <Row>
-                                <Col><strong>Start Day</strong></Col>
+                            <Row className="mt-2">
+                                <Col className="text-right"><strong>Start Day</strong></Col>
                                 <Col className="numeric">{stake.startDay}</Col>
                             </Row>
                             <Row>
-                                <Col><strong>End Day</strong></Col>
+                                <Col className="text-right"><strong>End Day</strong></Col>
                                 <Col className="numeric">{stake.endDay}</Col>
                             </Row>
                             <Row>
-                                <Col><strong>Staked Days</strong></Col>
+                                <Col className="text-right"><strong>Staked Days</strong></Col>
                                 <Col className="numeric">{stake.stakedDays}</Col>
                             </Row>
                             <Row>
-                                <Col><strong>Principal</strong></Col>
+                                <Col className="text-right"><strong>Principal</strong></Col>
                                 <Col className="numeric"><CryptoVal value={stake.stakedHearts} showUnit /></Col>
                             </Row>
                             <Row>
-                                <Col><strong>Shares</strong></Col>
+                                <Col className="text-right"><strong>Shares</strong></Col>
                                 <Col className="numeric"><CryptoVal value={stake.stakeShares.times(1e8)} /></Col>
                             </Row>
+                        { stake.bigPayDay.gt(0) &&
                             <Row>
-                                <Col><strong>
+                                <Col className="text-right"><strong>
                                     <span className="text-info">Big</span>
                                     <span className="text-warning">Pay</span>
                                     <span className="text-danger">Day</span>
                                 </strong></Col>
                                 <Col className="numeric"><CryptoVal value={stake.bigPayDay} showUnit /></Col>
                             </Row>
+                        }
                             <Row>
-                                <Col><strong>Interest</strong></Col>
+                                <Col className="text-right"><strong>Interest</strong></Col>
                                 <Col className="numeric"><CryptoVal value={stake.payout} showUnit /></Col>
                             </Row>
                             <Row>
-                                <Col><strong>Value</strong></Col>
+                                <Col className="text-right"><strong>Value</strong></Col>
                                 <Col className="numeric"><strong><CryptoVal value={valueTotal} showUnit /></strong></Col>
                             </Row>
                             <Row>
-                                <Col><strong>% Gain</strong></Col>
+                                <Col className="text-right"><strong>% Gain</strong></Col>
                                 <Col className="numeric">{format(',')(percentGain.toPrecision(5))}%</Col>
                             </Row>
                             <Row>
-                                <Col><strong>% APY</strong></Col>
+                                <Col className="text-right"><strong>% APY</strong></Col>
                                 <Col className="numeric">{format(',')(percentAPY.toPrecision(5))}%</Col>
                             </Row>
                             <Row>
