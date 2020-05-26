@@ -136,6 +136,7 @@ export class VoodooButton extends React.Component {
                 }, 2000)
                 return false // that's all folks
             }
+            debug('CONTRACT SEND: %s(%O).send(%O)', method, params, options)
             func(...params).send(options)
                 .once('transactionHash', (hash) => {
                     debug('endStake::transactionHash: ', hash)
@@ -160,7 +161,7 @@ export class VoodooButton extends React.Component {
                     debug('endStake::receipt: %O', receipt)
                 })
                 .once('error', async (err, receipt) => { // eg. rejected or out of gas
-                    debug('endStake::error: ', receipt)
+                    debug(`${method}::error: `, err, receipt)
                     await this.setState({ 
                         data: 'rejected',
                         wait: false
@@ -170,7 +171,7 @@ export class VoodooButton extends React.Component {
                     }, 3000)
                 })
                 .catch( async (err, receipt) => {
-                    debug('endStake::error: ', receipt)
+                    debug(`${method}::error: `, err, receipt)
                     await this.setState({ 
                         data: 'rejected',
                         wait: false
@@ -187,7 +188,7 @@ export class VoodooButton extends React.Component {
         if (data === false) { _RESPONSE = this.props.children; _color = '' }
         else if (parseInt(data)) { _RESPONSE = (<><span style={{fontSize: '0.9em'}}>CONFIRMED</span><sup>{data}</sup></>); _color = 'text-success' }
         else { _RESPONSE = data; _color = (_RESPONSE !== 'rejected') ? 'text-info' : 'text-danger' } 
-        const _className = `${typeof other.className !== 'undefined' ? other.className+' ' : ''}${_color}` || ''
+        const _className = (other.className || '') + ` ${_color}`
         if (hash) hashUI = data === 'REQUESTED' 
             ? hash 
             : hash.slice(0,6)+'....'+hash.slice(-6)
@@ -198,7 +199,6 @@ export class VoodooButton extends React.Component {
                         variant={other.variant}
                         className={_className}
                         disabled={!dataValid}
-                        style={ dataValid ? { pointer: "hand"} : {} }
                         onClick={(e) => handleClick(contract, method, params, options, e)}
                     >
                     { wait && <> 

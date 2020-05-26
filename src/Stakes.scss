@@ -25,10 +25,19 @@
 
 /* LOBBY ENTER BUTTON */
 .btn-lobby.btn-enter { 
-    color: map-get($theme-colors, success); 
+    color: map-get($theme-colors, info); 
     border: 2px map-get($theme-colors, dark) solid; 
 }
 .btn-lobby.btn-enter:hover:enabled {
+    border-color: map-get($theme-colors, info); 
+}
+
+/* LOBBY MINT BUTTON */
+.btn-lobby.btn-mint { 
+    color: map-get($theme-colors, success); 
+    border: 2px map-get($theme-colors, secondary) solid; 
+}
+.btn-lobby.btn-mint:hover:enabled {
     border-color: map-get($theme-colors, success); 
 }
 

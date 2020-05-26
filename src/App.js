@@ -324,11 +324,6 @@ class App extends React.Component {
             <Container id="wallet_status" fluid>
             <Row>
                 <Col><Badge variant="success" className="small">mainnet</Badge></Col>
-                <Col className="text-center"> 
-                    <Badge variant="info" className="small"> 
-                        <CryptoVal value={balance} showUnit />
-                    </Badge>
-                </Col>
                 <Col className="text-right">
                     <Badge className="text-info">{ addressFragment }</Badge>
                 </Col>
@@ -478,7 +473,7 @@ class App extends React.Component {
                         }
                     </Container>
 
-                { !isTrust && 
+                    { !isTrust && 
                     <>
                         <Container className="p-3 my-3">
                             <Card.Body as={Button} variant="info" className="w-100" style={{ cursor: "pointer" }}
@@ -508,17 +503,17 @@ class App extends React.Component {
                             </Card.Body>
                         </Container>
                     </> 
-                } 
+                    } 
 
                     <Container>
                         <div className="text-center m-3">
-                            <Button variant="secondary" onClick={ this.disconnectWallet } >
+                            <Button variant="outline-danger" onClick={ this.disconnectWallet } >
                                 DISCONNECT WALLET
                             </Button>
                         </div>
                     </Container>
+            
                 </Container>
-
                 <Container>
                     { this.state.walletConnected && <this.WalletStatus />}
                 </Container>

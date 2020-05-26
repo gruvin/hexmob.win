@@ -314,7 +314,6 @@ class Stakes extends React.Component {
             <Accordion 
                 id='stakes_accordion'
                 className="text-left"
-                defaultActiveKey={this.state.selectedCard}
                 onSelect={handleAccordionSelect}
             >
                 <Card bg="secondary" text="light">
