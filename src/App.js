@@ -12,15 +12,13 @@ import { Container,
 } from 'react-bootstrap'
 import Stakes from './Stakes'
 import Lobby from './Lobby'
-
+import HEX from './hex_contract'
 import Web3 from "web3";
 import Web3Modal from "web3modal";
 import WalletConnectProvider from "@walletconnect/web3-provider"
 import Portis from "@portis/web3";
-
-import HEX from './hex_contract'
-
 import './App.scss'
+
 const debug = require('debug')('App')
 debug('loading')
 
@@ -185,8 +183,8 @@ class App extends React.Component {
         if (!this.web3) this.web3 = await new Web3(this.provider)
         debug('web3 provider connected')
 
-//        window._P = this.provider // DEBUG remove mer
-//        window._W3 = this.web3 // DEBUG remove me
+//        window._P = this.provider // DEBUG remove me
+        window._W3 = this.web3 // DEBUG remove me
 
         var address
         if (this.provider.isMetaMask) {

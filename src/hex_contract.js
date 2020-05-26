@@ -1,4 +1,4 @@
-import { BigNumber } from 'bignumber.js'
+const { BigNumber } = require('bignumber.js')
 
 const START_DATE_POSIX = 1575331200000
 const START_DATE = new Date(START_DATE_POSIX) // '2019-12-03 00:00:00Z' moble browser can't take it! :/
@@ -21,7 +21,7 @@ const BPB_MAX_HEX = BigNumber(150).times(1e6)
 const BPB_MAX_HEARTS = BPB_MAX_HEX.times(HEARTS_PER_HEX)
 const BPB = BPB_MAX_HEARTS.times(100).idiv(BPB_BONUS_PERCENT)
 
-export default {
+module.exports = {
     ContractAddress: "0x2b591e99afe9f32eaa6214f7b7629768c40eeb39",
     START_DATE,
     CLAIM_PHASE_START_DAY,

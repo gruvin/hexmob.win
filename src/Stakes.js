@@ -13,7 +13,7 @@ import './Stakes.scss'
 import { BigNumber } from 'bignumber.js'
 import HEX from './hex_contract'
 import { calcBigPayDaySlice, calcAdoptionBonus } from './util'
-import  NewStakeForm from './NewStakeForm' 
+import { NewStakeForm } from './NewStakeForm' 
 import { CryptoVal, BurgerHeading } from './Widgets' 
 import { StakeInfo } from './StakeInfo'
 import crypto from 'crypto'
@@ -36,59 +36,6 @@ class Stakes extends React.Component {
         }
 
         window._STAKES = this // DEBUG REMOVE ME
-    }
-
-    static async getStakePayoutData(context, stakeData) {
-        const { contract } = context 
-        const {
-            currentDay, 
-            allocatedSupply, 
-            globals 
-        } = contract.Data
-
-        const startDay = stakeData.lockedDay
-        const endDay = startDay + stakeData.stakedDays
-        if (currentDay === startDay) return
-
-        const dailyData = await contract.methods.dailyDataRange(startDay, Math.min(currentDay, endDay)).call()
-
-        // iterate over daily payouts history
-        let interest = new BigNumber(0)
-
-        // extract dailyData struct from uint256 mapping
-        dailyData.forEach((mapped_dailyData, dayNumber) => {
-            const hex = new BigNumber(mapped_dailyData).toString(16).padStart(64, '0')
-            const day = {
-                payoutTotal: new BigNumber(hex.slice(46,64), 16),
-                stakeSharesTotal: new BigNumber(hex.slice(28,46), 16),
-                unclaimedSatoshisTotal: new BigNumber(hex.slice(12,28), 16)
-            }
-            const payout = day.payoutTotal.times(stakeData.stakeShares).idiv(day.stakeSharesTotal)
-            interest = interest.plus(payout)
-        })
-
-        // Calculate our share of Daily Interest (for the current day)
-
-        // HEX mints 0.009955% daily interest (3.69%pa) and stakers get adoption bonuses from that, each day
-        const dailyInterestTotal = allocatedSupply.times(10000).idiv(100448995) // .sol line: 1243 
-        const interestShare = stakeData.stakeShares.times(dailyInterestTotal).idiv(globals.stakeSharesTotal)
-
-        // add our doption Bonus
-        const interestBonus = calcAdoptionBonus(interestShare, globals)
-        
-        // add interest (with adoption bonus) to stake's payout total 
-        interest = interest.plus(interestShare).plus(interestBonus)
-
-        let bigPayDay = new BigNumber(0)
-        if (startDay <= HEX.BIG_PAY_DAY && endDay > HEX.BIG_PAY_DAY) {
-            const bigPaySlice = calcBigPayDaySlice(stakeData.stakeShares, globals.stakeSharesTotal, globals)
-            const bonuses = calcAdoptionBonus(bigPaySlice, globals)
-            bigPayDay = bigPaySlice.plus(bonuses)
-            if ( currentDay >= HEX.BIG_PAY_DAY) stakeData.payout = stakeData.payout.plus(stakeData.bigPayDay)
-            // TODO: penalties have to come off for late End Stake
-        }
-
-        return { interest, bigPayDay }
     }
 
     addToEventLog = (s) => {
@@ -135,6 +82,60 @@ class Stakes extends React.Component {
     unsubscribeEvents = () => {
         this.web3 && this.web3.shh && this.web3.shh.clearSubscriptions()
         this.web3 && this.web3.eth && this.web3.eth.clearSubscriptions()
+    }
+
+    static async getStakePayoutData(context, stakeData) {
+        const { contract } = context 
+        const {
+            currentDay, 
+            allocatedSupply, 
+            globals 
+        } = contract.Data
+
+        const startDay = stakeData.lockedDay
+        const endDay = startDay + stakeData.stakedDays
+        if (currentDay === startDay) return
+
+        const dailyData = await contract.methods.dailyDataRange(startDay, Math.min(currentDay, endDay)).call()
+
+        // iterate over daily payouts history
+        let interest = new BigNumber(0)
+
+        debugger
+        // extract dailyData struct from uint256 mapping
+        dailyData.forEach((mapped_dailyData, dayNumber) => {
+            const hex = new BigNumber(mapped_dailyData).toString(16).padStart(64, '0')
+            const day = {
+                payoutTotal: new BigNumber(hex.slice(46,64), 16),
+                stakeSharesTotal: new BigNumber(hex.slice(28,46), 16),
+                unclaimedSatoshisTotal: new BigNumber(hex.slice(12,28), 16)
+            }
+            const payout = day.payoutTotal.times(stakeData.stakeShares).idiv(day.stakeSharesTotal)
+            interest = interest.plus(payout)
+        })
+
+        // Calculate our share of Daily Interest (for the current day)
+
+        // HEX mints 0.009955% daily interest (3.69%pa) and stakers get adoption bonuses from that, each day
+        const dailyInterestTotal = allocatedSupply.times(10000).idiv(100448995) // .sol line: 1243 
+        const interestShare = stakeData.stakeShares.times(dailyInterestTotal).idiv(globals.stakeSharesTotal)
+
+        // add our doption Bonus
+        const interestBonus = calcAdoptionBonus(interestShare, globals)
+        
+        // add interest (with adoption bonus) to stake's payout total 
+        interest = interest.plus(interestShare).plus(interestBonus)
+
+        let bigPayDay = new BigNumber(0)
+        if (startDay <= HEX.BIG_PAY_DAY && endDay > HEX.BIG_PAY_DAY) {
+            const bigPaySlice = calcBigPayDaySlice(stakeData.stakeShares, globals.stakeSharesTotal, globals)
+            const bonuses = calcAdoptionBonus(bigPaySlice, globals)
+            bigPayDay = bigPaySlice.plus(bonuses)
+            if ( currentDay >= HEX.BIG_PAY_DAY) stakeData.payout = stakeData.payout.plus(stakeData.bigPayDay)
+            // TODO: penalties have to come off for late End Stake
+        }
+
+        return { interest, bigPayDay }
     }
 
     static async loadStakes(context) {
@@ -240,6 +241,7 @@ class Stakes extends React.Component {
             <>
                 {
                     stakeList.map((stakeData) => {
+                        debug('stakeData: %o', stakeData)
                         const startDay = Number(stakeData.lockedDay)
                         const endDay = startDay + Number(stakeData.stakedDays)
                         const startDate = new Date(HEX.START_DATE) // UTC but is converted to local
@@ -322,7 +324,7 @@ class Stakes extends React.Component {
                         <div className="float-right">
                             <small><small>available </small> </small>
                             <Badge variant="success" >
-                                <CryptoVal value={this.props.wallet.balance} showUnit />
+                                <strong><CryptoVal value={this.props.wallet.balance} showUnit /></strong>
                             </Badge>
                         </div>
                     </Accordion.Toggle>

@@ -8,11 +8,12 @@ import {
     Accordion,
 } from 'react-bootstrap'
 import './Stakes.scss'
-import { BigNumber } from 'bignumber.js'
 import HEX from './hex_contract'
+import { BigNumber } from 'bignumber.js'
 import { CryptoVal, BurgerHeading, VoodooButton } from './Widgets' 
 import BitSet from 'bitset'
 import Timer from 'react-compound-timer'
+
 
 const debug = require('debug')('Lobby')
 debug('loading')

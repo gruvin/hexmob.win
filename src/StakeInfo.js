@@ -18,8 +18,6 @@ debug('loading')
 
 export class StakeInfo extends React.Component {
 
-    // TODO: move to Widgets
-
     render() {
         const { contract, stake } = this.props
         const { currentDay } = contract.Data

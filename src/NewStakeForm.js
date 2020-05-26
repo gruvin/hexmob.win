@@ -8,18 +8,16 @@ import {
     DropdownButton,
     Row,
     Col,
-    Badge
 } from 'react-bootstrap'
 import './Stakes.scss'
 import { BigNumber } from 'bignumber.js'
-import { format } from 'd3-format'
-import HEX from './hex_contract.js'
-import { calcBigPayDaySlice, calcAdoptionBonus } from './util.js'
-import { CryptoVal, WhatIsThis, VoodooButton } from './Widgets.js' 
+import HEX from './hex_contract'
+import { calcBigPayDaySlice, calcAdoptionBonus } from './util'
+import { CryptoVal, WhatIsThis, VoodooButton } from './Widgets' 
 const debug = require('debug')('NewStakeForm')
 debug('loading')
 
-class NewStakeForm extends React.Component {
+export class NewStakeForm extends React.Component {
     constructor(props) {
         super(props)
         this.state = {
@@ -35,7 +33,7 @@ class NewStakeForm extends React.Component {
             percentGain: 0.0,
             percentAPY: 0.0,
         }
-//        window._NEW = this // DEBUG remove me
+        // window._NEW = this // DEBUG remove me
     }
 
     componentDidMount() {
@@ -366,5 +364,3 @@ class NewStakeForm extends React.Component {
         )
     }
 }
-
-export default NewStakeForm

@@ -8,46 +8,20 @@ import {
 } from 'react-bootstrap'
 import './App.scss'
 import { BigNumber } from 'bignumber.js'
-import { format } from 'd3-format' // gives us Intl for free
 import { EventEmitter } from 'events'
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
 import { faCopy } from '@fortawesome/free-solid-svg-icons'
 import { CopyToClipboard } from 'react-copy-to-clipboard'
+import { cryptoFormat } from './util.js'
 const debug = require('debug')('Widgets')
 
 export const CryptoVal = (props) => {
     let v = new BigNumber(props.value) 
     if (isNaN(v)) return ( <>NaN</> )
+    
+    const { valueString:s, unit } = cryptoFormat(v, props.currency)
 
-    let unit = ' HEX'
-    let s
-    switch (props.currency) {
-        case 'ETH':
-            unit = ' ETH'
-            if (v.isZero())         s = '0.000'
-            else if (v.lt( 1e3))    { unit = ' Wei'; s = format(',')(v.toFixed(0)) }
-            else if (v.lt( 1e6))    { unit = ' Wei'; s = format(',.0f')(v.toFixed(0)) }
-            else if (v.lt( 1e9))    { unit = ' Wei'; s = format(',.3f')(v.div( 1e09).toFixed(3, 1))+'G' }
-            else if (v.lt(1e12))    { unit = ' Wei'; s = format(',.0f')(v.div( 1e09).toFixed(0, 1))+'G' }
-            else if (v.lt(1e15))    { unit = ' Wei'; s = format(',.3f')(v.div( 1e12).toFixed(3, 1))+'T' }
-            else if (v.lt(1e18))    s = format(',.3f')(v.div( 1e15).toFixed(3, 1))+'m'
-            else if (v.lt(1e21))    s = format(',.3f')(v.div( 1e18).toFixed(3, 1))
-            else if (v.lt(1e24))    s = format(',.0f')(v.div( 1e18).toFixed(0, 1))
-            else if (v.lt(1e27))    s = format(',.3f')(v.div( 1e21).toFixed(3, 1))+'M'
-            else                    s = format(',.0f')(v.div( 1e21).toFixed(0, 1))+'M'
-            break
-        default:
-            if (v.isZero())         s = '0.000'
-            else if (v.lt(1e5))     { unit = ' Hearts'; s = format(',.0f')(v.toFixed(0, 1)) }
-            else if (v.lt(1e11))    s = format(',')(v.div( 1e08).toFixed(3, 1))
-            else if (v.lt(1e14))    s = format(',')(v.div( 1e08).toFixed(0, 1))
-            else if (v.lt(1e17))    s = format(',.3f')(v.div( 1e14).toFixed(3, 1))+'M'
-            else if (v.lt(1e20))    s = format(',.3f')(v.div( 1e17).toFixed(3, 1))+'B'
-            else if (v.lt(1e23))    s = format(',.3f')(v.div( 1e20).toFixed(3, 1))+'T'
-            else                    s = format(',.0f')(v.div( 1e20).toFixed(0, 1))+'T'
-    }
-
-    // fade fractional part (including the period)
+    // mute fractional part (including the period)
     const r = s.match(/^(.*)(\.\d+)(.*)$/) 
     if (r && r.length > 1)
         return ( 

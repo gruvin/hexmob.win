@@ -161,7 +161,7 @@ button#connect_wallet:hover { border-style: inset; border-color: #fec}
     color: #eee; font-weight: bold;
     margin: 0;
     padding: 0;
-    background: linear-gradient(180deg, rgba(20,20,20,1) 0, rgba(0,0,0,1) 18px, rgba(50,50,50,1) 36px);
+    background: linear-gradient(180deg, rgba(20,20,20,1) 0, rgba(0,0,0,1) 22px, rgba(50,50,50,1) 44px);
     border: 0;
     border-radius: 3px !important;
 }
@@ -174,7 +174,7 @@ button#connect_wallet:hover { border-style: inset; border-color: #fec}
     font-family: 'Titillium Web', Arial, sans-serif;
     font-size: 1.35rem;
     font-weight: bold;
-    padding-bottom: .25em;
+    padding: .1em .25em;
 }
 .burger-heading > img:first-child {
     display: inline-block;
