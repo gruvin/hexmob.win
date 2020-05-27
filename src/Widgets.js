@@ -13,7 +13,9 @@ import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
 import { faCopy } from '@fortawesome/free-solid-svg-icons'
 import { CopyToClipboard } from 'react-copy-to-clipboard'
 import { cryptoFormat } from './util.js'
+
 const debug = require('debug')('Widgets')
+debug('loading')
 
 export const CryptoVal = (props) => {
     if (props.value === '---') return ( <>---</> )
@@ -121,7 +123,9 @@ export class VoodooButton extends React.Component {
             })
 
             const func = simulate ? sim : contract.methods[method]
+            debug('CONTRACT SEND: %s(%O).send(%O)', method, params, options)
             if (window.web3 && window.web3.currentProvider && window.web3.currentProvider.isTrust) {
+                debug('Sending via TrustWallet provider')
                 // TrustWallet returns immediately, with nothing and 
                 // never again :/ (See XXX notes in App.js)
                 func(...params).send(options)
@@ -137,7 +141,6 @@ export class VoodooButton extends React.Component {
                 }, 2000)
                 return false // that's all folks
             }
-            debug('CONTRACT SEND: %s(%O).send(%O)', method, params, options)
             func(...params).send(options)
                 .once('transactionHash', (hash) => {
                     debug('endStake::transactionHash: ', hash)

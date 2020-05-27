@@ -14,6 +14,7 @@ import { BigNumber } from 'bignumber.js'
 import HEX from './hex_contract'
 import { calcBigPayDaySlice, calcAdoptionBonus } from './util'
 import { CryptoVal, WhatIsThis, VoodooButton } from './Widgets' 
+
 const debug = require('debug')('NewStakeForm')
 debug('loading')
 
