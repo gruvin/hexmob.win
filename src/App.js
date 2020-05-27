@@ -20,10 +20,11 @@ import Portis from "@portis/web3";
 import './App.scss'
 const debug = require('debug')('App')
 if (process.env.REACT_APP_NODE_ENV === 'development') {
+    console.log('Enabling dev console logging')
+    const createDebug = require('debug')
     window.localStorage.setItem('debug', '*')
-    if (process.env.REACT_APP_REMOTE_LOGGING) {
+    if (process.env.REACT_APP_REMOTE_LOGGING === 'yes') {
         const axios = require('axios');
-        const createDebug = require('debug')
         debug.useColors = false
         debug.log = (...args) => {
             axios.get('http://serif.home:8080/'+encodeURI(JSON.stringify.call(null, args)))
@@ -31,6 +32,7 @@ if (process.env.REACT_APP_NODE_ENV === 'development') {
         }
     }
 } else {
+    console.log('Disabling dev console logging')
     window.localStorage.removeItem('debug')
 }
 
@@ -63,7 +65,6 @@ class App extends React.Component {
             referrer
         }
         window._APP = this // DEBUG remove me
-        debug('process.env: ', process.env)
     }
 
     subscribeProvider = async (provider) => {
@@ -145,6 +146,7 @@ class App extends React.Component {
     }
 
     componentDidMount = async () => {
+        debug('process.env: ', process.env)
         if (!this.provider) {
             // check first for Mobile TrustWallet
             if (window.web3 && window.web3.currentProvider.isTrust) {
@@ -153,10 +155,11 @@ class App extends React.Component {
                     rpcUrl: `https://mainnet.infura.io/v3/${process.env.REACT_APP_INFURA_ID}`
                 };
                 /* XXX: 
-                    Ancient legacy 0.5.x web3 code. provider.sendAync used only callback.
-                    It doesn't matter because TrustWallet (iOS) sends no response back to
-                    browser after signing (or not) a provider.sendAsync('send_Transaction')
-                    anyway. :'( More ominous even ...
+                    Ancient legacy 0.5.x web3 code. provider.sendAync uses only callback, no Promise.
+                    It doesn't matter because TrustWallet (iOS) sends no response back to browser
+                    after signing (or not) a provider.sendAsync('send_Transaction') anyway. :'( 
+
+                    More ominous even ...
 
                     2020-05-21: Telegram::@hewig (Tao X) referring to [@trustwallet/trust-web3-provider]
                         ................... unfortunately legacy trust provider
@@ -175,7 +178,7 @@ class App extends React.Component {
         }
         if (!this.provider) return // User will need to click the button to connect again
 
-        // this.provider.enable()
+        this.provider.enable()
         
         debug('web3 provider established')
 
@@ -315,15 +318,16 @@ class App extends React.Component {
         if (reset) {
             await this.web3Modal.clearCachedProvider()
             this.web3 = null
+            this.provider = null
         }
         this.web3Modal = new Web3Modal({
             network: "mainnet",                         // optional
             cacheProvider: false,                        // optional
             providerOptions: this.getProviderOptions()  // required
         });
-        this.provider = null
         this.provider = await this.web3Modal.connect()
         if (this.provider) {
+            debug('web3Modal getProviderInfo: ', getProviderInfo(this.provider))
             this.setState({ currentProvider: getProviderInfo(this.provider).name })
             this.componentDidMount()
         }
