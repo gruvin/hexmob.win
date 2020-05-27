@@ -16,6 +16,7 @@ import { cryptoFormat } from './util.js'
 const debug = require('debug')('Widgets')
 
 export const CryptoVal = (props) => {
+    if (props.value === '---') return ( <>---</> )
     let v = new BigNumber(props.value) 
     if (isNaN(v)) return ( <>NaN</> )
     

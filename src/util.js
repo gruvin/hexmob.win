@@ -23,6 +23,8 @@ const calcAdoptionBonus = (bigPayDaySlice, _globals) => {
 
 const cryptoFormat = (v, currency) => {
     if (typeof currency === 'undefined') currency = 'HEX'
+    if (typeof v === 'string' || typeof v === 'number') v = BigNumber(v)
+
     let unit = ' HEX'
     let s
     switch (currency) {
@@ -34,11 +36,15 @@ const cryptoFormat = (v, currency) => {
             else if (v.lt( 1e9))    { unit = ' Wei'; s = format(',.3f')(v.div( 1e09).toFixed(3, 1))+'G' }
             else if (v.lt(1e12))    { unit = ' Wei'; s = format(',.0f')(v.div( 1e09).toFixed(0, 1))+'G' }
             else if (v.lt(1e15))    { unit = ' Wei'; s = format(',.3f')(v.div( 1e12).toFixed(3, 1))+'T' }
-            else if (v.lt(1e18))    s = format(',.3f')(v.div( 1e15).toFixed(3, 1))+'m'
-            else if (v.lt(1e21))    s = format(',.3f')(v.div( 1e18).toFixed(3, 1))
-            else if (v.lt(1e24))    s = format(',.0f')(v.div( 1e18).toFixed(0, 1))
-            else if (v.lt(1e27))    s = format(',.3f')(v.div( 1e21).toFixed(3, 1))+'M'
-            else                    s = format(',.0f')(v.div( 1e21).toFixed(0, 1))+'M'
+            else if (v.lt(1e18))    s = format(',.3f')(v.div( 1e18).toFixed(3, 1)) // 0.nnn
+            else if (v.lt(1e21))    s = format(',.3f')(v.div( 1e18).toFixed(3, 1)) // nnn.nnn
+            else if (v.lt(1e24))    s = format(',.0f')(v.div( 1e18).toFixed(0, 1)) // nnn,nnn
+            else if (v.lt(1e27))    s = format(',.3f')(v.div( 1e24).toFixed(3, 1))+'M' // nnn.nnn M
+            else if (v.lt(1e30))    s = format(',.0f')(v.div( 1e24).toFixed(3, 1))+'M' // nnn,nnn M
+            else if (v.lt(1e33))    s = format(',.3f')(v.div( 1e30).toFixed(3, 1))+'B' // nnn.nnn B
+            else if (v.lt(1e36))    s = format(',.0f')(v.div( 1e30).toFixed(0, 1))+'B' // nnn,nnn B
+            else if (v.lt(1e39))    s = format(',.3f')(v.div( 1e36).toFixed(3, 1))+'T' // nnn.nnn T
+            else                    s = format(',.0f')(v.div( 1e36).toFixed(0, 1))+'T' // [nnn,...,]nnn,nnn T
             break
         default:
             if (v.isZero())         s = '0.000'

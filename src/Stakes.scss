@@ -35,7 +35,8 @@
 /* LOBBY MINT BUTTON */
 .btn-lobby.btn-mint { 
     color: map-get($theme-colors, success); 
-    border: 2px map-get($theme-colors, secondary) solid; 
+    border: 2px map-get($theme-colors, dark) solid; 
+    background-color: map-get($theme-colors, dark); 
 }
 .btn-lobby.btn-mint:hover:enabled {
     border-color: map-get($theme-colors, success); 

@@ -27,6 +27,7 @@ class Lobby extends React.Component {
             error: null,
             dailyDataCount: 0,
             lobbyData: null,
+            pastEntries: { },
             entryETH: '', // form input value
             todayAvailableHEX: '---',
             todayPendingETH: '---',
@@ -45,39 +46,73 @@ class Lobby extends React.Component {
             contract.methods.xfLobbyMembers(day, address).call()
             .then(entryIndexes => {
                 const { headIndex, tailIndex } = entryIndexes
-                debug(`headIndex=${headIndex}, tailIndex=${tailIndex}`)
-                const promiseQueue = [ ]
-                let unmintedCount = 0
+                // debug(`headIndex=${headIndex}, tailIndex=${tailIndex}`)
+
+                // let's NOT use Promise.all ... (reasons)
+                var entries = [ ]
+                if (Number(tailIndex) === 0) return resolveEntries(entries)
                 for (let entryIndex = 0; entryIndex < tailIndex; entryIndex++) {
-                    const entryId = BigNumber(day).times(BigNumber(2).pow(40)).plus(entryIndex)
-                    if (headIndex <= entryIndex) unmintedCount++
-                    promiseQueue.push(
-                        contract.methods.xfLobbyEntry(address, entryId.toString()).call()
-                    )
-                }
-                if (day < currentDay && unmintedCount > 0) {
-                    this.setState({ 
-                        unmintedEntries: this.state.unmintedEntries.concat({ day,  count: unmintedCount })
-                    })
-                }
-                Promise.all(promiseQueue).then(entriesResult => {
-                    const entries = entriesResult.map(entry => {
-                        return {
-                            rawAmount: BigNumber(entry.rawAmount),
-                            referrerAddr: entry.referrerAddr
+                    const entryId = BigNumber(day).times(BigNumber(2).pow(40)).plus(entryIndex).toString()
+                    contract.methods.xfLobbyEntry(address, entryId)
+                    .call({from: address}, (err, entry) => {
+                        let newEntry = [ ]
+                        if (err) {
+                            debug('getDayEntries:: WARNING: day %d, entryId:%s : %s', day, entryId, err)
+                        } else {
+                            newEntry = {
+                                rawAmount: BigNumber(entry.rawAmount),
+                                referrerAddr: entry.referrerAddr,
+                            }
+                        }
+                        entries = entries.concat(newEntry)
+
+
+                        if (entries.length == tailIndex) {
+                            debug('day %d => ENTRIES: ', day, entries, entries.length, tailIndex)
+                            if (headIndex <= entryIndex) {
+                                this.setState({ 
+                                    unmintedEntries: this.state.unmintedEntries.concat({ day, entries})
+                                })
+                            }
+                            resolveEntries(entries)
                         }
                     })
-                    resolveEntries(entries)
-                })
-                .catch(e => reject(e))
+                }
             })
+            .catch(e => debug('getDayEntries:: ERROR: ', e))
        })
+    }
+
+    calcEntryTotals = (entries, availableHEX=null, totalETH=null) => {
+        let rawEntriesTotal = BigNumber(0)
+        let entriesTotal = BigNumber(0)
+        let mintedHEXTotal = BigNumber(0)
+        let potentialHEXTotal = BigNumber(0)
+        entries && entries.forEach(entry => { 
+            let amount = entry.rawAmount
+            rawEntriesTotal = rawEntriesTotal.plus(amount)
+            if (entry.referrerAddr.slice(0, 2) === '0x') {
+                amount = amount.times(1.10)
+                if (entry.referrerAddr.toLowerCase() === this.props.wallet.address.toLowerCase())
+                    amount = amount.times(1.20) // clever person in the house! :p
+            }
+            entriesTotal = entriesTotal.plus(amount)
+            if (entry.mintedHEX) mintedHEXTotal = mintedHEXTotal.plus(entry.mintedHEX)
+        })
+        if (availableHEX !== null && totalETH !== null) {
+            potentialHEXTotal = entriesTotal.div(totalETH).times(availableHEX)
+        }
+        return {
+            potentialHEXTotal,
+            mintedHEXTotal,
+            rawEntriesTotal,
+            entriesTotal
+        }
     }
 
     getToday = () => {
         const { contract, wallet } = this.props
         const { currentDay } = this.props.contract.Data
-
         Promise.all([
             contract.methods.xfLobby(currentDay).call(),            // [0] global ETH entered today (total pending)
             this.getDayEntries(currentDay, wallet.address),         // [1] our ETH entries for current day (total no. pending)
@@ -86,30 +121,22 @@ class Lobby extends React.Component {
             const todayYourEntries = results[1]
             const totalUnclaimedSatoshis = contract.Data.globals.claimStats.unclaimedSatoshisTotal
             const todayAvailableHEX = totalUnclaimedSatoshis.div(350).times(HEX.HEARTS_PER_SATOSHI) 
-
-            let todayYourEntriesRawTotal = BigNumber(0)
-            let todayYourEntriesTotal = BigNumber(0)
-            todayYourEntries && todayYourEntries.forEach(entry => { 
-                let amount = entry.rawAmount
-                todayYourEntriesRawTotal = todayYourEntriesRawTotal.plus(amount)
-                if (entry.referrerAddr.slice(0, 2) === '0x') {
-                    amount = amount.times(1.10)
-                    if (entry.referrerAddr.toLowerCase() === this.props.wallet.address.toLowerCase())
-                        amount = amount.times(1.20) // clever person in the house! :p
-                }
-                todayYourEntriesTotal = todayYourEntriesTotal.plus(amount)
-            })
-            const HEXperETH = todayAvailableHEX.div(todayPendingETH)
+            const { 
+                rawEntriesTotal:todayYourEntriesRawTotal, 
+                entriesTotal:todayYourEntriesTotal
+            } = this.calcEntryTotals(todayYourEntries)
+            const HEXperETH = todayAvailableHEX.div(todayPendingETH.div(1e18))
             const todayYourHEXPending = todayYourEntriesTotal.div(todayPendingETH).times(todayAvailableHEX)
     
             this.setState({
                 todayPendingETH,
                 todayAvailableHEX,
-                HEXperETH: HEXperETH.times(1e8),
+                HEXperETH: HEXperETH,
                 todayYourHEXPending,
                 todayYourEntriesRawTotal
             })
         })
+        .catch(e => debug('getToday:: ERROR: ', e))
     }
 
     getHistory = () => {
@@ -120,16 +147,15 @@ class Lobby extends React.Component {
         Promise.all([
             contract.methods.dailyDataRange(0, dailyDataCount).call(),  // [0] for unclaimedSatoshisTotal from each day in range
             contract.methods.xfLobbyRange(0, dailyDataCount).call(),    // [1] total ETH from each day in range
-            contract.methods.xfLobbyPendingDays(wallet.address).call(), // [2] bit vector of days; 1 == we have entires that day
+            this.getPastLobbyEntries(),                                 // [2] lobby entries history from XfLobbyEnter/Exit event log
+            contract.methods.xfLobbyPendingDays(wallet.address).call(), // [3] bit vector of days; 1 == we have entires that day
         ]).then(results => {
             const lobbyDailyData        = results[0]
             const lobbyDailyETH         = results[1]
-            const totalUnclaimedSatoshis = contract.Data.globals.claimStats.unclaimedSatoshisTotal
-            const lobbyTodayAvailableHEX = totalUnclaimedSatoshis.div(350).times(HEX.HEARTS_PER_SATOSHI) 
-
-            const hasEntryThisDay = new BitSet(
-                BigNumber(results[2][1]).toString(2) +
-                BigNumber(results[2][0]).toString(2)
+            const pastEntries           = results[2]
+            const hasPendingEntryThisDay = new BitSet(
+                BigNumber(results[3][1]).toString(2) +
+                BigNumber(results[3][0]).toString(2)
             )
 
             new Promise((resolveLobby, reject) => {
@@ -138,15 +164,18 @@ class Lobby extends React.Component {
                         const hexa = BigNumber(mappedDayData).toString(16).padStart(64, '0')
                         const unclaimedSatoshisTotal = BigNumber(hexa.slice(12,28), 16)
                         const availableHEX = (day === 0) ? BigNumber(1e13) : unclaimedSatoshisTotal.div(350).times(HEX.HEARTS_PER_SATOSHI)
-                        const totalETH = lobbyDailyETH[day]
+                        const totalETH = BigNumber(lobbyDailyETH[day])
+                        const HEXperETH = availableHEX.div(totalETH.div(1e18))
 
-                        if (hasEntryThisDay.get(day)) {
+                        if (hasPendingEntryThisDay.get(day)) {
                             this.getDayEntries(day, wallet.address).then(entries => {
+                                const { rawEntriesTotal, entriesTotal } = this.calcEntryTotals(entries)
                                 resolveDay({
                                     day,
                                     availableHEX,
                                     totalETH,
-                                    entries
+                                    entries,
+                                    HEXperETH: HEXperETH,
                                 })
                             })
                             .catch(e => reject(e))
@@ -155,7 +184,8 @@ class Lobby extends React.Component {
                                 day,
                                 availableHEX,
                                 totalETH,
-                                entries: null
+                                entries: null,
+                                HEXperETH: HEXperETH,
                             })
                         }
                     })
@@ -168,10 +198,53 @@ class Lobby extends React.Component {
                 this.setState({
                     dailyDataCount,
                     lobbyData,
+                    pastEntries,
                     historyDataReady: true
                 })
             })
             .catch(e => { this.setState({ error: e }) })
+        })
+    }
+
+    getPastLobbyEntries = () => {
+        return new Promise((resolvePastEntries, reject) => {
+            const { contract, wallet } = this.props
+            let entries = { }
+            contract.getPastEvents('XfLobbyEnter',{ 
+                fromBlock: 'earliest', 
+                filter: { memberAddr: wallet.address }
+            }).then(results => {
+                let dayEntries = [ ]
+                results.forEach(d => {
+                    const r = d.returnValues
+                    const day = BigNumber(r.entryId).idiv(BigNumber(2).pow(40)).toString()
+                    const entryNum = BigNumber(r.entryId).mod(BigNumber(2).pow(40)).toNumber()
+                    const entriesCopy = { ...entries }
+                    const dayEntriesCopy = entriesCopy[day] ? [ ...entriesCopy[day] ] : [ ]
+                    dayEntriesCopy[entryNum] = { 
+                        rawAmount: BigNumber(r.data0).idiv(BigNumber(2).pow(40)),
+                        referrerAddr: r.referrerAddr 
+                    }
+                    entriesCopy[day] = dayEntriesCopy
+                    entries = entriesCopy 
+                })
+                contract.getPastEvents('XfLobbyExit',{ 
+                    fromBlock: 'earliest', 
+                    filter: { memberAddr: wallet.address }
+                }).then(results => {
+                    results.forEach(d => {
+                        const r = d.returnValues
+                        const day = BigNumber(r.entryId).idiv(BigNumber(2).pow(40)).toString()
+                        const entryNum = BigNumber(r.entryId).mod(BigNumber(2).pow(40)).toNumber()
+                        const entriesCopy = { ...entries }
+                        let dayEntriesCopy = entriesCopy[day] ? [ ...entriesCopy[day] ] : [ ]
+                        dayEntriesCopy[entryNum].mintedHEX = BigNumber(r.data0).idiv(BigNumber(2).pow(40))
+                        entriesCopy[day] = dayEntriesCopy
+                        entries = entriesCopy
+                    })
+                    resolvePastEntries(entries)
+                })
+            })
         })
     }
 
@@ -222,55 +295,53 @@ class Lobby extends React.Component {
 
         const LobbyDays = () => {
             if (!this.state.historyDataReady) {
-                if (this.state.error)
+                if (this.state.error) {
+                    debug('ERROR: ', this.state.error)
                     return ( <div className="text-center">error :/</div> )
-                else
+                } else 
                     return ( <div className="text-center">loading ...</div> )
             }
 
             const lobbyData = [...this.state.lobbyData].reverse()
             return (
-                <>
+                <Container>
+                    <p className="text-center">
+                        <b><span className="d-none d-sm-inline">Complete </span>
+                        Transform History to Date</b>
+                    </p>
                     <Row key="header" className="py-0 mx-0 xs-small xxs-small align-items-end">
-                        <Col xs={2} sm={1} className="pl-1 pr-1"><a href="#sort_day">Day</a></Col>
-                        <Col xs={3} sm={2} className="pr-1"><a href="#sort_available">Available</a></Col>
+                        <Col xs={1} sm={1} className="p-0"><a href="#sort_day">Day</a></Col>
+                        <Col xs={3} sm={2} className="p-0"><a href="#sort_available">Available</a></Col>
 
-                        <Col        sm={2} className="pr-1 d-none d-sm-inline"><a href="#sort_eth">ETH</a></Col>
-                        <Col        sm={2} className="pr-1 d-none d-sm-inline"><a href="#sort_available">HEX/ETH</a></Col>
+                        <Col        sm={2} className="px-0 d-none d-sm-inline"><a href="#sort_eth">ETH</a></Col>
+                        <Col        sm={2} className="px-0 d-none d-sm-inline"><a href="#sort_available">HEX/ETH</a></Col>
 
-                        <Col xs={3} sm={2} className="pr-1"><a href="#sort_available">Your HEX</a></Col>        
-                        <Col xs={3} sm={2} className="pr-1"><a href="#sort_youreth">Your ETH</a></Col>
+                        <Col xs={4} sm={2} className="p-0"><a href="#sort_available">Your HEX</a></Col>        
+                        <Col xs={4} sm={2} className="p-0"><a href="#sort_youreth">Your ETH</a></Col>
                     </Row>
                     { lobbyData.map(dayData => { 
-                        const { day, availableHEX, totalETH, entries } = dayData
-                        let entriesRawTotal = BigNumber(0)
-                        let entriesTotal = BigNumber(0)
-                        entries && entries.forEach(entry => { 
-                            let amount = entry.rawAmount
-                            entriesRawTotal = entriesTotal.plus(amount)
-                            if (entry.referrerAddr.slice(0,2) === '0x') {
-                                amount = amount.times(1.10)
-                                if (entry.referrerAddr.toLowerCase() === this.props.wallet.address.toLowerCase())
-                                    amount = amount.times(1.20)
-                            }
-                            entriesTotal = entriesTotal.plus(amount)
-                        })
-                        const HEXperETH = 0
-                        const yourHEX = 0 
+                        const { day, availableHEX, totalETH, entries, HEXperETH } = dayData
+
+                        const {
+                            mintedHEXTotal,
+                            rawEntriesTotal,
+                            entriesTotal
+                        } = this.calcEntryTotals(this.state.pastEntries[day])
+
                         return (
-                            <Row key={day} className="py-0 mx-0 xs-small xxs-small">
-                                <Col xs={2} sm={1} className="pl-1 pr-1">{day+1}</Col>
-                                <Col xs={3} sm={2} className="pr-1"><CryptoVal value={BigNumber(availableHEX)} /></Col>
+                            <Row key={day} className={"py-0 mx-0 xs-small xxs-small"+(rawEntriesTotal.gt(0) ? " text-success" : "")}>
+                                <Col xs={1} sm={1} className="px-0">{day+1}</Col>
+                                <Col xs={3} sm={2} className="px-0"><CryptoVal value={availableHEX} /></Col>
 
-                                <Col        sm={2} className="pr-1 d-none d-sm-inline"><CryptoVal value={BigNumber(totalETH)} currency="ETH" /></Col>
-                                <Col        sm={2} className="pr-1 d-none d-sm-inline"><CryptoVal value={BigNumber(HEXperETH)} /></Col>
+                                <Col        sm={2} className="px-0 d-none d-sm-inline"><CryptoVal value={totalETH} currency="ETH" /></Col>
+                                <Col        sm={2} className="px-0 d-none d-sm-inline"><CryptoVal value={HEXperETH} /></Col>
 
-                                <Col xs={3} sm={2} className="pr-1"><CryptoVal value={BigNumber(yourHEX)} /></Col>
-                                <Col xs={3} sm={2} className="pr-1"><CryptoVal value={BigNumber(entriesRawTotal)} currency="ETH" /></Col>
+                                <Col xs={4} sm={2} className="px-0"><CryptoVal value={mintedHEXTotal} showUnit/></Col>
+                                <Col xs={4} sm={2} className="px-0"><CryptoVal value={rawEntriesTotal} currency="ETH" showUnit /></Col>
                             </Row>
                         )
                     }) }
-                </>
+                </Container>
             )
         }
 
@@ -394,31 +465,41 @@ class Lobby extends React.Component {
                                 </Col>
                             </Row>
                         </Form>
-                        { this.state.unmintedEntries.length && 
-                        <Container className="bg-dark text-center rounded p-3" style={{ width: "340px" }}>
-                            <p>Previous entries awaiting minting</p>
-                            {this.state.unmintedEntries.map(entry => {
+                        {this.state.historyDataReady === true && this.state.unmintedEntries.length > 0 && 
+                        <Container className="p-3 text-center">
+                            <h5>Mint closed day HEX ...</h5>
+                            {this.state.unmintedEntries.map(data => {
+                                const { day, entries } = data
+                                const { availableHEX, totalETH } = this.state.lobbyData[day]
+                                const {
+                                    potentialHEXTotal,
+                                    rawEntriesTotal,
+                                    entriesTotal
+                                } = this.calcEntryTotals(
+                                    this.state.pastEntries[day],
+                                    availableHEX,
+                                    totalETH
+                                )
+
                                 return (
-                                    <div className="text-center m-2">
+                                    <div className="text-center m-2" key={day}>
                                         <VoodooButton 
                                             contract={this.props.contract}
                                             method="xfLobbyExit" 
-                                            params={[entry.day, 0]}
+                                            params={[day, 0]}
                                             options={{ from: this.props.wallet.address }}
                                             confirmationCallback={this.resetFormAndReload}
                                             variant="lobby btn-mint"
-                                            className="text-right"
-                                            style={{ minWidth: "7em"}}
+                                            className="text-center"
                                         >
                                             <span className="text-info text-normal">
-                                                <small>day {entry.day+1}<sup>({entry.count})</sup></small>
+                                                <small>day {day+1}<sup>({entries.length} entries)</sup></small>
                                             </span>{' '}
-                                            MINT
+                                            MINT&nbsp;<CryptoVal value={potentialHEXTotal} showUnit />
                                         </VoodooButton>
                                     </div>
                                 )
-                            })
-                        }
+                            })}
                         </Container>
                         }
                 </> }

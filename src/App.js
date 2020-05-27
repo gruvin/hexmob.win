@@ -164,6 +164,10 @@ class App extends React.Component {
         debug('web3 provider established')
 
         if (!this.web3) this.web3 = await new Web3(this.provider)
+
+        // ref: https://soliditydeveloper.com/web3-1-2-5-revert-reason-strings
+        if (this.web3.eth.hasOwnProperty('handleRevert'))  this.web3.eth.handleRevert = true 
+        
         debug('web3 provider connected')
 
         window._P = this.provider // DEBUG remove me

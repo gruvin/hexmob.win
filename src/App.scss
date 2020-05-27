@@ -16,11 +16,14 @@
     and (device-height: 896px) 
     and (-webkit-device-pixel-ratio: 3) { }
 
+@media (max-width: 414px){
+    .xs-small { font-size: 0.90em }
+}
 @media (max-width: 400px){
-    .xs-small { font-size: 0.85em }
+    .xs-small { font-size: 0.80em }
 }
 @media (max-width: 320px){
-    .xxs-small { font-size: 0.77em }
+    .xxs-small { font-size: 0.67em }
 }
 @import url('https://fonts.googleapis.com/css2?family=Happy+Monkey&family=Jura:wght@500;700&family=Press+Start+2P&family=Titillium+Web:wght@400;700&family=Nosifer&display=swap');
 
@@ -129,7 +132,7 @@ button#connect_wallet {
 }
 button#connect_wallet:hover { border-style: inset; border-color: #fec}
 
-.numeric { font-family: Jura, "Courier New", monospace; display: inline-block; }
+.numeric { font-family: Jura, "Courier New", monospace; display: inline; }
 .day-number {
     font-family: Jura, 'Courier New', monospace;
     color: map-get($theme-colors, secondary);
