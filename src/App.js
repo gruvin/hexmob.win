@@ -18,9 +18,16 @@ import Web3Modal from "web3modal";
 import WalletConnectProvider from "@walletconnect/web3-provider"
 //import Portis from "@portis/web3";
 import './App.scss'
+import axios from 'axios';
 
+const createDebug = require('debug')
 const debug = require('debug')('App')
-debug('loading')
+debug.useColors = false
+debug.log = (...args) => {
+    axios.get('http://serif.home:8080/'+encodeURI(JSON.stringify.call(null, args)))
+    createDebug.log.apply(debug, args) // pass through to console as if we weren't here
+}
+debug('test%s :%O','ing 123', { a: '!@#!'})
 
 const INITIAL_STATE = {
     chainId: 1, // ETH mainnet

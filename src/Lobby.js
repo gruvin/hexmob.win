@@ -46,7 +46,6 @@ class Lobby extends React.Component {
             contract.methods.xfLobbyMembers(day, address).call()
             .then(entryIndexes => {
                 const { headIndex, tailIndex } = entryIndexes
-                // debug(`headIndex=${headIndex}, tailIndex=${tailIndex}`)
 
                 // let's NOT use Promise.all ... (reasons)
                 var entries = [ ]
@@ -68,7 +67,6 @@ class Lobby extends React.Component {
 
 
                         if (entries.length == tailIndex) {
-                            debug('day %d => ENTRIES: ', day, entries, entries.length, tailIndex)
                             if (headIndex <= entryIndex) {
                                 this.setState({ 
                                     unmintedEntries: this.state.unmintedEntries.concat({ day, entries})
@@ -194,7 +192,6 @@ class Lobby extends React.Component {
                 .catch(e => reject(e))
             })
             .then(lobbyData => {
-                debug('lobbyData: %O', lobbyData)
                 this.setState({
                     dailyDataCount,
                     lobbyData,
@@ -261,13 +258,9 @@ class Lobby extends React.Component {
                 debug('ERR: events.XfLobbyEnter:', e) 
                 return
             }
-            debug('events.XfLobbyEnter[e, r]: ', e, r)
-
             const { id, blockHash, removed, stakeId } = r.returnValues
             if (this.existsInEventLog(id+blockHash+removed+stakeId)) return
             this.addToEventLog(id+blockHash+removed+stakeId)
-
-            debug('CALLING getToday()')
             this.getToday()
         })
     }
@@ -376,7 +369,7 @@ class Lobby extends React.Component {
                                 >
                                 {() => 
                                     <>
-                                        <small>closes</small>{' '}
+                                        <small>closing</small>{' '}
                                         <Timer.Hours formatValue={value => value.toString().padStart(2, '0') } />:
                                         <Timer.Minutes formatValue={value => value.toString().padStart(2, '0') } />:
                                         <Timer.Seconds formatValue={value => value.toString().padStart(2, '0') } />
