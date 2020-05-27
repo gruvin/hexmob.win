@@ -19,7 +19,7 @@ import WalletConnectProvider from "@walletconnect/web3-provider"
 //import Portis from "@portis/web3";
 import './App.scss'
 const debug = require('debug')('App')
-if (process.env.NODE_ENV === 'development') {
+if (process.env.NODE_ENV === 'development' && process.env.REACT_APP_REMOTE_LOGGING) {
     const axios = require('axios');
     window.localStorage.setItem('debug', '*')
     const createDebug = require('debug')
@@ -465,7 +465,7 @@ class App extends React.Component {
                 <Container id="hexmob_header" fluid>
                     <h1>HEX<span>mobile</span></h1>
                     <h2>...stake on the run</h2>
-                    <h3>Open BETA <span>USE AT YOUR OWN RISK</span></h3>
+                    <h3>Open BETA <span>{process.env.REACT_APP_HEXMOB_VERSION}</span></h3>
                 </Container>
                 <Container id="hexmob_body" fluid className="p-1">
                     <Container className="p-1">

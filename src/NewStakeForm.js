@@ -191,12 +191,13 @@ export class NewStakeForm extends React.Component {
         return (
             <Form>
                 <Row>
-                    <Col xs={12} sm={5} className="mb-3">
-                        <Form.Group controlId="stake_amount">
-                            <Form.Label className="w-100 my-0">
+                    <Col xs={12} sm={5}>
+                    <Container>
+                        <Form.Group controlId="stake_amount" className="mt-3">
+                            <Form.Label className="w-100 mb-0">
                                 Stake Amount in HEX
                             </Form.Label> 
-                            <InputGroup className="p-1 col-7 col-sm-10">
+                            <InputGroup className="p-1 col-8 col-sm-10">
                                 <FormControl
                                     type="number"
                                     value={this.state.stakeAmount}
@@ -228,7 +229,7 @@ export class NewStakeForm extends React.Component {
                         </Form.Group>
                         <Form.Group controlId="stake_days" className="mb-0">
                             <Form.Label>Stake Length in Days</Form.Label>
-                            <InputGroup className="p-1 col-5 col-sm-9">
+                            <InputGroup className="p-1 col-7 col-sm-9">
                                 <FormControl
                                     type="number"
                                     placeholder="min one day" 
@@ -262,7 +263,7 @@ export class NewStakeForm extends React.Component {
                             </Form.Text>
                         </Form.Group>
                         <Row>
-                            <Col className='text-center'>
+                            <Col className='text-right mr-3 pr-3'>
                                 <VoodooButton 
                                     contract={this.props.contract}
                                     method="stakeStart" 
@@ -276,6 +277,7 @@ export class NewStakeForm extends React.Component {
                                 </VoodooButton>
                             </Col>
                         </Row>
+                    </Container>
                     </Col>
                     <Col xs={12} sm={7}>
                         <Container>
