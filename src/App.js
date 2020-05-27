@@ -1,7 +1,7 @@
 import React from 'react'
 import { BigNumber } from 'bignumber.js'
-import { CryptoVal } from './Widgets'
-import { Container,
+import { 
+    Container,
     Card,
     Row,
     Col,
@@ -14,19 +14,21 @@ import Stakes from './Stakes'
 import Lobby from './Lobby'
 import HEX from './hex_contract'
 import Web3 from "web3";
-import Web3Modal from "web3modal";
+import Web3Modal, { getProviderInfo } from "web3modal";
 import WalletConnectProvider from "@walletconnect/web3-provider"
-//import Portis from "@portis/web3";
+import Portis from "@portis/web3";
 import './App.scss'
 const debug = require('debug')('App')
-if (process.env.NODE_ENV === 'development' && process.env.REACT_APP_REMOTE_LOGGING) {
-    const axios = require('axios');
+if (process.env.REACT_APP_NODE_ENV === 'development') {
     window.localStorage.setItem('debug', '*')
-    const createDebug = require('debug')
-    debug.useColors = false
-    debug.log = (...args) => {
-        axios.get('http://serif.home:8080/'+encodeURI(JSON.stringify.call(null, args)))
-        createDebug.log.apply(debug, args) // pass through to console as if we weren't here
+    if (process.env.REACT_APP_REMOTE_LOGGING) {
+        const axios = require('axios');
+        const createDebug = require('debug')
+        debug.useColors = false
+        debug.log = (...args) => {
+            axios.get('http://serif.home:8080/'+encodeURI(JSON.stringify.call(null, args)))
+            createDebug.log.apply(debug, args) // pass through to console as if we weren't here
+        }
     }
 } else {
     window.localStorage.removeItem('debug')
@@ -34,6 +36,7 @@ if (process.env.NODE_ENV === 'development' && process.env.REACT_APP_REMOTE_LOGGI
 
 const INITIAL_STATE = {
     chainId: 1, // ETH mainnet
+    currentProvider: '---',
     walletConnected: false,
     wallet: {
         address: '',
@@ -164,14 +167,18 @@ class App extends React.Component {
                     0uc4
                 */
                 this.provider = new window.Trust(mainnet)
+                this.setState({ currentProvider: 'TrustWallet' })
             } else {
+                this.setState({ currentProvider: 'web3modal' })
                 return this.connectWeb3ModalWallet()
             }
         }
         if (!this.provider) return // User will need to click the button to connect again
-        this.provider.enable()
+
+        // this.provider.enable()
         
         debug('web3 provider established')
+
 
         if (!this.web3) this.web3 = await new Web3(this.provider)
 
@@ -186,7 +193,7 @@ class App extends React.Component {
         var address
         if (this.provider.isMetaMask) {
             debug('MetaMask detected')
-            // UGLY: MetaMask takes time to srot itself out 
+            // UGLY: MetaMask takes time to sort itself out 
             address = await new Promise((resolve, reject) => {
                 let retries = 10
                 let timer = setInterval(() => {
@@ -217,8 +224,8 @@ class App extends React.Component {
 
         await this.setState({ 
             wallet: { ...this.state.wallet, address },
-            walletConnected: true }
-        )
+            walletConnected: true 
+        })
         // WARNING: do not move this to before address establishment, because race conditionsi re MM selectedAddress
         try {
             this.contract = new this.web3.eth.Contract(HEX.ABI, HEX.ContractAddress)
@@ -281,6 +288,8 @@ class App extends React.Component {
         await this.unsubscribeEvents()
         await this.web3Modal.clearCachedProvider()
         await this.setState({ ...INITIAL_STATE })
+        this.provider = null
+        this.web3 = null
         window.location.reload()
     }
 
@@ -292,52 +301,54 @@ class App extends React.Component {
                     infuraId: process.env.REACT_APP_INFURA_ID // required
                 }
             },
-//            portis: {
-//                package: Portis, // required
-//                options: {
-//                    id: process.env.REACT_APP_PORTIS_ID // required
-//                }
-//            }
+            portis: {
+                package: Portis, // required
+                options: {
+                    id: process.env.REACT_APP_PORTIS_ID // required
+                }
+            }
         }
         return providerOptions
     }
 
     connectWeb3ModalWallet = async (reset) => {
+        if (reset) {
+            await this.web3Modal.clearCachedProvider()
+            this.web3 = null
+        }
         this.web3Modal = new Web3Modal({
             network: "mainnet",                         // optional
-            cacheProvider: true,                        // optional
+            cacheProvider: false,                        // optional
             providerOptions: this.getProviderOptions()  // required
         });
-        if (reset) await this.web3Modal.clearCachedProvider()
         this.provider = null
-        while (this.provider === null) {
-            this.provider = await this.web3Modal.connect()
-            .catch(() => {
-                debug('web3 provider connection cancelled')
-            })
+        this.provider = await this.web3Modal.connect()
+        if (this.provider) {
+            this.setState({ currentProvider: getProviderInfo(this.provider).name })
+            this.componentDidMount()
         }
-        if (this.provider) this.componentDidMount()
     }
 
     disconnectWallet = async () => {
-        const provider = this.web3 || null
+        const provider = this.provider || null
         if (provider && provider.close) {
             await this.unsubscribeEvents()
             await this.web3Modal.clearCachedProvider()
-            provider.close()
+            await this.provider.close()
         } else {
             this.resetApp()
         }
     }
 
     WalletStatus = () => {
-        const { address, balance } = this.state.wallet
+        const { address } = this.state.wallet
         const addressFragment = address && address !== ''
             ? address.slice(0,6)+'...'+address.slice(-4) : 'unknown'
         return (
             <Container id="wallet_status" fluid>
             <Row>
                 <Col><Badge variant="success" className="small">mainnet</Badge></Col>
+                <Col className="text-light text-center">{this.state.currentProvider}</Col>
                 <Col className="text-right">
                     <Badge className="text-info">{ addressFragment }</Badge>
                 </Col>

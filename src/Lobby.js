@@ -41,7 +41,6 @@ class Lobby extends React.Component {
     
     getDayEntries = (day, address) => {
         const { contract } = this.props
-        const { currentDay } = this.props.contract.Data
         return new Promise((resolveEntries, reject) => {
             contract.methods.xfLobbyMembers(day, address).call()
             .then(entryIndexes => {
@@ -52,8 +51,8 @@ class Lobby extends React.Component {
                 if (Number(tailIndex) === 0) return resolveEntries(entries)
                 for (let entryIndex = 0; entryIndex < tailIndex; entryIndex++) {
                     const entryId = BigNumber(day).times(BigNumber(2).pow(40)).plus(entryIndex).toString()
-                    contract.methods.xfLobbyEntry(address, entryId)
-                    .call({from: address}, (err, entry) => {
+                    // eslint-disable-next-line
+                    contract.methods.xfLobbyEntry(address, entryId).call({from: address}, (err, entry) => {
                         let newEntry = [ ]
                         if (err) {
                             debug('getDayEntries:: WARNING: day %d, entryId:%s : %s', day, entryId, err)
@@ -66,7 +65,7 @@ class Lobby extends React.Component {
                         entries = entries.concat(newEntry)
 
 
-                        if (entries.length == tailIndex) {
+                        if (entries.length === Number(tailIndex)) {
                             if (headIndex <= entryIndex) {
                                 this.setState({ 
                                     unmintedEntries: this.state.unmintedEntries.concat({ day, entries})
@@ -167,7 +166,6 @@ class Lobby extends React.Component {
 
                         if (hasPendingEntryThisDay.get(day)) {
                             this.getDayEntries(day, wallet.address).then(entries => {
-                                const { rawEntriesTotal, entriesTotal } = this.calcEntryTotals(entries)
                                 resolveDay({
                                     day,
                                     availableHEX,
@@ -211,7 +209,6 @@ class Lobby extends React.Component {
                 fromBlock: 'earliest', 
                 filter: { memberAddr: wallet.address }
             }).then(results => {
-                let dayEntries = [ ]
                 results.forEach(d => {
                     const r = d.returnValues
                     const day = BigNumber(r.entryId).idiv(BigNumber(2).pow(40)).toString()
@@ -313,12 +310,11 @@ class Lobby extends React.Component {
                         <Col xs={4} sm={2} className="p-0"><a href="#sort_youreth">Your ETH</a></Col>
                     </Row>
                     { lobbyData.map(dayData => { 
-                        const { day, availableHEX, totalETH, entries, HEXperETH } = dayData
+                        const { day, availableHEX, totalETH, HEXperETH } = dayData
 
                         const {
                             mintedHEXTotal,
                             rawEntriesTotal,
-                            entriesTotal
                         } = this.calcEntryTotals(this.state.pastEntries[day])
 
                         return (
@@ -339,11 +335,6 @@ class Lobby extends React.Component {
         }
 
         const HeaderDetail = () => {
-            const { 
-                lobbyTodayAvailableHEX,
-                lobbyTodayPendingETH,
-                lobbyTodayYourEntries
-            } = this.state
             const epocHour = new Date(HEX.START_DATE).getUTCHours() // should convert to local time
             const now = new Date(Date.now())
             const nextEpoc = new Date(now)
@@ -465,9 +456,7 @@ class Lobby extends React.Component {
                                 const { day, entries } = data
                                 const { availableHEX, totalETH } = this.state.lobbyData[day]
                                 const {
-                                    potentialHEXTotal,
-                                    rawEntriesTotal,
-                                    entriesTotal
+                                    potentialHEXTotal
                                 } = this.calcEntryTotals(
                                     this.state.pastEntries[day],
                                     availableHEX,
