@@ -34,10 +34,10 @@
     "web3modal": "^1.6.3"
   },
   "scripts": {
-    "start": "react-scripts start",
-    "build": "react-scripts build",
-    "serve": "serve -s -p 5001 build",
-    "test": "react-scripts test",
+    "start": "source LOAD_ENV && react-scripts start",
+    "build": "source LOAD_ENV && react-scripts build",
+    "serve": "source LOAD_ENV && serve -s -p 5001 build",
+    "test": "source LOAD_ENV && react-scripts test",
     "eject": "react-scripts eject"
   },
   "eslintConfig": {
