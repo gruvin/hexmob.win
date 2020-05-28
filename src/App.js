@@ -16,7 +16,7 @@ import HEX from './hex_contract'
 import Web3 from "web3";
 import Web3Modal, { getProviderInfo } from "web3modal";
 import WalletConnectProvider from "@walletconnect/web3-provider"
-import Portis from "@portis/web3";
+//import Portis from "@portis/web3";
 import './App.scss'
 const debug = require('debug')('App')
 if (process.env.REACT_APP_NODE_ENV === 'development') {
@@ -304,12 +304,12 @@ class App extends React.Component {
                     infuraId: process.env.REACT_APP_INFURA_ID // required
                 }
             },
-            portis: {
-                package: Portis, // required
-                options: {
-                    id: process.env.REACT_APP_PORTIS_ID // required
-                }
-            }
+//            portis: {
+//                package: Portis, // required
+//                options: {
+//                    id: process.env.REACT_APP_PORTIS_ID // required
+//                }
+//            }
         }
         return providerOptions
     }
@@ -322,7 +322,7 @@ class App extends React.Component {
         }
         this.web3Modal = new Web3Modal({
             network: "mainnet",                         // optional
-            cacheProvider: false,                        // optional
+            cacheProvider: true,                        // optional
             providerOptions: this.getProviderOptions()  // required
         });
         this.provider = await this.web3Modal.connect()
