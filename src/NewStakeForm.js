@@ -197,7 +197,7 @@ export class NewStakeForm extends React.Component {
                             <Form.Label className="w-100 mb-0">
                                 Stake Amount in HEX
                             </Form.Label> 
-                            <InputGroup className="p-1 col-8 col-sm-10">
+                            <InputGroup className="p-1 col-8 col-sm-12">
                                 <FormControl
                                     type="number"
                                     value={this.state.stakeAmount}
@@ -229,7 +229,7 @@ export class NewStakeForm extends React.Component {
                         </Form.Group>
                         <Form.Group controlId="stake_days" className="mb-0">
                             <Form.Label>Stake Length in Days</Form.Label>
-                            <InputGroup className="p-1 col-7 col-sm-9">
+                            <InputGroup className="p-1 col-7 col-sm-11">
                                 <FormControl
                                     type="number"
                                     placeholder="min one day" 

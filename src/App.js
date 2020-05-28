@@ -17,6 +17,7 @@ import Web3 from "web3";
 import Web3Modal, { getProviderInfo } from "web3modal";
 import WalletConnectProvider from "@walletconnect/web3-provider"
 //import Portis from "@portis/web3";
+import { detectedTrustWallet } from './util'
 import './App.scss'
 const debug = require('debug')('App')
 if (process.env.REACT_APP_NODE_ENV === 'development') {
@@ -149,7 +150,7 @@ class App extends React.Component {
         debug('process.env: ', process.env)
         if (!this.provider) {
             // check first for Mobile TrustWallet
-            if (window.web3 && window.web3.currentProvider.isTrust) {
+            if (detectedTrustWallet) {
                 const mainnet = {
                     chainId: 1,
                     rpcUrl: `https://mainnet.infura.io/v3/${process.env.REACT_APP_INFURA_ID}`
@@ -213,8 +214,8 @@ class App extends React.Component {
                 }, 100)
             })
             if (!address) throw new Error("MetaMask failed to provide user's selected address")
-        } else if (window.web3 && window.web3.currentProvider.isTrust) {
-            address = this.web3.eth.givenProvider.address
+        } else if (detectedTrustWallet) {
+            address = this.web3.eth.givenProvider.address || 0x7357000000000000000000000000000000000000
             this.provider.setAddress(address)
         } else if (this.provider.isPortis) {
             const accounts = await this.web3.eth.getAccounts()
@@ -373,7 +374,7 @@ class App extends React.Component {
                         <Container fluid className="my-3" id="mobile_trust_wallet">
                             <Row>
                                 <Col className="text-center">
-                                    <h3>It's like <a href="https://go.hex.win?r=0xd30542151ea34007c4c4ba9d653f4dc4707ad2d2">go.hex.win</a> but on your mobile!</h3>
+                                    <h3>like <a href="https://go.hex.win?r=0xd30542151ea34007c4c4ba9d653f4dc4707ad2d2">go.hex.win</a> for your mobile!</h3>
                                     <p><small><small>COMPATIBLE WITH ...</small></small></p>
                                     <p>
                                         <em><Image src="/mm-wordmark.svg" alt="Metamask" height={56} /></em> <em>on</em> <strong>Desktops</strong>
@@ -473,8 +474,6 @@ class App extends React.Component {
     }
 
     render() {
-        // TrustWallet won't follow external links
-        const isTrust = window.web3 && window.web3.currentProvider.isTrust
         return (
             <>
                 <Container id="hexmob_header" fluid>
@@ -502,7 +501,8 @@ class App extends React.Component {
                         }
                     </Container>
 
-                    { !isTrust && 
+                    // TrustWallet won't follow external links
+                    { !detectedTrustWallet && 
                     <>
                         <Container className="p-3 my-3">
                             <Card.Body as={Button} variant="info" className="w-100" style={{ cursor: "pointer" }}
