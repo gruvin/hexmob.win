@@ -1,4 +1,4 @@
-# Developer contact details
+# Developer Contact Details
 ## Contact dev via encrypted email form at https://flowcrypt.com/me/gruvin
 
 #### FlowCrypt™ (gPg)
