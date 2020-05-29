@@ -46,7 +46,33 @@ const cryptoFormat = (v, currency) => {
             else if (v.lt(1e39))    s = format(',.3f')(v.div( 1e36).toFixed(3, 1))+'T' // nnn.nnn T
             else                    s = format(',.0f')(v.div( 1e36).toFixed(0, 1))+'T' // [nnn,...,]nnn,nnn T
             break
-        default:
+        case 'SHARES_PER_HEX':
+            unit = ' /HEX'
+            v = BigNumber(v).times(1e8)
+            if (v.isZero())         s = '0.000'
+            else if (v.lt( 1e3))    s = format(',.3f')(v.toFixed(3))
+            else if (v.lt( 1e6))    s = format(',.3f')(v.div(1e3).toFixed(3, 1))+'K'
+            else if (v.lt( 1e9))    s = format(',.3f')(v.div(1e6).toFixed(3, 1))+'M'
+            else if (v.lt(1e12))    s = format(',.3f')(v.div(1e9).toFixed(3, 1))+'B'
+            else                    s = format(',.0f')(v.div(1e9).toFixed(0))+'B'
+            break
+        case 'SHARES':
+            unit = ' /HEX'
+            if (v.isZero())         s = '0.000'
+            else if (v.lt( 1e3))    s = format(',.3f')(v.toFixed(3))
+            else if (v.lt( 1e6))    s = format(',.3f')(v.div(1e3).toFixed(3, 1))+'K'
+            else if (v.lt( 1e9))    s = format(',.3f')(v.div(1e6).toFixed(3, 1))+'M'
+            else if (v.lt(1e12))    s = format(',.3f')(v.div(1e9).toFixed(3, 1))+'B'
+            else                    s = format(',.0f')(v.div(1e9).toFixed(0))+'B'
+            break
+        case 'PERCENT': // where 1.0 = 1%
+            unit = '%'
+            v = BigNumber(v)
+            if (v.isZero())         s = '0.000'
+            else if (v.lt( 1e3))    s = format(',.3f')(v.toFixed(3, 1))
+            else                    s = format(',.0f')(v.toFixed(0, 1))
+            break
+        default: // HEX
             if (v.isZero())         s = '0.000'
             else if (v.lt(1e5))     { unit = ' Hearts'; s = format(',.0f')(v.toFixed(0, 1)) }
             else if (v.lt(1e11))    s = format(',')(v.div( 1e08).toFixed(3, 1))

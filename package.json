@@ -88,7 +88,7 @@
     "workbox-webpack-plugin": "4.3.1"
   },
   "scripts": {
-    "start": "source LOAD_ENV && node scripts/start.js",
+    "start": "NODE_ENV='development' source LOAD_ENV && node scripts/start.js",
     "build": "source LOAD_ENV && node scripts/build.js",
     "serve": "source LOAD_ENV && serve -s -p 5001 build",
     "test": "source LOAD_ENV && node scripts/test.js"

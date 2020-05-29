@@ -34,13 +34,13 @@ export class NewStakeForm extends React.Component {
             percentGain: 0.0,
             percentAPY: 0.0,
         }
-        // window._NEW = this // DEBUG remove me
     }
 
     componentDidMount() {
         const _shareRate = this.props.contract.Data.globals.shareRate || 100000
-        const shareRate = BigNumber('100000').div(_shareRate).times(1e8)
+        const shareRate = BigNumber('100000').div(_shareRate)
         this.setState({ shareRate })
+        window._NEW = this // DEBUG remove me
     }
 
     resetForm = () => {
@@ -91,7 +91,7 @@ export class NewStakeForm extends React.Component {
         let bigPayDay = BigNumber(0)
         let percentGain = BigNumber(0)
         let percentAPY = BigNumber(0)
-        if (this.state.endDay-1 > HEX.BIG_PAY_DAY) {
+        if (this.state.endDay > HEX.BIG_PAY_DAY) {
             const { globals } = this.props.contract.Data
             const BPD_sharePool = globals.stakeSharesTotal.plus(stakeShares)
             const bigPaySlice = calcBigPayDaySlice(stakeShares, BPD_sharePool, globals)
@@ -99,8 +99,8 @@ export class NewStakeForm extends React.Component {
             bigPayDay = bigPaySlice.plus(adoptionBonus)
 
             percentGain = stakeAmount.isZero() ? stakeAmount : bigPayDay.div(stakeAmount).times(100)
-            const startDay = this.props.contract.Data.currentDay + 1
-            percentAPY = BigNumber(365).div(HEX.BIG_PAY_DAY - startDay + 1).times(percentGain)
+            const startDay = this.props.contract.Data.currentDay+1
+            percentAPY = BigNumber(365).div(HEX.BIG_PAY_DAY + 1 - startDay).times(percentGain)
         }
 
         this.setState({
@@ -123,8 +123,7 @@ export class NewStakeForm extends React.Component {
 
     render() {
         const { balance } = this.props.wallet
-
-        const currentDay = this.props.contract.Data.currentDay + 1
+        const { currentDay } = this.props.contract.Data
 
         const handleAmountChange = (e) => {
             e.preventDefault()
@@ -138,6 +137,8 @@ export class NewStakeForm extends React.Component {
             const stakeDays = parseInt(e.target.value) || 0
             this.setState({
                 stakeDays: stakeDays > 5555 ? '5555' : stakeDays.toString(),
+                startDay: currentDay+1,
+                endDay: currentDay+1+stakeDays
             }, this.updateFigures)
         }
         
@@ -184,7 +185,7 @@ export class NewStakeForm extends React.Component {
 
             e.target.value = days
             this.setState({ 
-                stakeDays: days.toString()
+                stakeDays: days.toString(),
             }, handleDaysChange(e))
         }
 
@@ -310,8 +311,7 @@ export class NewStakeForm extends React.Component {
                             <Row className="mt-3">
                                 <Col><strong>Share Rate</strong></Col>
                                 <Col className="text-right">
-                                    <CryptoVal value={this.state.shareRate.times(1e8/*fudge non-HEX unit for desired display*/)} />
-                                    {' '}/ HEX
+                                    <CryptoVal value={this.state.shareRate} currency="SHARES_PER_HEX" showUnit />
                                 </Col>
                             </Row>
                             <Row>
@@ -326,7 +326,7 @@ export class NewStakeForm extends React.Component {
                                     </WhatIsThis>{' '}
                                 </Col>
                                 <Col className="text-right">
-                                    <CryptoVal value={this.state.stakeShares.times(1e8/*fudge non-HEX unit for desired display*/)} />
+                                    <CryptoVal value={this.state.stakeShares} currency="SHARES" />
                                 </Col>
                             </Row>
                         </Container>
@@ -350,11 +350,11 @@ export class NewStakeForm extends React.Component {
                             </Row>
                             <Row>
                                 <Col>% Gain<span className="text-info">*</span> </Col>
-                                <Col className="text-right"><CryptoVal value={this.state.percentGain} />%</Col>
+                                <Col className="text-right"><CryptoVal value={this.state.percentGain} currency='PERCENT' />%</Col>
                             </Row>
                             <Row>
                                 <Col>% APY<span className="text-info">*</span></Col>
-                                <Col className="text-right"><CryptoVal value={this.state.percentAPY} />%</Col>
+                                <Col className="text-right"><CryptoVal value={this.state.percentAPY} currency='PERCENT' />%</Col>
                             </Row>
                             <Row>
                                 <Col className="pt-2"><span className="text-info">*</span> <em>If stake still open on BigPayDay</em></Col>
