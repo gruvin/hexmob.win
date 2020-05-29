@@ -20,6 +20,7 @@
     border: 2px map-get($theme-colors, dark) solid; 
 }
 .btn-stake.btn-start:hover:enabled {
+    color: map-get($theme-colors, success); 
     border-color: map-get($theme-colors, success); 
 }
 
@@ -29,6 +30,7 @@
     border: 2px map-get($theme-colors, dark) solid; 
 }
 .btn-lobby.btn-enter:hover:enabled {
+    color: map-get($theme-colors, info); 
     border-color: map-get($theme-colors, info); 
 }
 
@@ -39,6 +41,7 @@
     background-color: map-get($theme-colors, dark); 
 }
 .btn-lobby.btn-mint:hover:enabled {
+    color: map-get($theme-colors, success); 
     border-color: map-get($theme-colors, success); 
 }
 
@@ -48,6 +51,7 @@
     border: 2px map-get($theme-colors, secondary) solid; 
 }
 .btn-exitbtn.pendingexit:hover {
+    color: map-get($theme-colors, info); 
     border-color: map-get($theme-colors, info); 
 }
 
@@ -60,6 +64,7 @@
     border: 2px map-get($theme-colors, secondary) solid; 
 }
 .btn-exitbtn.earlyexit:hover {
+    color: map-get($theme-colors, danger); 
     border-color: map-get($theme-colors, danger); 
 }
 
@@ -69,6 +74,7 @@
     border: 2px map-get($theme-colors, secondary) solid; 
 }
 .btn-exitbtn.midexit:hover {
+    color: map-get($theme-colors, warning); 
     border-color: map-get($theme-colors, warning); 
 }
 
@@ -78,6 +84,7 @@
     border: 2px map-get($theme-colors, secondary) solid; 
 }
 .btn-exitbtn.termexit:hover {
+    color: map-get($theme-colors, success); 
     border-color: map-get($theme-colors, success); 
 }
 
@@ -89,6 +96,7 @@
     background-size: 10px 26px;
 }
 .btn-exitbtn.lateexit:hover {
+    color: map-get($theme-colors, success); 
     border-color: map-get($theme-colors, success); 
 }
 
