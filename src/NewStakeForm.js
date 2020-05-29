@@ -51,8 +51,12 @@ export class NewStakeForm extends React.Component {
     }
 
     updateFigures = () => {
-        const stakeDays = parseInt(this.state.stakeDays) || 0
-        const stakeAmount = BigNumber(this.state.stakeAmount).times(1e8) || BigNumber(0)
+        const { currentDay, globals } = this.props.contract.Data
+
+        let { stakeDays, stakeAmount } = this.state
+        stakeDays = parseInt(this.state.stakeDays) || 0
+        stakeAmount = BigNumber(stakeAmount).times(1e8)
+        if (stakeAmount.isNaN()) stakeAmount = BigNumber(0)
 
         const { LPB_MAX_DAYS, LPB, BPB_MAX_HEARTS, BPB } = HEX
         /*
@@ -82,7 +86,7 @@ export class NewStakeForm extends React.Component {
 
         const bonusTotal = longerPaysBetter.plus(biggerPaysBetter)
         const effectiveHEX = stakeAmount.plus(bonusTotal)
-        const _shareRate = this.props.contract.Data.globals.shareRate || 100000
+        const _shareRate = globals.shareRate || 100000
         const shareRate = BigNumber('100000').div(_shareRate)
         const stakeShares = effectiveHEX.times(shareRate)
 
@@ -92,17 +96,17 @@ export class NewStakeForm extends React.Component {
         let percentGain = BigNumber(0)
         let percentAPY = BigNumber(0)
         if (this.state.endDay > HEX.BIG_PAY_DAY) {
-            const { globals } = this.props.contract.Data
             const BPD_sharePool = globals.stakeSharesTotal.plus(stakeShares)
             const bigPaySlice = calcBigPayDaySlice(stakeShares, BPD_sharePool, globals)
             const adoptionBonus = calcAdoptionBonus(bigPaySlice, globals)
             bigPayDay = bigPaySlice.plus(adoptionBonus)
 
             percentGain = stakeAmount.isZero() ? stakeAmount : bigPayDay.div(stakeAmount).times(100)
-            const startDay = this.props.contract.Data.currentDay+1
+            const startDay = currentDay+1
             percentAPY = BigNumber(365).div(HEX.BIG_PAY_DAY + 1 - startDay).times(percentGain)
         }
 
+        debug('STATE: ', this.state)
         this.setState({
             longerPaysBetter,
             biggerPaysBetter,
