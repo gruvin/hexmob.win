@@ -2,7 +2,7 @@
 ## Secure Communication with the Dev (Bryan aka gruvin)
 Crypto is full of theives and trixters. I recommend sending me any queries via GPG signed and verified email. You can begin that process at my [FlowCrypt™ Encrypted Contact Page](https://flowcrypt.com/me/gruvin). 
 
-At the very least, you'll be able to verify it was really me who replied, thusly ...
+At the very least, you'll be able to verify it was really me who replied, assuming you can use some kind of GPG enabled email client. I use the FlowCrypt™ exension for Gmail.
 
 - Download my GPG Public Key *file* from my [FlowCrypt™ Encrypted Contact Page](https://flowcrypt.com/me/gruvin)
 
