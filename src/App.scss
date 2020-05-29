@@ -67,11 +67,12 @@ body {
     background: rgba(0, 0, 0, 0) url(/favicon-96x96.png) no-repeat top left;
     background-size: auto 30px;
 }
-#hexmob_header h1 span {
+#hexmob_header h1 sup {
     position: relative;
     font-size: 14px;
+    top: -10px;
     margin-left: 0.1em;
-    vertical-align: super;
+    vertical-align: none;
 }
 #hexmob_header h2 {
     position: absolute;

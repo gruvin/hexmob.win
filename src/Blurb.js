@@ -12,7 +12,10 @@ const Blurb = () => {
             <Container fluid className="my-3" id="mobile_trust_wallet">
                 <Row>
                     <Col className="text-center">
-                        <h3>like <a href="https://go.hex.win?r=0xd30542151ea34007c4c4ba9d653f4dc4707ad2d2">go.hex.win</a> but for mobile</h3>
+                        <h1>HEX<sup>mob.win</sup></h1>
+                        <h2>mobile friendly <a href="https://go.hex.win?r=0xd30542151ea34007c4c4ba9d653f4dc4707ad2d2">go.hex.win</a></h2>
+                        <h4>indepependant community dev project.</h4>
+                        <h5>Not endorsed by RH™ (yet :)</h5>
                         <p><small><small>COMPATIBLE WALLETS INCLUDE ...</small></small></p>
                         <p>
                             <Image src="/mm-wordmark.svg" alt="Metamask" height={96} /><em>on</em> <strong>Desktops</strong>
@@ -21,12 +24,12 @@ const Blurb = () => {
                             <Image src="/trustwallet-logo.png" alt="Trust Wallet" height={64} /><em> on </em><strong>Mobile</strong>
                             </p>
                         <p>
-                            HEX<sup>mobile</sup> runs in TrustWallet's built-in dApp browser.
+                            HEX<sup>mob.win</sup> runs in TrustWallet's built-in dApp browser.
                         </p>
                     </Col>
                 </Row>
                 <Row className="h-100">
-                    <Col xs={12} sm={4}>
+                    <Col xs={12} sm={5}>
                     <img className="d-none d-sm-block"
                         style={{ maxWidth: "90%" }}
                         alt="TrustWallet on iPhone11"
@@ -38,7 +41,7 @@ const Blurb = () => {
                         src="/trustwallet-iphone11-cropped.png"
                     />
                     </Col>
-                    <Col xs={12} sm={8} className="py-3 text-center text-sm-left m-auto allign-middle">
+                    <Col xs={12} sm={7} className="py-3 text-center text-sm-left m-auto allign-middle">
                         <h3>Get&nbsp;Trust&nbsp;Wallet</h3>
                         <div>
                             <div className="m-3 d-inline-block">
@@ -75,6 +78,16 @@ const Blurb = () => {
                                 </cite>
                             </footer>
                         </blockquote>
+                        <p>
+                            WalletConnect is integrated into many popular mobie
+                            wallets including 
+                            {' ' }<a href="https://trustwallet.com">TrustWallet</a>, 
+                            {' ' }<a href="https://mobile.metamask.io">Metamask</a>,
+                            {' ' }<a href="https://www.argent.xyz">Argent</a>,
+                            {' ' }<a href="https://atomicwallet.io">Atomic</a>,
+                            {' ' }<a href="https://authereum.org/">Authereum</a>
+                            {' ' }and more.
+                        </p>
                         <hr/>
                     </Col>
                 </Row>

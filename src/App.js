@@ -306,12 +306,12 @@ class App extends React.Component {
                     infuraId: process.env.REACT_APP_INFURA_ID // required
                 }
             },
-//            portis: {
-//                package: Portis, // required
-//                options: {
-//                    id: process.env.REACT_APP_PORTIS_ID // required
-//                }
-//            }
+            // portis: {
+            //     package: Portis, // required
+            //     options: {
+            //         id: process.env.REACT_APP_PORTIS_ID // required
+            //     }
+            // }
         }
         return providerOptions
     }
@@ -392,7 +392,7 @@ class App extends React.Component {
         return (
             <>
                 <Container id="hexmob_header" fluid>
-                    <h1>HEX<span>mobile</span></h1>
+                    <h1>HEX<sup>mob.win</sup></h1>
                     <h2>...stake on the run</h2>
                     <h3>Open BETA <span>{process.env.REACT_APP_HEXMOB_VERSION}</span></h3>
                 </Container>
