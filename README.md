@@ -3,6 +3,21 @@
 
 #### FlowCrypt™ (gPg)
 Public Fingerprint: 036E 2526 A474 0940 E1DF 9195 5751 D33B 09A2 7356
+I use the same key to sign git tags (when I do) example: tag 0.1.4B is signed 
+
+```
+% git tag --verify 0.1.4B
+object 2432833451fa454dd3a51e201cbc65cce6cfcc41
+type commit
+tag 0.1.4B
+tagger Bryan <gruvin@gmail.com> 1590725304 +1200
+
+dev merged to master for public code release
+gpg: Signature made Fri 29 May 16:08:24 2020 NZST
+gpg:                using RSA key 036E2526A4740940E1DF91955751D33B09A27356
+gpg: Good signature from "Bryan Rentoul <gruvin@gmail.com>" [ultimate]
+```
+
 
 ----
 
