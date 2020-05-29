@@ -1,10 +1,19 @@
 # Developer Contact Details
-## Contact dev via encrypted email form at https://flowcrypt.com/me/gruvin
+## Secure Communication with the Dev (
+Crypto is full of theives and trixters. I recommend sending me any queries via GPG signed and verified email. You can begin that process at my [FlowCrypt™ Encrypted Contact Page](https://flowcrypt.com/me/gruvin). 
 
-#### FlowCrypt™ (gPg)
-Public Fingerprint: 036E 2526 A474 0940 E1DF 9195 5751 D33B 09A2 7356
+At the very least, you'll be able to verify it was really me who replied, thusly ...
+
+- Download my GPG Public Key *file* from my [FlowCrypt™ Encrypted Contact Page](https://flowcrypt.com/me/gruvin)
+
 I use the same key to sign git tags (when I do) example: tag 0.2.0B (first open source release) is signed ...
 
+- Import my public key into your GPG keyring ...
+
+```
+% gpg --import 0x8F351354BCBE9993-gruvingmailcom-public-key.asc
+```
+- Now you can see if a git tag is signed by me ...
 ```
 % git tag --verify v0.2.0B
 object a9662f470c35a28b1e3ca6301b08066ae82289ba
