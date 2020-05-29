@@ -1,3 +1,12 @@
+# Developer contact details
+## Contact dev via encrypted email form at https://flowcrypt.com/me/gruvin
+
+#### FlowCrypt™ (gPg)
+Public Fingerprint: 036E 2526 A474 0940 E1DF 9195 5751 D33B 09A2 7356
+
+----
+
+
 This project was bootstrapped with [Create React App](https://github.com/facebook/create-react-app).
 
 ## Available Scripts
