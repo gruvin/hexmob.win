@@ -1,5 +1,5 @@
 # Developer Contact Details
-## Secure Communication with the Dev (
+## Secure Communication with the Dev (Bryan aka gruvin)
 Crypto is full of theives and trixters. I recommend sending me any queries via GPG signed and verified email. You can begin that process at my [FlowCrypt™ Encrypted Contact Page](https://flowcrypt.com/me/gruvin). 
 
 At the very least, you'll be able to verify it was really me who replied, thusly ...
