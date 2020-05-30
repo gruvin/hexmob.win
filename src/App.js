@@ -10,6 +10,7 @@ import {
     ProgressBar,
     Image
 } from 'react-bootstrap'
+import { DebugPanel } from './Widgets'
 import Stakes from './Stakes'
 import Lobby from './Lobby'
 import Blurb from './Blurb' 
@@ -20,21 +21,10 @@ import WalletConnectProvider from "@walletconnect/web3-provider"
 //import Portis from "@portis/web3";
 import { detectedTrustWallet } from './util'
 import './App.scss'
-const debug = require('debug')('App')
-if (process.env.REACT_APP_NODE_ENV === 'development') {
-    console.log('Enabling dev console logging')
-    const createDebug = require('debug')
+const debug = require('./debug')('App')
+if ('development' === process.env.REACT_APP_NODE_ENV) {
     window.localStorage.setItem('debug', '*')
-    if (process.env.REACT_APP_REMOTE_LOGGING === 'yes') {
-        const axios = require('axios');
-        debug.useColors = false
-        debug.log = (...args) => {
-            axios.get('http://serif.home:8080/'+encodeURI(JSON.stringify.call(null, args)))
-            createDebug.log.apply(debug, args) // pass through to console as if we weren't here
-        }
-    }
 } else {
-    console.log('Disabling dev console logging')
     window.localStorage.removeItem('debug')
 }
 
@@ -47,7 +37,8 @@ const INITIAL_STATE = {
         balance: new BigNumber(0)
     },
     contractReady: false,
-    contractGlobals: null
+    contractGlobals: null,
+    debug: [ ]
 }
 
 class App extends React.Component {
@@ -66,7 +57,8 @@ class App extends React.Component {
             incomingReferrer,
             referrer
         }
-        window._APP = this // DEBUG remove me
+        this.debug = [ <p>DEBUG</p> ]
+
     }
 
     subscribeProvider = async (provider) => {
@@ -128,10 +120,10 @@ class App extends React.Component {
             this.updateHEXBalance()
         }
         this.subscriptions.push(
-            this.contract.events.Transfer( {filter:{from:this.state.wallet.address}}, eventCallback).on('connected', (id) => debug('sub: HEX from:', id))
+            this.contract.events.Transfer( {filter:{from:this.state.wallet.address}}, eventCallback).on('connected', (id) => debug('subbed: HEX from:', id))
         )
         this.subscriptions.push(
-            this.contract.events.Transfer( {filter:{to:this.state.wallet.address}}, eventCallback).on('connected', (id) => debug('sub: HEX to:', id))
+            this.contract.events.Transfer( {filter:{to:this.state.wallet.address}}, eventCallback).on('connected', (id) => debug('subbed: HEX to:', id))
         )
     }
 
@@ -149,7 +141,8 @@ class App extends React.Component {
 
     componentDidMount = async () => {
         debug('process.env: ', process.env)
-        if (!this.provider) {
+        window._APP = this // DEBUG remove me
+        if (!this.walletProvider) {
             // check first for Mobile TrustWallet
             if (detectedTrustWallet) {
                 const mainnet = {
@@ -171,39 +164,46 @@ class App extends React.Component {
 
                     0uc4
                 */
-                this.provider = new window.Trust(mainnet)
+                this.walletProvider = new window.Trust(mainnet)
                 this.setState({ currentProvider: 'TrustWallet' })
+            } else if (window.ethereum && window.ethereum.isImToken === true ) {
+                this.walletProvider = window.ethereum
             } else {
                 this.setState({ currentProvider: 'web3modal' })
                 return this.connectWeb3ModalWallet()
             }
         }
-        if (!this.provider) return // User will need to click the button to connect again
+        if (!this.walletProvider) return // User will need to click the button to connect again
 
-        this.provider.enable()
-        
+
         debug('web3 provider established')
 
+        // window.web3 used for sending/signing transactions
+        window.web3 = new Web3(this.walletProvider)
 
-        if (!this.web3) this.web3 = await new Web3(this.provider)
+        // this.web3 used for everything else 
+        this.provider = new Web3.providers.WebsocketProvider(`wss://mainnet.infura.io/ws/v3/${process.env.REACT_APP_INFURA_ID}`)
+        this.web3 = new Web3(this.provider)
 
         // ref: https://soliditydeveloper.com/web3-1-2-5-revert-reason-strings
+        if (window.web3.eth.hasOwnProperty('handleRevert'))  window.web3.eth.handleRevert = true 
         if (this.web3.eth.hasOwnProperty('handleRevert'))  this.web3.eth.handleRevert = true 
-        
+       
         debug('web3 provider connected')
 
-        window._P = this.provider // DEBUG remove me
-        window._W3 = this.web3 // DEBUG remove me
-
         var address
-        if (this.provider.isMetaMask) {
+        if (this.walletProvider.isMetaMask) {
             debug('MetaMask detected')
-            // UGLY: MetaMask takes time to sort itself out 
+            /*
+            const accounts = await window.ethereum.send('eth_requestAccounts') // EIP1102. Not working. WHY? :/ MM extension too old? Weird. 
+            address = accounts[0]
+            */
+            // UGLY: MetaMask takes time to sort itself out (EIP-1102 'eth_requestAccounts' not available yet)
             address = await new Promise((resolve, reject) => {
                 let retries = 10
                 let timer = setInterval(() => {
                     debug('try ', retries)
-                    address = this.web3.eth.accounts.givenProvider.selectedAddress
+                    address = window.web3.eth.givenProvider.selectedAddress
                     if (address) {
                         clearInterval(timer)
                         return resolve(address)
@@ -214,30 +214,35 @@ class App extends React.Component {
                     }
                 }, 100)
             })
-            if (!address) throw new Error("MetaMask failed to provide user's selected address")
         } else if (detectedTrustWallet) {
-            address = this.web3.eth.givenProvider.address || 0x7357000000000000000000000000000000000000
+            this.walletProvider.enable()
+            address = window.web3.eth.givenProvider.address || 0x7357000000000000000000000000000000000000
             this.provider.setAddress(address)
-        } else if (this.provider.isPortis) {
-            const accounts = await this.web3.eth.getAccounts()
+        } else if (window.web3.currentProvider.isPortis) {
+            this.walletProvider.enable()
+            const accounts = await window.web3.eth.getAccounts()
+            address = accounts[0]
+        } else if (window.web3.currentProvider.isImToken) {
+            debug('imToken Wallet detected')
+            const accounts = await window.ethereum.send('eth_requestAccounts') // EIP1102
             address = accounts[0]
         } else 
-            address = this.web3.eth.accounts.currentProvider.accounts[0]   // everyone else ... maybe
+            address = window.web3.eth.accounts[0]   // everyone else ... maybe
 
         debug('wallet address: ', address)
-        if (!address) return // web3Modal will take it from here
+        if (!address) {
+            debug('Wallet address unknown. STOP.')
+            return // web3Modal should take it from here
+        }
+
+        window.contract = new window.web3.eth.Contract(HEX.ABI, HEX.ContractAddress)    // wallet's provider
+        this.contract = new this.web3.eth.Contract(HEX.ABI, HEX.ContractAddress) // INFURA
+        this.subscribeProvider(this.provider)
 
         await this.setState({ 
             wallet: { ...this.state.wallet, address },
             walletConnected: true 
         })
-        // WARNING: do not move this to before address establishment, because race conditionsi re MM selectedAddress
-        try {
-            this.contract = new this.web3.eth.Contract(HEX.ABI, HEX.ContractAddress)
-            this.subscribeProvider(this.provider)
-        } catch(e) {
-            throw new Error('Contract instantiation failed', e)
-        }
 
         Promise.all([
             this.contract.methods.balanceOf(this.state.wallet.address).call(), // [0] HEX balance
@@ -272,6 +277,7 @@ class App extends React.Component {
                 currentDay,
                 globals
             }
+            window.contract.Data = this.contract.Data
 
             // setState doesn't handle > 1 level trees at all well but we like to live dangerously 
             this.setState({
@@ -319,6 +325,7 @@ class App extends React.Component {
     connectWeb3ModalWallet = async (reset) => {
         if (reset) {
             await this.web3Modal.clearCachedProvider()
+            window.web3 = null
             this.web3 = null
             this.provider = null
         }
@@ -327,10 +334,10 @@ class App extends React.Component {
             cacheProvider: true,                        // optional
             providerOptions: this.getProviderOptions()  // required
         });
-        this.provider = await this.web3Modal.connect()
-        if (this.provider) {
-            debug('web3Modal getProviderInfo: ', getProviderInfo(this.provider))
-            this.setState({ currentProvider: getProviderInfo(this.provider).name })
+        this.walletProvider = await this.web3Modal.connect()
+        if (this.walletProvider) {
+            debug('web3Modal getProviderInfo: ', getProviderInfo(this.walletProvider))
+            this.setState({ currentProvider: getProviderInfo(this.walletProvider).name })
             this.componentDidMount()
         }
     }
@@ -457,6 +464,9 @@ class App extends React.Component {
                         </div>
                     </Container>
             
+                    { (process.env.REACT_APP_NODE_ENV === 'development' || window.location.hostname.match(/^dev\./) !== null) &&
+                        <DebugPanel />
+                    }
                 </Container>
                 <Container>
                     { this.state.walletConnected && <this.WalletStatus />}

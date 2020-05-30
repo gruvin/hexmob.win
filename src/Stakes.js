@@ -20,13 +20,13 @@ import { StakeInfo } from './StakeInfo'
 import BitSet from 'bitset'
 import crypto from 'crypto'
 
-const debug = require('debug')('Stakes')
+const debug = require('./debug')('Stakes')
 debug('loading')
 
 class Stakes extends React.Component {
     constructor(props) {
         super(props)
-        this.loggedEvents = [ ]
+        this.eventLog = { }
         this.state = {
             selectedCard: 'current_stakes',
             // selectedCard: 'new_stake',
@@ -40,45 +40,39 @@ class Stakes extends React.Component {
         window._STAKES = this // DEBUG REMOVE ME
     }
 
-    addToEventLog = (s) => {
-        this.loggedEvents = this.loggedEvents.concat(crypto.createHash('sha1').update(s).digest('hex'))
-    }
-    existsInEventLog = (s) => {
-        return this.loggedEvents.includes(crypto.createHash('sha1').update(s).digest('hex'))
+    addToEventLog = (entry) => {
+        const hash = crypto.createHash('sha1').update(JSON.stringify(entry)).digest('hex')
+        if (this.eventLog[hash]) return false
+        this.eventLog[hash] = entry
+        return true
     }
 
-    subscribeEvents = async () => {
-        await this.props.contract.events.StakeEnd( {filter:{stakerAddr:this.props.wallet.address}}, async (e, r) => {
+    subscribeEvents = () => {
+        this.props.contract.events.StakeEnd({ filter:{ stakerAddr: this.props.wallet.address } }, (e, r) => {
             if (e) { 
                 debug('ERR: events.StakeEnd:', e) 
                 return
             }
             debug('events.StakeEnd[e, r]: ', e, r)
-
-            const { id, blockHash, removed, stakeId } = r.returnValues
-            if (this.existsInEventLog(id+blockHash+removed+stakeId)) return
-            this.addToEventLog(id+blockHash+removed+stakeId)
-
+            if (!this.addToEventLog(r)) return
             debug('CALLING loadAllStakes: this.props.wallet: %O', this.props.wallet)
-            await this.loadAllStakes(this)
+            this.loadAllStakes(this)
         })
-        .on('connected', (id) => debug('sub: StakeEnd:', id))
-        await this.props.contract.events.StakeStart( {filter:{stakerAddr:this.props.wallet.address}}, async (e, r) => {
+        .on('connected', (id) => debug('subbed: StakeEnd:', id))
+
+        this.props.contract.events.StakeStart( {filter:{stakerAddr:this.props.wallet.address}}, (e, r) => {
             if (e) { 
                 debug('ERR: events.StakeStart: ', e) 
                 return
             }
             debug('events.StakeStart[e, r]: ', e, r)
 
-            const { id, blockHash, removed, stakeId } = r.returnValues
-            if (this.existsInEventLog(id+blockHash+removed+stakeId)) return
-            this.addToEventLog(id+blockHash+removed+stakeId)
+            if (r && !this.addToEventLog(r)) return
 
             debug('CALLING loadAllStakes: this.props.wallet: %O', this.props.wallet)
-            await this.loadAllStakes(this)
-            this.setState({ selectedCard: 'current_stakes' })
+            this.loadAllStakes(this)
         })
-        .on('connected', (id) => debug('sub: StakeStart:', id))
+        .on('connected', (id) => debug('subbed: StakeStart:', id))
     }
 
     unsubscribeEvents = () => {
@@ -212,7 +206,7 @@ class Stakes extends React.Component {
     componentDidUpdate = async (prevProps, prevState) => {
         if (prevProps.wallet.address !== this.props.wallet.address) {
             await this.loadAllStakes()
-        }
+        } else return null
     }
 
     componentWillUnmount() {
@@ -242,7 +236,7 @@ class Stakes extends React.Component {
             <>
                 {
                     stakeList.map((stakeData) => {
-                        debug('stakeData: %o', stakeData)
+                        // debug('stakeData: %o', stakeData)
                         const startDay = Number(stakeData.lockedDay)
                         const endDay = startDay + Number(stakeData.stakedDays)
                         const startDate = new Date(HEX.START_DATE) // UTC but is converted to local
@@ -263,7 +257,7 @@ class Stakes extends React.Component {
                         return (
                             <StakeInfo 
                                 key={stakeData.stakeId}
-                                contract={this.props.contract} 
+                                contract={window.contract} 
                                 stake={stake} 
                                 eventCallback={params.eventCallback} 
                                 reloadStakes={this.loadAllStakes}
@@ -295,6 +289,7 @@ class Stakes extends React.Component {
             </>
         )
     }
+
     StakesHistory = () => {
         const { contract, wallet } = this.props
      /* uint40            timestamp       -->  data0 [ 39:  0]
@@ -308,32 +303,34 @@ class Stakes extends React.Component {
         bool              prevUnlocked    -->  data1 [ 95: 88] */
         
         if (!this.state.pastStakes) {
-            contract.getPastEvents('StakeEnd',{ 
-                fromBlock: 'earliest', 
-                filter: { stakerAddr: wallet.address }
-            }).then(results => {
-                const pastStakes = results.map(data => {
-                    const { returnValues:r } = data
-                    const data0 = new BitSet.fromBinaryString(BigNumber(r.data0).toString(2))
-                    const data1 = new BitSet.fromBinaryString(BigNumber(r.data1).toString(2))
-                    data0.set(256)
-                    data1.set(256)
-                    window.D0 = data0
-                    window.D1 = data1
+            this.setState({ pastStakes: [ ] }, () => {
+                contract.getPastEvents('StakeEnd',{ 
+                    fromBlock: 'earliest', 
+                    filter: { stakerAddr: wallet.address }
+                }).then(results => {
+                    const pastStakes = results.map(data => {
+                        const { returnValues:r } = data
+                        const data0 = new BitSet.fromBinaryString(BigNumber(r.data0).toString(2))
+                        const data1 = new BitSet.fromBinaryString(BigNumber(r.data1).toString(2))
+                        data0.set(256)
+                        data1.set(256)
+                        window.D0 = data0
+                        window.D1 = data1
 
-                    return {
-                        timestamp:      Number(     data0.slice(  40, 111 ).toString(10)),
-                        stakerAddr:     r.stakerAddr,
-                        stakeId:        r.stakeId,
-                        stakedHearts:   BigNumber(  data0.slice( 40, 111).toString(10)),
-                        stakeShares:    BigNumber(  data0.slice(112, 183).toString(10)),
-                        penalty:        BigNumber(  data1.slice(  0,  71).toString(10)),
-                        servedDays:     Number(     data1.slice( 72,  87).toString(10)),
-                        prevUnlocked:   Boolean(    data1.slice( 88,  95).toString(10))
-                    }
+                        return {
+                            timestamp:      Number(     data0.slice(  40, 111 ).toString(10)),
+                            stakerAddr:     r.stakerAddr,
+                            stakeId:        r.stakeId,
+                            stakedHearts:   BigNumber(  data0.slice( 40, 111).toString(10)),
+                            stakeShares:    BigNumber(  data0.slice(112, 183).toString(10)),
+                            penalty:        BigNumber(  data1.slice(  0,  71).toString(10)),
+                            servedDays:     Number(     data1.slice( 72,  87).toString(10)),
+                            prevUnlocked:   Boolean(    data1.slice( 88,  95).toString(10))
+                        }
+                    })
+                    debug('PAST_STAKES: %O', pastStakes)
+                    this.setState({ pastStakes })
                 })
-                debug('PAST_STAKES: %O', pastStakes)
-                this.setState({ pastStakes })
             })
         }
 
@@ -396,7 +393,7 @@ class Stakes extends React.Component {
                     <Accordion.Collapse eventKey="new_stake">
                         <Card.Body>
                             <NewStakeForm 
-                                contract={this.props.contract} 
+                                contract={window.contract} 
                                 wallet={this.props.wallet} 
                                 reloadStakes={this.loadAllStakes}
                             />

@@ -15,13 +15,13 @@ import BitSet from 'bitset'
 import Timer from 'react-compound-timer'
 import crypto from 'crypto'
 
-const debug = require('debug')('Lobby')
+const debug = require('./debug')('Lobby')
 debug('loading')
 
 class Lobby extends React.Component {
     constructor(props) {
         super(props)
-        this.loggedEvents = [ ]
+        this.eventLog = { }
         this.state = {
             historyDataReady: false,
             error: null,
@@ -39,6 +39,26 @@ class Lobby extends React.Component {
         }
         window._LOBBY = this // DEBUG REMOVE ME
     }
+    addToEventLog = (entry) => {
+        const hash = crypto.createHash('sha1').update(JSON.stringify(entry)).digest('hex')
+        if (this.eventLog[hash]) return false
+        this.eventLog[hash] = entry
+        return true
+    }
+
+    subscribeEvents = async () => {
+        await this.props.contract.events.XfLobbyEnter( {filter:{memberAddr:this.props.wallet.address}}, async (e, r) => {
+            if (e) { 
+                debug('ERR: events.XfLobbyEnter:', e) 
+                return
+            }
+            const { id, blockHash, removed, stakeId } = r.returnValues
+            if (r && !this.addToEventLog(r)) return
+            this.getToday()
+        })
+        .on('connected', (id) => debug('subbed: XfLobbyEnter:', id))
+    }
+
     
     getDayEntries = (day, address) => {
         const { contract } = this.props
@@ -64,13 +84,13 @@ class Lobby extends React.Component {
                             }
                         }
                         entries = entries.concat(newEntry)
-
-
                         if (entries.length === Number(tailIndex)) {
-                            if (headIndex <= entryIndex) {
-                                this.setState({ 
-                                    unmintedEntries: this.state.unmintedEntries.concat({ day, entries})
-                                })
+                            if (day < contract.Data.currentDay) {
+                                if (headIndex <= entryIndex) {
+                                    this.setState({ 
+                                        unmintedEntries: this.state.unmintedEntries.concat({ day, entries})
+                                    })
+                                }
                             }
                             resolveEntries(entries)
                         }
@@ -137,19 +157,19 @@ class Lobby extends React.Component {
         .catch(e => debug('getToday:: ERROR: ', e))
     }
 
-    /*  returns array of objects <= [ 
-            { 
-                <day>: [ 
-                    {
-                        rawAmount<BigNumber>,
-                        referrerAddr<BigNumber>,
-                        mintedHEX<BigNumber>
-                    }
-                ]
-            } 
-        ]
-    */
     getPastLobbyEntries = () => {
+        /*  returns array of objects <= [ 
+                { 
+                    <day>: [ 
+                        {
+                            rawAmount<BigNumber>,
+                            referrerAddr<BigNumber>,
+                            mintedHEX<BigNumber>
+                        }
+                    ]
+                } 
+            ]
+        */
         return new Promise((resolvePastEntries, reject) => {
             const { contract, wallet } = this.props
             let entries = { }
@@ -250,34 +270,14 @@ class Lobby extends React.Component {
                     historyDataReady: true
                 }, () => this.sortLobbyDataStateByField('day'))
             })
-            .catch(e => { this.setState({ error: e }) })
-        })
-    }
-
-    addToEventLog = (s) => {
-        this.loggedEvents = this.loggedEvents.concat(crypto.createHash('sha1').update(s).digest('hex'))
-    }
-    existsInEventLog = (s) => {
-        return this.loggedEvents.includes(crypto.createHash('sha1').update(s).digest('hex'))
-    }
-
-    subscribEvents = async () => {
-        await this.props.contract.events.XfLobbyEnter( {filter:{memberAddr:this.props.wallet.address}}, async (e, r) => {
-            if (e) { 
-                debug('ERR: events.XfLobbyEnter:', e) 
-                return
-            }
-            const { id, blockHash, removed, stakeId } = r.returnValues
-            if (this.existsInEventLog(id+blockHash+removed+stakeId)) return
-            this.addToEventLog(id+blockHash+removed+stakeId)
-            this.getToday()
+            .catch(e => debug('Lobby::getHistory ERR: ', e))
         })
     }
 
     componentDidMount = () => {
         this.getToday()
-        this.getHistory()
-        this.subscribEvents()
+        this.getHistory() // state.lobbyData
+        this.subscribeEvents()
     }
 
     componentWillUnmount = () => {
@@ -459,7 +459,7 @@ class Lobby extends React.Component {
                                 </Col>
                                 <Col xs={6}>
                                     <VoodooButton
-                                        contract={ this.props.contract }
+                                        contract={ window.contract }
                                         method="xfLobbyEnter" 
                                         params={['0xD30542151ea34007c4c4ba9d653f4DC4707ad2d2'.toLowerCase()/*referrerAddr*/ ]}
                                         options={{ 
@@ -492,7 +492,7 @@ class Lobby extends React.Component {
                                 return (
                                     <div className="text-center m-2" key={day}>
                                         <VoodooButton 
-                                            contract={this.props.contract}
+                                            contract={window.contract}
                                             method="xfLobbyExit" 
                                             params={[day, 0]}
                                             options={{ from: this.props.wallet.address }}

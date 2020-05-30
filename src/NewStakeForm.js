@@ -15,7 +15,7 @@ import HEX from './hex_contract'
 import { calcBigPayDaySlice, calcAdoptionBonus } from './util'
 import { CryptoVal, WhatIsThis, VoodooButton } from './Widgets' 
 
-const debug = require('debug')('NewStakeForm')
+const debug = require('./debug')('NewStakeForm')
 debug('loading')
 
 export class NewStakeForm extends React.Component {
@@ -270,7 +270,7 @@ export class NewStakeForm extends React.Component {
                         <Row>
                             <Col className='text-right mr-3 pr-3'>
                                 <VoodooButton 
-                                    contract={this.props.contract}
+                                    contract={window.contract}
                                     method="stakeStart" 
                                     params={[BigNumber(this.state.stakeAmount).times(1e8).toString(), this.state.stakeDays/*string*/]}
                                     options={{ from: this.props.wallet.address }}

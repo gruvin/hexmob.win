@@ -13,11 +13,10 @@ import HEX from './hex_contract'
 import { format } from 'd3-format'
 import { CryptoVal, VoodooButton } from './Widgets' 
 
-const debug = require('debug')('StakeInfo')
+const debug = require('./debug')('StakeInfo')
 debug('loading')
 
 export class StakeInfo extends React.Component {
-
     render() {
         const { contract, stake } = this.props
         const { currentDay } = contract.Data
@@ -126,7 +125,7 @@ export class StakeInfo extends React.Component {
                             <Row>
                                 <Col className="text-center mt-3">
                                     <VoodooButton 
-                                        contract={contract}
+                                        contract={window.contract}
                                         method="stakeEnd" 
                                         params={[stake.stakeIndex, stake.stakeId]}
                                         options={{ from: stake.stakeOwner }}

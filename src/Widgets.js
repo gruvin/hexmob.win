@@ -1,5 +1,6 @@
 import React from 'react'
 import { 
+    Container,
     Button,
     Spinner,
     OverlayTrigger,
@@ -14,7 +15,7 @@ import { faCopy } from '@fortawesome/free-solid-svg-icons'
 import { CopyToClipboard } from 'react-copy-to-clipboard'
 import { cryptoFormat } from './util.js'
 
-const debug = require('debug')('Widgets')
+const debug = require('./debug')('Widgets')
 debug('loading')
 
 export const CryptoVal = (props) => {
@@ -122,6 +123,8 @@ export class VoodooButton extends React.Component {
                 data: 'sending'
             })
 
+            var callbackCounter = 1
+
             const func = simulate ? sim : contract.methods[method]
             debug('CONTRACT SEND: %s(%O).send(%O)', method, params, options)
             if (window.web3 && window.web3.currentProvider && window.web3.currentProvider.isTrust) {
@@ -143,7 +146,7 @@ export class VoodooButton extends React.Component {
             }
             func(...params).send(options)
                 .once('transactionHash', (hash) => {
-                    debug('endStake::transactionHash: ', hash)
+                    debug(`${method}::transactionHash: `, hash)
                     this.setState({ 
                         hash, 
                         data: 'confirming' 
@@ -151,20 +154,20 @@ export class VoodooButton extends React.Component {
                 })
                 .on('confirmation', (confirmationNumber, receipt) => {
                     debug('endStake::confirmationNumber: %s, receipt: %O', confirmationNumber, receipt)
-                    if (typeof confirmationCallback === 'function') {
+                    if (typeof confirmationCallback === 'function' && callbackCounter-- > 0) {
                         this.setState({
                             wait: false,
                             data: false,
                             hash: null
-                        }, confirmationCallback)
-                    } else {
-                        this.setState({ data: confirmationNumber })
+                        })
+                        confirmationCallback.call()
                     }
+                    this.setState({ data: confirmationNumber+1 })
                 })
                 .once('receipt', (receipt) => {
-                    debug('endStake::receipt: %O', receipt)
+                    debug(`${method}::receipt: %O`, receipt)
                 })
-                .once('error', async (err, receipt) => { // eg. rejected or out of gas
+                .on('error', async (err, receipt) => { // eg. rejected or out of gas
                     debug(`${method}::error: `, err, receipt)
                     await this.setState({ 
                         data: 'rejected',
@@ -189,8 +192,8 @@ export class VoodooButton extends React.Component {
 
         const { data, wait, hash } = this.state
         let _RESPONSE, _color, hashUI
-        if (data === false) { _RESPONSE = this.props.children; _color = '' }
-        else if (parseInt(data)) { _RESPONSE = (<><span style={{fontSize: '0.9em'}}>CONFIRMED</span><sup>{data}</sup></>); _color = 'text-success' }
+        if (!wait ) { _RESPONSE = this.props.children; _color = '' }
+        else if (!isNaN(parseInt(data))) { _RESPONSE = (<><span style={{fontSize: '0.9em'}}>CONFIRMED</span><sup>{data}</sup></>); _color = 'text-success' }
         else { _RESPONSE = data; _color = (_RESPONSE !== 'rejected') ? 'text-info' : 'text-danger' } 
         const _className = (other.className || '') + ` ${_color}`
         if (hash) hashUI = data === 'REQUESTED' 
@@ -227,4 +230,12 @@ export class VoodooButton extends React.Component {
             </div>
         )
     }
+}
+
+export const DebugPanel = () => {
+    return (
+        <Container className="p-1 bg-light" style={{ maxHeight: '200px', overflow: 'auto', fontSize: '0.8em', lineHeight: '0.82em' }}>
+            <pre id="HM_DEBUG">{"DEBUG\n"}</pre>
+        </Container>
+    )
 }

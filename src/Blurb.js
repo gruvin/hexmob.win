@@ -13,9 +13,8 @@ const Blurb = () => {
                 <Row>
                     <Col className="text-center">
                         <h1>HEX<sup>mob.win</sup></h1>
-                        <h2>mobile friendly <a href="https://go.hex.win?r=0xd30542151ea34007c4c4ba9d653f4dc4707ad2d2">go.hex.win</a></h2>
-                        <h4>indepependant community dev project.</h4>
-                        <h5>Not endorsed by RH™ (yet :)</h5>
+                        <h2>“a mobile friendly <a href="https://go.hex.win?r=0xd30542151ea34007c4c4ba9d653f4dc4707ad2d2">go.hex.win</a>”</h2>
+                        <h4>independent community dev project</h4>
                         <p><small><small>COMPATIBLE WALLETS INCLUDE ...</small></small></p>
                         <p>
                             <Image src="/mm-wordmark.svg" alt="Metamask" height={96} /><em>on</em> <strong>Desktops</strong>
@@ -24,7 +23,7 @@ const Blurb = () => {
                             <Image src="/trustwallet-logo.png" alt="Trust Wallet" height={64} /><em> on </em><strong>Mobile</strong>
                             </p>
                         <p>
-                            HEX<sup>mob.win</sup> runs in TrustWallet's built-in dApp browser.
+                            HEX<sup>mob.win</sup> runs mobile dApp browsers. We recommend  TokenIm.
                         </p>
                     </Col>
                 </Row>

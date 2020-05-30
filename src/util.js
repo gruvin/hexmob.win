@@ -1,7 +1,6 @@
 const HEX = require('./hex_contract')
 const { BigNumber } = require('bignumber.js')
 const { format } = require('d3-format')
-
 /*
  * displays unitized .3 U formatted values (eg. 12.345 M) with 50% opacity for fractional part
  */
@@ -95,6 +94,5 @@ module.exports = {
     calcBigPayDaySlice,
     calcAdoptionBonus,
     cryptoFormat,
-    detectedTrustWallet
+    detectedTrustWallet,
 }
-
