@@ -14,51 +14,39 @@ const Blurb = () => {
                     <Col className="text-center">
                         <h1>HEX<sup>mob.win</sup></h1>
                         <h2>“a mobile friendly <a href="https://go.hex.win?r=0xd30542151ea34007c4c4ba9d653f4dc4707ad2d2">go.hex.win</a>”</h2>
-                        <h4>independent community dev project</h4>
-                        <p><small><small>COMPATIBLE WALLETS INCLUDE ...</small></small></p>
+                        <p className="text-muted">independent community project</p>
+                        <p className="m-0"><small><small>COMPATIBLE WALLETS INCLUDE ...</small></small></p>
                         <p>
-                            <Image src="/mm-wordmark.svg" alt="Metamask" height={96} /><em>on</em> <strong>Desktops</strong>
-                        </p>
-                        <p>
-                            <Image src="/trustwallet-logo.png" alt="Trust Wallet" height={64} /><em> on </em><strong>Mobile</strong>
-                            </p>
-                        <p>
-                            HEX<sup>mob.win</sup> runs mobile dApp browsers. We recommend  TokenIm.
+                            <Image src="/mm-wordmark.svg" alt="Metamask" height={96} /><br />
+                            for <strong>PCs and Notebooks</strong>
                         </p>
                     </Col>
                 </Row>
                 <Row className="h-100">
-                    <Col xs={12} sm={5}>
-                    <img className="d-none d-sm-block"
-                        style={{ maxWidth: "90%" }}
+                    <Col xs={12} sm={5} className="text-right">
+                    <img className="d-none d-sm-inline-block"
+                        style={{ maxWidth: "90%", maxHeight: "460px" }}
                         alt="TrustWallet on iPhone11"
                         src="/trustwallet-iphone11.png"
                     />
-                    <img className="d-block d-sm-none"
+                    <Image className="d-block d-sm-none"
                         style={{ maxWidth: "100%" }}
                         alt="TrustWallet on iPhone11"
                         src="/trustwallet-iphone11-cropped.png"
                     />
                     </Col>
                     <Col xs={12} sm={7} className="py-3 text-center text-sm-left m-auto allign-middle">
-                        <h3>Get&nbsp;Trust&nbsp;Wallet</h3>
-                        <div>
-                            <div className="m-3 d-inline-block">
-                                <a href="https://apps.apple.com/app/trust-ethereum-wallet/id1288339409">
-                                    <Image src="/dltw-appstore.png" height={56} alt="Download on the App Store" />
-                                </a>
-                            </div>
-                            <div className="m-3 d-inline-block">
-                                <a href="https://play.google.com/store/apps/details?id=com.wallet.crypto.trustapp">
-                                    <Image src="/dltw-googleplay.png" height={56} alt="Get it at Google Play" />
-                                </a>
-                            </div>
-                            <div className="m-3 d-inline-block">
-                                <a href="https://trustwallet.com/dl/apk">
-                                    <Image src="/dltw-android.png" height={56} alt="Download for Android ARK" />
-                                </a>
-                            </div>
-                        </div>
+                        <p>
+                            <Image src="/imToken-logo.png" alt="imToken Wallet" with={217} height={40} />
+                        </p>
+                        <p>
+                            for <strong>Mobile Devices</strong>
+                        </p>
+                        <p>
+                            imToken is a world-renowned mobile light wallet for
+                            digital asset management.
+                        </p>
+                        <p><a href="https://token.im">Click here to learn more</a></p>
                     </Col>
                 </Row>
             </Container>
