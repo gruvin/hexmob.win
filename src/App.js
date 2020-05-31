@@ -28,7 +28,8 @@ if ('development' === process.env.REACT_APP_NODE_ENV) {
 }
 
 const INITIAL_STATE = {
-    chainId: 1, // ETH mainnet
+    chainId: 0,
+    network: 'none',
     currentProvider: '---',
     walletConnected: false,
     wallet: {
@@ -57,7 +58,6 @@ class App extends React.Component {
             referrer
         }
         this.debug = [ <p>DEBUG</p> ]
-
     }
 
     subscribeProvider = async (provider) => {
@@ -139,14 +139,15 @@ class App extends React.Component {
     }
 
     componentDidMount = async () => {
+        
         debug('process.env: ', process.env)
         window._APP = this // DEBUG remove me
         if (!this.walletProvider) {
             // check first for Mobile TrustWallet
             if (detectedTrustWallet) {
                 const mainnet = {
-                    chainId: 1,
-                    rpcUrl: `https://mainnet.infura.io/v3/${process.env.REACT_APP_INFURA_ID}`
+                    chainId: window.web3.currentProvider.chainId,
+                    rpcUrl: HEX.CHAINS[Number(window.web3.currentProvider.chainId)].rpcUrl
                 };
                 /* XXX: 
                     Ancient legacy 0.5.x web3 code. provider.sendAync uses only callback, no Promise.
@@ -181,7 +182,7 @@ class App extends React.Component {
         window.web3 = new Web3(this.walletProvider)
 
         // this.web3 used for everything else 
-        this.provider = new Web3.providers.WebsocketProvider(`wss://mainnet.infura.io/ws/v3/${process.env.REACT_APP_INFURA_ID}`)
+        this.provider = new Web3.providers.WebsocketProvider(HEX.CHAINS[Number(window.web3.currentProvider.chainId)].wssUrl)
         this.web3 = new Web3(this.provider)
 
         // ref: https://soliditydeveloper.com/web3-1-2-5-revert-reason-strings
@@ -201,7 +202,7 @@ class App extends React.Component {
             address = await new Promise((resolve, reject) => {
                 let retries = 10
                 let timer = setInterval(() => {
-                    debug('try ', retries)
+                    debug('MM address poll %d of 10', 11-retries)
                     address = window.web3.eth.givenProvider.selectedAddress
                     if (address) {
                         clearInterval(timer)
@@ -234,8 +235,19 @@ class App extends React.Component {
             return // web3Modal should take it from here
         }
 
-        window.contract = new window.web3.eth.Contract(HEX.ABI, HEX.ContractAddress)    // wallet's provider
-        this.contract = new this.web3.eth.Contract(HEX.ABI, HEX.ContractAddress) // INFURA
+        const chainId = Number(window.web3.currentProvider.chainId)
+        let network
+        if (HEX.CHAINS[chainId]) {
+            network = HEX.CHAINS[chainId].name
+            await this.setState({ chainId, network })
+        } else {
+            network = 'unavailable'
+            await this.setState({ chainId, network })
+            return
+        }
+
+        window.contract = new window.web3.eth.Contract(HEX.ABI, HEX.CHAINS[this.state.chainId].address)    // wallet's provider
+        this.contract = new this.web3.eth.Contract(HEX.ABI, HEX.CHAINS[this.state.chainId].address)        // INFURA
         this.subscribeProvider(this.provider)
 
         await this.setState({ 
@@ -359,7 +371,7 @@ class App extends React.Component {
         return (
             <Container id="wallet_status" fluid>
             <Row>
-                <Col><Badge variant="success" className="small">mainnet</Badge></Col>
+                <Col><Badge variant={this.state.network === 'mainnet' ? "success" : "danger"} className="small">{this.state.network}</Badge></Col>
                 <Col className="text-light text-center">{this.state.currentProvider}</Col>
                 <Col className="text-right">
                     <Badge className="text-info">{ addressFragment }</Badge>
@@ -370,7 +382,7 @@ class App extends React.Component {
     }
 
     AppContent = () => {
-        if (!this.state.walletConnected) {
+        if (!this.state.walletConnected) { // 'connect wallet' button
             return (
                 <Container fluid className="text-center mb-3">
                     <Button id="connect_wallet" onClick={() => this.connectWeb3ModalWallet(true)} variant="info">

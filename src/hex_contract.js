@@ -22,7 +22,22 @@ const BPB_MAX_HEARTS = BPB_MAX_HEX.times(HEARTS_PER_HEX)
 const BPB = BPB_MAX_HEARTS.times(100).idiv(BPB_BONUS_PERCENT)
 
 module.exports = {
-    ContractAddress: "0x2b591e99afe9f32eaa6214f7b7629768c40eeb39",
+    CHAINS: {
+        0x0: { name: 'none',    address: "0x0000000000000000000000000000000000000000", rpcUrl: null },
+        0x1: {
+            name: "mainnet",
+            address: "0x2b591e99afe9f32eaa6214f7b7629768c40eeb39",
+            rpcUrl: `https://mainnet.infura.io/v3/${process.env.REACT_APP_INFURA_ID}`,
+            wssUrl: `wss://mainnet.infura.io/ws/v3/${process.env.REACT_APP_INFURA_ID}` 
+        },
+        0x2: null,
+        0x3: {
+            name: "ropsten",
+            address: "0xd86C94478F8634e1D845038B9490D93665469dA4",
+            rpcUrl: `https://ropsten.infura.io/v3/${process.env.REACT_APP_INFURA_ID}`,
+            wssUrl: `wss://ropsten.infura.io/ws/v3/${process.env.REACT_APP_INFURA_ID}` 
+        },
+    },
     START_DATE,
     CLAIM_PHASE_START_DAY,
     CLAIM_PHASE_DAYS,
