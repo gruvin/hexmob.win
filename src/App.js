@@ -76,7 +76,7 @@ class App extends React.Component {
                     this.resetApp()
                 else {                                  // => event:"accountsChanged"
                     const newAddress = accounts[0]
-                    debug('***** ADDRESS CHANGE ***** %s(old) => %s', this.state.wallet.address, newAddress)
+                    debug('ADDRESS CHANGE [metamask]: %s(old) => %s', this.state.wallet.address, newAddress)
                     this.setState({ 
                         wallet: { ...this.state.wallet, address: accounts[0] } 
                     }, this.updateHEXBalance)
@@ -85,7 +85,7 @@ class App extends React.Component {
         } else { // WalletConnect (and others?) ...
 
             provider.on("close", () => {  
-                console.log('[Event] App:provider:close')
+                debug('provider::event:close')
             })
 
             provider.on("stop", async (networkId: number) => { // WalletConnect: fires when remote wallet is disconnected
@@ -94,22 +94,18 @@ class App extends React.Component {
             
             provider.on("accountsChanged", async (accounts) => {
                 const newAddress = accounts[0]
-                debug('***** ADDRESS CHANGE [2] ***** %s(old) => %s', this.state.wallet.address, newAddress)
+                debug('ADDRESS CHANGE: %s(old) => %s', this.state.wallet.address, newAddress)
                 await this.setState({ wallet: { ...this.state.wallet, address: newAddress } })
                 this.updateHEXBalance()
             })
         }
 
         provider.on("chainChanged", async (chainId) => {
-            const networkId = await this.web3.eth.net.getId()
-            await this.setState({ chainId, networkId })
-            this.updateHEXBalance()
+            window.location.reload()
         })
 
         provider.on("networkChanged", async (networkId: number) => {
-            const chainId = await this.web3.eth.chainId()
-            await this.setState({ chainId, networkId })
-            this.updateHEXBalance()
+            window.location.reload()
         })
     }
 
@@ -217,7 +213,7 @@ class App extends React.Component {
         } else if (detectedTrustWallet) {
             this.walletProvider.enable()
             address = window.web3.eth.givenProvider.address || 0x7357000000000000000000000000000000000000
-            this.provider.setAddress(address)
+            this.walletProvider.setAddress(address)
         } else if (window.web3.currentProvider.isPortis) {
             this.walletProvider.enable()
             const accounts = await window.web3.eth.getAccounts()
@@ -248,7 +244,7 @@ class App extends React.Component {
 
         window.contract = new window.web3.eth.Contract(HEX.ABI, HEX.CHAINS[this.state.chainId].address)    // wallet's provider
         this.contract = new this.web3.eth.Contract(HEX.ABI, HEX.CHAINS[this.state.chainId].address)        // INFURA
-        this.subscribeProvider(this.provider)
+        this.subscribeProvider(this.walletProvider)
 
         await this.setState({ 
             wallet: { ...this.state.wallet, address },

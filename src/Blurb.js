@@ -12,7 +12,7 @@ const Blurb = () => {
             <Container fluid className="my-3" id="mobile_trust_wallet">
                 <Row>
                     <Col className="text-center">
-                        <h1>HEX<sup>mob.win</sup></h1>
+                        <h3 className="text-muted">HEX<sup>mob.win</sup></h3>
                         <h2>“a mobile friendly <a href="https://go.hex.win?r=0xd30542151ea34007c4c4ba9d653f4dc4707ad2d2">go.hex.win</a>”</h2>
                         <p className="text-muted">independent community project</p>
                         <p className="m-0"><small><small>COMPATIBLE WALLETS INCLUDE ...</small></small></p>

@@ -88,6 +88,7 @@ const sim = function(params) {
 export class VoodooButton extends React.Component {
     constructor(props) {
         super(props) 
+        this.isVoodooButton = true
         this.state = {
             data: false,
             wait: false,
@@ -110,20 +111,18 @@ export class VoodooButton extends React.Component {
     }
 
     render() {
-        const { contract, method, params, options, inputValid, simulate, confirmationCallback, ...other } = this.props
+        const { contract, method, params, options, inputValid, simulate, confirmationCallback, callbackArgs, ...other } = this.props
         const dataValid = (typeof inputValid === 'undefined') ? true : inputValid
 
         const handleClick = async (contract, method, params, options, e ) => {
             e.preventDefault()
             e.stopPropagation()
-            if (!dataValid) return
+            if (!dataValid || wait) return
 
             await this.setState({
                 wait: true,
                 data: 'sending'
             })
-
-            var callbackCounter = 1
 
             const func = simulate ? sim : contract.methods[method]
             debug('CONTRACT SEND: %s(%O).send(%O)', method, params, options)
@@ -153,14 +152,15 @@ export class VoodooButton extends React.Component {
                     })
                 })
                 .on('confirmation', (confirmationNumber, receipt) => {
-                    debug('endStake::confirmationNumber: %s, receipt: %O', confirmationNumber, receipt)
-                    if (typeof confirmationCallback === 'function' && callbackCounter-- > 0) {
+                    debug(`${method}::confirmationNumber: %s, receipt: %O`, confirmationNumber, receipt)
+                    if (!wait) {
                         this.setState({
                             wait: false,
                             data: false,
                             hash: null
+                        }, () => {
+                            if (typeof confirmationCallback === 'function') confirmationCallback.apply(this, callbackArgs)
                         })
-                        confirmationCallback.call()
                     }
                     this.setState({ data: confirmationNumber+1 })
                 })
