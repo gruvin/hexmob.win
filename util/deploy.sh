@@ -42,12 +42,7 @@ case "$NODE_ENV" in
                 if [[ ! -d release ]]; then mkdir release; fi
                 echo "Creating ${RELEASE}"
                 eval $TAR czf "${RELEASE}" build/
-                echo "GPG Signing ${RELEASE} => ${RELEASE}.asc"
-                eval $GPG --yes -b ${RELEASE}
-                if [[ ! -f "${RELEASE}.asc" ]]; then
-                    echo "Signing failed. Use 'gpg -b ${RELEASE}' to try again."
-                    exit 3
-                fi
+                echo "Build done."
                 ;;
             esac
         ;;
@@ -58,5 +53,7 @@ echo "RSYNC: (dry run) sending build/* => ${DEST}"
 $RSYNC -n -r --delete 'build/' ${DEST}
 
 echo "DONE"
+echo "Release files are in release/ dir. REMEMBER TO SIGN: gpg --yes -b ${RELEASE}"
+
 exit 0
 
