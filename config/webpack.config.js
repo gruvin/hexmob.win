@@ -193,6 +193,7 @@ module.exports = function(webpackEnv) {
       // this defaults to 'window', but by setting it to 'this' then
       // module chunks which are built will work in web workers as well.
       globalObject: 'this',
+      crossOriginLoading: 'anonymous',
     },
     optimization: {
       minimize: isEnvProduction,
@@ -234,7 +235,6 @@ module.exports = function(webpackEnv) {
               // Turned on because emoji and regex is not minified properly using default
               // https://github.com/facebook/create-react-app/issues/2488
               ascii_only: true,
-              crossOriginLoading: 'anonymous',
             },
           },
           sourceMap: shouldUseSourceMap,
