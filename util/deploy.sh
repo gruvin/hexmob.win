@@ -36,6 +36,7 @@ case "$NODE_ENV" in
                 eval ${CHECKOUT_CMD}
                 if [[ $? -ne 0 ]]; then echo "\nWell that went badly :/\n"; exit -1; fi
                 echo "Building ${TAG} for production server"
+                export REACT_APP_VERSION="${TAG}"
                 yarn build 
                 RELEASE="release/hexmob.win-${TAG}-build.tgz"
                 if [[ ! -d release ]]; then mkdir release; fi

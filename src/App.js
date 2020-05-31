@@ -400,7 +400,7 @@ class App extends React.Component {
                 <Container id="hexmob_header" fluid>
                     <h1>HEX<sup>mob.win</sup></h1>
                     <h2>...stake on the run</h2>
-                    <h3>Open BETA <span>{process.env.REACT_APP_HEXMOB_VERSION}</span></h3>
+                    <h3>Open BETA <span>{process.env.REACT_APP_VERSION} ({process.env.REACT_APP_HEXMOB_COMMIT_HASH})</span></h3>
                 </Container>
                 <Container id="hexmob_body" fluid className="p-1">
                     <Container className="p-1">
