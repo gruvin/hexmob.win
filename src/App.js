@@ -7,8 +7,7 @@ import {
     Col,
     Button,
     Badge,
-    ProgressBar,
-    Image
+    ProgressBar
 } from 'react-bootstrap'
 import { DebugPanel } from './Widgets'
 import Stakes from './Stakes'

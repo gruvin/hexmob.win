@@ -24,11 +24,11 @@ const cryptoFormat = (v, currency) => {
     if (typeof currency === 'undefined') currency = 'HEX'
     if (typeof v === 'string' || typeof v === 'number') v = BigNumber(v)
 
-    let unit = ' HEX'
+    let unit = 'HEX'
     let s
     switch (currency) {
         case 'ETH':
-            unit = ' ETH'
+            unit = 'ETH'
             if (v.isZero())         s = '0.000'
             else if (v.lt( 1e3))    { unit = ' Wei'; s = format(',')(v.toFixed(0)) }
             else if (v.lt( 1e6))    { unit = ' Wei'; s = format(',.0f')(v.toFixed(0)) }
@@ -46,7 +46,7 @@ const cryptoFormat = (v, currency) => {
             else                    s = format(',.0f')(v.div( 1e36).toFixed(0, 1))+'T' // [nnn,...,]nnn,nnn T
             break
         case 'SHARES_PER_HEX':
-            unit = ' /HEX'
+            unit = '/HEX'
             v = BigNumber(v).times(1e8)
             if (v.isZero())         s = '0.000'
             else if (v.lt( 1e3))    s = format(',.3f')(v.toFixed(3))
@@ -56,7 +56,7 @@ const cryptoFormat = (v, currency) => {
             else                    s = format(',.0f')(v.div(1e9).toFixed(0))+'B'
             break
         case 'SHARES':
-            unit = ' /HEX'
+            unit = ' Shares'
             if (v.isZero())         s = '0.000'
             else if (v.lt( 1e3))    s = format(',.3f')(v.toFixed(3))
             else if (v.lt( 1e6))    s = format(',.3f')(v.div(1e3).toFixed(3, 1))+'K'

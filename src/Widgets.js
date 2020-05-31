@@ -23,7 +23,7 @@ export const CryptoVal = (props) => {
     let v = new BigNumber(props.value) 
     if (isNaN(v)) return ( <>NaN</> )
     
-    const { valueString:s, unit } = cryptoFormat(v, props.currency)
+    let { valueString:s, unit } = cryptoFormat(v, props.currency)
 
     // mute fractional part (including the period)
     const r = s.match(/^(.*)(\.\d+)(.*)$/) 
@@ -35,11 +35,11 @@ export const CryptoVal = (props) => {
                     { r[2] }
                 </span>
                 { r[3] && r[3] }
-                { props.showUnit && unit }
+            { props.showUnit && <>&nbsp;{unit}</> }
             </div>
         ) 
-        else 
-            return ( <div className="numeric">{s}{ props.showUnit && unit}</div> )
+    else 
+        return ( <div className="numeric">{s}{ props.showUnit && <>&nbsp;{unit}</> }</div> )
 }
 
 export const WhatIsThis = (props) => {

@@ -52,7 +52,6 @@ class Lobby extends React.Component {
                 debug('ERR: events.XfLobbyEnter:', e) 
                 return
             }
-            const { id, blockHash, removed, stakeId } = r.returnValues
             if (r && !this.addToEventLog(r)) return
             this.getToday()
         })
