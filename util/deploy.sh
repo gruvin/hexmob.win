@@ -25,7 +25,7 @@ case "$NODE_ENV" in
         DEST='hexmob:~/public_html' 
         echo "Enter release version tag for this PRODUCTION build"
         read TAG\?"eg. v0.2.3B -- this should match a master branch git tag: "
-        CHECKOUT_CMD="$GIT checkout ${TAG}"
+        CHECKOUT_CMD="$GIT stash && $GIT checkout ${TAG}"
         read -k1 YN\?"OK to execute '${CHECKOUT_CMD}'? [Y/n]: "
         case $YN in
             [Nn])
@@ -34,7 +34,7 @@ case "$NODE_ENV" in
                 ;;
             *) 
                 eval ${CHECKOUT_CMD}
-                if [[ $? -ne 0 ]]; then "\nWell that went badly :/\n"; exit -1; fi
+                if [[ $? -ne 0 ]]; then echo "\nWell that went badly :/\n"; exit -1; fi
                 echo "Building ${TAG} for production server"
                 yarn build 
                 RELEASE="release/hexmob.win-${TAG}-build.tgz"
