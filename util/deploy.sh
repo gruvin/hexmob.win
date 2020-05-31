@@ -40,9 +40,9 @@ case "$NODE_ENV" in
                 RELEASE="release/hexmob.win-${TAG}-build.tgz"
                 if [[ ! -d release ]]; then mkdir release; fi
                 echo "Creating ${RELEASE}"
-                $TAR czf "${RELEASE}" build/
+                eval $TAR czf "${RELEASE}" build/
                 echo "GPG Signing ${RELEASE} => ${RELEASE}.asc"
-                $GPG --yes -b ${RELEASE}
+                eval $GPG --yes -b ${RELEASE}
                 if [[ ! -f "${RELEASE}.asc" ]]; then
                     echo "Signing failed. Use 'gpg -b ${RELEASE}' to try again."
                     exit 3
