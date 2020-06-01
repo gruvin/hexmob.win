@@ -297,6 +297,21 @@ class App extends React.Component {
             })
             this.subscribeEvents()
         })
+
+        // update UI and contract currentDay every hour
+        var lastHour = -1;
+        setInterval(async () => {
+            if (!this.state.contractReady) return
+            var d = new Date();
+            var currentHour = d.getHours();
+            if (currentHour !== lastHour) {
+                lastHour = currentHour;
+                const currentDay = Number(await this.contract.methods.currentDay().call())
+                this.contract.Data.currentDay = currentDay
+                this.setState({ currentDay: currentDay+1 })
+                // TODO: other UI stuff should update here as well
+            }
+        }, 1000);
     }
 
     componentWillUnmount = () => {
@@ -408,8 +423,11 @@ class App extends React.Component {
             <>
                 <Container id="hexmob_header" fluid>
                     <h1>HEX<sup>mob.win</sup></h1>
+                    <div className="day">
+                        <span className="text-muted small ml-3">DAY</span><span className="day-number">{this.state.currentDay}</span>
+                    </div>
                     <h2>...stake on the run</h2>
-                    <h3>Open BETA <span>{process.env.REACT_APP_VERSION} ({process.env.REACT_APP_HEXMOB_COMMIT_HASH})</span></h3>
+                    <h3>Open BETA <span>{process.env.REACT_APP_VERSION || 'v0.0.0A'} ({process.env.REACT_APP_HEXMOB_COMMIT_HASH})</span></h3>
                 </Container>
                 <Container id="hexmob_body" fluid className="p-1">
                     <Container className="p-1">

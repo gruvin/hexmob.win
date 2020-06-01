@@ -34,10 +34,9 @@ class Stakes extends React.Component {
             stakeList: null,
             loadingStakes: true,
             stakeContext: { }, // active UI stake context
-            showExitModal: false
+            showExitModal: false,
+            currentDay: '---'
         }
-
-        window._STAKES = this // DEBUG REMOVE ME
     }
 
     addToEventLog = (entry) => {
@@ -199,8 +198,9 @@ class Stakes extends React.Component {
     }
 
     componentDidMount = async () => {
-       await this.loadAllStakes()
-       await this.subscribeEvents()
+        window._STAKES = this // DEBUG REMOVE ME
+        await this.loadAllStakes()
+        await this.subscribeEvents()
     }
 
     componentDidUpdate = async (prevProps, prevState) => {

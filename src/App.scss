@@ -85,6 +85,15 @@ body {
     padding: 0;
     display: block;
 }
+#hexmob_header div.day {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 90%;
+    display: inline-block;
+    text-align: center
+}
+
 #hexmob_header h3 {
     position: absolute;
     overflow: hidden;
@@ -134,22 +143,12 @@ button#connect_wallet {
 button#connect_wallet:hover { border-style: inset; border-color: #fec}
 
 .numeric { font-family: Jura, "Courier New", monospace; display: inline; }
-.day-number {
-    font-family: Jura, 'Courier New', monospace;
-    color: map-get($theme-colors, secondary);
-    font-size: 0.65em;
-    line-height: 1.6em;
-    font-weight: normal;
-    text-transform: lowercase;
-}
-.day-number .numeric { 
+.day-number { 
+    padding: 0;
+    color: map-get($theme-colors, info);
+    font-family: Jura, "Courier New", monospace;
     font-size: 1.6em;
     font-weight: bold;
-    vertical-align: middle;
-    color: map-get($theme-colors, info);
-    background-color: map-get($theme-colors, dark);
-    padding: 0 0.25em;
-    border-radius: 5px;
 }
 
 .accordion .accordion > .card {

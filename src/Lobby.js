@@ -336,7 +336,7 @@ class Lobby extends React.Component {
                         <Col        sm={2} className="px-0 d-none d-sm-inline"><a href="#sort_totalETH" onClick={handleSortSelection}>ETH</a></Col>
                         <Col        sm={2} className="px-0 d-none d-sm-inline"><a href="#sort_HEXperETH" onClick={handleSortSelection}>HEX/ETH</a></Col>
 
-                        <Col xs={4} sm={2} className="p-0"><a href="#sort_mintedHEXTotal" onClick={handleSortSelection}>Your HEX</a></Col>        
+                        <Col xs={4} sm={2} className="px-2"><a href="#sort_mintedHEXTotal" onClick={handleSortSelection}>Your HEX</a></Col>        
                         <Col xs={4} sm={2} className="p-0"><a href="#sort_rawEntriesTotal" onClick={handleSortSelection}>Your ETH</a></Col>
                     </Row>
                     { lobbyData.map(dayData => { 
@@ -350,7 +350,7 @@ class Lobby extends React.Component {
                                 <Col        sm={2} className="px-0 d-none d-sm-inline"><CryptoVal value={totalETH} currency="ETH" /></Col>
                                 <Col        sm={2} className="px-0 d-none d-sm-inline"><CryptoVal value={HEXperETH} /></Col>
 
-                                <Col xs={4} sm={2} className="px-0"><CryptoVal value={mintedHEXTotal} showUnit/></Col>
+                                <Col xs={4} sm={2} className="px-2"><CryptoVal value={mintedHEXTotal} /></Col>
                                 <Col xs={4} sm={2} className="px-0"><CryptoVal value={rawEntriesTotal} currency="ETH" showUnit /></Col>
                             </Row>
                         )
