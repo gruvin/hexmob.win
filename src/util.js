@@ -36,8 +36,9 @@ const cryptoFormat = (v, currency) => {
             else if (v.lt( 1e9))    { unit = 'Wei'; s = format(',.3f')(v.div( 1e06).toFixed(3, 1))+'M' }
             else if (v.lt(1e12))    { unit = 'Wei'; s = format(',.3f')(v.div( 1e09).toFixed(3, 1))+'G' }
             else if (v.lt(1e15))    { unit = 'Wei'; s = format(',.0f')(v.div( 1e09).toFixed(0, 1))+'G' } // RH uses nnn.nnnT. We prefer GWei over TWei
-            else if (v.lt(1e19))    { unit = 'ETH'; s = format(',.6f')(v.div( 1e18).toFixed(6, 1)) } //  n.nnnnn
-            else if (v.lt(1e20))    { unit = 'ETH'; s = format(',.5f')(v.div( 1e18).toFixed(5, 1)) } //  nn.nnnn
+            else if (v.lt(1e18))    { unit = 'ETH'; s = format(',.6f')(v.div( 1e18).toFixed(6, 1)) }
+            else if (v.lt(1e19))    { unit = 'ETH'; s = format(',.6f')(v.div( 1e18).toFixed(6, 1)) }
+            else if (v.lt(1e20))    { unit = 'ETH'; s = format(',.5f')(v.div( 1e18).toFixed(5, 1)) }
             else if (v.lt(1e21))    s = format(',.3f')(v.div( 1e18).toFixed(3, 1)) // nnn.nnn
             else if (v.lt(1e24))    s = format(',.0f')(v.div( 1e18).toFixed(0, 1)) // nnn,nnn
             else if (v.lt(1e27))    s = format(',.3f')(v.div( 1e24).toFixed(3, 1))+'M' // nnn.nnn M
@@ -46,6 +47,7 @@ const cryptoFormat = (v, currency) => {
             else if (v.lt(1e36))    s = format(',.0f')(v.div( 1e30).toFixed(0, 1))+'B' // nnn,nnn B
             else if (v.lt(1e39))    s = format(',.3f')(v.div( 1e36).toFixed(3, 1))+'T' // nnn.nnn T
             else                    s = format(',.0f')(v.div( 1e36).toFixed(0, 1))+'T' // [nnn,...,]nnn,nnn T
+            s = s.replace(/(^\d+\.\d{3})0+$/, "$1") // nn.123000 => nn.123
             break
         case 'SHARES_PER_HEX':
             unit = '/HEX'

@@ -384,7 +384,7 @@ class App extends React.Component {
             <Container id="wallet_status" fluid>
             <Row>
                 <Col><Badge variant={this.state.network === 'mainnet' ? "success" : "danger"} className="small">{this.state.network}</Badge></Col>
-                <Col className="text-light text-center">{this.state.currentProvider}</Col>
+                <Col className="text-muted text-center small">{this.state.currentProvider}</Col>
                 <Col className="text-right">
                     <Badge className="text-info">{ addressFragment }</Badge>
                 </Col>

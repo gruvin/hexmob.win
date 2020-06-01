@@ -61,7 +61,7 @@ export class StakeInfo extends React.Component {
                             </Row>
                             <Row className="mb-1">
                                 <Col xs={7} className="numeric">
-                                    <span className="numeric text-muted small mr-1">
+                                    <span className="text-muted small mr-1">
                                         DAYS
                                     </span>
                                     {startDay+1} to {endDay+1}
