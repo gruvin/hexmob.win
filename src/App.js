@@ -490,7 +490,7 @@ class App extends React.Component {
                         </div>
                     </Container>
             
-                    { 
+                    { uriQuery.has('debug') &&
                         <DebugPanel />
                     }
                 </Container>
