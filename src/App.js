@@ -403,6 +403,7 @@ class App extends React.Component {
     }
 
     render() {
+        const uriQuery = new URLSearchParams(window.location.search)
         return (
             <>
                 <Container id="hexmob_header" fluid>
@@ -471,7 +472,7 @@ class App extends React.Component {
                         </div>
                     </Container>
             
-                    { (process.env.REACT_APP_NODE_ENV === 'development' || window.location.hostname.match(/^dev\./) !== null) &&
+                    { uriQuery.has('debug') &&
                         <DebugPanel />
                     }
                 </Container>
