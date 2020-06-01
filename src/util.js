@@ -36,7 +36,8 @@ const cryptoFormat = (v, currency) => {
             else if (v.lt( 1e9))    { unit = 'Wei'; s = format(',.3f')(v.div( 1e06).toFixed(3, 1))+'M' }
             else if (v.lt(1e12))    { unit = 'Wei'; s = format(',.3f')(v.div( 1e09).toFixed(3, 1))+'G' }
             else if (v.lt(1e15))    { unit = 'Wei'; s = format(',.0f')(v.div( 1e09).toFixed(0, 1))+'G' } // RH uses nnn.nnnT. We prefer GWei over TWei
-            else if (v.lt(1e18))    { unit = 'Wei'; s = format(',.3f')(v.div( 1e15).toFixed(3, 1))+'T' }
+            else if (v.lt(1e19))    { unit = 'ETH'; s = format(',.6f')(v.div( 1e18).toFixed(6, 1)) } //  n.nnnnn
+            else if (v.lt(1e20))    { unit = 'ETH'; s = format(',.5f')(v.div( 1e18).toFixed(5, 1)) } //  nn.nnnn
             else if (v.lt(1e21))    s = format(',.3f')(v.div( 1e18).toFixed(3, 1)) // nnn.nnn
             else if (v.lt(1e24))    s = format(',.0f')(v.div( 1e18).toFixed(0, 1)) // nnn,nnn
             else if (v.lt(1e27))    s = format(',.3f')(v.div( 1e24).toFixed(3, 1))+'M' // nnn.nnn M
@@ -84,7 +85,7 @@ const cryptoFormat = (v, currency) => {
             break
         default: // NaN or Infinity
             unit = ''
-            s = v
+            s = v.toString()
     }
     return {
         valueString: s,
