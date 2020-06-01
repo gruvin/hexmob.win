@@ -21,7 +21,8 @@ import WalletConnectProvider from "@walletconnect/web3-provider"
 import { detectedTrustWallet } from './util'
 import './App.scss'
 const debug = require('./debug')('App')
-if ('development' === process.env.REACT_APP_NODE_ENV) {
+const uriQuery = new URLSearchParams(window.location.search)
+if (uriQuery.has('debug')) {
     window.localStorage.setItem('debug', '*')
 } else {
     window.localStorage.removeItem('debug')
@@ -57,7 +58,6 @@ class App extends React.Component {
             incomingReferrer,
             referrer
         }
-        this.debug = [ <p>DEBUG</p> ]
     }
 
     subscribeProvider = async (provider) => {
@@ -135,7 +135,6 @@ class App extends React.Component {
     }
 
     componentDidMount = async () => {
-        
         debug('process.env: ', process.env)
         window._APP = this // DEBUG remove me
         if (!this.walletProvider) {
@@ -163,7 +162,9 @@ class App extends React.Component {
                 this.walletProvider = new window.Trust(mainnet)
                 this.setState({ currentProvider: 'TrustWallet' })
             } else if (window.ethereum && window.ethereum.isImToken === true ) {
+                debug("Detected imToken wallet")
                 this.walletProvider = window.ethereum
+                this.walletProvider.chainId = '0x1' // imToken returns null
             } else {
                 this.setState({ currentProvider: 'web3modal' })
                 return this.connectWeb3ModalWallet()
@@ -178,7 +179,7 @@ class App extends React.Component {
         window.web3 = new Web3(this.walletProvider)
 
         // this.web3 used for everything else 
-        this.provider = new Web3.providers.WebsocketProvider(HEX.CHAINS[Number(window.web3.currentProvider.chainId)].wssUrl)
+        this.provider = new Web3.providers.WebsocketProvider(HEX.CHAINS[Number(this.walletProvider.chainId)].wssUrl)
         this.web3 = new Web3(this.provider)
 
         // ref: https://soliditydeveloper.com/web3-1-2-5-revert-reason-strings
@@ -403,7 +404,6 @@ class App extends React.Component {
     }
 
     render() {
-        const uriQuery = new URLSearchParams(window.location.search)
         return (
             <>
                 <Container id="hexmob_header" fluid>
@@ -472,7 +472,7 @@ class App extends React.Component {
                         </div>
                     </Container>
             
-                    { uriQuery.has('debug') &&
+                    { 
                         <DebugPanel />
                     }
                 </Container>
