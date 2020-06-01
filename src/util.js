@@ -42,7 +42,7 @@ const cryptoFormat = (v, currency) => {
             else if (v.lt(1e21))    s = format(',.3f')(v.div( 1e18).toFixed(3, 1)) // nnn.nnn
             else if (v.lt(1e24))    s = format(',.0f')(v.div( 1e18).toFixed(0, 1)) // nnn,nnn
             else if (v.lt(1e27))    s = format(',.3f')(v.div( 1e24).toFixed(3, 1))+'M' // nnn.nnn M
-            else if (v.lt(1e30))    s = format(',.0f')(v.div( 1e24).toFixed(3, 1))+'M' // nnn,nnn M
+            else if (v.lt(1e30))    s = format(',.0f')(v.div( 1e24).toFixed(0, 1))+'M' // nnn,nnn M
             else if (v.lt(1e33))    s = format(',.3f')(v.div( 1e30).toFixed(3, 1))+'B' // nnn.nnn B
             else if (v.lt(1e36))    s = format(',.0f')(v.div( 1e30).toFixed(0, 1))+'B' // nnn,nnn B
             else if (v.lt(1e39))    s = format(',.3f')(v.div( 1e36).toFixed(3, 1))+'T' // nnn.nnn T

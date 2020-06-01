@@ -50,13 +50,13 @@ describe('CryptoVal number formatter', () => {
         { input: BigNumber("  12.345e18       ")  , expect: { unit: "ETH", valueString:   "12.345", valueWithUnit:   "12.345 ETH"} },
         { input: BigNumber(" 123.456e18       ")  , expect: { unit: "ETH", valueString:  "123.456", valueWithUnit:  "123.456 ETH"} },
         { input:    "123456789012345678901.234"   , expect: { unit: "ETH", valueString:  "123.456", valueWithUnit:  "123.456 ETH"} },
-        { input: BigNumber(123.456e3).times(1e18) , expect: { unit: "ETH", valueString:  "123,456", valueWithUnit:  "123,456 ETH"} },
-        { input: BigNumber(123.456e3).times(1e21) , expect: { unit: "ETH", valueString: "123.456M", valueWithUnit: "123.456M ETH"} },
-        { input: BigNumber(123.456e3).times(1e24) , expect: { unit: "ETH", valueString: "123,456M", valueWithUnit: "123,456M ETH"} },
-        { input: BigNumber(123.456e3).times(1e27) , expect: { unit: "ETH", valueString: "123.456B", valueWithUnit: "123.456B ETH"} },
-        { input: BigNumber(123.456e3).times(1e30) , expect: { unit: "ETH", valueString: "123,456B", valueWithUnit: "123,456B ETH"} },
+        { input: BigNumber(123.4567e3).times(1e18) , expect: { unit: "ETH", valueString:  "123,456", valueWithUnit:  "123,456 ETH"} },
+        { input: BigNumber(123.4567e3).times(1e21) , expect: { unit: "ETH", valueString: "123.456M", valueWithUnit: "123.456M ETH"} },
+        { input: BigNumber(123.4567e3).times(1e24) , expect: { unit: "ETH", valueString: "123,456M", valueWithUnit: "123,456M ETH"} },
+        { input: BigNumber(123.4567e3).times(1e27) , expect: { unit: "ETH", valueString: "123.456B", valueWithUnit: "123.456B ETH"} },
+        { input: BigNumber(123.4567e3).times(1e30) , expect: { unit: "ETH", valueString: "123,456B", valueWithUnit: "123,456B ETH"} },
         { input: BigNumber("NOT A NUMBER")        , expect: { unit:    "", valueString:      "NaN", valueWithUnit:          "NaN"} },
-        { input: BigNumber(123.456e3).div(0)      , expect: { unit:    "", valueString: "Infinity", valueWithUnit:     "Infinity"} },
+        { input: BigNumber(1).div(0)              , expect: { unit:    "", valueString: "Infinity", valueWithUnit:     "Infinity"} },
     ]
 
     ETH.forEach(t => {
