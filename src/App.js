@@ -18,7 +18,7 @@ import Web3 from "web3";
 import Web3Modal, { getProviderInfo } from "web3modal";
 import WalletConnectProvider from "@walletconnect/web3-provider"
 //import Portis from "@portis/web3";
-import { detectedTrustWallet } from './util'
+import { detectTrustWallet } from './util'
 import './App.scss'
 const debug = require('./debug')('App')
 const uriQuery = new URLSearchParams(window.location.search)
@@ -134,67 +134,80 @@ class App extends React.Component {
         this.setState({ wallet: { ...this.state.wallet, balance: new BigNumber(balance) } })
     }
 
-    componentDidMount = async () => {
-        debug('process.env: ', process.env)
-        window._APP = this // DEBUG remove me
-        if (!this.walletProvider) {
-            // check first for Mobile TrustWallet
-            if (detectedTrustWallet) {
-                const mainnet = {
-                    chainId: window.web3.currentProvider.chainId,
-                    rpcUrl: HEX.CHAINS[Number(window.web3.currentProvider.chainId)].rpcUrl
-                };
-                /* XXX: 
-                    Ancient legacy 0.5.x web3 code. provider.sendAync uses only callback, no Promise.
-                    It doesn't matter because TrustWallet (iOS) sends no response back to browser
-                    after signing (or not) a provider.sendAsync('send_Transaction') anyway. :'( 
-
-                    More ominous even ...
-
-                    2020-05-21: Telegram::@hewig (Tao X) referring to [@trustwallet/trust-web3-provider]
-                        ................... unfortunately legacy trust provider
-                        is not fully eip1193 compatible, apple doesn’t like dapp
-                        browsers, we might have some difficult decision to make 
-                        in a few weeks
-
-                    0uc4
-                */
-                this.walletProvider = new window.Trust(mainnet)
-                this.setState({ currentProvider: 'TrustWallet' })
-            } else if (window.ethereum && window.ethereum.isImToken === true ) {
-                debug("Detected imToken wallet")
-                this.walletProvider = window.ethereum
-                this.walletProvider.chainId = '0x1' // imToken returns null
-            } else {
-                this.setState({ currentProvider: 'web3modal' })
-                return this.connectWeb3ModalWallet()
-            }
+    async selectWeb3ModalWallet() {
+        this.walletProvider = null
+        const web3Modal = new Web3Modal({
+            cacheProvider: true,                        // optional
+            providerOptions: this.getProviderOptions()  // required
+        });
+        try {
+            return web3Modal.connect()
+        } catch(e) { // user closed dialog withot selection 
+            return null
         }
-        if (!this.walletProvider) return // User will need to click the button to connect again
+    }
 
+    /* returns address or null */
+    async establishWeb3Provider() {
+        // Check for non-web3modal injected providers (mobile dApp browsers)
+        if (detectTrustWallet()) {                                                  // TrustWallet
+            const chainId = window.web3.currentProvider.chainId
+            const mainnet = {
+                chainId, 
+                rpcUrl: HEX.CHAINS[Number(chainId)].rpcURL
+            }
+            this.walletProvider = new window.Trust(mainnet)
+            this.setState({ currentProvider: 'TrustWallet' })
+        } else if (window.ethereum && window.ethereum.isImToken === true ) {        // imToken
+            debug("Detected imToken wallet")
+            window.ethereum.chainId = '0x1' // imToken returns null
+            this.walletProvider = window.ethereum
+            this.setState({ currentProvider: 'TrustWallet' })
+        } else {                                                                    // web3modal selection
+            this.setState({ currentProvider: 'web3modal' })
+            this.walletProvider = await this.selectWeb3ModalWallet()
+            const currentProvider = this.walletProvider ? getProviderInfo(this.walletProvider).name : '---'
+            this.setState({ currentProvider })
+        }
 
-        debug('web3 provider established')
+        // We set up TWO providers. Once from the wallet to handle sending transactions
+        // and one for all other chain quuery operations (using Infura or the like)
+        // this.walletProvider stores the transaction provider
+        // this.provider stores the query provider
+        if (!this.walletProvider || !this.walletProvider.chainId) 
+            return // User will need to click the button to connect again
+        
+        // we only get here if this.walletProvider has been established
 
-        // window.web3 used for sending/signing transactions
-        window.web3 = new Web3(this.walletProvider)
+        const chainId = Number(this.walletProvider.chainId)
+        const networkData = HEX.CHAINS[chainId] || null
+        if (!networkData) return debug(`Unsupported chainId '${chainId}'`);
 
-        // this.web3 used for everything else 
-        this.provider = new Web3.providers.WebsocketProvider(HEX.CHAINS[Number(this.walletProvider.chainId)].wssUrl)
-        this.web3 = new Web3(this.provider)
+        const network = networkData.name || 'error'
+        const wssURL = networkData.wssURL || null 
 
+        await this.setState({ chainId, network })
+
+        this.provider = new Web3.providers.WebsocketProvider(wssURL)
+        debug('web3 providers established')
+
+        window.web3 = new Web3(this.walletProvider) // window.web3 used for sending/signing transactions
+        this.web3 = new Web3(this.provider)         // this.web3 used for everything else 
+
+        if (!window.web3 || !this.web3) return debug('Unexpected error setting up Web3 instances')
+        
         // ref: https://soliditydeveloper.com/web3-1-2-5-revert-reason-strings
         if (window.web3.eth.hasOwnProperty('handleRevert'))  window.web3.eth.handleRevert = true 
         if (this.web3.eth.hasOwnProperty('handleRevert'))  this.web3.eth.handleRevert = true 
-       
-        debug('web3 provider connected')
+        debug('web3 providers connected')
 
-        var address
-        if (this.walletProvider.isMetaMask) {
+        // Different ewallets have different methods of supplying the user's active ETH address
+        var address = null
+        if (this.walletProvider.isMetaMask) {               // METAMASK
             debug('MetaMask detected')
-            /*
-            const accounts = await window.ethereum.send('eth_requestAccounts') // EIP1102. Not working. WHY? :/ MM extension too old? Weird. 
-            address = accounts[0]
-            */
+            /* EIP1102. Not working. WHY? :/ MM extension too old? Weird. 
+            const accounts = await window.ethereum.send('eth_requestAccounts')
+            address = accounts[0] */
             // UGLY: MetaMask takes time to sort itself out (EIP-1102 'eth_requestAccounts' not available yet)
             address = await new Promise((resolve, reject) => {
                 let retries = 10
@@ -211,37 +224,29 @@ class App extends React.Component {
                     }
                 }, 100)
             })
-        } else if (detectedTrustWallet) {
+        } else if (detectTrustWallet()) {                 // TRUST WALLET
             this.walletProvider.enable()
-            address = window.web3.eth.givenProvider.address || 0x7357000000000000000000000000000000000000
+            address = window.web3.eth.givenProvider.address || '0x7357000000000000000000000000000000000000'
             this.walletProvider.setAddress(address)
         } else if (window.web3.currentProvider.isPortis) {
             this.walletProvider.enable()
             const accounts = await window.web3.eth.getAccounts()
             address = accounts[0]
-        } else if (window.web3.currentProvider.isImToken) {
+        } else if (window.web3.currentProvider.isImToken) { // imTOKEN
             debug('imToken Wallet detected')
             const accounts = await window.ethereum.send('eth_requestAccounts') // EIP1102
             address = accounts[0]
-        } else 
-            address = window.web3.eth.accounts[0]   // everyone else ... maybe
+        } else                                              // OTHERS (WalletConnect)
+            address = window.web3.eth.accounts[0]
+        return (address.toLowerCase().slice(0, 2) === '0x') ? address : null
+    }
 
-        debug('wallet address: ', address)
-        if (!address) {
-            debug('Wallet address unknown. STOP.')
-            return // web3Modal should take it from here
-        }
+    async componentDidMount() {
+        debug('process.env: ', process.env)
+        window._APP = this // DEBUG remove me
 
-        const chainId = Number(window.web3.currentProvider.chainId)
-        let network
-        if (HEX.CHAINS[chainId]) {
-            network = HEX.CHAINS[chainId].name
-            await this.setState({ chainId, network })
-        } else {
-            network = 'unavailable'
-            await this.setState({ chainId, network })
-            return
-        }
+        const address = await this.establishWeb3Provider() 
+        if (!address) return debug('No wallet address supplied - STOP')
 
         window.contract = new window.web3.eth.Contract(HEX.ABI, HEX.CHAINS[this.state.chainId].address)    // wallet's provider
         this.contract = new this.web3.eth.Contract(HEX.ABI, HEX.CHAINS[this.state.chainId].address)        // INFURA
@@ -297,6 +302,7 @@ class App extends React.Component {
             })
             this.subscribeEvents()
         })
+        .catch(e => debug("App::cpompentDidMount:Promise.all(...): ", e))
 
         // update UI and contract currentDay every hour
         var lastHour = -1;
@@ -319,11 +325,8 @@ class App extends React.Component {
     }
 
     resetApp = async () => {
-        await this.unsubscribeEvents()
-        await this.web3Modal.clearCachedProvider()
-        await this.setState({ ...INITIAL_STATE })
-        this.provider = null
-        this.web3 = null
+        const o = new Web3Modal()
+        o.clearCachedProvider()
         window.location.reload()
     }
 
@@ -344,25 +347,11 @@ class App extends React.Component {
         }
         return providerOptions
     }
-
-    connectWeb3ModalWallet = async (reset) => {
-        if (reset) {
-            await this.web3Modal.clearCachedProvider()
-            window.web3 = null
-            this.web3 = null
-            this.provider = null
-        }
-        this.web3Modal = new Web3Modal({
-            network: "mainnet",                         // optional
-            cacheProvider: true,                        // optional
-            providerOptions: this.getProviderOptions()  // required
-        });
-        this.walletProvider = await this.web3Modal.connect()
-        if (this.walletProvider) {
-            debug('web3Modal getProviderInfo: ', getProviderInfo(this.walletProvider))
-            this.setState({ currentProvider: getProviderInfo(this.walletProvider).name })
-            this.componentDidMount()
-        }
+    
+    handleConnectEWalletButton = () => {
+        const o = new Web3Modal()
+        o.clearCachedProvider()
+        this.componentDidMount()
     }
 
     disconnectWallet = async () => {
@@ -397,7 +386,7 @@ class App extends React.Component {
         if (!this.state.walletConnected) { // 'connect wallet' button
             return (
                 <Container fluid className="text-center mb-3">
-                    <Button id="connect_wallet" onClick={() => this.connectWeb3ModalWallet(true)} variant="info">
+                    <Button id="connect_wallet" variant="info" onClick={this.handleConnectEWalletButton} >
                         <span className="d-none d-sm-inline">Click to Connect a Wallet</span>
                         <span className="d-inline d-sm-none">Connect Wallet</span>
                     </Button>
@@ -450,7 +439,7 @@ class App extends React.Component {
                     </Container>
 
                     
-                    { !detectedTrustWallet && /* TrustWallet won't follow external links */
+                    { !detectTrustWallet() && /* TrustWallet won't follow external links */
                     <>
                         <Container className="p-3 my-3">
                             <Card.Body as={Button} variant="info" className="w-100" style={{ cursor: "pointer" }}

@@ -96,11 +96,13 @@ const cryptoFormat = (v, currency) => {
     }
 }
 
-const detectedTrustWallet = (window.web3 && window.web3.currentProvider && window.web3.currentProvider.isTrust)
+const detectTrustWallet = () => {
+    return (window.web3 && window.web3.currentProvider && window.web3.currentProvider.isTrust)
+}
 
 module.exports = {
     calcBigPayDaySlice,
     calcAdoptionBonus,
     cryptoFormat,
-    detectedTrustWallet,
+    detectTrustWallet,
 }

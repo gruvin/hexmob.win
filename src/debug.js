@@ -1,7 +1,10 @@
 const createDebug = require('debug')
 
 const debug_panel = (...args) => {
-    const output = JSON.stringify(args).slice(1,-1)
+    let output
+    try {
+        output = JSON.stringify(args).slice(1,-1)
+    } catch(e) { output=`"${args[0]} [msg contains circular object]"` }
     const el = document.getElementById('HM_DEBUG')
     if (el) el.innerText += output+"\n"
 }

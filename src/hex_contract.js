@@ -27,15 +27,15 @@ module.exports = {
         0x1: {
             name: "mainnet",
             address: "0x2b591e99afe9f32eaa6214f7b7629768c40eeb39",
-            rpcUrl: `https://mainnet.infura.io/v3/${process.env.REACT_APP_INFURA_ID}`,
-            wssUrl: `wss://mainnet.infura.io/ws/v3/${process.env.REACT_APP_INFURA_ID}` 
+            rpcURL: `https://mainnet.infura.io/v3/${process.env.REACT_APP_INFURA_ID}`,
+            wssURL: `wss://mainnet.infura.io/ws/v3/${process.env.REACT_APP_INFURA_ID}` 
         },
         0x2: null,
         0x3: {
             name: "ropsten",
             address: "0xd86C94478F8634e1D845038B9490D93665469dA4",
-            rpcUrl: `https://ropsten.infura.io/v3/${process.env.REACT_APP_INFURA_ID}`,
-            wssUrl: `wss://ropsten.infura.io/ws/v3/${process.env.REACT_APP_INFURA_ID}` 
+            rpcURL: `https://ropsten.infura.io/v3/${process.env.REACT_APP_INFURA_ID}`,
+            wssURL: `wss://ropsten.infura.io/ws/v3/${process.env.REACT_APP_INFURA_ID}` 
         },
     },
     START_DATE,
