@@ -57,9 +57,9 @@ const Blurb = () => {
                 <Row className="h-100">
                     <Col>
                         <h2 className="text-center text-sm-left"><img width={120} src="/walletconnect.svg" alt="" /> WalletConnect</h2>
-                        <blockquote class="blockquote">
-                            <p class="mb-0">Opening up a whole world of Dapps that were once only available to Metamask.</p>
-                            <footer class="blockquote-footer">What is WalletConnect? 
+                        <blockquote className="blockquote">
+                            <p className="mb-0">Opening up a whole world of Dapps that were once only available to Metamask.</p>
+                            <footer className="blockquote-footer">What is WalletConnect? 
                                 <cite title="walletconnect.org">
                                     <a href="walletconnect.org">walletconnect.org</a>
                                 </cite>

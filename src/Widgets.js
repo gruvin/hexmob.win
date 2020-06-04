@@ -153,7 +153,7 @@ export class VoodooButton extends React.Component {
                 })
                 .on('confirmation', (confirmationNumber, receipt) => {
                     debug(`${method}::confirmationNumber: %s, receipt: %O`, confirmationNumber, receipt)
-                    if (!wait) {
+                    if (this.state.wait) {
                         this.setState({
                             wait: false,
                             data: false,

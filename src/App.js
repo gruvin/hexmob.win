@@ -61,6 +61,7 @@ class App extends React.Component {
                 },
             }
         })
+        this.triggerWeb3Modal = false
         this.web3 = null
         this.subscriptions = [ ]
         this.contract = null
@@ -148,7 +149,7 @@ class App extends React.Component {
     async selectWeb3ModalWallet() {
         this.walletProvider = null
         try {
-            return this.web3modal.connect()
+            return await this.web3modal.connect()
         } catch(e) { // user closed dialog withot selection 
             return null
         }
@@ -158,6 +159,7 @@ class App extends React.Component {
     async establishWeb3Provider() {
         // Check for non-web3modal injected providers (mobile dApp browsers)
         if (detectTrustWallet()) {                                                  // TrustWallet
+            debug("Detected TrustWallet")
             const chainId = window.web3.currentProvider.chainId
             const mainnet = {
                 chainId, 
@@ -173,7 +175,8 @@ class App extends React.Component {
         } else {                                                                    // web3modal selection
             this.setState({ currentProvider: 'web3modal' })
             debug('this.web3modal.cachedProvider: ', this.web3modal.cachedProvider)
-            if (this.web3modal.cachedProvider === '__trigger_popup') {
+            if (this.web3modal.cachedProvider !== '' || this.triggerWeb3Modal) {
+                this.triggerWeb3Modal = false
                 this.web3modal.clearCachedProvider()
                 this.walletProvider = await this.selectWeb3ModalWallet()
                 const currentProvider = this.walletProvider ? getProviderInfo(this.walletProvider).name : '---'
@@ -186,7 +189,7 @@ class App extends React.Component {
         // this.walletProvider stores the transaction provider
         // this.provider stores the query provider
         if (!this.walletProvider || !this.walletProvider.chainId) 
-            return // User will need to click the button to connect again
+            return debug('web3modal cancelled by user') // User will need to click the button to connect again
         
         // we only get here if this.walletProvider has been established
 
@@ -342,9 +345,8 @@ class App extends React.Component {
         window.location.reload()
     }
 
-    handleConnectEWalletButton = () => {
-        this.web3modal.clearCachedProvider()
-        this.web3modal.setCachedProvider('__trigger_popup') // used to trigger modal pop-up in this.establishWeb3Provider()
+    handleConnectWalletButton = async () => {
+        this.triggerWeb3Modal = true // used to trigger modal pop-up in this.establishWeb3Provider()
         this.componentDidMount()
     }
 
@@ -380,7 +382,7 @@ class App extends React.Component {
         if (!this.state.walletConnected) { // 'connect wallet' button
             return (
                 <Container fluid className="text-center mb-3">
-                    <Button id="connect_wallet" variant="info" onClick={this.handleConnectEWalletButton} >
+                    <Button id="connect_wallet" variant="info" onClick={this.handleConnectWalletButton} >
                         <span className="d-none d-sm-inline">Click to Connect a Wallet</span>
                         <span className="d-inline d-sm-none">Connect Wallet</span>
                     </Button>
@@ -410,7 +412,7 @@ class App extends React.Component {
                         <span className="text-muted small ml-3">DAY</span><span className="day-number">{this.state.currentDay}</span>
                     </div>
                     <h2>...stake on the run</h2>
-                    <h3>Open BETA <span>{process.env.REACT_APP_VERSION || 'v0.0.0A'} ({process.env.REACT_APP_HEXMOB_COMMIT_HASH})</span></h3>
+                    <h3>Open BETA <span>{process.env.REACT_APP_VERSION || 'v0.0.0A'}</span></h3>
                 </Container>
                 <Container id="hexmob_body" fluid className="p-1">
                     <Container className="p-1">

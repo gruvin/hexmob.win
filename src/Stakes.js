@@ -383,11 +383,9 @@ class Stakes extends React.Component {
                 <Card bg="secondary" text="light">
                     <Accordion.Toggle as={Card.Header} eventKey="new_stake">
                         <BurgerHeading className="float-left">New Stake</BurgerHeading>
-                        <div className="float-right">
-                            <small><small>available </small> </small>
-                            <Badge variant="success" >
-                                <strong><CryptoVal value={this.props.wallet.balance} showUnit /></strong>
-                            </Badge>
+                        <div className="float-right pr-1 text-success">
+                             <span className="text-muted small">AVAILABLE </span>
+                             <strong><CryptoVal value={this.props.wallet.balance} showUnit /></strong>
                         </div>
                     </Accordion.Toggle>
                     <Accordion.Collapse eventKey="new_stake">

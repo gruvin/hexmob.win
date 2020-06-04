@@ -1,0 +1,19 @@
+// Jest Snapshot v1, https://goo.gl/fbAQLP
+
+exports[`App initial state (constructor working) 1`] = `
+Object {
+  "chainId": 0,
+  "contractGlobals": null,
+  "contractReady": false,
+  "currentProvider": "web3modal",
+  "debug": Array [],
+  "incomingReferrer": null,
+  "network": "none",
+  "referrer": "0xd30542151ea34007c4c4ba9d653f4dc4707ad2d2",
+  "wallet": Object {
+    "address": "",
+    "balance": "0",
+  },
+  "walletConnected": false,
+}
+`;
