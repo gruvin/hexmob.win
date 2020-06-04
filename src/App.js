@@ -50,6 +50,17 @@ class App extends React.Component {
         const incomingReferrer = (m && m.length > 1)
         const referrer = (incomingReferrer ? m[1] : '0xD30542151ea34007c4c4ba9d653f4DC4707ad2d2').toLowerCase()
 
+        this.web3modal = new Web3Modal({
+            cacheProvider: true,                                    // optional
+            providerOptions: {                                      // required
+                walletconnect: {
+                    package: WalletConnectProvider,                 // required
+                    options: {
+                        infuraId: process.env.REACT_APP_INFURA_ID   // required
+                    }
+                },
+            }
+        })
         this.web3 = null
         this.subscriptions = [ ]
         this.contract = null
@@ -136,12 +147,8 @@ class App extends React.Component {
 
     async selectWeb3ModalWallet() {
         this.walletProvider = null
-        const web3Modal = new Web3Modal({
-            cacheProvider: true,                        // optional
-            providerOptions: this.getProviderOptions()  // required
-        });
         try {
-            return web3Modal.connect()
+            return this.web3modal.connect()
         } catch(e) { // user closed dialog withot selection 
             return null
         }
@@ -165,9 +172,13 @@ class App extends React.Component {
             this.setState({ currentProvider: 'TrustWallet' })
         } else {                                                                    // web3modal selection
             this.setState({ currentProvider: 'web3modal' })
-            this.walletProvider = await this.selectWeb3ModalWallet()
-            const currentProvider = this.walletProvider ? getProviderInfo(this.walletProvider).name : '---'
-            this.setState({ currentProvider })
+            debug('this.web3modal.cachedProvider: ', this.web3modal.cachedProvider)
+            if (this.web3modal.cachedProvider === '__trigger_popup') {
+                this.web3modal.clearCachedProvider()
+                this.walletProvider = await this.selectWeb3ModalWallet()
+                const currentProvider = this.walletProvider ? getProviderInfo(this.walletProvider).name : '---'
+                this.setState({ currentProvider })
+            }
         }
 
         // We set up TWO providers. Once from the wallet to handle sending transactions
@@ -244,6 +255,7 @@ class App extends React.Component {
     async componentDidMount() {
         debug('process.env: ', process.env)
         window._APP = this // DEBUG remove me
+        window._w3M = Web3Modal
 
         const address = await this.establishWeb3Provider() 
         if (!address) return debug('No wallet address supplied - STOP')
@@ -330,27 +342,9 @@ class App extends React.Component {
         window.location.reload()
     }
 
-    getProviderOptions = () => {
-        const providerOptions = {
-            walletconnect: {
-                package: WalletConnectProvider, // required
-                options: {
-                    infuraId: process.env.REACT_APP_INFURA_ID // required
-                }
-            },
-            // portis: {
-            //     package: Portis, // required
-            //     options: {
-            //         id: process.env.REACT_APP_PORTIS_ID // required
-            //     }
-            // }
-        }
-        return providerOptions
-    }
-    
     handleConnectEWalletButton = () => {
-        const o = new Web3Modal()
-        o.clearCachedProvider()
+        this.web3modal.clearCachedProvider()
+        this.web3modal.setCachedProvider('__trigger_popup') // used to trigger modal pop-up in this.establishWeb3Provider()
         this.componentDidMount()
     }
 
@@ -358,7 +352,7 @@ class App extends React.Component {
         const provider = this.provider || null
         if (provider && provider.close) {
             await this.unsubscribeEvents()
-            await this.web3Modal.clearCachedProvider()
+            await this.web3modal.clearCachedProvider()
             await this.provider.close()
         } else {
             this.resetApp()
