@@ -55,18 +55,25 @@ export class StakeInfo extends React.Component {
                                     <span className="d-none d-sm-inline"><strong>Stake </strong></span> 
                                     #<strong className="numeric text-info text-center">{stake.stakeId}</strong></Col>
                                 <Col xs={7} className="text-right">
-                                    <span className="d-none d-sm-inline"><strong>Principal </strong></span> 
+                                    <span className="text-muted small">PRINCIPAL </span> 
                                     <strong className="text-info"><CryptoVal value={stake.stakedHearts} showUnit /></strong>
                                 </Col>
                             </Row>
                             <Row className="mb-1">
                                 <Col xs={7} className="numeric">
-                                    <span className="numeric text-muted small mr-1">
+                                    <span className="text-muted small mr-1">
                                         DAYS
                                     </span>
                                     {startDay+1} to {endDay+1}
                                 </Col>
-                                <Col xs={5} className="text-right numeric">{ pending ? <Badge variant="primary">PENDING</Badge> : progress+"%"}</Col>
+                                <Col xs={5} className="text-right numeric">
+                                    { pending ? <Badge variant="primary">PENDING</Badge> 
+                                        : <>
+                                            <span className="text-muted small ">PROGRESS </span>
+                                            <span>{progress+"%"}</span>
+                                        </>
+                                    }
+                                </Col>
                             </Row>
                             { pending 
                                 ? <ProgressBar variant={progressVariant} now={100} striped />
