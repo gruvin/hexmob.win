@@ -1,5 +1,4 @@
 #!/bin/zsh
-# This file is usally sourced, so the exports won't (export)
 if [ "$NODE_ENV" = "" ]; then export NODE_ENV='development'; fi
 export REACT_APP_NODE_ENV=${NODE_ENV}
 export REACT_APP_INFURA_ID='you_re_too_sexy_for_this_secret'
