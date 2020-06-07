@@ -195,7 +195,7 @@ export class NewStakeForm extends React.Component {
 
         return (
             <Form>
-                <Row>
+                <Row className="overflow-auto">
                     <Col xs={12} sm={5}>
                     <Container>
                         <Form.Group controlId="stake_amount" className="mt-3">
