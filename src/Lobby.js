@@ -39,6 +39,7 @@ class Lobby extends React.Component {
         }
         window._LOBBY = this // DEBUG REMOVE ME
     }
+
     addToEventLog = (entry) => {
         const hash = crypto.createHash('sha1').update(JSON.stringify(entry)).digest('hex')
         if (this.eventLog[hash]) return false
@@ -46,8 +47,8 @@ class Lobby extends React.Component {
         return true
     }
 
-    subscribeEvents = async () => {
-        await this.props.contract.events.XfLobbyEnter( {filter:{memberAddr:this.props.wallet.address}}, async (e, r) => {
+    subscribeEvents = () => {
+        const onXfLobbyEnter = this.props.contract.events.XfLobbyEnter( {filter:{memberAddr:this.props.wallet.address}}, async (e, r) => {
             if (e) { 
                 debug('ERR: events.XfLobbyEnter:', e) 
                 return
@@ -56,8 +57,13 @@ class Lobby extends React.Component {
             this.getToday()
         })
         .on('connected', (id) => debug('subbed: XfLobbyEnter:', id))
+
+        this.subscriptions = [ onXfLobbyEnter ]
     }
 
+    unsubscribeEvents = () => {
+        this.subscriptions && this.subscriptions.forEach(s => s.unsubscribe())
+    }
     
     getDayEntries = (day, address) => {
         const { contract } = this.props
@@ -117,7 +123,7 @@ class Lobby extends React.Component {
             if (entry.mintedHEX) mintedHEXTotal = mintedHEXTotal.plus(entry.mintedHEX)
         })
         if (availableHEX !== null && totalETH !== null) {
-            potentialHEXTotal = entriesTotal.div(totalETH).times(availableHEX)
+            potentialHEXTotal = entriesTotal.div(totalETH).times(availableHEX).times(10000)
         }
         return {
             potentialHEXTotal,
@@ -280,7 +286,7 @@ class Lobby extends React.Component {
     }
 
     componentWillUnmount = () => {
-        /* TODO -- clear subscriptions */
+        this.unsubscribeEvents()
     }
 
     resetFormAndReload = async () => {
@@ -309,8 +315,11 @@ class Lobby extends React.Component {
         const { currentDay } = this.props.contract.Data
 
         const handleSortSelection = (e) => {
-            const keyField = e.target.hash.match(/sort_(.+)$/)[1]
-            this.sortLobbyDataStateByField(keyField)
+            e.preventDefault()
+            e.stopPropagation()
+            const hash = e.target.closest('a').hash
+            const keyField = hash.match(/sort_(.+)$/)[1] || null
+            keyField && this.sortLobbyDataStateByField(keyField)
         }
 
         const LobbyDays = () => {
@@ -324,7 +333,7 @@ class Lobby extends React.Component {
 
             const lobbyData = this.state.lobbyData
             return (
-                <Container>
+                <Container className="pl-0 pr-3">
                     <p className="text-center">
                         <b><span className="d-none d-sm-inline">Complete </span>
                         Transform History to Date</b>
@@ -334,10 +343,20 @@ class Lobby extends React.Component {
                         <Col xs={3} sm={2} className="p-0"><a href="#sort_availableHEX" onClick={handleSortSelection}>Available</a></Col>
 
                         <Col        sm={2} className="px-0 d-none d-sm-inline"><a href="#sort_totalETH" onClick={handleSortSelection}>ETH</a></Col>
-                        <Col        sm={2} className="px-0 d-none d-sm-inline"><a href="#sort_HEXperETH" onClick={handleSortSelection}>HEX/ETH</a></Col>
+                        <Col        sm={2} className="px-0 d-none d-sm-inline">
+                            <a href="#sort_HEXperETH" onClick={handleSortSelection}>
+                                <span className="d-sm-inline d-md-none"><sup>HEX</sup>/<sub>ETH</sub></span>
+                                <span className="d-sm-none d-md-inline">HEX/ETH</span>
+                            </a>
+                        </Col>
 
-                        <Col xs={4} sm={2} className="px-2"><a href="#sort_mintedHEXTotal" onClick={handleSortSelection}>Your HEX</a></Col>        
-                        <Col xs={4} sm={2} className="p-0"><a href="#sort_rawEntriesTotal" onClick={handleSortSelection}>Your ETH</a></Col>
+                        <Col xs={4} sm={2} className="px-2">
+                            <a href="#sort_mintedHEXTotal" onClick={handleSortSelection}>
+                                <span className="d-inline d-sm-inline d-md-none">Ur HEX</span>
+                                <span className="d-none d-md-inline">Your HEX</span>
+                            </a>
+                        </Col>        
+                        <Col xs={4} sm={3} className="p-0"><a href="#sort_rawEntriesTotal" onClick={handleSortSelection}>Your ETH</a></Col>
                     </Row>
                     { lobbyData.map(dayData => { 
                         const { day, availableHEX, totalETH, HEXperETH, mintedHEXTotal, rawEntriesTotal } = dayData
@@ -351,7 +370,7 @@ class Lobby extends React.Component {
                                 <Col        sm={2} className="px-0 d-none d-sm-inline"><CryptoVal value={HEXperETH} /></Col>
 
                                 <Col xs={4} sm={2} className="px-2"><CryptoVal value={mintedHEXTotal} /></Col>
-                                <Col xs={4} sm={2} className="px-0"><CryptoVal value={rawEntriesTotal} currency="ETH" showUnit /></Col>
+                                <Col xs={4} sm={3} className="px-0"><CryptoVal value={rawEntriesTotal} currency="ETH" showUnit /></Col>
                             </Row>
                         )
                     }) }
@@ -476,7 +495,8 @@ class Lobby extends React.Component {
                         </Form>
                         {this.state.historyDataReady === true && this.state.unmintedEntries.length > 0 && 
                         <Container className="p-3 text-center">
-                            <h5>Mint closed day HEX ...</h5>
+                            <h4>Exit Previous Days</h4>
+                            <p>Tap each <span className="text-success"><b>MINT</b></span> below to get your HEX...</p>
                             {this.state.unmintedEntries.map(data => {
                                 const { day, entries } = data
                                 const { availableHEX, totalETH } = this.state.lobbyData[day]
@@ -500,7 +520,7 @@ class Lobby extends React.Component {
                                             className="text-center"
                                         >
                                             <span className="text-info text-normal">
-                                                <small>day {day+1}<sup>({entries.length} entries)</sup></small>
+                                                <small>day {day+1}{entries.length > 1 && <sup>({entries.length} entries)</sup>}</small>
                                             </span>{' '}
                                             MINT&nbsp;<CryptoVal value={potentialHEXTotal} showUnit />
                                         </VoodooButton>
