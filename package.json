@@ -51,7 +51,6 @@
     "identity-obj-proxy": "3.0.0",
     "jest": "24.9.0",
     "jest-resolve": "26.0.1",
-    "jquery": "1.9.1",
     "mini-css-extract-plugin": "0.9.0",
     "node-sass": "^4.14.1",
     "optimize-css-assets-webpack-plugin": "5.0.3",
@@ -83,7 +82,7 @@
     "web3-fake-provider": "^0.1.0",
     "web3modal": "^1.6.3",
     "webpack": "4.42.0",
-    "webpack-dev-server": "3.10.3",
+    "webpack-dev-server": "^3.11.0",
     "webpack-manifest-plugin": "2.2.0",
     "webpack-subresource-integrity": "^1.4.1",
     "workbox-webpack-plugin": "4.3.1"
