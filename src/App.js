@@ -126,19 +126,14 @@ class App extends React.Component {
             //debug('events.Transfer[error, result] => ', error, result.returnValues )
             this.updateHEXBalance()
         }
-        this.subscriptions.push(
-            this.contract.events.Transfer( {filter:{from:this.state.wallet.address}}, eventCallback).on('connected', (id) => debug('subbed: HEX from:', id))
-        )
-        this.subscriptions.push(
-            this.contract.events.Transfer( {filter:{to:this.state.wallet.address}}, eventCallback).on('connected', (id) => debug('subbed: HEX to:', id))
-        )
+        const onTransferFrom = this.contract.events.Transfer( {filter:{from:this.state.wallet.address}}, eventCallback).on('connected', (id) => debug('subbed: HEX from:', id))
+        const onTransferTo = this.contract.events.Transfer( {filter:{to:this.state.wallet.address}}, eventCallback).on('connected', (id) => debug('subbed: HEX to:', id))
+
+        this.subscriptions = [ onTransferFrom, onTransferTo ]
     }
 
     unsubscribeEvents = () => {
-        if (this.scrubscriptions && this.scrubscriptions.length) { 
-            this.web3 && this.web3.eth && this.web3.eth.clearSubscriptions()
-            this.web3 && this.web3.shh && this.web3.shh.clearSubscriptions()
-        }
+        this.scrubscriptions && this.scrubscriptions.forEach(s => s.unsubscribe())
     }
 
     updateHEXBalance = async () => {
@@ -177,7 +172,6 @@ class App extends React.Component {
             debug('this.web3modal.cachedProvider: ', this.web3modal.cachedProvider)
             if (this.web3modal.cachedProvider !== '' || this.triggerWeb3Modal) {
                 this.triggerWeb3Modal = false
-                this.web3modal.clearCachedProvider()
                 this.walletProvider = await this.selectWeb3ModalWallet()
                 const currentProvider = this.walletProvider ? getProviderInfo(this.walletProvider).name : '---'
                 this.setState({ currentProvider })
@@ -479,7 +473,7 @@ class App extends React.Component {
                         <DebugPanel />
                     }
                 </Container>
-                <Container>
+                <Container id="hexmob_footer">
                     { this.state.walletConnected && <this.WalletStatus />}
                 </Container>
             </>

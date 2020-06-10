@@ -8,7 +8,6 @@ import {
     Alert,
     ProgressBar,
     Accordion,
-    Badge
 } from 'react-bootstrap'
 import './Stakes.scss'
 import { BigNumber } from 'bignumber.js'
@@ -47,19 +46,7 @@ class Stakes extends React.Component {
     }
 
     subscribeEvents = () => {
-        this.props.contract.events.StakeEnd({ filter:{ stakerAddr: this.props.wallet.address } }, (e, r) => {
-            if (e) { 
-                debug('ERR: events.StakeEnd:', e) 
-                return
-            }
-            debug('events.StakeEnd[e, r]: ', e, r)
-            if (!this.addToEventLog(r)) return
-            debug('CALLING loadAllStakes: this.props.wallet: %O', this.props.wallet)
-            this.loadAllStakes(this)
-        })
-        .on('connected', (id) => debug('subbed: StakeEnd:', id))
-
-        this.props.contract.events.StakeStart( {filter:{stakerAddr:this.props.wallet.address}}, (e, r) => {
+        const onStakeStart = this.props.contract.events.StakeStart( {filter:{stakerAddr:this.props.wallet.address}}, (e, r) => {
             if (e) { 
                 debug('ERR: events.StakeStart: ', e) 
                 return
@@ -71,12 +58,25 @@ class Stakes extends React.Component {
             debug('CALLING loadAllStakes: this.props.wallet: %O', this.props.wallet)
             this.loadAllStakes(this)
         })
-        .on('connected', (id) => debug('subbed: StakeStart:', id))
+        .on('connected', id => debug('subbed: StakeStart:', id))
+
+        const onStakeEnd = this.props.contract.events.StakeEnd({ filter:{ stakerAddr: this.props.wallet.address } }, (e, r) => {
+            if (e) { 
+                debug('ERR: events.StakeEnd:', e) 
+                return
+            }
+            debug('events.StakeEnd[e, r]: ', e, r)
+            if (!this.addToEventLog(r)) return
+            debug('CALLING loadAllStakes: this.props.wallet: %O', this.props.wallet)
+            this.loadAllStakes(this)
+        })
+        .on('connected', id => debug('subbed: StakeEnd:', id))
+
+        this.subscriptions = [ onStakeStart, onStakeEnd ]
     }
 
     unsubscribeEvents = () => {
-        this.web3 && this.web3.shh && this.web3.shh.clearSubscriptions()
-        this.web3 && this.web3.eth && this.web3.eth.clearSubscriptions()
+        this.subscriptions && this.subscriptions.forEach(s => s.unsubscribe())
     }
 
     static async getStakePayoutData(context, stakeData) {
@@ -197,10 +197,54 @@ class Stakes extends React.Component {
         stakeList && this.setState({ stakeList, loadingStakes: false })
     }
 
-    componentDidMount = async () => {
+    loadStakeHistory = () => {
+        const { contract, wallet } = this.props
+        /* 
+        uint40            timestamp       -->  data0 [ 39:  0]
+        address  indexed  stakerAddr
+        uint40   indexed  stakeId
+        uint72            stakedHearts    -->  data0 [111: 40]
+        uint72            stakeShares     -->  data0 [183:112]
+        uint72            payout          -->  data0 [255:184]
+        uint72            penalty         -->  data1 [ 71:  0]
+        uint16            servedDays      -->  data1 [ 87: 72]
+        bool              prevUnlocked    -->  data1 [ 95: 88]
+        */
+        this.setState({ pastStakes: [ ] }, () => {
+            contract.getPastEvents('StakeEnd',{ 
+                fromBlock: 'earliest', 
+                filter: { stakerAddr: wallet.address }
+            }).then(results => {
+                const pastStakes = results.map(data => {
+                    const { returnValues:r } = data
+                    const data0 = new BitSet.fromBinaryString(BigNumber(r.data0).toString(2))
+                    const data1 = new BitSet.fromBinaryString(BigNumber(r.data1).toString(2))
+                    data0.set(256)
+                    data1.set(256)
+                    return {
+                        timestamp:      Number(     data0.slice(  40, 111 ).toString(10)),
+                        stakerAddr:     r.stakerAddr,
+                        stakeId:        r.stakeId,
+                        stakedHearts:   BigNumber(  data0.slice( 40, 111).toString(10)),
+                        stakeShares:    BigNumber(  data0.slice(112, 183).toString(10)),
+                        penalty:        BigNumber(  data1.slice(  0,  71).toString(10)),
+                        servedDays:     Number(     data1.slice( 72,  87).toString(10)),
+                        prevUnlocked:   Boolean(    data1.slice( 88,  95).toString(10))
+                    }
+                })
+                debug('PAST_STAKES: %O', pastStakes)
+                this.setState({ pastStakes })
+            })
+        })
+    }
+
+    componentDidMount() {
         window._STAKES = this // DEBUG REMOVE ME
-        await this.loadAllStakes()
-        await this.subscribeEvents()
+        Promise.all([
+            this.loadAllStakes(),
+            this.loadStakeHistory(),
+            this.subscribeEvents(),
+        ])
     }
 
     componentDidUpdate = async (prevProps, prevState) => {
@@ -291,50 +335,8 @@ class Stakes extends React.Component {
     }
 
     StakesHistory = () => {
-        const { contract, wallet } = this.props
-     /* uint40            timestamp       -->  data0 [ 39:  0]
-        address  indexed  stakerAddr
-        uint40   indexed  stakeId
-        uint72            stakedHearts    -->  data0 [111: 40]
-        uint72            stakeShares     -->  data0 [183:112]
-        uint72            payout          -->  data0 [255:184]
-        uint72            penalty         -->  data1 [ 71:  0]
-        uint16            servedDays      -->  data1 [ 87: 72]
-        bool              prevUnlocked    -->  data1 [ 95: 88] */
-        
-        if (!this.state.pastStakes) {
-            this.setState({ pastStakes: [ ] }, () => {
-                contract.getPastEvents('StakeEnd',{ 
-                    fromBlock: 'earliest', 
-                    filter: { stakerAddr: wallet.address }
-                }).then(results => {
-                    const pastStakes = results.map(data => {
-                        const { returnValues:r } = data
-                        const data0 = new BitSet.fromBinaryString(BigNumber(r.data0).toString(2))
-                        const data1 = new BitSet.fromBinaryString(BigNumber(r.data1).toString(2))
-                        data0.set(256)
-                        data1.set(256)
-                        window.D0 = data0
-                        window.D1 = data1
-
-                        return {
-                            timestamp:      Number(     data0.slice(  40, 111 ).toString(10)),
-                            stakerAddr:     r.stakerAddr,
-                            stakeId:        r.stakeId,
-                            stakedHearts:   BigNumber(  data0.slice( 40, 111).toString(10)),
-                            stakeShares:    BigNumber(  data0.slice(112, 183).toString(10)),
-                            penalty:        BigNumber(  data1.slice(  0,  71).toString(10)),
-                            servedDays:     Number(     data1.slice( 72,  87).toString(10)),
-                            prevUnlocked:   Boolean(    data1.slice( 88,  95).toString(10))
-                        }
-                    })
-                    debug('PAST_STAKES: %O', pastStakes)
-                    this.setState({ pastStakes })
-                })
-            })
-        }
-
         const { pastStakes } = this.state || null
+        if (!pastStakes) return ( <>loading</> )
         return (
             <Container className="p-0">
                 <Row className="p-0 my-2 mx-0 xs-small xxs-small text-right font-weight-bold">
@@ -345,7 +347,7 @@ class Stakes extends React.Component {
                 </Row>
             {pastStakes && pastStakes.map(stake => {
                 return (
-                    <Row className="p-0 m-0 xs-small xxs-small text-right">
+                    <Row key={stake.stakeId} className="p-0 m-0 xs-small xxs-small text-right">
                         <Col xs={2} sm={2} className="p-0 text-center">{stake.servedDays}</Col>
                         <Col xs={3} sm={3} className="p-0"><CryptoVal value={stake.stakedHearts} showUnit /></Col>
                         <Col xs={3} sm={3} className="p-0"><CryptoVal value={stake.stakeShares.times(1e8)} /></Col>
