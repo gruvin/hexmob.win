@@ -473,8 +473,8 @@ class App extends React.Component {
                         <DebugPanel />
                     }
                 </Container>
-                <Container id="hexmob_footer">
-                    { this.state.walletConnected && <this.WalletStatus />}
+                <Container id="hexmob_footer" fluid>
+                    { this.state.walletConnected && <this.WalletStatus /> }
                 </Container>
             </>
         )
