@@ -170,6 +170,11 @@ class App extends React.Component {
             debug("Detected imToken wallet")
             this.walletProvider = window.ethereum
             this.setState({ currentProvider: 'imToken' })
+        } else if (window.ethereum && window.ethereum.isToshi === true && window.ethereum.isCipher ) { // Coinbase (mobile)
+            debug("Detected Coinbase wallet")
+            this.walletProvider = window.ethereum
+            this.walletProvider.isCoinBase = true
+            this.setState({ currentProvider: 'CoinBase' })
         } else {                                                                    // web3modal selection
             this.setState({ currentProvider: 'web3modal' })
             debug('this.web3modal.cachedProvider: ', this.web3modal.cachedProvider)
@@ -216,9 +221,13 @@ class App extends React.Component {
         // Different ewallets have different methods of supplying the user's active ETH address
         var address = null
         if (this.walletProvider.isMetaMask) {               // MetaMask
-            const response = await window.ethereum.send('eth_requestAccounts') // EIP1102
+            const response = await window.ethereum.send('eth_requestAccounts') // EIP1102(ish)
             debug('accounts[]: ', response)
             address = response.result[0]
+        } else if (this.walletProvider.isCoinBase) {        // CoinBase
+            this.walletProvider.enable()
+            const accounts = await window.web3.eth.getAccounts()
+            address=accounts[0]
         } else if (detectTrustWallet()) {                   // TrustWallet
             this.walletProvider.enable()
             address = window.web3.eth.givenProvider.address || '0x7357000000000000000000000000000000000000'
