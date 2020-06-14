@@ -152,6 +152,10 @@ class App extends React.Component {
 
     /* returns address or null */
     async establishWeb3Provider() {
+        debug('window.ethereum: ', window.ethereum)
+
+        if (window.ethereum && !window.ethereum.chainId) window.ethereum.chainId = '0x1'
+
         // Check for non-web3modal injected providers (mobile dApp browsers)
         if (detectTrustWallet()) {                                                  // TrustWallet
             debug("Detected TrustWallet")
@@ -164,15 +168,15 @@ class App extends React.Component {
             this.setState({ currentProvider: 'TrustWallet' })
         } else if (window.ethereum && window.ethereum.isImToken === true ) {        // imToken
             debug("Detected imToken wallet")
-            window.ethereum.chainId = '0x1' // imToken returns null
             this.walletProvider = window.ethereum
-            this.setState({ currentProvider: 'TrustWallet' })
+            this.setState({ currentProvider: 'imToken' })
         } else {                                                                    // web3modal selection
             this.setState({ currentProvider: 'web3modal' })
             debug('this.web3modal.cachedProvider: ', this.web3modal.cachedProvider)
             if (this.web3modal.cachedProvider !== '' || this.triggerWeb3Modal) {
                 this.triggerWeb3Modal = false
                 this.walletProvider = await this.selectWeb3ModalWallet()
+                debug('post web3modal walletProvider: ', this.walletProvider)
                 const currentProvider = this.walletProvider ? getProviderInfo(this.walletProvider).name : '---'
                 this.setState({ currentProvider })
             }
@@ -183,7 +187,7 @@ class App extends React.Component {
         // this.walletProvider stores the transaction provider
         // this.provider stores the query provider
         if (!this.walletProvider || !this.walletProvider.chainId) 
-            return debug('web3modal cancelled by user') // User will need to click the button to connect again
+            return debug('web3modal failed to resolve a wallet')
         
         // we only get here if this.walletProvider has been established
 
@@ -211,28 +215,11 @@ class App extends React.Component {
 
         // Different ewallets have different methods of supplying the user's active ETH address
         var address = null
-        if (this.walletProvider.isMetaMask) {               // METAMASK
-            debug('MetaMask detected')
-            /* EIP1102. Not working. WHY? :/ MM extension too old? Weird. 
-            const accounts = await window.ethereum.send('eth_requestAccounts')
-            address = accounts[0] */
-            // UGLY: MetaMask takes time to sort itself out (EIP-1102 'eth_requestAccounts' not available yet)
-            address = await new Promise((resolve, reject) => {
-                let retries = 10
-                let timer = setInterval(() => {
-                    debug('MM address poll %d of 10', 11-retries)
-                    address = window.web3.eth.givenProvider.selectedAddress
-                    if (address) {
-                        clearInterval(timer)
-                        return resolve(address)
-                    }
-                    if (!retries--) {
-                        clearInterval(timer)
-                        return reject(null)
-                    }
-                }, 100)
-            })
-        } else if (detectTrustWallet()) {                 // TRUST WALLET
+        if (this.walletProvider.isMetaMask) {               // MetaMask
+            const response = await window.ethereum.send('eth_requestAccounts') // EIP1102
+            debug('accounts[]: ', response)
+            address = response.result[0]
+        } else if (detectTrustWallet()) {                   // TrustWallet
             this.walletProvider.enable()
             address = window.web3.eth.givenProvider.address || '0x7357000000000000000000000000000000000000'
             this.walletProvider.setAddress(address)
@@ -240,7 +227,7 @@ class App extends React.Component {
             this.walletProvider.enable()
             const accounts = await window.web3.eth.getAccounts()
             address = accounts[0]
-        } else if (window.web3.currentProvider.isImToken) { // imTOKEN
+        } else if (window.web3.currentProvider.isImToken) { // imToken
             debug('imToken Wallet detected')
             const accounts = await window.ethereum.send('eth_requestAccounts') // EIP1102
             address = accounts[0]
