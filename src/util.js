@@ -77,13 +77,26 @@ const cryptoFormat = (v, currency) => {
             break
         case 'HEX': 
             if (v.isZero())         s = '0.000'
-            else if (v.lt(1e5))     { unit = ' Hearts'; s = format(',.0f')(v.toFixed(0, 1)) }
+            else if (v.lt(1e2))     { unit = 'Hearts'; s = format(',.4f')(v.toFixed(4, 1)) }
+            else if (v.lt(1e3))     { unit = 'Hearts'; s = format(',.3f')(v.toFixed(3, 1)) }
+            else if (v.lt(1e4))     { unit = 'Hearts'; s = format(',.1f')(v.toFixed(1, 1)) }
+            else if (v.lt(1e6))     { unit = 'Hearts'; s = format(',.0f')(v.toFixed(0, 1)) }
+            else if (v.lt(1e9))     s = format(',')(v.div( 1e08).toFixed(5, 1))
+            else if (v.lt(1e10))    s = format(',')(v.div( 1e08).toFixed(4, 1))
             else if (v.lt(1e11))    s = format(',')(v.div( 1e08).toFixed(3, 1))
+            else if (v.lt(1e12))    s = format(',')(v.div( 1e08).toFixed(1, 1))
             else if (v.lt(1e14))    s = format(',')(v.div( 1e08).toFixed(0, 1))
-            else if (v.lt(1e17))    s = format(',.3f')(v.div( 1e14).toFixed(3, 1))+'M'
-            else if (v.lt(1e20))    s = format(',.3f')(v.div( 1e17).toFixed(3, 1))+'B'
-            else if (v.lt(1e23))    s = format(',.3f')(v.div( 1e20).toFixed(3, 1))+'T'
+            else if (v.lt(1e15))    s = format(',.4f')(v.div( 1e14).toFixed(4, 1))+'M'
+            else if (v.lt(1e16))    s = format(',.3f')(v.div( 1e14).toFixed(3, 1))+'M'
+            else if (v.lt(1e17))    s = format(',.2f')(v.div( 1e14).toFixed(2, 1))+'M'
+            else if (v.lt(1e18))    s = format(',.4f')(v.div( 1e17).toFixed(4, 1))+'B'
+            else if (v.lt(1e19))    s = format(',.3f')(v.div( 1e17).toFixed(3, 1))+'B'
+            else if (v.lt(1e20))    s = format(',.2f')(v.div( 1e17).toFixed(2, 1))+'B'
+            else if (v.lt(1e21))    s = format(',.4f')(v.div( 1e20).toFixed(4, 1))+'T'
+            else if (v.lt(1e22))    s = format(',.3f')(v.div( 1e20).toFixed(3, 1))+'T'
+            else if (v.lt(1e23))    s = format(',.2f')(v.div( 1e20).toFixed(2, 1))+'T'
             else                    s = format(',.0f')(v.div( 1e20).toFixed(0, 1))+'T'
+            s = s.replace(/(^\d+)\.0{3}$/, "$1") // nn.000 => nn (Hearts)
             break
         default: // NaN or Infinity
             unit = ''
