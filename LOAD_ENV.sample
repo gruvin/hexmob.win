@@ -3,3 +3,10 @@ if [ "$NODE_ENV" = "" ]; then export NODE_ENV='development'; fi
 export REACT_APP_NODE_ENV=${NODE_ENV}
 export REACT_APP_INFURA_ID='you_re_too_sexy_for_this_secret'
 export REACT_APP_PORTIS_ID='this_secret_aint_sexy_to_noone'
+
+# This code base depends on node v12 LTS (v12.18.0 at time of writing)
+# If you do not have nvm installed, your system node version may need to be v12.18.0
+if [ -s "$HONE/.nvm/nvm.sh" ]; then
+    source "$HOME/.env/nvm.sh"
+    nvm use 12
+fi

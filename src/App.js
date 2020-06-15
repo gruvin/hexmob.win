@@ -35,7 +35,8 @@ const INITIAL_STATE = {
     walletConnected: false,
     wallet: {
         address: '',
-        balance: new BigNumber(0)
+        balance: new BigNumber(0),
+        balanceETH: new BigNumber(0)
     },
     contractReady: false,
     contractGlobals: null,
@@ -109,6 +110,7 @@ class App extends React.Component {
                 debug('ADDRESS CHANGE: %s(old) => %s', this.state.wallet.address, newAddress)
                 await this.setState({ wallet: { ...this.state.wallet, address: newAddress } })
                 this.updateHEXBalance()
+                this.updateETHBalance()
             })
         }
 
@@ -129,11 +131,36 @@ class App extends React.Component {
         const onTransferFrom = this.contract.events.Transfer( {filter:{from:this.state.wallet.address}}, eventCallback).on('connected', (id) => debug('subbed: HEX from:', id))
         const onTransferTo = this.contract.events.Transfer( {filter:{to:this.state.wallet.address}}, eventCallback).on('connected', (id) => debug('subbed: HEX to:', id))
 
-        this.subscriptions = [ onTransferFrom, onTransferTo ]
+        const address = this.state.wallet.address
+        const onAddressLog = this.web3.eth.subscribe('logs', {
+            address,
+            fromBlock: "0x9CAA35",
+        }, function(error, result){
+            if (!error)
+                debug('SS::result ', result)
+            else
+                debug('SS:ERROR:', error)
+        })
+        .on('connected', id => debug('SS::subbed: %s -- addr: %s', id, address))
+        .on("data", (log) => {
+            debug('SS::data: ', log);
+        })
+        .on("changed", (log) => {
+            debug('SS::changed: ', log);
+        })
+        .on("error", log => debug('SS::ERRROR: ', log))
+
+        this.subscriptions = [ onTransferFrom, onTransferTo, onAddressLog ]
+        this.updateETHBalance()
     }
 
     unsubscribeEvents = () => {
         this.scrubscriptions && this.scrubscriptions.forEach(s => s.unsubscribe())
+    }
+
+    updateETHBalance = async () => {
+        const balance = await this.web3.eth.getBalance(this.state.wallet.address)
+        this.setState({ wallet: { ...this.state.wallet, balanceETH: new BigNumber(balance) } })
     }
 
     updateHEXBalance = async () => {

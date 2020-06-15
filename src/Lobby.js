@@ -35,7 +35,8 @@ class Lobby extends React.Component {
             todayYourHEXPending: '---',
             todayYourEntriesRawTotal: '---',
             unmintedEntries: [ ],
-            lobbySortKey: { keyField: '', dir: -1 }
+            lobbySortKey: { keyField: '', dir: -1 },
+            walletETHBalance: new BigNumber(0)
         }
         window._LOBBY = this // DEBUG REMOVE ME
     }
@@ -448,10 +449,14 @@ class Lobby extends React.Component {
         }
 
         return (
-            <Accordion id="lobby_accordion" className="text.left my-3" >
+            <Accordion id="lobby_accordion" className="my-3" >
                 <Card bg="secondary" text="light rounded">
                     <Accordion.Toggle as={Card.Header} eventKey="0">
                         <BurgerHeading>Transform (AA Lobby)</BurgerHeading>
+                        <div className="float-right pr-1 text-success">
+                             <span className="text-muted small">AVAILABLE </span>
+                             <strong><CryptoVal value={this.props.wallet.balanceETH} currency="ETH" showUnit /></strong>
+                        </div>
                         <Container>
                             <ProgressBar id="lobby" 
                                 min="0" max="350" 
@@ -460,7 +465,7 @@ class Lobby extends React.Component {
                                 style={{ height: "6px" }}
                                 variant={currentDay > 263 ? "danger" : currentDay > 125 ? "warning" : currentDay > 88 ? "info" : "success"}
                             />
-                { HEX.lobbyIsActive() && <>
+                    { HEX.lobbyIsActive() && <>
                             <HeaderDetail />
                             <Form>
                                 <Row className="my-2">

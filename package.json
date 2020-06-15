@@ -89,7 +89,7 @@
   },
   "scripts": {
     "start": "NODE_ENV='development' source LOAD_ENV && node scripts/start.js",
-    "builddev": "NODE_ENV='development' source LOAD_ENV && node scripts/build.js",
+    "builddev": "NODE_ENV='development' source LOAD_ENV node scripts/build.js",
     "build": "NODE_ENV='production'  source LOAD_ENV && node scripts/build.js",
     "deploy": "util/deploy.sh",
     "serve": "NODE_ENV='development' source LOAD_ENV && serve -s -p 5001 build",

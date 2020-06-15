@@ -36,17 +36,13 @@ const cryptoFormat = (v, currency) => {
             else if (v.lt( 1e9))    { unit = 'Wei'; s = format(',.3f')(v.div( 1e06).toFixed(3, 1))+'M' }
             else if (v.lt(1e12))    { unit = 'Wei'; s = format(',.3f')(v.div( 1e09).toFixed(3, 1))+'G' }
             else if (v.lt(1e15))    { unit = 'Wei'; s = format(',.0f')(v.div( 1e09).toFixed(0, 1))+'G' } // RH uses nnn.nnnT. We prefer GWei over TWei
-            else if (v.lt(1e18))    { unit = 'ETH'; s = format(',.6f')(v.div( 1e18).toFixed(6, 1)) }
-            else if (v.lt(1e19))    { unit = 'ETH'; s = format(',.6f')(v.div( 1e18).toFixed(6, 1)) }
-            else if (v.lt(1e20))    { unit = 'ETH'; s = format(',.5f')(v.div( 1e18).toFixed(5, 1)) }
-            else if (v.lt(1e21))    s = format(',.3f')(v.div( 1e18).toFixed(3, 1)) // nnn.nnn
-            else if (v.lt(1e24))    s = format(',.0f')(v.div( 1e18).toFixed(0, 1)) // nnn,nnn
-            else if (v.lt(1e27))    s = format(',.3f')(v.div( 1e24).toFixed(3, 1))+'M' // nnn.nnn M
-            else if (v.lt(1e30))    s = format(',.0f')(v.div( 1e24).toFixed(0, 1))+'M' // nnn,nnn M
-            else if (v.lt(1e33))    s = format(',.3f')(v.div( 1e30).toFixed(3, 1))+'B' // nnn.nnn B
-            else if (v.lt(1e36))    s = format(',.0f')(v.div( 1e30).toFixed(0, 1))+'B' // nnn,nnn B
-            else if (v.lt(1e39))    s = format(',.3f')(v.div( 1e36).toFixed(3, 1))+'T' // nnn.nnn T
-            else                    s = format(',.0f')(v.div( 1e36).toFixed(0, 1))+'T' // [nnn,...,]nnn,nnn T
+            else if (v.lt(1e24))    s = format(',')(v.div( 1e18).toFixed(8, 1)).slice(0, 8)
+            else if (v.lt(1e27))    s = format(',')(v.div( 1e24).toFixed(8, 1)).slice(0, 7)+'M'
+            else if (v.lt(1e30))    s = format(',')(v.div( 1e27).toFixed(8, 1)).slice(0, 7)+'B'
+            else if (v.lt(1e33))    s = format(',')(v.div( 1e30).toFixed(8, 1)).slice(0, 7)+'T'
+            else if (v.lt(1e36))    s = format(',')(v.div( 1e33).toFixed(8, 1)).slice(0, 7)+'Q'
+            else                    s = format(',')(v.div( 1e33).toFixed(0, 1))+'Q' // [nnn,...,]nnn,nnn Q
+            s = s.replace(/(^[-,0-9]+)[.0]+(M|B|T)?$/, "$1$2") // nn.000 => nn
             s = s.replace(/(^\d+\.\d{3})0+$/, "$1") // nn.123000 => nn.123
             break
         case 'SHARES_PER_HEX':
@@ -57,7 +53,8 @@ const cryptoFormat = (v, currency) => {
             else if (v.lt( 1e6))    s = format(',.3f')(v.div(1e3).toFixed(3, 1))+'K'
             else if (v.lt( 1e9))    s = format(',.3f')(v.div(1e6).toFixed(3, 1))+'M'
             else if (v.lt(1e12))    s = format(',.3f')(v.div(1e9).toFixed(3, 1))+'B'
-            else                    s = format(',.0f')(v.div(1e9).toFixed(0))+'B'
+            else if (v.lt(1e15))    s = format(',.3f')(v.div(1e12).toFixed(3, 1))+'T'
+            else                    s = format(',.0f')(v.div(1e12).toFixed(0))+'T'
             break
         case 'SHARES':
             unit = ' Shares'
@@ -66,7 +63,8 @@ const cryptoFormat = (v, currency) => {
             else if (v.lt( 1e6))    s = format(',.3f')(v.div(1e3).toFixed(3, 1))+'K'
             else if (v.lt( 1e9))    s = format(',.3f')(v.div(1e6).toFixed(3, 1))+'M'
             else if (v.lt(1e12))    s = format(',.3f')(v.div(1e9).toFixed(3, 1))+'B'
-            else                    s = format(',.0f')(v.div(1e9).toFixed(0))+'B'
+            else if (v.lt(1e15))    s = format(',.3f')(v.div(1e12).toFixed(3, 1))+'T'
+            else                    s = format(',.0f')(v.div(1e12).toFixed(0))+'T'
             break
         case 'PERCENT': // where 1.0 = 1%
             unit = '%'
@@ -77,26 +75,13 @@ const cryptoFormat = (v, currency) => {
             break
         case 'HEX': 
             if (v.isZero())         s = '0.000'
-            else if (v.lt(1e2))     { unit = 'Hearts'; s = format(',.4f')(v.toFixed(4, 1)) }
-            else if (v.lt(1e3))     { unit = 'Hearts'; s = format(',.3f')(v.toFixed(3, 1)) }
-            else if (v.lt(1e4))     { unit = 'Hearts'; s = format(',.1f')(v.toFixed(1, 1)) }
-            else if (v.lt(1e6))     { unit = 'Hearts'; s = format(',.0f')(v.toFixed(0, 1)) }
-            else if (v.lt(1e9))     s = format(',')(v.div( 1e08).toFixed(5, 1))
-            else if (v.lt(1e10))    s = format(',')(v.div( 1e08).toFixed(4, 1))
-            else if (v.lt(1e11))    s = format(',')(v.div( 1e08).toFixed(3, 1))
-            else if (v.lt(1e12))    s = format(',')(v.div( 1e08).toFixed(1, 1))
-            else if (v.lt(1e14))    s = format(',')(v.div( 1e08).toFixed(0, 1))
-            else if (v.lt(1e15))    s = format(',.4f')(v.div( 1e14).toFixed(4, 1))+'M'
-            else if (v.lt(1e16))    s = format(',.3f')(v.div( 1e14).toFixed(3, 1))+'M'
-            else if (v.lt(1e17))    s = format(',.2f')(v.div( 1e14).toFixed(2, 1))+'M'
-            else if (v.lt(1e18))    s = format(',.4f')(v.div( 1e17).toFixed(4, 1))+'B'
-            else if (v.lt(1e19))    s = format(',.3f')(v.div( 1e17).toFixed(3, 1))+'B'
-            else if (v.lt(1e20))    s = format(',.2f')(v.div( 1e17).toFixed(2, 1))+'B'
-            else if (v.lt(1e21))    s = format(',.4f')(v.div( 1e20).toFixed(4, 1))+'T'
-            else if (v.lt(1e22))    s = format(',.3f')(v.div( 1e20).toFixed(3, 1))+'T'
-            else if (v.lt(1e23))    s = format(',.2f')(v.div( 1e20).toFixed(2, 1))+'T'
-            else                    s = format(',.0f')(v.div( 1e20).toFixed(0, 1))+'T'
-            s = s.replace(/(^\d+)\.0{3}$/, "$1") // nn.000 => nn (Hearts)
+            else if (v.lt(1e6))     { unit = 'Hearts'; s = format(',.6f')(v).slice(0, 7) }
+            else if (v.lt(1e14))    s = format(',.6f')(v.div(1e08)).slice(0, 7)
+            else if (v.lt(1e17))    s = format(',.6f')(v.div(1e14)).slice(0, 6)+'M'
+            else if (v.lt(1e20))    s = format(',.6f')(v.div(1e17)).slice(0, 6)+'B'
+            else if (v.lt(1e23))    s = format(',.6f')(v.div(1e20)).slice(0, 6)+'T'
+            else                    s = format(',')(v.div(1e20))+'T'
+            s = s.replace(/(^[-,0-9]+)[.0]+(M|B|T)?$/, "$1$2") // nn.000 => nn
             break
         default: // NaN or Infinity
             unit = ''
