@@ -452,7 +452,7 @@ class Lobby extends React.Component {
             <Accordion id="lobby_accordion" className="my-3" >
                 <Card bg="secondary" text="light rounded">
                     <Accordion.Toggle as={Card.Header} eventKey="0">
-                        <BurgerHeading>Transform (AA Lobby)</BurgerHeading>
+                        <BurgerHeading>Transform<span className="d-none d-sm-inline"> (AA Lobby)</span></BurgerHeading>
                         <div className="float-right pr-1 text-success">
                              <span className="text-muted small">AVAILABLE </span>
                              <strong><CryptoVal value={this.props.wallet.balanceETH} currency="ETH" showUnit /></strong>

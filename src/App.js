@@ -433,12 +433,11 @@ class App extends React.Component {
                     <h3>Open BETA <span>{process.env.REACT_APP_VERSION || 'v0.0.0A'}</span></h3>
                 </Container>
                 <Container id="hexmob_body" fluid className="p-1">
-                    <Container className="p-1">
+                    <Container className="p-1" style={{ maxWidth: '890px' }}>
                         <this.AppContent />
                         { HEX.lobbyIsActive() &&
-                            <Container className="p-3 my-3 text-center">
+                            <Container className="p-1 my-3 text-center">
                                 <Card.Body as={Button} variant="success" className="w-100"
-                                    href={'https://go.hex.win/?r='+this.state.referrer} target="_blank" rel="noopener noreferrer"
                                 >
                                     <div><img src="/extra-bonus-10.png" alt="extra bonus 10%" /></div>
                                     <div>
@@ -450,49 +449,50 @@ class App extends React.Component {
                                 </Card.Body>
                             </Container>
                         }
-                    </Container>
 
                     
-                    { !detectTrustWallet() && /* TrustWallet won't follow external links */
-                    <>
-                        <Container className="p-3 my-3">
-                            <Card.Body as={Button} variant="info" className="w-100" style={{ cursor: "pointer" }}
-                                href="https://changelly.com/?ref_id=1b7z255j4rfbxsyd#buy" target="_blank" rel="noopener noreferrer"
-                            >
-                                <div>
-                                    <img className="d-inline-block" src="/buy-eth.png" alt="buy ethereum here" style={{ verticalAlign: "middle" }} />
-                                    <div className="d-inline-block text-center" style={{ verticalAlign: "middle" }}>
-                                        Click HERE to<br/>
-                                        <strong>buy Ethereum</strong><br/>
-                                        using Credit Card
+                        { !detectTrustWallet() && /* TrustWallet won't follow external links */
+                        <>
+                            <Container className="p-1 my-3">
+                                <Card.Body as={Button} variant="info" className="w-100" style={{ cursor: "pointer" }}
+                                    href="https://changelly.com/?ref_id=1b7z255j4rfbxsyd#buy" target="_blank" rel="noopener noreferrer"
+                                >
+                                    <div>
+                                        <img className="d-inline-block" src="/buy-eth.png" alt="buy ethereum here" style={{ verticalAlign: "middle" }} />
+                                        <div className="d-inline-block text-center" style={{ verticalAlign: "middle" }}>
+                                            Click HERE to<br/>
+                                            <strong>buy Ethereum</strong><br/>
+                                            using Credit Card
+                                        </div>
                                     </div>
-                                </div>
-                            </Card.Body>
-                        </Container>
-                        <Container className="p-3 my-3">
-                            <Card.Body as={Button} variant="warning" className="text-center w-100" style={{ cursor: "pointer" }}
-                                href="https://hexdex.win/swap" target="_blank" rel="noopener noreferrer"
-                            >
-                                <img className="d-inline-block" src="/holders.png" alt="swap HEX for USDC or DAI" style={{ verticalAlign: "middle", height: "97px" }} />
-                                <div className="text-right d-inline-block" style={{ verticalAlign: "middle", marginLeft: "28px" }}>
-                                    <strong>Swap HEX</strong> with<br/>
-                                    ERC20s including<br/>
-                                    <strong>USDC</strong> & <strong>DAI</strong>
-                                    <br/>
-                                </div>
-                            </Card.Body>
-                        </Container>
-                    </> 
-                    } 
+                                </Card.Body>
+                            </Container>
+                            <Container className="p-1 my-3">
+                                <Card.Body as={Button} variant="warning" className="text-center w-100" style={{ cursor: "pointer" }}
+                                    href="https://hexdex.win/swap" target="_blank" rel="noopener noreferrer"
+                                >
+                                    <img className="d-inline-block" src="/holders.png" alt="swap HEX for USDC or DAI" style={{ verticalAlign: "middle", height: "97px" }} />
+                                    <div className="text-right d-inline-block" style={{ verticalAlign: "middle", marginLeft: "28px" }}>
+                                        <strong>Swap HEX</strong> with<br/>
+                                        ERC20s including<br/>
+                                        <strong>USDC</strong> & <strong>DAI</strong>
+                                        <br/>
+                                    </div>
+                                </Card.Body>
+                            </Container>
+                        </> 
+                        } 
 
-                    <Container>
-                        <div className="text-center m-3">
-                            <Button variant="outline-danger" onClick={ this.disconnectWallet } >
-                                DISCONNECT WALLET
-                            </Button>
-                        </div>
-                    </Container>
+                        <Container>
+                            <div className="text-center m-3">
+                                <Button variant="outline-danger" onClick={ this.disconnectWallet } >
+                                    DISCONNECT WALLET
+                                </Button>
+                            </div>
+                        </Container>
             
+                    </Container>
+
                     { uriQuery.has('debug') &&
                         <DebugPanel />
                     }

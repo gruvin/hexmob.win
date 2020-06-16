@@ -25,6 +25,9 @@
 @media (max-width: 320px){
     .xxs-small { font-size: 0.67em }
 }
+@media (min-width: 992px)  { .container, .container-sm, .container-md, .container-lg { max-width: 720px; } }
+@media (min-width: 1200px) { .container, .container-sm, .container-md, .container-lg { max-width: 720px; } }
+
 @import url('https://fonts.googleapis.com/css2?family=Happy+Monkey&family=Jura:wght@500;700&family=Press+Start+2P&family=Titillium+Web:wght@400;700&family=Nosifer&display=swap');
 
 $hex-crimson: #ff4136;
@@ -40,6 +43,7 @@ $theme-colors: (
   "danger": $hex-crimson
 );
 @import "~bootstrap/scss/bootstrap";
+.container md { max-width: 720px }
 
 body { 
     overflow: hidden;
@@ -147,6 +151,7 @@ button#connect_wallet {
     text-transform: uppercase;
 }
 button#connect_wallet:hover { border-style: inset; border-color: #fec}
+.btn-info:hover { color: #fff; }
 
 .numeric { font-family: Jura, "Courier New", monospace; display: inline; }
 .day-number { 
