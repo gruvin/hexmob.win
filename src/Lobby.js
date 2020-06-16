@@ -334,11 +334,8 @@ class Lobby extends React.Component {
 
             const lobbyData = this.state.lobbyData
             return (
-                <Container className="pl-0 pr-3">
-                    <p className="text-center">
-                        <b><span className="d-none d-sm-inline">Complete </span>
-                        Transform History to Date</b>
-                    </p>
+                <Container className="pl-0 pr-3 row-highlight-even">
+                    <p className="text-center"><b>Transform History</b></p>
                     <Row key="header" className="py-0 mx-0 xs-small xxs-small align-items-end">
                         <Col xs={1} sm={1} className="p-0"><a href="#sort_day" onClick={handleSortSelection}>Day</a></Col>
                         <Col xs={3} sm={2} className="p-0"><a href="#sort_availableHEX" onClick={handleSortSelection}>Available</a></Col>

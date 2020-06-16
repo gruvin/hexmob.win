@@ -221,3 +221,5 @@ button#connect_wallet:hover { border-style: inset; border-color: #fec}
     opacity: 0.95;
 }
 #lobby.progress .progress-bar { color: black; }
+
+.row-highlight-even .row:nth-child(even) {  background-color: #1b1313; }

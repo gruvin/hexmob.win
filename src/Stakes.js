@@ -34,7 +34,8 @@ class Stakes extends React.Component {
             loadingStakes: true,
             stakeContext: { }, // active UI stake context
             showExitModal: false,
-            currentDay: '---'
+            currentDay: '---',
+            pastStakesSortKey: { keyField: '', dir: -1 },
         }
     }
 
@@ -334,16 +335,40 @@ class Stakes extends React.Component {
         )
     }
 
+    sortPastStakesStateByField = (keyField) => {
+        const { keyField:oldKey, dir:oldDir } = this.state.pastStakesSortKey
+        const dir = (oldKey === keyField) ? -oldDir : -1
+        const pastStakesSortKey = { keyField, dir }
+        this.setState({
+            pastStakesSortKey,
+            pastStakes: [ ...this.state.pastStakes ].sort((a, b) => {
+                const bn_a = BigNumber(a[keyField])
+                const bn_b = BigNumber(b[keyField])
+                return dir * (bn_a.lt(bn_b) ? -1 : bn_a.gt(bn_b) ? 1 : 0)
+            })
+        })
+    }
+
     StakesHistory = () => {
         const { pastStakes } = this.state || null
         if (!pastStakes) return ( <>loading</> )
+
+        const handleSortSelection = (e) => {
+            e.preventDefault()
+            e.stopPropagation()
+            const hash = e.target.closest('a').hash
+            const keyField = hash.match(/sort_(.+)$/)[1] || null
+            debug('keyField: ', keyField)
+            keyField && this.sortPastStakesStateByField(keyField)
+        }
+
         return (
-            <Container className="p-0">
+            <Container className="p-0 row-highlight-even">
                 <Row className="p-0 my-2 mx-0 xs-small xxs-small text-right font-weight-bold">
-                    <Col xs={2} sm={2} className="p-0 text-center">Days<span className="d-none d-sm-inline"> Served</span></Col>
-                    <Col xs={3} sm={3} className="p-0">Stake<span className="d-none d-sm-inline">d Amount</span></Col>
-                    <Col xs={3} sm={3} className="p-0">Shares</Col>
-                    <Col xs={3} sm={3} className="p-0">Penalty</Col>
+                    <Col xs={2} sm={2} className="p-0 text-center"><a href="#sort_servedDays" onClick={handleSortSelection}>Days<span className="d-none d-sm-inline"> Served</span></a></Col>
+                    <Col xs={3} sm={3} className="p-0"><a href="#sort_stakedHearts" onClick={handleSortSelection}>Stake<span className="d-none d-sm-inline">d Amount</span></a></Col>
+                    <Col xs={3} sm={3} className="p-0"><a href="#sort_stakeShares" onClick={handleSortSelection}>Shares</a></Col>
+                    <Col xs={3} sm={3} className="p-0"><a href="#sort_penalty" onClick={handleSortSelection}>Penalty</a></Col>
                 </Row>
             {pastStakes && pastStakes.map(stake => {
                 return (
@@ -415,7 +440,7 @@ class Stakes extends React.Component {
                         <BurgerHeading>Stake History</BurgerHeading>
                     </Accordion.Toggle>
                     <Accordion.Collapse eventKey="stake_history">
-                        <Card.Body>
+                        <Card.Body className="bg-dark">
                             <this.StakesHistory />
                         </Card.Body>
                     </Accordion.Collapse>
