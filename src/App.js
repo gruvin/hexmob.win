@@ -110,7 +110,6 @@ class App extends React.Component {
                 debug('ADDRESS CHANGE: %s(old) => %s', this.state.wallet.address, newAddress)
                 await this.setState({ wallet: { ...this.state.wallet, address: newAddress } })
                 this.updateHEXBalance()
-                this.updateETHBalance()
             })
         }
 
@@ -121,6 +120,8 @@ class App extends React.Component {
         provider.on("networkChanged", async (networkId: number) => {
             window.location.reload()
         })
+
+        window.web3.currentProvider.publicConfigStore.on('update', this.updateETHBalance)
     }
 
     subscribeEvents = () => {
