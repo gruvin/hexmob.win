@@ -427,7 +427,7 @@ class Stakes extends React.Component {
                 </Card>
                 <Card bg="secondary" text="light">
                     <Accordion.Toggle as={Card.Header} eventKey="current_stakes">
-                        <BurgerHeading>Current Stakes</BurgerHeading>
+                        <BurgerHeading>Active Stakes</BurgerHeading>
                     </Accordion.Toggle>
                     <Accordion.Collapse eventKey="current_stakes">
                         <Card.Body>
