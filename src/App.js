@@ -416,6 +416,15 @@ class App extends React.Component {
                 <>
                     <Stakes contract={this.contract} wallet={this.state.wallet} />
                     <Lobby contract={this.contract} wallet={this.state.wallet} />
+                    <Container className="text-center">
+                        <Badge variant="secondary"><span className="text-mute small">CONTRACT ADDRESS </span><a 
+                            href="https://etherscan.io/address/0x2b591e99afe9f32eaa6214f7b7629768c40eeb39" 
+                            target="_blank"
+                            rel="noopener noreferrer"
+                        >
+                            {this.contract._address}
+                        </a></Badge>
+                    </Container>
                 </>
             )
         }
@@ -449,8 +458,6 @@ class App extends React.Component {
                                 </Card.Body>
                             </Container>
                         }
-
-                    
                         { !detectTrustWallet() && /* TrustWallet won't follow external links */
                         <>
                             <Container className="p-1 my-3">
@@ -482,7 +489,6 @@ class App extends React.Component {
                             </Container>
                         </> 
                         } 
-
                         <Container>
                             <div className="text-center m-3">
                                 <Button variant="outline-danger" onClick={ this.disconnectWallet } >
@@ -490,9 +496,8 @@ class App extends React.Component {
                                 </Button>
                             </div>
                         </Container>
-            
-                    </Container>
 
+                    </Container>
                     { uriQuery.has('debug') &&
                         <DebugPanel />
                     }
