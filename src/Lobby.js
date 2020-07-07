@@ -124,7 +124,7 @@ class Lobby extends React.Component {
             if (entry.mintedHEX) mintedHEXTotal = mintedHEXTotal.plus(entry.mintedHEX)
         })
         if (availableHEX !== null && totalETH !== null) {
-            potentialHEXTotal = entriesTotal.div(totalETH).times(availableHEX).times(10000)
+            potentialHEXTotal = entriesTotal.div(totalETH).times(availableHEX)
         }
         return {
             potentialHEXTotal,
@@ -524,7 +524,7 @@ class Lobby extends React.Component {
                                             <span className="text-info text-normal">
                                                 <small>day {day+1}{entries.length > 1 && <sup>({entries.length} entries)</sup>}</small>
                                             </span>{' '}
-                                            MINT&nbsp;<CryptoVal value={potentialHEXTotal} showUnit />
+                                            MINT&nbsp;<CryptoVal value={potentialHEXTotal}calcEntryTotals showUnit />
                                         </VoodooButton>
                                     </div>
                                 )
