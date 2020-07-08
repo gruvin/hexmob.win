@@ -49,7 +49,7 @@
     "global": "^4.4.0",
     "html-webpack-plugin": "4.0.0-beta.11",
     "identity-obj-proxy": "3.0.0",
-    "jest": "24.9.0",
+    "jest": "^26.1.0",
     "jest-resolve": "26.0.1",
     "mini-css-extract-plugin": "0.9.0",
     "node-sass": "^4.14.1",
@@ -89,7 +89,7 @@
   },
   "scripts": {
     "start": "NODE_ENV='development' source LOAD_ENV && node scripts/start.js",
-    "builddev": "NODE_ENV='development' source LOAD_ENV node scripts/build.js",
+    "builddev": "NODE_ENV='development' source LOAD_ENV && node scripts/build.js",
     "build": "NODE_ENV='production'  source LOAD_ENV && node scripts/build.js",
     "deploy": "util/deploy.sh",
     "serve": "NODE_ENV='development' source LOAD_ENV && serve -s -p 5001 build",

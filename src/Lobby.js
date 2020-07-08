@@ -113,18 +113,18 @@ class Lobby extends React.Component {
         let mintedHEXTotal = BigNumber(0)
         let potentialHEXTotal = BigNumber(0)
         entries && entries.forEach(entry => { 
-            let amount = entry.rawAmount
-            rawEntriesTotal = rawEntriesTotal.plus(amount)
+            let amountETH = entry.rawAmount
+            rawEntriesTotal = rawEntriesTotal.plus(amountETH)
             if (entry.referrerAddr.slice(0, 2) === '0x') {
-                amount = amount.times(1.10)
+                amountETH = amountETH.times(1.10)
                 if (entry.referrerAddr.toLowerCase() === this.props.wallet.address.toLowerCase())
-                    amount = amount.times(1.20) // clever person in the house! :p
+                    amountETH = amountETH.times(1.20) // clever person in the house! :p
             }
-            entriesTotal = entriesTotal.plus(amount)
+            entriesTotal = entriesTotal.plus(amountETH)
             if (entry.mintedHEX) mintedHEXTotal = mintedHEXTotal.plus(entry.mintedHEX)
         })
         if (availableHEX !== null && totalETH !== null) {
-            potentialHEXTotal = entriesTotal.div(totalETH).times(availableHEX)
+            potentialHEXTotal = entriesTotal.times(availableHEX).idiv(totalETH)
         }
         return {
             potentialHEXTotal,
