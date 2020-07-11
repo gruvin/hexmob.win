@@ -26,7 +26,8 @@ class Lobby extends React.Component {
             historyDataReady: false,
             error: null,
             dailyDataCount: 0,
-            lobbyData: null,
+            lobbyData: null, // no mutations
+            lobbyDataUI: null, // sorted for UI display
             pastEntries: { },
             entryETH: '', // form input value
             todayAvailableHEX: '---',
@@ -272,6 +273,7 @@ class Lobby extends React.Component {
                 this.setState({
                     dailyDataCount,
                     lobbyData,
+                    lobbyDataUI: lobbyData,
                     pastEntries,
                     historyDataReady: true
                 }, () => this.sortLobbyDataStateByField('day'))
@@ -304,7 +306,7 @@ class Lobby extends React.Component {
         const lobbySortKey = { keyField, dir }
         this.setState({
             lobbySortKey,
-            lobbyData: [ ...this.state.lobbyData ].sort((a, b) => {
+            lobbyDataUI: [ ...this.state.lobbyData ].sort((a, b) => {
                 const bn_a = BigNumber(a[keyField])
                 const bn_b = BigNumber(b[keyField])
                 return dir * (bn_a.lt(bn_b) ? -1 : bn_a.gt(bn_b) ? 1 : 0)
@@ -332,7 +334,7 @@ class Lobby extends React.Component {
                     return ( <div className="text-center">loading ...</div> )
             }
 
-            const lobbyData = this.state.lobbyData
+            const lobbyData = this.state.lobbyDataUI
             return (
                 <Container className="pl-0 pr-3 row-highlight-even">
                     <p className="text-center"><b>Transform History</b></p>
@@ -502,6 +504,7 @@ class Lobby extends React.Component {
                             {this.state.unmintedEntries.map(data => {
                                 const { day, entries } = data
                                 const { availableHEX, totalETH } = this.state.lobbyData[day]
+                                
                                 const {
                                     potentialHEXTotal
                                 } = this.calcEntryTotals(
@@ -524,7 +527,7 @@ class Lobby extends React.Component {
                                             <span className="text-info text-normal">
                                                 <small>day {day+1}{entries.length > 1 && <sup>({entries.length} entries)</sup>}</small>
                                             </span>{' '}
-                                            MINT&nbsp;<CryptoVal value={potentialHEXTotal}calcEntryTotals showUnit />
+                                            MINT&nbsp;<CryptoVal value={potentialHEXTotal}showUnit />
                                         </VoodooButton>
                                     </div>
                                 )
