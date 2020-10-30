@@ -399,13 +399,34 @@ class App extends React.Component {
     AppContent = () => {
         if (!this.state.walletConnected) { // 'connect wallet' button
             return (
-                <Container fluid className="text-center mb-3">
-                    <Button id="connect_wallet" variant="info" onClick={this.handleConnectWalletButton} >
-                        <span className="d-none d-sm-inline">Click to Connect a Wallet</span>
-                        <span className="d-inline d-sm-none">Connect Wallet</span>
-                    </Button>
-                    <Blurb />
-                </Container>
+            <>
+                <Container fluid className="bg-light text-dark rounded p-3 my-3 overflow-hidden text-left" id="gatekeepers_suck">
+                    <h1 className="text-center text-danger">IMPORTANT NOTICE</h1>
+                    <h2 className="text-warning">Mobile dApps blocked by <strong>Apple</strong> &amp; <strong>Google</strong></h2>
+                    <p>
+                        Unfortunately, both Google (Android) and Apple (iOS) have blocked mobile dApp apps. 
+                        New T&Cs for Play/App Store inclusion have forced imToken to remove its built-in dApp browser and 
+                        Web3 Javacript libraries are apparently being blocked by all previously compatible mobile browsers.
+                    </p>
+                    <h2 className="text-success">Your HEX and Stakes are safe!</h2>
+                    <p>
+                        Any lobby entries or stakes made using this app are <em><strong>still accessible </strong></em>
+                        using <a href="https://go.hex.com"><strong>go.hex.com</strong></a> in the usual manner.
+                        HEXmob will also remain accessible via desktop browser for some time, as yet undetermined.
+                    </p>
+                    <h3>Thank you for your support and understanding</h3>
+                    <p>
+                        We now return you to your regular program ...
+                    </p>
+                    </Container>
+                    <Container fluid className="text-center mb-3">
+                        <Button id="connect_wallet" variant="info" onClick={this.handleConnectWalletButton} >
+                            <span className="d-none d-sm-inline">Click to Connect a Wallet</span>
+                            <span className="d-inline d-sm-none">Connect Wallet</span>
+                        </Button>
+                        <Blurb />
+                    </Container>
+                </>
             )
         } else if (!this.state.contractReady) {
             return (
