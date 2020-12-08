@@ -121,7 +121,7 @@ class App extends React.Component {
             window.location.reload()
         })
 
-        window.web3.currentProvider.publicConfigStore.on('update', this.updateETHBalance)
+        window.web3.currentProvider.publicConfigStore && window.web3.currentProvider.publicConfigStore.on('update', this.updateETHBalance)
     }
 
     subscribeEvents = () => {
@@ -183,9 +183,10 @@ class App extends React.Component {
         debug('window.ethereum: ', window.ethereum)
 
         if (window.ethereum && !window.ethereum.chainId) window.ethereum.chainId = '0x1'
+        debug('window.ethereum = %O', window.ethereum)
 
         // Check for non-web3modal injected providers (mobile dApp browsers)
-        if (detectTrustWallet()) {                                                  // TrustWallet
+        if (detectTrustWallet()) {                                                  // TrustWallet internal browser (now defunct)
             debug("Detected TrustWallet")
             const chainId = window.web3.currentProvider.chainId
             const mainnet = {
@@ -203,19 +204,18 @@ class App extends React.Component {
             this.walletProvider = window.ethereum
             this.walletProvider.isCoinBase = true
             this.setState({ currentProvider: 'CoinBase' })
-        } else {                                                                    // web3modal selection
+        } else { // web3modal it is ...
             this.setState({ currentProvider: 'web3modal' })
             debug('this.web3modal.cachedProvider: ', this.web3modal.cachedProvider)
             if (this.web3modal.cachedProvider !== '' || this.triggerWeb3Modal) {
                 this.triggerWeb3Modal = false
                 this.walletProvider = await this.selectWeb3ModalWallet()
-                debug('post web3modal walletProvider: ', this.walletProvider)
                 const currentProvider = this.walletProvider ? getProviderInfo(this.walletProvider).name : '---'
-                this.setState({ currentProvider })
+                await this.setState({ currentProvider })
             }
         }
 
-        // We set up TWO providers. Once from the wallet to handle sending transactions
+        // We set up TWO providers. One from the connected wallet to handle sending transactions
         // and one for all other chain quuery operations (using Infura or the like)
         // this.walletProvider stores the transaction provider
         // this.provider stores the query provider
@@ -237,7 +237,7 @@ class App extends React.Component {
         debug('web3 providers established')
 
         window.web3 = new Web3(this.walletProvider) // window.web3 used for sending/signing transactions
-        this.web3 = new Web3(this.provider)         // this.web3 used for everything else 
+        this.web3 = new Web3(this.provider)         // this.web3 used for everything else (Infura)
 
         if (!window.web3 || !this.web3) return debug('Unexpected error setting up Web3 instances')
         
@@ -249,19 +249,25 @@ class App extends React.Component {
         // Different ewallets have different methods of supplying the user's active ETH address
         var address = null
         if (this.walletProvider.isMetaMask) {               // MetaMask
+            debug('web3modal provider is MetaMask')
             const response = await window.ethereum.send('eth_requestAccounts') // EIP1102(ish)
             debug('accounts[]: ', response)
             address = response.result[0]
         } else if (this.walletProvider.isCoinBase) {        // CoinBase
-            this.walletProvider.enable()
+            debug('Provider is Coinbase')
+            await this.walletProvider.enable()
             const accounts = await window.web3.eth.getAccounts()
             address=accounts[0]
-        } else if (detectTrustWallet()) {                   // TrustWallet
+        } else if (detectTrustWallet()) {                   // TrustWallet internal browser (since removed 'cause Apple sux)
+            debug('Provider is TrustWallet (internal browser)')
             this.walletProvider.enable()
             address = window.web3.eth.givenProvider.address || '0x7357000000000000000000000000000000000000'
             this.walletProvider.setAddress(address)
+        } else if (this.walletProvider.isWalletConnect) {    // Wallet Connect
+            debug('web3modal provider is WalletConnect (QR code)')
+            address = this.walletProvider.accounts[0]
         } else if (window.web3.currentProvider.isPortis) {
-            this.walletProvider.enable()
+            await this.walletProvider.enable()
             const accounts = await window.web3.eth.getAccounts()
             address = accounts[0]
         } else if (window.web3.currentProvider.isImToken) { // imToken
@@ -277,6 +283,7 @@ class App extends React.Component {
         debug('process.env: ', process.env)
         window._APP = this // DEBUG remove me
         window._w3M = Web3Modal
+        window._HEX = HEX
 
         const address = await this.establishWeb3Provider() 
         if (!address) return debug('No wallet address supplied - STOP')
@@ -369,11 +376,12 @@ class App extends React.Component {
     }
 
     disconnectWallet = async () => {
-        const provider = this.provider || null
+        const provider = this.walletProvider || null
         if (provider && provider.close) {
+            debug("DISCONNECT: App.disconnectWallet()")
             await this.unsubscribeEvents()
             await this.web3modal.clearCachedProvider()
-            await this.provider.close()
+            await this.walletProvider.close()
         } else {
             this.resetApp()
         }
@@ -402,7 +410,7 @@ class App extends React.Component {
                 <Container fluid className="text-center mb-3">
                     <Button id="connect_wallet" variant="info" onClick={this.handleConnectWalletButton} >
                         <span className="d-none d-sm-inline">Click to Connect a Wallet</span>
-                        <span className="d-inline d-sm-none">Connect Wallet</span>
+                        <span className="d-inline d-sm-none">CONNECT WALLET</span>
                     </Button>
                     <Blurb />
                 </Container>

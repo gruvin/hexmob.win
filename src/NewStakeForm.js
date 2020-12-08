@@ -273,7 +273,9 @@ export class NewStakeForm extends React.Component {
                                     contract={window.contract}
                                     method="stakeStart" 
                                     params={[BigNumber(this.state.stakeAmount).times(1e8).toString(), this.state.stakeDays/*string*/]}
-                                    options={{ from: this.props.wallet.address }}
+                                    options={{ 
+                                        from: this.props.wallet.address
+                                    }}
                                     inputValid={ (BigNumber(this.state.stakeAmount).gt(0) && this.state.stakeDays > 0) }
                                     confirmationCallback={this.resetFormAndReloadStakes}
                                     variant="stake btn-start"
@@ -327,7 +329,7 @@ export class NewStakeForm extends React.Component {
                                         Effective HEX
                                         <span className="text-success"> x </span>
                                         Stake Bonuses
-                                    </WhatIsThis>{' '}
+                                    </WhatIsThis>
                                 </Col>
                                 <Col className="text-right">
                                     <CryptoVal value={this.state.stakeShares} currency="SHARES" />
