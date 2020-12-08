@@ -45,7 +45,6 @@ export const CryptoVal = (props) => {
 export const WhatIsThis = (props) => {
     return (
         <OverlayTrigger
-            show={true}
             placement={props.placement || "auto"}
             overlay={
                 <Tooltip>
@@ -125,10 +124,9 @@ export class VoodooButton extends React.Component {
             })
 
             const func = simulate ? sim : contract.methods[method]
-            debug('CONTRACT SEND: %s(%O).send(%O)', method, params, options)
             if (window.web3 && window.web3.currentProvider && window.web3.currentProvider.isTrust) {
                 debug('Sending via TrustWallet provider')
-                // TrustWallet returns immediately, with nothing and 
+                // TrustWallet [internal browser] returns immediately, with nothing and 
                 // never again :/ (See XXX notes in App.js)
                 func(...params).send(options)
                 setTimeout(async ()=>{
@@ -143,6 +141,9 @@ export class VoodooButton extends React.Component {
                 }, 2000)
                 return false // that's all folks
             }
+
+            debug("contract.methods.%s(%o).send(%o)", method, params, options)
+            
             func(...params).send(options)
                 .once('transactionHash', (hash) => {
                     debug(`${method}::transactionHash: `, hash)

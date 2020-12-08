@@ -48,7 +48,7 @@ export class StakeInfo extends React.Component {
         return (
             <Accordion xs={12} sm={6} defaultActiveKey="0" key={stake.stakeId} className="my-2">
                 <Card bg="dark">
-                    <Accordion.Toggle as={Card.Header} eventKey={0}>
+                    <Accordion.Toggle as={Card.Header} eventKey={stake.stakeId}>
                         <Container>
                             <Row>
                                 <Col xs={5}>
@@ -81,7 +81,7 @@ export class StakeInfo extends React.Component {
                             }
                         </Container>
                     </Accordion.Toggle>
-                    <Accordion.Collapse eventKey={0} bg="secondary">
+                    <Accordion.Collapse eventKey={stake.stakeId} bg="secondary">
                         <Card.Body>
                             <Row className="mt-2">
                                 <Col className="text-right"><strong>Start Day</strong></Col>
