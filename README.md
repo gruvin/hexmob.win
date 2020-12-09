@@ -29,72 +29,48 @@ gpg: Good signature from "Bryan Rentoul <gruvin@gmail.com>" [ultimate]
 
 ----
 
+# How Can I Trust this dApp Interface?
 
-This project was bootstrapped with [Create React App](https://github.com/facebook/create-react-app).
+Oh! I'm so glad you asked! Hold on to your hat! Here we go ...
 
-## Available Scripts
+## Self Service Security Audit
+I'm just a lone guy, at the end of the Earth. I cannot hope to pay for any kind of proper code security audit. However, if you are so inclined, I have created a method for you to at least verify that what you get served over the web, matches what I have personally signed and published here on GitHub.
 
-In the project directory, you can run:
+- You'll need GPG and to be competent at the command line.
+- Download my GPG Public Key *file* from my [FlowCrypt™ Encrypted Contact Page](https://flowcrypt.com/me/gruvin)
+- Import my public key into your GPG keyring ...
+```
+% gpg --import 0x8F351354BCBE9993-gruvingmailcom-public-key.asc
+```
+- Download the two `hexmob.win-*` files from the [latest release](https://github.com/gruvin/hexmob.win/releases/latest), which shouod be the current website version.
+- Use the `.sig` file to verify the code is as it was when signed by the author (ME)
+```
+% gpg --verify hexmob.win-0.2.12B-build.tgz.sig hexmob.win-0.2.12B-build.tgz
+gpg: Signature made Wed  9 Dec 14:10:31 2020 NZDT
+gpg:                using RSA key 036E2526A4740940E1DF91955751D33B09A27356
+gpg: Good signature from "Bryan Rentoul <gruvin@gmail.com>" [unknown]
+```
+- Now, you can use your browser's developer tools to check the code you are running matches the contents of the `.tgz` file.
 
-### `yarn start`
+# Self Service Code Audit
+So, the code your browser gets matches what I wrote and intended. Yay! \0/ But ... is what I wrote fair and true? Well, that's where we reach the end of the road, I'm afraid. You'll either have to beg or pay someone to audit the code for you --OR-- at least look through it yourself, trying to find any ETH addresses other than the legitimate HEX ERC20 contract. That should be enough to know the code won't be sending your HEX off to somewhere you didn't want.
 
-Runs the app in the development mode.<br />
-Open [http://localhost:3000](http://localhost:3000) to view it in the browser.
+Here is how you can clone the code to your own computer and verifiy that what you got was what I actually wrote ...
 
-The page will reload if you make edits.<br />
-You will also see any lint errors in the console.
+```
+% git clone https://github.com/gruvin/hexmob.win.git
+% cd hexmob.win
+% git checkout v0.2.12B    [or whatever the current version is]
+% git tag --verify 0.2.12B            [ ditto]
+object ab8d83bffd6774df5534e46523fa7310ac8772b0
+type commit
+tag 0.2.12B
+tagger Bryan Rentoul <gruvin@gmail.com> 1607498555 +1300
 
-### `yarn test`
+0.12.B official release 2020-12-09 [<== this line might be anything]
+gpg: Signature made Wed  9 Dec 20:23:30 2020 NZDT
+gpg:                using RSA key 036E2526A4740940E1DF91955751D33B09A27356
+gpg: Good signature from "Bryan Rentoul <gruvin@gmail.com>" [unknown]
+```
 
-Launches the test runner in the interactive watch mode.<br />
-See the section about [running tests](https://facebook.github.io/create-react-app/docs/running-tests) for more information.
-
-### `yarn build`
-
-Builds the app for production to the `build` folder.<br />
-It correctly bundles React in production mode and optimizes the build for the best performance.
-
-The build is minified and the filenames include the hashes.<br />
-Your app is ready to be deployed!
-
-See the section about [deployment](https://facebook.github.io/create-react-app/docs/deployment) for more information.
-
-### `yarn eject`
-
-**Note: this is a one-way operation. Once you `eject`, you can’t go back!**
-
-If you aren’t satisfied with the build tool and configuration choices, you can `eject` at any time. This command will remove the single build dependency from your project.
-
-Instead, it will copy all the configuration files and the transitive dependencies (webpack, Babel, ESLint, etc) right into your project so you have full control over them. All of the commands except `eject` will still work, but they will point to the copied scripts so you can tweak them. At this point you’re on your own.
-
-You don’t have to ever use `eject`. The curated feature set is suitable for small and middle deployments, and you shouldn’t feel obligated to use this feature. However we understand that this tool wouldn’t be useful if you couldn’t customize it when you are ready for it.
-
-## Learn More
-
-You can learn more in the [Create React App documentation](https://facebook.github.io/create-react-app/docs/getting-started).
-
-To learn React, check out the [React documentation](https://reactjs.org/).
-
-### Code Splitting
-
-This section has moved here: https://facebook.github.io/create-react-app/docs/code-splitting
-
-### Analyzing the Bundle Size
-
-This section has moved here: https://facebook.github.io/create-react-app/docs/analyzing-the-bundle-size
-
-### Making a Progressive Web App
-
-This section has moved here: https://facebook.github.io/create-react-app/docs/making-a-progressive-web-app
-
-### Advanced Configuration
-
-This section has moved here: https://facebook.github.io/create-react-app/docs/advanced-configuration
-
-### Deployment
-
-This section has moved here: https://facebook.github.io/create-react-app/docs/deployment
-
-### `yarn build` fails to minify
-
-This section has moved here: https://facebook.github.io/create-react-app/docs/troubleshooting#npm-run-build-fails-to-minify
+Those `[unknown]` tags mean that no one you already trust has vouched for my GPG key. Sheesh! Let's try to keep it real though huh? 'k? Tnx.
