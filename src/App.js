@@ -411,12 +411,11 @@ class App extends React.Component {
                 <Col><Badge variant={this.state.network === 'mainnet' ? "success" : "danger"} className="small">{this.state.network}</Badge></Col>
                 <Col className="text-muted text-center small">{this.state.currentProvider}</Col>
                 <Col className="text-right">
-                    <Badge className="text-info">
-                        { addressFragment }
-                        <WhatIsThis>
-                            <small>{address}</small>
-                        </WhatIsThis>
-                    </Badge>
+                    <WhatIsThis tooltip={address}>
+                        <Badge className="text-info">
+                          { addressFragment }
+                        </Badge>
+                    </WhatIsThis>
                 </Col>
             </Row>
             </Container>

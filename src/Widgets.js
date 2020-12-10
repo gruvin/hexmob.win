@@ -1,8 +1,8 @@
-import React from 'react'
+import React, { useRef, useState } from 'react'
 import { 
     Button,
     Spinner,
-    OverlayTrigger,
+    Overlay,
     Tooltip,
     Badge
 } from 'react-bootstrap'
@@ -41,18 +41,25 @@ export const CryptoVal = (props) => {
 }
 
 export const WhatIsThis = (props) => {
+    const [show, setShow] = useState(false)
+    const target = useRef(null)
     return (
-        <OverlayTrigger
-            placement={props.placement || "auto"}
-            delay={{ show: 250, hide: 400 }}
-            overlay={
-                <Tooltip {...props}>
-                    {props.children}
+        <>
+            <span ref={target} style={{ cursor: "pointer" }} onClick={()=>setShow(!show)}>
+                { props.children }
+                { (props.showPill) && <sup><Badge variant="info" pill>?</Badge></sup> }
+            </span>
+            <Overlay 
+                target={target.current} show={show}
+                rootClose={true} onHide={() => setShow(false)}
+                placement={props.placement || "auto"} flip
+                delay={{ show: 200, hide: 400 }}
+            >
+                <Tooltip>
+                    {props.tooltip}
                 </Tooltip>
-            }
-        >
-            <Badge variant="info" className="whatisthis" pill>?</Badge>
-        </OverlayTrigger>
+            </Overlay>
+        </>
     )
 }
 

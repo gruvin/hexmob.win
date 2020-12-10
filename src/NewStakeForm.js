@@ -303,13 +303,16 @@ export class NewStakeForm extends React.Component {
                             </Row>
                             <Row className="mt-2">
                                 <Col>
-                                    <strong>Effective HEX</strong>
-                                    <WhatIsThis>
-                                        Effective HEX
-                                        <span className="text-success"> = </span><br/>
-                                        Stake Amount in HEX
-                                        <span className="text-success"> + </span>
-                                        Stake Bonuses
+                                    <WhatIsThis showPill tooltip={
+                                        <>
+                                            Effective HEX
+                                            <span className="text-success"> = </span><br/>
+                                            Stake Amount in HEX
+                                            <span className="text-success"> + </span>
+                                            Stake Bonuses
+                                        </>
+                                    }>
+                                        <strong>Effective HEX</strong>
                                     </WhatIsThis>
                                     </Col>
                                 <Col className="text-right"><strong><CryptoVal value={this.state.effectiveHEX} showUnit /></strong></Col>
@@ -322,13 +325,16 @@ export class NewStakeForm extends React.Component {
                             </Row>
                             <Row>
                                 <Col>
-                                    <strong>Stake Shares</strong>
-                                    <WhatIsThis>
-                                        Stake Shares
-                                        <span className="text-success"> = </span><br/>
-                                        Effective HEX
-                                        <span className="text-success"> x </span>
-                                        Stake Bonuses
+                                    <WhatIsThis showPill tooltip={
+                                        <>
+                                            Stake Shares
+                                            <span className="text-success"> = </span><br/>
+                                            Effective HEX
+                                            <span className="text-success"> x </span>
+                                            Stake Bonuses
+                                        </>
+                                    }>
+                                        <strong>Stake Shares</strong>
                                     </WhatIsThis>
                                 </Col>
                                 <Col className="text-right">
