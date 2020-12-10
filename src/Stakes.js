@@ -19,8 +19,7 @@ import { StakeInfo } from './StakeInfo'
 import BitSet from 'bitset'
 import crypto from 'crypto'
 
-const debug = require('./debug')('Stakes')
-debug('loading')
+const debug = require('debug')('Stakes')
 
 class Stakes extends React.Component {
     constructor(props) {

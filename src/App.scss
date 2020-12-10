@@ -46,7 +46,9 @@ $theme-colors: (
 .container md { max-width: 720px }
 
 body { 
-    overflow: hidden;
+    position: relative;
+    overflow-x: hidden;
+    overflow-y: auto;    
     font-family: "Happy Monkey", sans-serif; 
     background: #171515;
     background-size: auto;
@@ -207,6 +209,7 @@ button#connect_wallet:hover { border-style: inset; border-color: #fec}
 }
 
 
+.whatisthis { position: relative; top: -.4em; left: 0.4em; }
 .tooltip-inner {
     font-family: "Happy Monkey", Arial, sans-serif;
     font-size: 1.1em;

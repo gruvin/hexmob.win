@@ -9,18 +9,18 @@ import {
     Badge,
     ProgressBar
 } from 'react-bootstrap'
-import { DebugPanel } from './Widgets'
 import Stakes from './Stakes'
 import Lobby from './Lobby'
 import Blurb from './Blurb' 
+import { WhatIsThis } from './Widgets'
 import HEX from './hex_contract'
-import Web3 from "web3";
-import Web3Modal, { getProviderInfo } from "web3modal";
-import WalletConnectProvider from "@walletconnect/web3-provider"
+import Web3 from 'web3';
+import Web3Modal, { getProviderInfo } from 'web3modal';
+import WalletConnectProvider from '@walletconnect/web3-provider'
 //import Portis from "@portis/web3";
 import { detectTrustWallet } from './util'
 import './App.scss'
-const debug = require('./debug')('App')
+const debug = require('debug')('App')
 const uriQuery = new URLSearchParams(window.location.search)
 if (uriQuery.has('debug')) {
     window.localStorage.setItem('debug', '*')
@@ -84,10 +84,15 @@ class App extends React.Component {
                 ethereum.autoRefreshOnNetworkChange = false // will be default behavour in new MM api
 
             // MetaMask has no 'close' or 'disconnect' event. Workaround ...
-            ethereum.on('accountsChanged', (accounts) => {
-                if (!accounts.length)                   // => event:"close" (logged out)
+            ethereum.on('disconnect', () => {
                     this.resetApp()
-                else {                                  // => event:"accountsChanged"
+            })
+
+            ethereum.on('accountsChanged', (accounts) => {
+                if (!accounts.length)                   // => legacy workaround for lack of event:[close|disconnect] (logged out)
+                    this.resetApp()
+                else 
+                {                                       // => event:accountsChanged actual
                     const newAddress = accounts[0]
                     debug('ADDRESS CHANGE [metamask]: %s(old) => %s', this.state.wallet.address, newAddress)
                     this.setState({ 
@@ -117,7 +122,7 @@ class App extends React.Component {
             window.location.reload()
         })
 
-        provider.on("networkChanged", async (networkId: number) => {
+        provider.on("chainChanged", async (networkId: number) => {
             window.location.reload()
         })
 
@@ -143,8 +148,8 @@ class App extends React.Component {
                 debug('SS:ERROR:', error)
         })
         .on('connected', id => debug('SS::subbed: %s -- addr: %s', id, address))
-        .on("data", (log) => {
-            debug('SS::data: ', log);
+        .on("message", (log) => {
+            debug('SS::message: ', log);
         })
         .on("changed", (log) => {
             debug('SS::changed: ', log);
@@ -180,7 +185,7 @@ class App extends React.Component {
 
     /* returns address or null */
     async establishWeb3Provider() {
-        debug('window.ethereum: ', window.ethereum)
+        debug('window.ethereum: %O', window.ethereum)
 
         if (window.ethereum && !window.ethereum.chainId) window.ethereum.chainId = '0x1'
         debug('window.ethereum = %O', window.ethereum)
@@ -250,9 +255,18 @@ class App extends React.Component {
         var address = null
         if (this.walletProvider.isMetaMask) {               // MetaMask
             debug('web3modal provider is MetaMask')
-            const response = await window.ethereum.send('eth_requestAccounts') // EIP1102(ish)
-            debug('accounts[]: ', response)
-            address = response.result[0]
+            let accounts = null
+            if (window.ethereum.request) { // new way
+                debug('accounts[] new method')
+                const response = await window.ethereum.request({method: 'eth_accounts'})
+                accounts = response
+            } else { // legacy way
+                debug('accounts[] legacy method')
+                const response = await window.ethereum.send('eth_requestAccounts') // EIP1102(ish)
+                accounts = response.result
+            }
+            debug('accounts[]: ', accounts)
+            address = accounts[0]
         } else if (this.walletProvider.isCoinBase) {        // CoinBase
             debug('Provider is Coinbase')
             await this.walletProvider.enable()
@@ -381,7 +395,7 @@ class App extends React.Component {
             debug("DISCONNECT: App.disconnectWallet()")
             await this.unsubscribeEvents()
             await this.web3modal.clearCachedProvider()
-            await this.walletProvider.close()
+            await provider.close() 
         } else {
             this.resetApp()
         }
@@ -397,7 +411,12 @@ class App extends React.Component {
                 <Col><Badge variant={this.state.network === 'mainnet' ? "success" : "danger"} className="small">{this.state.network}</Badge></Col>
                 <Col className="text-muted text-center small">{this.state.currentProvider}</Col>
                 <Col className="text-right">
-                    <Badge className="text-info">{ addressFragment }</Badge>
+                    <Badge className="text-info">
+                        { addressFragment }
+                        <WhatIsThis>
+                            <small>{address}</small>
+                        </WhatIsThis>
+                    </Badge>
                 </Col>
             </Row>
             </Container>
@@ -425,8 +444,10 @@ class App extends React.Component {
                     <Stakes contract={this.contract} wallet={this.state.wallet} />
                     <Lobby contract={this.contract} wallet={this.state.wallet} />
                     <Container className="text-center">
-                        <Badge variant="secondary"><span className="text-mute small">CONTRACT ADDRESS </span><a 
-                            href="https://etherscan.io/address/0x2b591e99afe9f32eaa6214f7b7629768c40eeb39" 
+                        <Badge variant="secondary"><span className="text-mute small">CONTRACT ADDRESS </span>
+                        <br className="d-md-none"/>
+                        <a 
+                            href="https://etherscan.io/address/{this.contract._address}" 
                             target="_blank"
                             rel="noopener noreferrer"
                         >
@@ -496,19 +517,18 @@ class App extends React.Component {
                                 </Card.Body>
                             </Container>
                         </> 
-                        } 
-                        <Container>
-                            <div className="text-center m-3">
-                                <Button variant="outline-danger" onClick={ this.disconnectWallet } >
-                                    DISCONNECT WALLET
-                                </Button>
-                            </div>
-                        </Container>
+                        }
+                        { this.state.walletConnected &&
+                            <Container>
+                                <div className="text-center m-3">
+                                    <Button variant="outline-danger" onClick={ this.disconnectWallet } >
+                                        DISCONNECT WALLET
+                                    </Button>
+                                </div>
+                            </Container>
+                        }
 
                     </Container>
-                    { uriQuery.has('debug') &&
-                        <DebugPanel />
-                    }
                 </Container>
                 <Container id="hexmob_footer" fluid>
                     { this.state.walletConnected && <this.WalletStatus /> }

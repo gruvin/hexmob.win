@@ -13,7 +13,7 @@ import HEX from './hex_contract'
 import { format } from 'd3-format'
 import { CryptoVal, VoodooButton } from './Widgets' 
 
-const debug = require('./debug')('StakeInfo')
+const debug = require('debug')('StakeInfo')
 debug('loading')
 
 export class StakeInfo extends React.Component {

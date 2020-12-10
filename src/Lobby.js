@@ -15,7 +15,7 @@ import BitSet from 'bitset'
 import Timer from 'react-compound-timer'
 import crypto from 'crypto'
 
-const debug = require('./debug')('Lobby')
+const debug = require('debug')('Lobby')
 debug('loading')
 
 class Lobby extends React.Component {

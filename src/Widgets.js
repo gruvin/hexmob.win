@@ -1,6 +1,5 @@
 import React from 'react'
 import { 
-    Container,
     Button,
     Spinner,
     OverlayTrigger,
@@ -15,8 +14,7 @@ import { faCopy } from '@fortawesome/free-solid-svg-icons'
 import { CopyToClipboard } from 'react-copy-to-clipboard'
 import { cryptoFormat } from './util.js'
 
-const debug = require('./debug')('Widgets')
-debug('loading')
+const debug = require('debug')('Widgets')
 
 export const CryptoVal = (props) => {
     if (props.value === '---') return ( <>---</> )
@@ -46,13 +44,14 @@ export const WhatIsThis = (props) => {
     return (
         <OverlayTrigger
             placement={props.placement || "auto"}
+            delay={{ show: 250, hide: 400 }}
             overlay={
-                <Tooltip>
+                <Tooltip {...props}>
                     {props.children}
                 </Tooltip>
             }
         >
-            <sup><Badge variant="info" pill>?</Badge></sup>
+            <Badge variant="info" className="whatisthis" pill>?</Badge>
         </OverlayTrigger>
     )
 }
@@ -233,10 +232,3 @@ export class VoodooButton extends React.Component {
     }
 }
 
-export const DebugPanel = () => {
-    return (
-        <Container className="p-1 bg-light" style={{ maxHeight: '200px', overflow: 'auto', fontSize: '0.8em', lineHeight: '0.82em' }}>
-            <pre id="HM_DEBUG">{"DEBUG\n"}</pre>
-        </Container>
-    )
-}
