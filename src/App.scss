@@ -221,6 +221,7 @@ button#connect_wallet:hover { border-style: inset; border-color: #fec}
 .tooltip.show {
     opacity: 0.95;
 }
+#lobby.progress, #stakes_accordion .progress { height: 0.2rem }
 #lobby.progress .progress-bar { color: black; }
 
 .row-highlight-even .row:nth-child(even) {  background-color: #1b1313; }

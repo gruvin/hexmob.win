@@ -40,6 +40,8 @@ export class StakeInfo extends React.Component {
         const valueTotal = stake.stakedHearts.plus(stake.payout).plus(currentDay >= HEX.BIG_PAY_DAY ? stake.bigPayDay : 0)
         const percentGain = stake.payout / stake.stakedHearts * 100
         const daysServed = currentDay - stake.startDay
+        const _endDate = new Date(HEX.START_DATE.getTime() + endDay * 24 * 3600 * 1000)
+        const endDate = _endDate.toLocaleDateString()+' '+_endDate.toLocaleTimeString()
         const percentAPY = currentDay < stake.startDay ? 0 
             : currentDay < stake.endDay ? 365 / Math.min(daysServed, 365) * percentGain
             : percentGain / 365
@@ -51,20 +53,19 @@ export class StakeInfo extends React.Component {
                     <Accordion.Toggle as={Card.Header} eventKey={stake.stakeId}>
                         <Container>
                             <Row>
-                                <Col xs={5}>
-                                    <span className="d-none d-sm-inline"><strong>Stake </strong></span> 
-                                    #<strong className="numeric text-info text-center">{stake.stakeId}</strong></Col>
-                                <Col xs={7} className="text-right">
+                                <Col xs={6} className="text-left">
                                     <span className="text-muted small">PRINCIPAL </span> 
-                                    <strong className="text-info"><CryptoVal value={stake.stakedHearts} showUnit /></strong>
+                                    <strong className="text-info"><CryptoVal value={stake.stakedHearts} /></strong>
+                                </Col>
+                                <Col xs={6} className="text-right">
+                                    <span className="text-muted small">VALUE </span> 
+                                    <strong className="text-info"><CryptoVal value={valueTotal} /></strong>
                                 </Col>
                             </Row>
                             <Row className="mb-1">
                                 <Col xs={7} className="numeric">
-                                    <span className="text-muted small mr-1">
-                                        DAYS
-                                    </span>
-                                    {startDay+1} to {endDay+1}
+                                    <span className="text-muted small mr-1">ENDS </span>
+                                    <span style={{ fontSize: "0.9em" }}>{endDate}</span>
                                 </Col>
                                 <Col xs={5} className="text-right numeric">
                                     { pending ? <Badge variant="primary">PENDING</Badge> 
@@ -90,6 +91,10 @@ export class StakeInfo extends React.Component {
                             <Row>
                                 <Col className="text-right"><strong>End Day</strong></Col>
                                 <Col className="numeric">{stake.endDay}</Col>
+                            </Row>
+                            <Row>
+                                <Col className="text-right"><strong>End Date</strong></Col>
+                                <Col className="numeric">{endDate}</Col>
                             </Row>
                             <Row>
                                 <Col className="text-right"><strong>Staked Days</strong></Col>

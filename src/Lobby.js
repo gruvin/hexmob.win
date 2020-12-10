@@ -461,7 +461,6 @@ class Lobby extends React.Component {
                                 min="0" max="350" 
                                 now={currentDay+1}
                                 className="mb-1"
-                                style={{ height: "6px" }}
                                 variant={currentDay > 263 ? "danger" : currentDay > 125 ? "warning" : currentDay > 88 ? "info" : "success"}
                             />
                     { HEX.lobbyIsActive() && <>

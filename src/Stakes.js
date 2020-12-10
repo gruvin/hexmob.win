@@ -321,7 +321,13 @@ class Stakes extends React.Component {
                             <Col><CryptoVal value={sharesTotal.times(1e8)} /></Col>
                         </Row>
                         <Row>
-                            <Col className="text-right"><strong>BigPayDay</strong></Col>
+                            <Col className="text-right">
+                                <strong>
+                                    <span className="text-info">Big</span>
+                                    <span className="text-warning">Pay</span>
+                                    <span className="text-danger">Day</span>
+                                </strong>
+                            </Col>
                             <Col><CryptoVal value={bpdTotal} showUnit /></Col>
                         </Row>
                         <Row>
