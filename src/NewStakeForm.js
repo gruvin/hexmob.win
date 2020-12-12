@@ -7,13 +7,16 @@ import {
     Dropdown,
     DropdownButton,
     Row,
-    Col,
+    Col
 } from 'react-bootstrap'
 import './Stakes.scss'
 import { BigNumber } from 'bignumber.js'
 import HEX from './hex_contract'
 import { calcBigPayDaySlice, calcAdoptionBonus } from './util'
 import { CryptoVal, WhatIsThis, VoodooButton } from './Widgets' 
+import { BarChart, Bar, XAxis, YAxis, Tooltip } from 'recharts'
+import fetch from "isomorphic-fetch";
+
 
 const debug = require('debug')('NewStakeForm')
 debug('loading')
@@ -33,14 +36,54 @@ export class NewStakeForm extends React.Component {
             bigPayDay: BigNumber(0),
             percentGain: 0.0,
             percentAPY: 0.0,
+            data: []
         }
     }
 
-    componentDidMount() {
+    async componentDidMount() {
         const _shareRate = this.props.contract.Data.globals.shareRate || 100000
         const shareRate = BigNumber('100000').div(_shareRate)
         this.setState({ shareRate })
         window._NEW = this // DEBUG remove me
+        await fetch('https://api.thegraph.com/subgraphs/name/codeakk/hex', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ query: `{
+                    stakeStarts (
+                        where: {
+                            endDay_gt:390,
+                            endDay_lte:400
+                        }
+                    )
+                    {
+                        id 
+                        stakeShares
+                        endDay
+                    }
+                }` 
+            }),
+        })
+        .then(res => res.json())
+        .then(data => {
+            let collated = []
+            let lastDay = undefined
+            let parsedData = data.data.stakeStarts.map(oRow => { 
+                const TShares = new BigNumber(oRow.stakeShares).div(10e12).toNumber()
+                return { endDay: parseInt(oRow.endDay)-376, stakeShares: TShares }
+            }).sort((row1, row2) => row1.endDay - row2.endDay).reduce((acc, cur, idx) => { 
+                if (cur.endDay === lastDay) {
+                    const lastEntry = collated.pop()
+                    collated.push({ endDay:lastEntry.endDay, stakeShares: lastEntry.stakeShares + cur.stakeShares })
+                }
+                else
+                    collated.push(cur)
+                lastDay = cur.endDay
+                return collated
+            })
+            this.setState({data: parsedData})
+        })
+
+       debug("DATA: %O", this.state.data) 
     }
 
     resetForm = () => {
@@ -139,10 +182,25 @@ export class NewStakeForm extends React.Component {
         const handleDaysChange = (e) => {
             e.preventDefault()
             const stakeDays = parseInt(e.target.value) || 0
+
+            const { currentDay } = this.props.contract.Data
+            const endDay = currentDay + 2 + stakeDays
+
+            const _startDate = new Date(HEX.START_DATE.getTime() + (currentDay + 1) * 24 * 3600 * 1000)
+            const _endDate = new Date(HEX.START_DATE.getTime() + endDay * 24 * 3600 * 1000)
+            const startDate = _startDate.toLocaleDateString()
+            const startTime = _startDate.toLocaleTimeString()
+            const endDate = _endDate.toLocaleDateString()
+            const endTime = _endDate.toLocaleTimeString()
+
             this.setState({
                 stakeDays: stakeDays > 5555 ? '5555' : stakeDays.toString(),
-                startDay: currentDay+1,
-                endDay: currentDay+1+stakeDays
+                startDay: currentDay+2,
+                endDay: currentDay+2+stakeDays,
+                startDate, 
+                startTime,
+                endDate,
+                endTime
             }, this.updateFigures)
         }
         
@@ -288,7 +346,17 @@ export class NewStakeForm extends React.Component {
                     </Col>
                     <Col xs={12} sm={7}>
                         <Container>
-                            <h4 className="text-info">Bonuses ...</h4>
+                            <Row>
+                                <Col className="col-3 text-info">Start</Col>
+                                <Col className="col-3 pr-0"><span className="text-muted small">DAY </span>{this.state.startDay}</Col>
+                                <Col className="col-6 pr-0">{this.state.startDate} <span className="text-muted">{this.state.startTime}</span></Col>
+                            </Row>
+                            <Row>
+                                <Col className="col-3 text-info">End<span className="d-none d-sm-inline"> Day</span></Col>
+                                <Col className="col-3 pr-0"><span className="text-muted small">DAY </span>{this.state.endDay}</Col>
+                                <Col className="col-6 pr-0">{this.state.endDate} <span className="text-muted">{this.state.endTime}</span></Col>
+                            </Row>
+                            <h4 className="mt-3 text-info">Bonuses ...</h4>
                             <Row>
                                 <Col className="ml-0 ml-md-3">Bigger <span className="d-none d-md-inline">Pays</span> Better</Col>
                                 <Col className="text-right">+ <CryptoVal value={this.state.biggerPaysBetter} showUnit /></Col>
@@ -375,7 +443,20 @@ export class NewStakeForm extends React.Component {
                         ) }
                     </Col>
                 </Row>
+
+            { (this.state.data) && 
+                <BarChart 
+                    width={450}
+                    height={200}
+                    data={this.state.data}
+                >
+                    <XAxis type="number" dataKey="endDay" />
+                    <YAxis type="number" />
+                    <Bar dataKey="stakeShares" fill="#ff7300" isAnimationActive={true} />
+                </BarChart>
+            }
             </Form>
+            
         )
     }
 }

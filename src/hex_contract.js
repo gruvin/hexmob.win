@@ -2,6 +2,7 @@ const { BigNumber } = require('bignumber.js')
 
 const START_DATE_POSIX = 1575331200000
 const START_DATE = new Date(START_DATE_POSIX) // '2019-12-03 00:00:00Z' moble browser can't take it! :/
+const GENESIS_BLOCK = 9041184
 const CLAIM_PHASE_START_DAY =  1
 const CLAIM_PHASE_DAYS =  (7 * 50)
 const CLAIM_PHASE_END_DAY =  CLAIM_PHASE_START_DAY + CLAIM_PHASE_DAYS
@@ -42,6 +43,7 @@ module.exports = {
     CLAIM_PHASE_START_DAY,
     CLAIM_PHASE_DAYS,
     CLAIM_PHASE_END_DAY,
+    GENESIS_BLOCK,
     BIG_PAY_DAY,
     CLAIMABLE_BTC_ADDR_COUNT,
     CLAIMABLE_SATOSHIS_TOTAL,
