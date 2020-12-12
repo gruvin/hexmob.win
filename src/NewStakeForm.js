@@ -14,7 +14,7 @@ import { BigNumber } from 'bignumber.js'
 import HEX from './hex_contract'
 import { calcBigPayDaySlice, calcAdoptionBonus } from './util'
 import { CryptoVal, WhatIsThis, VoodooButton } from './Widgets' 
-import { BarChart, Bar, XAxis, YAxis, Tooltip } from 'recharts'
+import { BarChart, Bar, XAxis, YAxis, Tooltip, Legend } from 'recharts'
 import fetch from "isomorphic-fetch";
 
 
@@ -45,45 +45,6 @@ export class NewStakeForm extends React.Component {
         const shareRate = BigNumber('100000').div(_shareRate)
         this.setState({ shareRate })
         window._NEW = this // DEBUG remove me
-        await fetch('https://api.thegraph.com/subgraphs/name/codeakk/hex', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ query: `{
-                    stakeStarts (
-                        where: {
-                            endDay_gt:390,
-                            endDay_lte:400
-                        }
-                    )
-                    {
-                        id 
-                        stakeShares
-                        endDay
-                    }
-                }` 
-            }),
-        })
-        .then(res => res.json())
-        .then(data => {
-            let collated = []
-            let lastDay = undefined
-            let parsedData = data.data.stakeStarts.map(oRow => { 
-                const TShares = new BigNumber(oRow.stakeShares).div(10e12).toNumber()
-                return { endDay: parseInt(oRow.endDay)-376, stakeShares: TShares }
-            }).sort((row1, row2) => row1.endDay - row2.endDay).reduce((acc, cur, idx) => { 
-                if (cur.endDay === lastDay) {
-                    const lastEntry = collated.pop()
-                    collated.push({ endDay:lastEntry.endDay, stakeShares: lastEntry.stakeShares + cur.stakeShares })
-                }
-                else
-                    collated.push(cur)
-                lastDay = cur.endDay
-                return collated
-            })
-            this.setState({data: parsedData})
-        })
-
-       debug("DATA: %O", this.state.data) 
     }
 
     resetForm = () => {
@@ -168,6 +129,55 @@ export class NewStakeForm extends React.Component {
         this.props.reloadStakes()
     }
 
+    updateBarGraph = () => {
+        const { startDay, endDay } = this.state
+        if (isNaN(startDay + endDay)) return
+
+        const graphStartDay = Math.max(startDay, endDay - 14)
+        const graphEndDay = endDay + 14
+        fetch('https://api.thegraph.com/subgraphs/name/codeakk/hex', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ query: `{
+                    stakeStarts (
+                        where: {
+                            endDay_gte:${graphStartDay},
+                            endDay_lte:${graphEndDay}
+                        }
+                    )
+                    {
+                        id 
+                        stakeShares
+                        endDay
+                    }
+                }` 
+            }),
+        })
+        .then(res => res.json())
+        .then(data => {
+            let collated = []
+            let lastDay = undefined
+            let parsedData = data.data.stakeStarts.map(oRow => { 
+                const TShares = new BigNumber(oRow.stakeShares).div(10e12).toNumber()
+                return { endDay: parseInt(oRow.endDay), "T-Shares": TShares }
+            })
+            .sort((row1, row2) => row1.endDay - row2.endDay)
+            .reduce((acc, cur, idx) => { 
+                if (cur.endDay === lastDay) {
+                    const lastEntry = collated.pop()
+                    collated.push({ endDay:lastEntry.endDay.toString(), "T-Shares": lastEntry['T-Shares'] + cur['T-Shares'] })
+                }
+                else
+                    collated.push({ endDay: cur.endDay.toString(), "T-Shares": cur['T-Shares'] })
+                lastDay = cur.endDay
+                return collated
+            })
+            debug("GRAPH DATA: %j", parsedData)
+            this.setState({data: parsedData})
+        })
+
+    }
+
     render() {
         const { balance } = this.props.wallet
         const { currentDay } = this.props.contract.Data
@@ -201,7 +211,10 @@ export class NewStakeForm extends React.Component {
                 startTime,
                 endDate,
                 endTime
-            }, this.updateFigures)
+            }, ()=>{
+                this.updateFigures()
+                this.updateBarGraph()
+            })
         }
         
         const handleAmountSelector = (key, e) => {
@@ -446,13 +459,23 @@ export class NewStakeForm extends React.Component {
 
             { (this.state.data) && 
                 <BarChart 
-                    width={450}
-                    height={200}
+                    width={365}
+                    height={220}
                     data={this.state.data}
                 >
-                    <XAxis type="number" dataKey="endDay" />
+                    <XAxis dataKey="endDay" />
                     <YAxis type="number" />
-                    <Bar dataKey="stakeShares" fill="#ff7300" isAnimationActive={true} />
+                    <Tooltip 
+                        filterNull={true}
+                        labelFormatter={ (value, name, props) => ([ "day "+value ]) }
+                        formatter={ (value, name, props) => ([ parseFloat(value).toFixed(3)+" T-Sh's" ]) }
+                        wrapperStyle={{ padding: "0" }}
+                        contentStyle={{ padding: "3px", backgroundColor: "rgba(0,0,0,0.3)", border: "none", borderRadius: "3px" }}
+                        labelStyle={{ lineHeight: "1em", padding: "2px 5px", color: "#ffdd00", fontWeight: "bold" }}
+                        itemStyle={{  lineHeight: "1em", padding: "2px 5px", color: "#ddd", backgroundColor: "rgba(0,0,0,0.5)" }}
+                    />
+                    <Legend />
+                    <Bar dataKey="T-Shares" fill="#ff7300" isAnimationActive={true} />
                 </BarChart>
             }
             </Form>
