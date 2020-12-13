@@ -133,9 +133,9 @@ export class NewStakeForm extends React.Component {
     updateBarGraph = () => {
         const { startDay, endDay } = this.state
         if (isNaN(startDay + endDay)) return
-
-        const graphStartDay = Math.max(startDay, endDay - 14)
-        const graphEndDay = graphStartDay + 28
+        const numDataPoints = 31
+        const graphStartDay = Math.max(startDay, endDay - Math.floor(numDataPoints / 2))
+        const graphEndDay = graphStartDay + numDataPoints
         fetch('https://api.thegraph.com/subgraphs/name/codeakk/hex', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
@@ -147,7 +147,6 @@ export class NewStakeForm extends React.Component {
                         }
                     )
                     {
-                        id 
                         stakeShares
                         endDay
                     }
@@ -155,26 +154,19 @@ export class NewStakeForm extends React.Component {
             }),
         })
         .then(res => res.json())
-        .then(data => {
-            let collated = []
-            let lastDay = undefined
-            let parsedData = data.data.stakeStarts.map(oRow => { 
+        .then(graphJSON => {
+            // debug("GRAPH RESPONSE: %j", graphJSON)
+            var collated = []
+            for (let d = graphStartDay; d <= graphEndDay; d++)
+                collated[d - graphStartDay] = { endDay: d.toString(), stakeShares: 0 }  
+            graphJSON.data.stakeStarts.forEach(oRow => {
                 const TShares = new BigNumber(oRow.stakeShares).div(10e12).toNumber()
-                return { endDay: parseInt(oRow.endDay), "T-Shares": TShares }
+                let index = parseInt(oRow.endDay) - graphStartDay
+                debug("WTF? %j", collated[index])
+                collated[index].stakeShares += TShares
             })
-            .sort((row1, row2) => row1.endDay - row2.endDay)
-            .reduce((acc, cur, idx) => { 
-                if (cur.endDay === lastDay) {
-                    const lastEntry = collated.pop()
-                    collated.push({ endDay:lastEntry.endDay.toString(), "T-Shares": lastEntry['T-Shares'] + cur['T-Shares'] })
-                }
-                else
-                    collated.push({ endDay: cur.endDay.toString(), "T-Shares": cur['T-Shares'] })
-                lastDay = cur.endDay
-                return collated
-            })
-            debug("GRAPH DATA: %j", parsedData)
-            this.setState({data: parsedData})
+            debug("GRAPH DATA (collated): %j", collated)
+            this.setState({data: collated})
         })
     }
 
@@ -191,6 +183,8 @@ export class NewStakeForm extends React.Component {
 
         const handleDaysChange = (e) => {
             e.preventDefault()
+            clearTimeout(this.timer)
+            
             const stakeDays = parseInt(e.target.value) || 0
 
             const { currentDay } = this.props.contract.Data
@@ -211,9 +205,14 @@ export class NewStakeForm extends React.Component {
                 startTime,
                 endDate,
                 endTime
-            }, ()=>{
+            }, () => {
                 this.updateFigures()
-                this.updateBarGraph()
+                if (this.lastDayEntry !== stakeDays) {
+                    this.timer = setTimeout(() => { 
+                        this.lastDayEntry = stakeDays
+                        this.updateBarGraph()
+                    }, 1200)
+                }
             })
         }
         
@@ -334,7 +333,7 @@ export class NewStakeForm extends React.Component {
                         </Form.Group>
                         <Form.Group controlId="stake_days" className="mb-0">
                             <Form.Label>Stake Length in Days</Form.Label>
-                            <InputGroup className="p-1 col-7 col-sm-11">
+                            <InputGroup className="p-1 col-12">
                                 <FormControl
                                     type="number"
                                     placeholder="min one day" 
@@ -348,7 +347,7 @@ export class NewStakeForm extends React.Component {
                                     key="days_selector"
                                     title="DAYS"
                                     onSelect={handleDaysSelector}
-                                    className="numeric"
+                                    className="mr-3 numeric"
                                 >
                                     <Dropdown.Item as="button" eventKey="new_stake" data-days="max">MAX (about 15yrs & 11wks)</Dropdown.Item>
                                     <Dropdown.Item as="button" eventKey="new_stake" data-days="10y">Ten Years</Dropdown.Item>
@@ -362,15 +361,8 @@ export class NewStakeForm extends React.Component {
                                     <Dropdown.Item as="button" eventKey="new_stake" data-days="1w">One Week</Dropdown.Item>
                                     <Dropdown.Item as="button" eventKey="new_stake" data-days="min">MIN (one day)</Dropdown.Item>
                                 </DropdownButton>
-                            </InputGroup>
-                            <Form.Text className="text-muted">
-                                Longer pays better (max 5555)
-                            </Form.Text>
-                        </Form.Group>
-                        <Row>
-                            <Col className='text-right mr-3 pr-3'>
                                 <VoodooButton 
-                                    contract={window.contract}
+                                    contract={this.props.contract}
                                     method="stakeStart" 
                                     params={[BigNumber(this.state.stakeAmount).times(1e8).toString(), this.state.stakeDays/*string*/]}
                                     options={{ 
@@ -382,8 +374,11 @@ export class NewStakeForm extends React.Component {
                                 >
                                     STAKE
                                 </VoodooButton>
-                            </Col>
-                        </Row>
+                            </InputGroup>
+                            <Form.Text className="text-muted">
+                                Longer pays better (max 5555)
+                            </Form.Text>
+                        </Form.Group>
                     </Container>
                     </Col>
                     <Col xs={12} sm={7}>
@@ -488,7 +483,7 @@ export class NewStakeForm extends React.Component {
 
             { (this.state.data) && 
             <>
-                <h6 className="ml-3 text-info">Other End Stakes Chart</h6>
+                <h6 className="mt-3 ml-3 text-info">Other Stakes Ending</h6>
                 <BarChart 
                     width={365}
                     height={220}
@@ -502,7 +497,7 @@ export class NewStakeForm extends React.Component {
                         <Label value="Tsh   " offset={15} angle={-90} position="insideLeft" fill="#ff7300" />
                     </YAxis>
                     <ReferenceLine x={this.state.endDay} stroke="#ffaa00" strokeDasharray="3 3" />
-                    <Bar dataKey="T-Shares" fill="#ff7300" isAnimationActive={true} />
+                    <Bar dataKey="stakeShares" fill="#ff7300" isAnimationActive={true} />
                     <Tooltip 
                         filterNull={true}
                         labelFormatter={ (value, name, props) => ([ "day "+value ]) }
