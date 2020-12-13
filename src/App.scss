@@ -54,6 +54,8 @@ body {
     background-size: auto;
     line-height: 1.5em; /* factory bootstrap has 1.5; with no siffix */
 }
+h6, .h6 { font-weight: bold }
+
 #hexmob_header {
     position: fixed;
     top: 0;

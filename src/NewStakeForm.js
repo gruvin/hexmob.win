@@ -14,7 +14,7 @@ import { BigNumber } from 'bignumber.js'
 import HEX from './hex_contract'
 import { calcBigPayDaySlice, calcAdoptionBonus } from './util'
 import { CryptoVal, WhatIsThis, VoodooButton } from './Widgets' 
-import { BarChart, Bar, XAxis, YAxis, Tooltip, Legend } from 'recharts'
+import { Bar, BarChart, Label, Rectangle, ReferenceLine, Tooltip, XAxis, YAxis } from 'recharts'
 import fetch from "isomorphic-fetch";
 
 
@@ -36,7 +36,8 @@ export class NewStakeForm extends React.Component {
             bigPayDay: BigNumber(0),
             percentGain: 0.0,
             percentAPY: 0.0,
-            data: []
+            data: [],
+            barActiveIndex: 0
         }
     }
 
@@ -134,7 +135,7 @@ export class NewStakeForm extends React.Component {
         if (isNaN(startDay + endDay)) return
 
         const graphStartDay = Math.max(startDay, endDay - 14)
-        const graphEndDay = endDay + 14
+        const graphEndDay = graphStartDay + 28
         fetch('https://api.thegraph.com/subgraphs/name/codeakk/hex', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
@@ -175,7 +176,6 @@ export class NewStakeForm extends React.Component {
             debug("GRAPH DATA: %j", parsedData)
             this.setState({data: parsedData})
         })
-
     }
 
     render() {
@@ -229,6 +229,8 @@ export class NewStakeForm extends React.Component {
         }
 
         const handleDaysSelector = (key, e) => {
+            e.preventDefault()
+
             function plusYears(years) {
                 const n = new Date(Date.now())
                 const d = new Date()
@@ -242,7 +244,6 @@ export class NewStakeForm extends React.Component {
                 return Number((d.valueOf() - n.valueOf()) / 1000 / 3600 / 24).toFixed(0)
             }
 
-            e.preventDefault()
             let days
             switch (e.target.dataset.days) {
                 case 'max': days = 5555; break;
@@ -262,6 +263,34 @@ export class NewStakeForm extends React.Component {
             this.setState({ 
                 stakeDays: days.toString(),
             }, handleDaysChange(e))
+        }
+
+        const handleCursorClick = (props, e) => {
+            e.preventDefault()
+            const { currentDay } = this.props.contract.Data
+            const endDay =  props.payload[0].payload.endDay
+
+            this.setState({ 
+                stakeDays: (endDay - currentDay - 2).toString(),
+                endDay
+            }, ()=>{
+                this.updateFigures()
+                this.updateBarGraph()
+            })
+        }
+
+        const GraphCustomCursor = (props) => {
+            const { x, y, width, height } = props
+            return ( 
+                <Rectangle 
+                    fill="rgba(0,0,0,0.3)" 
+                    stroke="none" 
+                    x={x} y={y} 
+                    width={width} 
+                    height={height}
+                    onClick={(e) => handleCursorClick(props, e)}
+                />
+            )
         }
 
         return (
@@ -360,16 +389,16 @@ export class NewStakeForm extends React.Component {
                     <Col xs={12} sm={7}>
                         <Container>
                             <Row>
-                                <Col className="col-3 text-info">Start</Col>
+                                <Col className="col-3 text-info h6">Start</Col>
                                 <Col className="col-3 pr-0"><span className="text-muted small">DAY </span>{this.state.startDay}</Col>
                                 <Col className="col-6 pr-0">{this.state.startDate} <span className="text-muted">{this.state.startTime}</span></Col>
                             </Row>
                             <Row>
-                                <Col className="col-3 text-info">End<span className="d-none d-sm-inline"> Day</span></Col>
+                                <Col className="col-3 text-info h6">End<span className="d-none d-sm-inline"> Day</span></Col>
                                 <Col className="col-3 pr-0"><span className="text-muted small">DAY </span>{this.state.endDay}</Col>
                                 <Col className="col-6 pr-0">{this.state.endDate} <span className="text-muted">{this.state.endTime}</span></Col>
                             </Row>
-                            <h4 className="mt-3 text-info">Bonuses ...</h4>
+                            <h6 className="mt-3 text-info">Bonuses</h6>
                             <Row>
                                 <Col className="ml-0 ml-md-3">Bigger <span className="d-none d-md-inline">Pays</span> Better</Col>
                                 <Col className="text-right">+ <CryptoVal value={this.state.biggerPaysBetter} showUnit /></Col>
@@ -458,25 +487,34 @@ export class NewStakeForm extends React.Component {
                 </Row>
 
             { (this.state.data) && 
+            <>
+                <h6 className="ml-3 text-info">Other End Stakes Chart</h6>
                 <BarChart 
                     width={365}
                     height={220}
+                    margin={{ top: 16, right: 5, bottom: 16, left: 15 }}
                     data={this.state.data}
                 >
-                    <XAxis dataKey="endDay" />
-                    <YAxis type="number" />
+                    <XAxis dataKey="endDay">
+                        <Label value="day" offset={-3} position="insideBottom" fill="#777" />
+                    </XAxis>
+                    <YAxis type="number">
+                        <Label value="Tsh   " offset={15} angle={-90} position="insideLeft" fill="#ff7300" />
+                    </YAxis>
+                    <ReferenceLine x={this.state.endDay} stroke="#ffaa00" strokeDasharray="3 3" />
+                    <Bar dataKey="T-Shares" fill="#ff7300" isAnimationActive={true} />
                     <Tooltip 
                         filterNull={true}
                         labelFormatter={ (value, name, props) => ([ "day "+value ]) }
-                        formatter={ (value, name, props) => ([ parseFloat(value).toFixed(3)+" T-Sh's" ]) }
+                        formatter={ (value, name, props) => ([ parseFloat(value).toFixed(3)+" Tsh" ]) }
                         wrapperStyle={{ padding: "0" }}
                         contentStyle={{ padding: "3px", backgroundColor: "rgba(0,0,0,0.3)", border: "none", borderRadius: "3px" }}
                         labelStyle={{ lineHeight: "1em", padding: "2px 5px", color: "#ffdd00", fontWeight: "bold" }}
-                        itemStyle={{  lineHeight: "1em", padding: "2px 5px", color: "#ddd", backgroundColor: "rgba(0,0,0,0.5)" }}
+                        itemStyle={{ lineHeight: "1em", padding: "2px 5px", color: "#ddd", backgroundColor: "rgba(0,0,0,0.5)" }}
+                        cursor={<GraphCustomCursor/>}
                     />
-                    <Legend />
-                    <Bar dataKey="T-Shares" fill="#ff7300" isAnimationActive={true} />
                 </BarChart>
+            </>
             }
             </Form>
             
