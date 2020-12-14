@@ -27,7 +27,7 @@ export const CryptoVal = (props) => {
     const r = s.match(/^(.*)(\.\d+)(.*)$/) 
     if (r && r.length > 1)
         return ( 
-            <div className="numeric">
+            <div className="numeric" {...props}>
                 { r[1] } 
                 <span style={{ opacity: "0.5" }}>
                     { r[2] }
@@ -55,7 +55,7 @@ export const WhatIsThis = (props) => {
                 placement={props.placement || "auto"} flip
                 delay={{ show: 200, hide: 400 }}
             >
-                <Tooltip>
+                <Tooltip {...props}>
                     {props.tooltip}
                 </Tooltip>
             </Overlay>

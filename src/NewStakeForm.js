@@ -183,7 +183,15 @@ export class NewStakeForm extends React.Component {
 
         const handleDaysBlur = (e) => {
             const stakeDays = parseInt(e.target.value) || 0
-            if (this.lastStakeDays !== stakeDays) this.updateBarGraph()
+            if (!stakeDays) {
+                this.setState({
+                    data: [],
+                    showGraphSpinner: true
+                })
+            } else if (this.lastStakeDays !== stakeDays) {
+                clearTimeout(this.timer)
+                this.updateBarGraph()
+            }
         }
 
         const handleDaysChange = (e) => {
@@ -212,17 +220,17 @@ export class NewStakeForm extends React.Component {
                 endTime
             }, () => {
                 this.updateFigures()
-                if (stakeDays && stakeDays !== this.lastStakeDays) {
+                if (!stakeDays) {
+                    this.setState({
+                        data: [],
+                        showGraphSpinner: true
+                    })
+                } else if (stakeDays !== this.lastStakeDays) {
                     // get new graph data only if >= 1.2 seconds since last stakeDays change 
                     this.timer = setTimeout(() => { 
                         this.lastStakeDays = stakeDays
                         this.updateBarGraph()
                     }, 1200)
-                } else {
-                    this.setState({
-                        data: [],
-                        showGraphSpinner: true
-                    })
                 }
             })
         }
@@ -307,105 +315,103 @@ export class NewStakeForm extends React.Component {
             <Form>
                 <Row className="overflow-auto">
                     <Col xs={12} sm={5}>
-                    <Container>
-                        <Form.Group controlId="stake_amount" className="mt-3">
+                    <Container className="p-0 pl-2 pr-2">
+                        <Form.Group controlId="stake_amount" className="">
                             <Form.Label className="w-100 mb-0">
                                 Stake Amount in HEX
                             </Form.Label> 
-                            <InputGroup className="p-1 col-8 col-sm-12">
-                                <FormControl
-                                    type="number"
-                                    value={this.state.stakeAmount}
-                                    placeholder="amount in HEX"
-                                    aria-label="amount to stake in HEX"
-                                    aria-describedby="basic-addon1"
-                                    onChange={handleAmountChange}
-                                />
-                                <DropdownButton
-                                    as={InputGroup.Append}
-                                    variant="dark"
-                                    key="percent_balance_selector"
-                                    title="HEX"
-                                    className="numeric"
-                                    onSelect={handleAmountSelector}
-                                >
-                                    <Dropdown.Item as="button" eventKey="new_stake" data-portion="max">MAX</Dropdown.Item>
-                                    <Dropdown.Item as="button" eventKey="new_stake" data-portion={1.00}>100%</Dropdown.Item>
-                                    <Dropdown.Item as="button" eventKey="new_stake" data-portion={0.75}>75%</Dropdown.Item>
-                                    <Dropdown.Item as="button" eventKey="new_stake" data-portion={0.50}>50%</Dropdown.Item>
-                                    <Dropdown.Item as="button" eventKey="new_stake" data-portion={0.25}>25%</Dropdown.Item>
-                                    <Dropdown.Item as="button" eventKey="new_stake" data-portion={0.10}>10%</Dropdown.Item>
-                                    <Dropdown.Item as="button" eventKey="new_stake" data-portion={0.05}>5%</Dropdown.Item>
-                                </DropdownButton>
-                            </InputGroup>
-                            <Form.Text>
-                                <span className="text-muted">Bigger pays better</span>
-                            </Form.Text>
-                        </Form.Group>
-                        <Form.Group controlId="stake_days" className="mb-0">
-                            <Form.Label>Stake Length in Days</Form.Label>
-                            <InputGroup className="p-1 col-12">
-                                <FormControl
-                                    type="number"
-                                    placeholder="min one day" 
-                                    value={this.state.stakeDays <= 0 ? '' : this.state.stakeDays}
-                                    aria-label="number of days to stake min one day"
-                                    onChange={handleDaysChange} 
-                                    onBlur={handleDaysBlur}
-                                />
-                                <DropdownButton
-                                    as={InputGroup.Append}
-                                    variant="dark"
-                                    key="days_selector"
-                                    title="DAYS"
-                                    onSelect={handleDaysSelector}
-                                    className="mr-3 numeric"
-                                >
-                                    <Dropdown.Item as="button" eventKey="new_stake" data-days="max">MAX (about 15yrs & 11wks)</Dropdown.Item>
-                                    <Dropdown.Item as="button" eventKey="new_stake" data-days="10y">Ten Years</Dropdown.Item>
-                                    <Dropdown.Item as="button" eventKey="new_stake" data-days="5y">Five Years</Dropdown.Item>
-                                    <Dropdown.Item as="button" eventKey="new_stake" data-days="3y">Three Years</Dropdown.Item>
-                                    <Dropdown.Item as="button" eventKey="new_stake" data-days="2y">Two Years</Dropdown.Item>
-                                    <Dropdown.Item as="button" eventKey="new_stake" data-days="1y">One Year</Dropdown.Item>
-                                    <Dropdown.Item as="button" eventKey="new_stake" data-days="6m">Six Months</Dropdown.Item>
-                                    <Dropdown.Item as="button" eventKey="new_stake" data-days="3m">Three Months</Dropdown.Item>
-                                    <Dropdown.Item as="button" eventKey="new_stake" data-days="1m">One Month</Dropdown.Item>
-                                    <Dropdown.Item as="button" eventKey="new_stake" data-days="1w">One Week</Dropdown.Item>
-                                    <Dropdown.Item as="button" eventKey="new_stake" data-days="min">MIN (one day)</Dropdown.Item>
-                                </DropdownButton>
-                                <VoodooButton 
-                                    contract={this.props.contract}
-                                    method="stakeStart" 
-                                    params={[BigNumber(this.state.stakeAmount).times(1e8).toString(), this.state.stakeDays/*string*/]}
-                                    options={{ 
-                                        from: this.props.wallet.address
-                                    }}
-                                    inputValid={ (BigNumber(this.state.stakeAmount).gt(0) && this.state.stakeDays > 0) }
-                                    confirmationCallback={this.resetFormAndReloadStakes}
-                                    variant="stake btn-start"
-                                >
-                                    STAKE
-                                </VoodooButton>
-                            </InputGroup>
-                            <Form.Text className="text-muted">
-                                Longer pays better (max 5555)
-                            </Form.Text>
-                        </Form.Group>
+                            <WhatIsThis placement="bottom" tooltip="Bigger pays better!">
+                                <InputGroup className="p-0 col-8 col-sm-12">
+                                    <FormControl
+                                        type="number"
+                                        value={this.state.stakeAmount}
+                                        placeholder="amount in HEX"
+                                        aria-label="amount to stake in HEX"
+                                        aria-describedby="basic-addon1"
+                                        onChange={handleAmountChange}
+                                    />
+                                    <DropdownButton
+                                        as={InputGroup.Append}
+                                        variant="dark"
+                                        key="percent_balance_selector"
+                                        title="HEX"
+                                        className="numeric"
+                                        onSelect={handleAmountSelector}
+                                    >
+                                        <Dropdown.Item as="button" eventKey="new_stake" data-portion="max">MAX</Dropdown.Item>
+                                        <Dropdown.Item as="button" eventKey="new_stake" data-portion={1.00}>100%</Dropdown.Item>
+                                        <Dropdown.Item as="button" eventKey="new_stake" data-portion={0.75}>75%</Dropdown.Item>
+                                        <Dropdown.Item as="button" eventKey="new_stake" data-portion={0.50}>50%</Dropdown.Item>
+                                        <Dropdown.Item as="button" eventKey="new_stake" data-portion={0.25}>25%</Dropdown.Item>
+                                        <Dropdown.Item as="button" eventKey="new_stake" data-portion={0.10}>10%</Dropdown.Item>
+                                        <Dropdown.Item as="button" eventKey="new_stake" data-portion={0.05}>5%</Dropdown.Item>
+                                    </DropdownButton>
+                                </InputGroup>
+                            </WhatIsThis>
+                            </Form.Group>
+                            <Form.Group controlId="stake_days" className="">
+                                <Form.Label className="mb-0">Stake Length in Days</Form.Label>
+                                <WhatIsThis placement="top" tooltip="Longer pays better! (max 5555)">
+                                    <InputGroup className="p-0 col-12">
+                                        <FormControl
+                                            type="number"
+                                            placeholder="min one day" 
+                                            value={this.state.stakeDays <= 0 ? '' : this.state.stakeDays}
+                                            aria-label="number of days to stake min one day"
+                                            onChange={handleDaysChange} 
+                                            onBlur={handleDaysBlur}
+                                        />
+                                        <DropdownButton
+                                            as={InputGroup.Append}
+                                            variant="dark"
+                                            key="days_selector"
+                                            title="DAYS"
+                                            onSelect={handleDaysSelector}
+                                            className="mr-3 numeric"
+                                        >
+                                            <Dropdown.Item as="button" eventKey="new_stake" data-days="max">MAX (about 15yrs & 11wks)</Dropdown.Item>
+                                            <Dropdown.Item as="button" eventKey="new_stake" data-days="10y">Ten Years</Dropdown.Item>
+                                            <Dropdown.Item as="button" eventKey="new_stake" data-days="5y">Five Years</Dropdown.Item>
+                                            <Dropdown.Item as="button" eventKey="new_stake" data-days="3y">Three Years</Dropdown.Item>
+                                            <Dropdown.Item as="button" eventKey="new_stake" data-days="2y">Two Years</Dropdown.Item>
+                                            <Dropdown.Item as="button" eventKey="new_stake" data-days="1y">One Year</Dropdown.Item>
+                                            <Dropdown.Item as="button" eventKey="new_stake" data-days="6m">Six Months</Dropdown.Item>
+                                            <Dropdown.Item as="button" eventKey="new_stake" data-days="3m">Three Months</Dropdown.Item>
+                                            <Dropdown.Item as="button" eventKey="new_stake" data-days="1m">One Month</Dropdown.Item>
+                                            <Dropdown.Item as="button" eventKey="new_stake" data-days="1w">One Week</Dropdown.Item>
+                                            <Dropdown.Item as="button" eventKey="new_stake" data-days="min">MIN (one day)</Dropdown.Item>
+                                        </DropdownButton>
+                                        <VoodooButton 
+                                            contract={this.props.contract}
+                                            method="stakeStart" 
+                                            params={[BigNumber(this.state.stakeAmount).times(1e8).toString(), this.state.stakeDays/*string*/]}
+                                            options={{ 
+                                                from: this.props.wallet.address
+                                            }}
+                                            inputValid={ (BigNumber(this.state.stakeAmount).gt(0) && this.state.stakeDays > 0) }
+                                            confirmationCallback={this.resetFormAndReloadStakes}
+                                            variant="stake btn-start"
+                                        >
+                                            STAKE
+                                        </VoodooButton>
+                                    </InputGroup>
+                                </WhatIsThis>
+                            </Form.Group>
                     </Container>
                     </Col>
                     <Col xs={12} sm={7}>
-                        <Container>
+                        <Container className="p-0 pl-2 lr-2" style={{ lineHeight: "1em" }}>
                             <Row>
-                                <Col className="col-3 text-info h6">Start</Col>
+                                <Col className="m-0 col-3 text-info h6">Start</Col>
                                 <Col className="col-3 pr-0"><span className="text-muted small">DAY </span>{this.state.startDay}</Col>
                                 <Col className="col-6 pr-0">{this.state.startDate} <span className="text-muted">{this.state.startTime}</span></Col>
                             </Row>
                             <Row>
-                                <Col className="col-3 text-info h6">End<span className="d-none d-sm-inline"> Day</span></Col>
+                                <Col className="m-0 col-3 text-info h6">End<span className="d-none d-sm-inline"> Day</span></Col>
                                 <Col className="col-3 pr-0"><span className="text-muted small">DAY </span>{this.state.endDay}</Col>
                                 <Col className="col-6 pr-0">{this.state.endDate} <span className="text-muted">{this.state.endTime}</span></Col>
                             </Row>
-                            <h6 className="mt-3 text-info">Bonuses</h6>
+                            <h5 className="mt-2 mb-0 text-info">Bonuses</h5>
                             <Row>
                                 <Col className="ml-0 ml-md-3">Bigger <span className="d-none d-md-inline">Pays</span> Better</Col>
                                 <Col className="text-right">+ <CryptoVal value={this.state.biggerPaysBetter} showUnit /></Col>
@@ -413,10 +419,6 @@ export class NewStakeForm extends React.Component {
                             <Row>
                                 <Col className="ml-0 ml-md-3">Longer <span className="d-none d-md-inline">Pays</span> Better</Col>
                                 <Col className="text-right">+ <CryptoVal value={this.state.longerPaysBetter.toFixed(0)} showUnit /></Col>
-                            </Row>
-                            <Row>
-                                <Col className="ml-0 ml-md-3"><strong>Total</strong></Col>
-                                <Col className="text-right"><strong><CryptoVal value={this.state.bonusTotal} showUnit /></strong></Col>
                             </Row>
                             <Row className="mt-2">
                                 <Col>
@@ -435,13 +437,13 @@ export class NewStakeForm extends React.Component {
                                 <Col className="text-right"><strong><CryptoVal value={this.state.effectiveHEX} showUnit /></strong></Col>
                             </Row>
                             <Row className="mt-3">
-                                <Col><strong>Share Rate</strong></Col>
+                                <Col>Share Rate</Col>
                                 <Col className="text-right">
                                     <CryptoVal value={this.state.shareRate} currency="SHARES_PER_HEX" showUnit />
                                 </Col>
                             </Row>
                             <Row>
-                                <Col>
+                                <Col className="col-8">
                                     <WhatIsThis showPill tooltip={
                                         <>
                                             Stake Shares
@@ -451,11 +453,11 @@ export class NewStakeForm extends React.Component {
                                             Stake Bonuses
                                         </>
                                     }>
-                                        <strong>Stake Shares</strong>
+                                        <span className="h5 text-success">Stake Shares</span>
                                     </WhatIsThis>
                                 </Col>
-                                <Col className="text-right">
-                                    <CryptoVal value={this.state.stakeShares} currency="SHARES" />
+                                <Col className="col-4 text-right">
+                                    <CryptoVal className="h5 text-success" value={this.state.stakeShares} currency="SHARES" />
                                 </Col>
                             </Row>
                         </Container>
