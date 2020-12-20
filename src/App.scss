@@ -42,7 +42,18 @@ $theme-colors: (
   "warning": $hex-orange,
   "danger": $hex-crimson
 );
+
+.primary-bo-50 { background-color: #d66f257f !important; }
+.secondary-bo-50 { background-color: #ff41367f !important; }
+.dark-bo-50 { background-color: #1510107f !important; }
+.success-bo-50 { background-color: #80d6317f !important; }
+.info-bo-50 { background-color: #e5c4007f !important; }
+.warning-bo-50 { background-color: #d66f257f !important; }
+.danger-bo-50 { background-color: #ff41367f !important; }
+.bg-midgray { background-color: #272727 !important; }
+
 @import "~bootstrap/scss/bootstrap";
+
 .container md { max-width: 720px }
 
 body { 

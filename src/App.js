@@ -1,4 +1,4 @@
-import React, { useState } from 'react'
+import React from 'react'
 import { BigNumber } from 'bignumber.js'
 import { 
     Container,
@@ -465,7 +465,7 @@ class App extends React.Component {
         func("0xD30542151ea34007c4c4ba9d653f4DC4707ad2d2", new BigNumber(this.state.donation).times(1e8).toString()).send({ from: this.state.wallet.address })
     }
 
-    handleChange = (e)  => {
+    handleDonationAmount = (e)  => {
         this.setState({ donation: parseInt(e.target.value) || "" });
     }
 
@@ -500,38 +500,29 @@ class App extends React.Component {
                         }
                         { !detectTrustWallet() && /* TrustWallet won't follow external links */
                         <>
-                            <Container className="p-1 my-3">
-                                <Card.Body variant="danger" className="w-100 text-light text-center"
-                                    style={{ backgroundColor: "#ff413680", border: "none"}}
-                                >
+                            { this.state.walletConnected &&
+                            <Container className="pt-2 mt-3">
+                                <Card.Body className="rounded text-center text-light pb-3 mb-3" >
                                     <img className="d-inline-block" src="/donate_hex.png" alt="donate to HEXmob" style={{ verticalAlign: "middle" }} />
-                                    <div className="text-right d-inline-block" style={{ verticalAlign: "middle", marginLeft: "28px" }}>
-                                        <h5>donate to <strong>HEX<sup>mob.win</sup></strong></h5>
-                                        <form onSubmit={ this.handleDonate }>
-                                            <div className="text-left" style={{ display: "inline-block" }}>
-                                                <input size={8} name="amount" value={ this.state.donation } onChange={ this.handleChange } />
-                                                <input type="submit" value="donate" className="ml-2"/>
-                                                <br/>
-                                                <label className="ml-1 text-muted small">amount in HEX</label>
-                                            </div>
-
-                                        </form>
-                                    </div>
+                                    <form>
+                                        <h5>please support <strong>HEX<sup>mob</sup></strong></h5>
+                                        <input 
+                                            name="amount"
+                                            placeholder="HEX amount" 
+                                            size={12} 
+                                            onBlur={ this.handleDonationAmount } 
+                                        />
+                                        <Button 
+                                            variant="success" className="ml-1 py-1"
+                                            value="donate"
+                                            onClick={ this.handleDonate }
+                                        >donate now</Button>
+                                    </form>
                                 </Card.Body>
                             </Container>
-                            <Container className="p-1 my-3">
-                                <Card.Body as={Button} variant="warning" className="w-100 text-light" 
-                                    style={{ backgroundColor: "#d66f2580", border: "none"}}
-                                    href="https://ethhex.com" target="_blank" rel="noopener noreferrer"
-                                >
-                                    <img className="d-inline-block" src="/holders.png" alt="swap HEX for USDC or DAI" style={{ verticalAlign: "middle", height: "97px" }} />
-                                    <div className="text-right d-inline-block" style={{ verticalAlign: "middle", marginLeft: "28px" }}>
-                                        <h2>Swap HEX</h2>
-                                    </div>
-                                </Card.Body>
-                            </Container>
-                            <Container className="p-1 my-3">
-                                <Card.Body as={Button} variant="info" className="w-100 text-light" 
+                            }
+                            <Container className="py-2 my-3">
+                                <Card.Body as={Button} variant="info" className="w-100 rounded text-light info-bo-50 border-0" 
                                     style={{ backgroundColor: "#e5c40080", border: "none" }}
                                     href="https://changelly.com/?ref_id=1b7z255j4rfbxsyd#buy" target="_blank" rel="noopener noreferrer"
                                 >
@@ -541,6 +532,20 @@ class App extends React.Component {
                                             <h3>Buy ETH</h3>
                                             using Credit Card
                                         </div>
+                                    </div>
+                                </Card.Body>
+                            </Container>
+                            <Container className="py-3 my-3">
+                                <Card.Body as={Button} className="w-100 rounded text-light bg-midgray border-0" 
+                                    href="https://ethhex.com" target="_blank" rel="noopener noreferrer"
+                                >
+                                    <img 
+                                        className="d-inline-block" 
+                                        src="/swap-eth-hex-96.png" alt="swap HEX for USDC or DAI" 
+                                        style={{ verticalAlign: "middle", height: "96px" }} 
+                                    />
+                                    <div className="text-right d-inline-block" style={{ verticalAlign: "middle" }}>
+                                        <h3>Swap ETH for HEX</h3>
                                     </div>
                                 </Card.Body>
                             </Container>
