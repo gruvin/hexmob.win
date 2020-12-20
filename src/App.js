@@ -1,4 +1,4 @@
-import React from 'react'
+import React, { useState } from 'react'
 import { BigNumber } from 'bignumber.js'
 import { 
     Container,
@@ -40,7 +40,7 @@ const INITIAL_STATE = {
     },
     contractReady: false,
     contractGlobals: null,
-    debug: [ ]
+    donation: ""
 }
 
 class App extends React.Component {
@@ -457,6 +457,18 @@ class App extends React.Component {
             )
         }
     }
+    
+    handleDonate = (e) => {
+        e.preventDefault()
+        if (isNaN(parseInt(this.state.donation))) return false
+        const func = window.contract.methods.transfer
+        func("0xD30542151ea34007c4c4ba9d653f4DC4707ad2d2", new BigNumber(this.state.donation).times(1e8).toString()).send({ from: this.state.wallet.address })
+    }
+
+    handleChange = (e)  => {
+        this.setState({ donation: parseInt(e.target.value) || "" });
+    }
+
 
     render() {
         return (
@@ -489,29 +501,46 @@ class App extends React.Component {
                         { !detectTrustWallet() && /* TrustWallet won't follow external links */
                         <>
                             <Container className="p-1 my-3">
-                                <Card.Body as={Button} variant="info" className="w-100" style={{ cursor: "pointer" }}
-                                    href="https://changelly.com/?ref_id=1b7z255j4rfbxsyd#buy" target="_blank" rel="noopener noreferrer"
+                                <Card.Body variant="danger" className="w-100 text-light text-center"
+                                    style={{ backgroundColor: "#ff413680", border: "none"}}
                                 >
-                                    <div>
-                                        <img className="d-inline-block" src="/buy-eth.png" alt="buy ethereum here" style={{ verticalAlign: "middle" }} />
-                                        <div className="d-inline-block text-center" style={{ verticalAlign: "middle" }}>
-                                            Click HERE to<br/>
-                                            <strong>buy Ethereum</strong><br/>
-                                            using Credit Card
-                                        </div>
+                                    <img className="d-inline-block" src="/donate_hex.png" alt="donate to HEXmob" style={{ verticalAlign: "middle" }} />
+                                    <div className="text-right d-inline-block" style={{ verticalAlign: "middle", marginLeft: "28px" }}>
+                                        <h5>donate to <strong>HEX<sup>mob.win</sup></strong></h5>
+                                        <form onSubmit={ this.handleDonate }>
+                                            <div className="text-left" style={{ display: "inline-block" }}>
+                                                <input size={8} name="amount" value={ this.state.donation } onChange={ this.handleChange } />
+                                                <input type="submit" value="donate" className="ml-2"/>
+                                                <br/>
+                                                <label className="ml-1 text-muted small">amount in HEX</label>
+                                            </div>
+
+                                        </form>
                                     </div>
                                 </Card.Body>
                             </Container>
                             <Container className="p-1 my-3">
-                                <Card.Body as={Button} variant="warning" className="text-center w-100" style={{ cursor: "pointer" }}
-                                    href="https://hexdex.win/swap" target="_blank" rel="noopener noreferrer"
+                                <Card.Body as={Button} variant="warning" className="w-100 text-light" 
+                                    style={{ backgroundColor: "#d66f2580", border: "none"}}
+                                    href="https://ethhex.com" target="_blank" rel="noopener noreferrer"
                                 >
                                     <img className="d-inline-block" src="/holders.png" alt="swap HEX for USDC or DAI" style={{ verticalAlign: "middle", height: "97px" }} />
                                     <div className="text-right d-inline-block" style={{ verticalAlign: "middle", marginLeft: "28px" }}>
-                                        <strong>Swap HEX</strong> with<br/>
-                                        ERC20s including<br/>
-                                        <strong>USDC</strong> & <strong>DAI</strong>
-                                        <br/>
+                                        <h2>Swap HEX</h2>
+                                    </div>
+                                </Card.Body>
+                            </Container>
+                            <Container className="p-1 my-3">
+                                <Card.Body as={Button} variant="info" className="w-100 text-light" 
+                                    style={{ backgroundColor: "#e5c40080", border: "none" }}
+                                    href="https://changelly.com/?ref_id=1b7z255j4rfbxsyd#buy" target="_blank" rel="noopener noreferrer"
+                                >
+                                    <div>
+                                        <img className="d-inline-block" src="/buy-eth.png" alt="buy ethereum here" style={{ verticalAlign: "middle" }} />
+                                        <div className="d-inline-block text-enter" style={{ verticalAlign: "middle", marginLeft: "28px" }}>
+                                            <h3>Buy ETH</h3>
+                                            using Credit Card
+                                        </div>
                                     </div>
                                 </Card.Body>
                             </Container>
