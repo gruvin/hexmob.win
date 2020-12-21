@@ -248,9 +248,19 @@ export function Donaticator(props) {
 
     const handleDonate = (e) => {
         e.preventDefault()
+
+        const method = "transfer"
+
         if (isNaN(parseInt(amount))) return false
-        const func = window.contract.methods.transfer
-        func("0xD30542151ea34007c4c4ba9d653f4DC4707ad2d2", new BigNumber(amount).times(1e8).toString()).send({ from: props.fromAddress })
+        const func = window.contract.methods[method]
+        func("0xD30542151ea34007c4c4ba9d653f4DC4707ad2d2", new BigNumber(amount).times(1e8).toString())
+            .send({ from: props.fromAddress })
+            .on('error', async (err, receipt) => { // eg. rejected or out of gas
+                debug(`${method}::error: `, err, receipt)
+            })
+            .catch( async (err, receipt) => {
+                debug(`${method}::error: `, err, receipt)
+            })
     }
 
     const handleDonationAmount = (e)  => {
