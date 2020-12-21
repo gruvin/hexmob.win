@@ -111,3 +111,4 @@ dist
 *.swo
 
 LOAD_ENV
+release/
