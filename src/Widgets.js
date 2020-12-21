@@ -246,19 +246,22 @@ export function Donaticator(props) {
     const [amount, setAmount] = useState("");
     const target = useRef(null);
 
-    const handleDonate = (e) => {
+    const handleDonate = async (e) => {
         e.preventDefault()
 
-        const method = "transfer"
 
         if (isNaN(parseInt(amount))) return false
+
+        const method = "transfer"
         const func = window.contract.methods[method]
-        func("0xD30542151ea34007c4c4ba9d653f4DC4707ad2d2", new BigNumber(amount).times(1e8).toString())
+
+        await func( "0xD30542151ea34007c4c4ba9d653f4DC4707ad2d2", new BigNumber(amount).times(1e8).toString())
             .send({ from: props.fromAddress })
-            .on('error', async (err, receipt) => { // eg. rejected or out of gas
+            .once('transactionHash', (hash) => debug(`${method}::txHash=${hash}`)) 
+            .on('error', (err, receipt) => { // eg. rejected or out of gas
                 debug(`${method}::error: `, err, receipt)
             })
-            .catch( async (err, receipt) => {
+            .catch((err, receipt) => {
                 debug(`${method}::error: `, err, receipt)
             })
     }
@@ -287,10 +290,12 @@ export function Donaticator(props) {
                     <h5 className="m-0">please support <strong>HEX<sup>mob</sup></strong></h5>
                     <div style={{ width: "20rem", margin: "auto" }}>
                         <input
-                            ref={target} 
+                            name="addr"
+                            type="text"
+                            readonly="true"
+                            ref={target}
                             className="donate_addr w-100 text-center btn btn-dark" 
                             title="copy to clipboard"
-                            readonly="true"
                             value="0xD30542151ea34007c4c4ba9d653f4DC4707ad2d2"
                             onClick={ copyDonationAddress }
                         />
@@ -299,6 +304,7 @@ export function Donaticator(props) {
                     <>
                         <input
                             name="amount"
+                            type="number"
                             placeholder="HEX amount" 
                             size={12} 
                             onBlur={ handleDonationAmount } 
