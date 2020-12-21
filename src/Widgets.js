@@ -1,5 +1,7 @@
 import React, { useRef, useState } from 'react'
 import { 
+    Container,
+    Card,
     Button,
     Spinner,
     Overlay,
@@ -239,3 +241,74 @@ export class VoodooButton extends React.Component {
     }
 }
 
+export function Donaticator(props) {
+    const [show, setShow] = useState(false);
+    const [amount, setAmount] = useState("");
+    const target = useRef(null);
+
+    const handleDonate = (e) => {
+        e.preventDefault()
+        if (isNaN(parseInt(amount))) return false
+        const func = window.contract.methods.transfer
+        func("0xD30542151ea34007c4c4ba9d653f4DC4707ad2d2", new BigNumber(amount).times(1e8).toString()).send({ from: props.fromAddress })
+    }
+
+    const handleDonationAmount = (e)  => {
+        e.preventDefault()
+        setAmount(parseInt(e.target.value) || "")
+    }
+
+    const copyDonationAddress = (e) => {
+        e.preventDefault()
+        const addr = document.querySelector("input.donate_addr")
+        addr.select()
+        document.execCommand("copy")
+        document.getSelection().removeAllRanges()
+        addr.blur()
+        setShow(true)
+        setTimeout(() => setShow(false), 1000)
+    }
+
+    return (
+        <Container className="pt-2 mt-3">
+            <Card.Body className="rounded text-center text-light pb-3 mb-3">
+                <img className="d-inline-block" src="/donate_hex.png" alt="donate to HEXmob" style={{ verticalAlign: "middle" }} />
+                <form>
+                    <h5 className="m-0">please support <strong>HEX<sup>mob</sup></strong></h5>
+                    <div style={{ width: "20rem", margin: "auto" }}>
+                        <input
+                            ref={target} 
+                            className="donate_addr w-100 text-center btn btn-dark" 
+                            title="copy to clipboard"
+                            readonly="true"
+                            value="0xD30542151ea34007c4c4ba9d653f4DC4707ad2d2"
+                            onClick={ copyDonationAddress }
+                        />
+                    </div>
+                    { props.walletConnected && 
+                    <>
+                        <input
+                            name="amount"
+                            placeholder="HEX amount" 
+                            size={12} 
+                            onBlur={ handleDonationAmount } 
+                        />
+                        <Button 
+                            variant="success" className="ml-1 py-1"
+                            value="donate"
+                            onClick={ handleDonate }
+                        >
+                            donate now
+                        </Button>
+                    </>
+                    }
+                </form>
+            </Card.Body>
+            <Overlay target={target.current} show={show} placement="top">
+                <Tooltip>
+                    address copied to clipboard
+                </Tooltip>
+            </Overlay>
+        </Container>
+    )
+}

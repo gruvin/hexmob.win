@@ -33,10 +33,11 @@
 $hex-crimson: #ff4136;
 $hex-orange: #d66f25;
 $hex-yellow: #e5c400;
+$col-dark: #171515;
 $theme-colors: (
   "primary": $hex-orange,
   "secondary": #333030,
-  "dark": #151010,
+  "dark": $col-dark,
   "success": #80d631,
   "info": $hex-yellow,
   "warning": $hex-orange,
@@ -47,7 +48,7 @@ $theme-colors: (
 .secondary-bo-50 { background-color: #ff41367f !important; }
 .dark-bo-50 { background-color: #1510107f !important; }
 .success-bo-50 { background-color: #80d6317f !important; }
-.info-bo-50 { background-color: #e5c4007f !important; }
+.info-bo-50 { background-color: #ffb5107f !important; }
 .warning-bo-50 { background-color: #d66f257f !important; }
 .danger-bo-50 { background-color: #ff41367f !important; }
 .bg-midgray { background-color: #272727 !important; }
@@ -61,7 +62,7 @@ body {
     overflow-x: hidden;
     overflow-y: auto;    
     font-family: "Happy Monkey", sans-serif; 
-    background: #171515;
+    background: $col-dark;
     background-size: auto;
     line-height: 1.5em; /* factory bootstrap has 1.5; with no siffix */
 }
@@ -242,3 +243,11 @@ button#connect_wallet:hover { border-style: inset; border-color: #fec}
 #lobby.progress .progress-bar { color: black; }
 
 .row-highlight-even .row:nth-child(even) {  background-color: #1b1313; }
+
+input.donate_addr {
+    font-family: "Courier New", monospace;
+    font-size: 0.65rem;
+    color: #ccc;
+    background-color: $col-dark;
+    border: 0;
+}

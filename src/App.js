@@ -12,7 +12,7 @@ import {
 import Stakes from './Stakes'
 import Lobby from './Lobby'
 import Blurb from './Blurb' 
-import { WhatIsThis } from './Widgets'
+import { WhatIsThis, Donaticator } from './Widgets'
 import HEX from './hex_contract'
 import Web3 from 'web3';
 import Web3Modal, { getProviderInfo } from 'web3modal';
@@ -458,18 +458,6 @@ class App extends React.Component {
         }
     }
     
-    handleDonate = (e) => {
-        e.preventDefault()
-        if (isNaN(parseInt(this.state.donation))) return false
-        const func = window.contract.methods.transfer
-        func("0xD30542151ea34007c4c4ba9d653f4DC4707ad2d2", new BigNumber(this.state.donation).times(1e8).toString()).send({ from: this.state.wallet.address })
-    }
-
-    handleDonationAmount = (e)  => {
-        this.setState({ donation: parseInt(e.target.value) || "" });
-    }
-
-
     render() {
         return (
             <>
@@ -500,30 +488,11 @@ class App extends React.Component {
                         }
                         { !detectTrustWallet() && /* TrustWallet won't follow external links */
                         <>
-                            { this.state.walletConnected &&
-                            <Container className="pt-2 mt-3">
-                                <Card.Body className="rounded text-center text-light pb-3 mb-3" >
-                                    <img className="d-inline-block" src="/donate_hex.png" alt="donate to HEXmob" style={{ verticalAlign: "middle" }} />
-                                    <form>
-                                        <h5>please support <strong>HEX<sup>mob</sup></strong></h5>
-                                        <input 
-                                            name="amount"
-                                            placeholder="HEX amount" 
-                                            size={12} 
-                                            onBlur={ this.handleDonationAmount } 
-                                        />
-                                        <Button 
-                                            variant="success" className="ml-1 py-1"
-                                            value="donate"
-                                            onClick={ this.handleDonate }
-                                        >donate now</Button>
-                                    </form>
-                                </Card.Body>
-                            </Container>
-                            }
+
+                            <Donaticator walletConnected={this.state.walletConnected} fromAddress={this.state.wallet.address || null} />
+
                             <Container className="py-2 my-3">
                                 <Card.Body as={Button} variant="info" className="w-100 rounded text-light info-bo-50 border-0" 
-                                    style={{ backgroundColor: "#e5c40080", border: "none" }}
                                     href="https://changelly.com/?ref_id=1b7z255j4rfbxsyd#buy" target="_blank" rel="noopener noreferrer"
                                 >
                                     <div>
