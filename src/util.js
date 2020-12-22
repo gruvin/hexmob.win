@@ -7,7 +7,7 @@ const { format } = require('d3-format')
 const calcBigPayDaySlice = (shares, sharePool, _globals) => {
     const unclaimedSatoshis = Object.entries(_globals).length 
             ? _globals.claimStats.unclaimedSatoshisTotal
-            : new BigNumber('fae0c6a6400dadc0', 16) // total claimable Satoshis
+            : new BigNumber('fae0c6a6400dadc0', 16) // total claimable Satoshis (pre BPD)
     return new BigNumber(unclaimedSatoshis.times(HEX.HEARTS_PER_SATOSHI).times(shares))
                                     .idiv(sharePool)
 }

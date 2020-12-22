@@ -95,6 +95,7 @@ class Stakes extends React.Component {
 
         // iterate over daily payouts history
         let interest = new BigNumber(0)
+        let preBPDStakeSharesTotal = new BigNumber(0)
 
         // extract dailyData struct from uint256 mapping
         dailyData.forEach((mapped_dailyData, dayNumber) => {
@@ -104,6 +105,7 @@ class Stakes extends React.Component {
                 stakeSharesTotal: new BigNumber(hex.slice(28,46), 16),
                 unclaimedSatoshisTotal: new BigNumber(hex.slice(12,28), 16)
             }
+            // post BPD UCSatsTot 1786651846416372
             const payout = day.payoutTotal.times(stakeData.stakeShares).idiv(day.stakeSharesTotal)
             interest = interest.plus(payout)
         })
@@ -114,7 +116,7 @@ class Stakes extends React.Component {
         const dailyInterestTotal = allocatedSupply.times(10000).idiv(100448995) // .sol line: 1243 
         const interestShare = stakeData.stakeShares.times(dailyInterestTotal).idiv(globals.stakeSharesTotal)
 
-        // add our doption Bonus
+        // add adoption Bonus
         const interestBonus = calcAdoptionBonus(interestShare, globals)
         
         // add interest (with adoption bonus) to stake's payout total 
@@ -122,11 +124,17 @@ class Stakes extends React.Component {
 
         let bigPayDay = new BigNumber(0)
         if (startDay <= HEX.BIG_PAY_DAY && endDay > HEX.BIG_PAY_DAY) {
-            const bigPaySlice = calcBigPayDaySlice(stakeData.stakeShares, globals.stakeSharesTotal, globals)
+            
+            const bpdStakeSharesTotal = (currentDay < 352)
+                ? globals.stakeSharesTotal 
+                : new BigNumber("50499329839740027369", 10) // value on day 353. Never gonna change so don't waste bw looking it up
+
+            const bigPaySlice = calcBigPayDaySlice(stakeData.stakeShares, bpdStakeSharesTotal, globals)
+
             const bonuses = calcAdoptionBonus(bigPaySlice, globals)
             bigPayDay = bigPaySlice.plus(bonuses)
             if ( currentDay >= HEX.BIG_PAY_DAY) stakeData.payout = stakeData.payout.plus(stakeData.bigPayDay)
-            // TODO: penalties have to come off for late End Stake
+            // TODO?: penalties have to come off for late End Stake
         }
 
         return { interest, bigPayDay }
@@ -283,10 +291,12 @@ class Stakes extends React.Component {
                         // debug('stakeData: %o', stakeData)
                         const startDay = Number(stakeData.lockedDay)
                         const endDay = startDay + Number(stakeData.stakedDays)
-                        const startDate = new Date(HEX.START_DATE) // UTC but is converted to local
-                        const endDate = new Date(HEX.START_DATE)
-                        startDate.setUTCDate(startDate.getUTCDate() + startDay)
-                        endDate.setUTCDate(endDate.getUTCDate() + endDay)
+
+                        const _startDate = new Date(HEX.START_DATE)
+                        const _endDate = new Date(HEX.START_DATE.getTime() + endDay * 24 * 3600 * 1000)
+                        const startDate = _startDate.toLocaleDateString()
+                        const endDate = _endDate.toLocaleDateString()
+
                         stakedTotal = stakedTotal.plus(stakeData.stakedHearts)
                         sharesTotal = sharesTotal.plus(stakeData.stakeShares)
                         bpdTotal = bpdTotal.plus(stakeData.bigPayDay)

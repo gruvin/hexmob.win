@@ -12,6 +12,7 @@ import './Stakes.scss'
 import HEX from './hex_contract'
 import { format } from 'd3-format'
 import { CryptoVal, VoodooButton } from './Widgets' 
+import { BigNumber } from 'bignumber.js'
 
 const debug = require('debug')('StakeInfo')
 debug('loading')
@@ -37,14 +38,28 @@ export class StakeInfo extends React.Component {
             : exitClass === "termexit" ? "success"
             : "info" // latexit
 
-        const valueTotal = stake.stakedHearts.plus(stake.payout).plus(currentDay >= HEX.BIG_PAY_DAY ? stake.bigPayDay : 0)
-        const percentGain = stake.payout / stake.stakedHearts * 100
-        const daysServed = currentDay - stake.startDay
+        const interest = stake.payout.plus(stake.bigPayDay)
+        const valueTotal = stake.stakedHearts.plus(interest)
+
+        if (stake.stakedHearts.toString() == "2247648431456") {
+            debug("INT: %j", { P:stake.stakedHearts.div(1e8).toString(), BPD: stake.bigPayDay.div(1e8).toString(), INT: interest.toString() })
+        }
+
+        const percentGain = interest.div(stake.stakedHearts).times(100)
+        const daysServed = Math.min(currentDay - stake.startDay, stake.stakedDays)
         const _endDate = new Date(HEX.START_DATE.getTime() + endDay * 24 * 3600 * 1000)
         const endDate = _endDate.toLocaleDateString()+' '+_endDate.toLocaleTimeString()
-        const percentAPY = currentDay < stake.startDay ? 0 
-            : currentDay < stake.endDay ? 365 / Math.min(daysServed, 365) * percentGain
-            : percentGain / 365
+        /*
+        const percentAPY = currentDay < stake.startDay 
+            ? 0 
+            : ( currentDay < stake.endDay 
+                ? 365 / Math.min(daysServed, 365) * percentGain
+                : percentGain / 365
+            )
+            */
+
+        const percentAPY = new BigNumber(365).div(daysServed).times(percentGain)
+
         const pending = (currentDay < stake.lockedDay)
 
         return (
@@ -86,11 +101,11 @@ export class StakeInfo extends React.Component {
                         <Card.Body>
                             <Row className="mt-2">
                                 <Col className="text-right"><strong>Start Day</strong></Col>
-                                <Col className="numeric">{stake.startDay}</Col>
+                                <Col className="numeric">{stake.startDay+1}</Col>
                             </Row>
                             <Row>
                                 <Col className="text-right"><strong>End Day</strong></Col>
-                                <Col className="numeric">{stake.endDay}</Col>
+                                <Col className="numeric">{stake.endDay+1}</Col>
                             </Row>
                             <Row>
                                 <Col className="text-right"><strong>End Date</strong></Col>
@@ -120,7 +135,7 @@ export class StakeInfo extends React.Component {
                         }
                             <Row>
                                 <Col className="text-right"><strong>Interest</strong></Col>
-                                <Col className="numeric"><CryptoVal value={stake.payout} showUnit /></Col>
+                                <Col className="numeric"><CryptoVal value={interest} showUnit /></Col>
                             </Row>
                             <Row>
                                 <Col className="text-right"><strong>Value</strong></Col>
@@ -144,7 +159,7 @@ export class StakeInfo extends React.Component {
                                         variant={'exitbtn '+exitClass}
                                         confirmationCallback={this.props.reloadStakes}
                                     >
-                                        EXIT
+                                        END STAKE
                                     </VoodooButton>
                                 </Col>
                             </Row>
