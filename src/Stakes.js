@@ -94,47 +94,39 @@ class Stakes extends React.Component {
         const dailyData = await contract.methods.dailyDataRange(startDay, Math.min(currentDay, endDay)).call()
 
         // iterate over daily payouts history
-        let interest = new BigNumber(0)
-        let preBPDStakeSharesTotal = new BigNumber(0)
+        let payout = new BigNumber(0)
 
-        // extract dailyData struct from uint256 mapping
-        dailyData.forEach((mapped_dailyData, dayNumber) => {
-            const hex = new BigNumber(mapped_dailyData).toString(16).padStart(64, '0')
-            const day = {
-                payoutTotal: new BigNumber(hex.slice(46,64), 16),
-                stakeSharesTotal: new BigNumber(hex.slice(28,46), 16),
-                unclaimedSatoshisTotal: new BigNumber(hex.slice(12,28), 16)
+        dailyData.forEach((mapped_dailyData, dayIndex) => {
+            const data = new BigNumber(mapped_dailyData).toString(16).padStart(64, '0')
+            const day = { // extract dailyData struct from uint256 mapping
+                payoutTotal: new BigNumber(data.slice(46,64), 16),
+                stakeSharesTotal: new BigNumber(data.slice(28,46), 16),
+                unclaimedSatoshisTotal: new BigNumber(data.slice(12,28), 16)
             }
-            // post BPD UCSatsTot 1786651846416372
-            const payout = day.payoutTotal.times(stakeData.stakeShares).idiv(day.stakeSharesTotal)
-            interest = interest.plus(payout)
+            payout = payout.plus(day.payoutTotal.times(stakeData.stakeShares).idiv(day.stakeSharesTotal)) // .sol line: 1586
         })
 
-        // Calculate our share of Daily Interest (for the current day)
 
+        // Calculate our share of Daily Interest ___for the current (incomplete) day___
         // HEX mints 0.009955% daily interest (3.69%pa) and stakers get adoption bonuses from that, each day
-        const dailyInterestTotal = allocatedSupply.times(10000).idiv(100448995) // .sol line: 1243 
-        const interestShare = stakeData.stakeShares.times(dailyInterestTotal).idiv(globals.stakeSharesTotal)
+        // .sol:1245:  rs._payoutTotal = rs._allocSupplyCached * 10000 / 100448995
+        const dailyInterestTotal = allocatedSupply.times(10000).idiv(100448995)
+        const interestShare = dailyInterestTotal.times(stakeData.stakeShares).idiv(globals.stakeSharesTotal)
+        const interestBonus = (currentDay < HEX.CLAIM_PHASE_END_DAY) ? calcAdoptionBonus(interestShare, globals) : 0
 
-        // add adoption Bonus
-        const interestBonus = calcAdoptionBonus(interestShare, globals)
-        
-        // add interest (with adoption bonus) to stake's payout total 
-        interest = interest.plus(interestShare).plus(interestBonus)
+        const interest = payout.plus(interestShare).plus(interestBonus)
 
         let bigPayDay = new BigNumber(0)
         if (startDay <= HEX.BIG_PAY_DAY && endDay > HEX.BIG_PAY_DAY) {
-            
-            const bpdStakeSharesTotal = (currentDay < 352)
-                ? globals.stakeSharesTotal 
-                : new BigNumber("50499329839740027369", 10) // value on day 353. Never gonna change so don't waste bw looking it up
+            const bpdStakeSharesTotal = (currentDay < 352) // day is zero based internally
+                ? globals.stakeSharesTotal // prior to BPD 
+                : new BigNumber("50499329839740027369", 10) // value on BPD (day 353). Never gonna change so don't waste bw looking it up
 
             const bigPaySlice = calcBigPayDaySlice(stakeData.stakeShares, bpdStakeSharesTotal, globals)
-
             const bonuses = calcAdoptionBonus(bigPaySlice, globals)
             bigPayDay = bigPaySlice.plus(bonuses)
             if ( currentDay >= HEX.BIG_PAY_DAY) stakeData.payout = stakeData.payout.plus(stakeData.bigPayDay)
-            // TODO?: penalties have to come off for late End Stake
+            // TODO: penalties have to come off for late End Stake
         }
 
         return { interest, bigPayDay }

@@ -41,7 +41,7 @@ export class StakeInfo extends React.Component {
         const interest = stake.payout.plus(stake.bigPayDay)
         const valueTotal = stake.stakedHearts.plus(interest)
 
-        if (stake.stakedHearts.toString() == "2247648431456") {
+        if (stake.stakedHearts.toString() === "2247648431456") {
             debug("INT: %j", { P:stake.stakedHearts.div(1e8).toString(), BPD: stake.bigPayDay.div(1e8).toString(), INT: interest.toString() })
         }
 

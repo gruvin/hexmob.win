@@ -12,10 +12,10 @@ const calcBigPayDaySlice = (shares, sharePool, _globals) => {
                                     .idiv(sharePool)
 }
 
-const calcAdoptionBonus = (bigPayDaySlice, _globals) => {
+const calcAdoptionBonus = (payout, _globals) => {
     const { claimedSatoshisTotal, claimedBtcAddrCount } = _globals.claimStats
-    const viral = bigPayDaySlice.times(claimedBtcAddrCount).idiv(HEX.CLAIMABLE_BTC_ADDR_COUNT)
-    const criticalMass = bigPayDaySlice.times(claimedSatoshisTotal).idiv(HEX.CLAIMABLE_SATOSHIS_TOTAL)
+    const viral = payout.times(claimedBtcAddrCount).idiv(HEX.CLAIMABLE_BTC_ADDR_COUNT) // .sol line: 1214
+    const criticalMass = payout.times(claimedSatoshisTotal).idiv(HEX.CLAIMABLE_SATOSHIS_TOTAL) // .sol line: 1221
     const bonus = viral.plus(criticalMass)
     return bonus
 }
