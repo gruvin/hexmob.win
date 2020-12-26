@@ -1,4 +1,5 @@
-# HEX mob[ile] Stakes UI
+# HEX mob[ile]
+https://hexmob.win
 
 ## Reporting Issues
 Please use the [Issue Tracker](https://github.com/gruvin/hexmob.win/issues)
