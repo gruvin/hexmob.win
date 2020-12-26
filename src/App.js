@@ -9,6 +9,7 @@ import {
     Badge,
     ProgressBar
 } from 'react-bootstrap'
+import { GitHubInfo } from './Widgets'
 import Stakes from './Stakes'
 import Lobby from './Lobby'
 import Blurb from './Blurb' 
@@ -531,6 +532,7 @@ class App extends React.Component {
                         }
 
                     </Container>
+                    <GitHubInfo />
                 </Container>
                 <Container id="hexmob_footer" fluid>
                     { this.state.walletConnected && <this.WalletStatus /> }

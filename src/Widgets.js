@@ -292,10 +292,10 @@ export function Donaticator(props) {
                         <input
                             name="addr"
                             type="text"
-                            readonly="true"
+                            readOnly={true}
                             ref={target}
-                            className="donate_addr w-100 text-center btn btn-dark" 
                             title="copy to clipboard"
+                            className="donate_addr w-100 text-center btn btn-dark" 
                             value="0xD30542151ea34007c4c4ba9d653f4DC4707ad2d2"
                             onClick={ copyDonationAddress }
                         />
@@ -325,6 +325,15 @@ export function Donaticator(props) {
                     address copied to clipboard
                 </Tooltip>
             </Overlay>
+        </Container>
+    )
+}
+
+export const GitHubInfo = (props) => {
+    return (
+        <Container className="text-light text-center">
+            <strong>Open Source</strong> <span className="text-muted">GPLv3</span><br/>
+            <a href="https://github.com/gruvin/hexmob.win" target="_blank" rel="noopener noreferrer">GitHub</a>
         </Container>
     )
 }

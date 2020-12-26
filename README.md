@@ -1,5 +1,15 @@
-# Developer Contact Details
-## Secure Communication with the Dev (Bryan aka gruvin)
+# HEX mob[ile] HEX Stake UI
+
+## Reporting Issues
+Please use the [Issue Tracker](https://github.com/gruvin/hexmob.win/issues)
+
+## Requesting Features
+Please use the [Issue Tracker](https://github.com/gruvin/hexmob.win/issues)
+
+
+## Dev Contact Details
+
+### Secure Communication with the Dev (Bryan aka gruvin)
 Crypto is full of theives and trixters. I recommend sending me any queries via GPG signed and verified email. You can begin that process at my [FlowCrypt™ Encrypted Contact Page](https://flowcrypt.com/me/gruvin). 
 
 At the very least, you'll be able to verify it was really me who replied, assuming you can use some kind of GPG enabled email client. I use the FlowCrypt™ exension for Gmail.
@@ -29,11 +39,11 @@ gpg: Good signature from "Bryan Rentoul <gruvin@gmail.com>" [ultimate]
 
 ----
 
-# How Can I Trust this dApp Interface?
+## How Can I Trust this dApp Interface?
 
 Oh! I'm so glad you asked! Hold on to your hat! Here we go ...
 
-## Self Service Security Audit
+### Self Service Security Audit
 I'm just a lone guy, at the end of the Earth. I cannot hope to pay for any kind of proper code security audit. However, if you are so inclined, I have created a method for you to at least verify that what you get served over the web, matches what I have personally signed and published here on GitHub.
 
 - You'll need GPG and to be competent at the command line.
@@ -52,7 +62,7 @@ gpg: Good signature from "Bryan Rentoul <gruvin@gmail.com>" [unknown]
 ```
 - Now, you can use your browser's developer tools to check the code you are running matches the contents of the `.tgz` file.
 
-# Self Service Code Audit
+## Self Service Code Audit
 So, the code your browser gets matches what I wrote and intended. Yay! \0/ But ... is what I wrote fair and true? Well, that's where we reach the end of the road, I'm afraid. You'll either have to beg or pay someone to audit the code for you --OR-- at least look through it yourself, trying to find any ETH addresses other than the legitimate HEX ERC20 contract. That should be enough to know the code won't be sending your HEX off to somewhere you didn't want.
 
 Here is how you can clone the code to your own computer and verifiy that what you got was what I actually wrote ...
