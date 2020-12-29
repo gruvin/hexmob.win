@@ -41,10 +41,6 @@ export class StakeInfo extends React.Component {
         const interest = stake.payout.plus(stake.bigPayDay)
         const valueTotal = stake.stakedHearts.plus(interest)
 
-        if (stake.stakedHearts.toString() === "2247648431456") {
-            debug("INT: %j", { P:stake.stakedHearts.div(1e8).toString(), BPD: stake.bigPayDay.div(1e8).toString(), INT: interest.toString() })
-        }
-
         const percentGain = interest.div(stake.stakedHearts).times(100)
         const daysServed = Math.min(currentDay - stake.startDay, stake.stakedDays)
         const _endDate = new Date(HEX.START_DATE.getTime() + endDay * 24 * 3600 * 1000)

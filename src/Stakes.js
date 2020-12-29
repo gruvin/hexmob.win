@@ -292,7 +292,7 @@ class Stakes extends React.Component {
                         stakedTotal = stakedTotal.plus(stakeData.stakedHearts)
                         sharesTotal = sharesTotal.plus(stakeData.stakeShares)
                         bpdTotal = bpdTotal.plus(stakeData.bigPayDay)
-                        interestTotal = interestTotal.plus(stakeData.payout)
+                        interestTotal = interestTotal.plus(stakeData.payout).plus(stakeData.bigPayDay)
                         const stake = {
                             ...stakeData,
                             startDay,
