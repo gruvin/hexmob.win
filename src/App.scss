@@ -222,8 +222,12 @@ button#connect_wallet:hover { border-style: inset; border-color: #fec}
     margin-right: 0.2em;
 }
 
-.bg-hexplanet {
+.icon-wait-bg {
     background: url('/hex_planet.gif') 160px 60px no-repeat
+}
+
+.icon-error-bg {
+    background: url('/failure.png') 120px 80px no-repeat
 }
 
 .tooltip-inner {

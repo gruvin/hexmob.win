@@ -12,11 +12,9 @@ import {
 import './Stakes.scss'
 import { BigNumber } from 'bignumber.js'
 import HEX from './hex_contract'
-import { calcBigPayDaySlice, calcAdoptionBonus } from './util'
+import { calcBigPayDaySlice, calcAdoptionBonus, fetchWithTimeout } from './util'
 import { CryptoVal, WhatIsThis, VoodooButton } from './Widgets' 
 import { Bar, BarChart, Label, Rectangle, ReferenceLine, Tooltip, XAxis, YAxis } from 'recharts'
-import fetch from "isomorphic-fetch";
-
 
 const debug = require('debug')('NewStakeForm')
 debug('loading')
@@ -37,7 +35,7 @@ export class NewStakeForm extends React.Component {
             percentGain: 0.0,
             percentAPY: 0.0,
             data: [],
-            showGraphSpinner: true
+            graphIconClass: "" // App.scss:  .icon-wait-bg / .icon-error-bg
         }
     }
 
@@ -81,14 +79,14 @@ export class NewStakeForm extends React.Component {
                 : LPB_MAX_DAYS;
         }
         const longerPaysBetter = stakeAmount.times(cappedExtraDays)
-                                        .div(LPB)
+            .div(LPB)
 
         const newStakedHearts = BigNumber(stakeAmount)
         const cappedStakedHearts = newStakedHearts.lte(BPB_MAX_HEARTS)
             ? newStakedHearts
             : BPB_MAX_HEARTS
         const biggerPaysBetter = stakeAmount.times(cappedStakedHearts)
-                                        .idiv(BPB)
+            .idiv(BPB)
 
         const bonusTotal = longerPaysBetter.plus(biggerPaysBetter)
         const effectiveHEX = stakeAmount.plus(bonusTotal)
@@ -112,7 +110,6 @@ export class NewStakeForm extends React.Component {
             percentAPY = BigNumber(365).div(HEX.BIG_PAY_DAY + 1 - startDay).times(percentGain)
         }
 
-        debug('STATE: ', this.state)
         this.setState({
             longerPaysBetter,
             biggerPaysBetter,
@@ -137,27 +134,38 @@ export class NewStakeForm extends React.Component {
         const numDataPoints = 31
         const graphStartDay = Math.max(startDay, endDay - Math.floor(numDataPoints / 2))
         const graphEndDay = graphStartDay + numDataPoints
-        this.setState({ showGraphSpinner: true })
-        fetch('https://api.thegraph.com/subgraphs/name/codeakk/hex', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ query: `{
-                    stakeStarts (
-                        where: {
-                            endDay_gte:${graphStartDay},
-                            endDay_lte:${graphEndDay}
-                        }
-                    )
-                    {
-                        stakeShares
-                        endDay
-                    }
-                }` 
-            }),
+        
+        this.setState({ 
+            data: [], 
+            graphIconClass: "icon-wait-bg"
         })
-        .then(res => res.json())
+
+        fetchWithTimeout('https://api.thegraph.com/subgraphs/name/codeakk/hex', 
+            {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ query: `{
+                        stakeStarts (
+                            where: {
+                                endDay_gte:${graphStartDay},
+                                endDay_lte:${graphEndDay}
+                            }
+                        )
+                        {
+                            stakeShares
+                            endDay
+                        }
+                    }` 
+                }),
+            },
+
+            10000 // timeout ms
+        )
+        .then(res => {
+            if (res.errors || res.error) throw new Error(res.errors[0].message)
+            return res.json()
+        })
         .then(graphJSON => {
-            // debug("GRAPH RESPONSE: %j", graphJSON)
             var collated = []
             for (let d = graphStartDay; d <= graphEndDay; d++)
                 collated[d - graphStartDay] = { endDay: d.toString(), stakeShares: 0 }  
@@ -166,7 +174,11 @@ export class NewStakeForm extends React.Component {
                 let index = parseInt(oRow.endDay) - graphStartDay
                 collated[index].stakeShares += TShares
             })
-            this.setState({data: collated, showGraphSpinner: false })
+            this.setState({data: collated, graphIconClass: "" })
+        })
+        .catch(e => {
+            debug(`Graph API: ${e.message}`)
+            this.setState({ graphIconClass: "icon-error-bg" })
         })
     }
 
@@ -186,18 +198,20 @@ export class NewStakeForm extends React.Component {
             if (!stakeDays) {
                 this.setState({
                     data: [],
-                    showGraphSpinner: true
+                    graphIconClass: "icon-wait-bg"
                 })
             } else if (this.lastStakeDays !== stakeDays) {
-                clearTimeout(this.timer)
+                clearTimeout(this.daysTimer)
                 this.updateBarGraph()
             }
         }
 
         const handleDaysChange = (e) => {
             e.preventDefault()
-            clearTimeout(this.timer)
-            
+            clearTimeout(this.daysTimer)
+
+            const immediate = (e.target || false) && (e.target.immediate || false)
+
             const stakeDays = parseInt(e.target.value) || 0
 
             const { currentDay } = this.props.contract.Data
@@ -223,14 +237,14 @@ export class NewStakeForm extends React.Component {
                 if (!stakeDays) {
                     this.setState({
                         data: [],
-                        showGraphSpinner: true
+                        graphIconClass: ""
                     })
                 } else if (stakeDays !== this.lastStakeDays) {
-                    // get new graph data only if >= 1.2 seconds since last stakeDays change 
-                    this.timer = setTimeout(() => { 
+                    // get new graph data only if >= 1.2 seconds since last stakeDays change (don't DDoS graph server between key presses)
+                    this.daysTimer = setTimeout(() => { 
                         this.lastStakeDays = stakeDays
                         this.updateBarGraph()
-                    }, 1200)
+                    }, immediate ? 0 : 1200)
                 }
             })
         }
@@ -278,6 +292,7 @@ export class NewStakeForm extends React.Component {
             }
 
             e.target.value = days
+            e.target.immediate = true
             this.setState({ 
                 stakeDays: days.toString(),
             }, handleDaysChange(e))
@@ -499,7 +514,7 @@ export class NewStakeForm extends React.Component {
             <>
                 <h6 className="mt-3 ml-3 text-info">Other Stakes Ending</h6>
                 <BarChart 
-                    className={ (this.state.showGraphSpinner) ? "bg-hexplanet" : "" }
+                    className={ this.state.graphIconClass }
                     width={365}
                     height={220}
                     margin={{ top: 16, right: 5, bottom: 16, left: 15 }}

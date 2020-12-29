@@ -9,6 +9,7 @@ import {
     Badge,
     ProgressBar
 } from 'react-bootstrap'
+import { GitHubInfo } from './Widgets'
 import Stakes from './Stakes'
 import Lobby from './Lobby'
 import Blurb from './Blurb' 
@@ -488,9 +489,6 @@ class App extends React.Component {
                         }
                         { !detectTrustWallet() && /* TrustWallet won't follow external links */
                         <>
-
-                            <Donaticator walletConnected={this.state.walletConnected} fromAddress={this.state.wallet.address || null} />
-
                             <Container className="py-2 my-3">
                                 <Card.Body as={Button} variant="info" className="w-100 rounded text-light info-bo-50 border-0" 
                                     href="https://changelly.com/?ref_id=1b7z255j4rfbxsyd#buy" target="_blank" rel="noopener noreferrer"
@@ -531,6 +529,8 @@ class App extends React.Component {
                         }
 
                     </Container>
+                    <GitHubInfo />
+                    <Donaticator walletConnected={this.state.walletConnected} fromAddress={this.state.wallet.address || null} />
                 </Container>
                 <Container id="hexmob_footer" fluid>
                     { this.state.walletConnected && <this.WalletStatus /> }

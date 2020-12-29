@@ -7,15 +7,15 @@ const { format } = require('d3-format')
 const calcBigPayDaySlice = (shares, sharePool, _globals) => {
     const unclaimedSatoshis = Object.entries(_globals).length 
             ? _globals.claimStats.unclaimedSatoshisTotal
-            : new BigNumber('fae0c6a6400dadc0', 16) // total claimable Satoshis
+            : new BigNumber('fae0c6a6400dadc0', 16) // total claimable Satoshis (pre BPD)
     return new BigNumber(unclaimedSatoshis.times(HEX.HEARTS_PER_SATOSHI).times(shares))
                                     .idiv(sharePool)
 }
 
-const calcAdoptionBonus = (bigPayDaySlice, _globals) => {
+const calcAdoptionBonus = (payout, _globals) => {
     const { claimedSatoshisTotal, claimedBtcAddrCount } = _globals.claimStats
-    const viral = bigPayDaySlice.times(claimedBtcAddrCount).idiv(HEX.CLAIMABLE_BTC_ADDR_COUNT)
-    const criticalMass = bigPayDaySlice.times(claimedSatoshisTotal).idiv(HEX.CLAIMABLE_SATOSHIS_TOTAL)
+    const viral = payout.times(claimedBtcAddrCount).idiv(HEX.CLAIMABLE_BTC_ADDR_COUNT) // .sol line: 1214
+    const criticalMass = payout.times(claimedSatoshisTotal).idiv(HEX.CLAIMABLE_SATOSHIS_TOTAL) // .sol line: 1221
     const bonus = viral.plus(criticalMass)
     return bonus
 }
@@ -98,9 +98,25 @@ const detectTrustWallet = () => {
     return (window.web3 && window.web3.currentProvider && window.web3.currentProvider.isTrust)
 }
 
+const fetchWithTimeout  = (url, params, timeout) => {
+    return new Promise( (resolve, reject) => {
+        // Set timeout timer
+        let timer = setTimeout(
+            () => reject( new Error('Request timed out') ),
+            timeout
+        );
+
+        fetch( url, params ).then(
+            response => resolve( response ),
+            err => reject( err )
+        ).finally( () => clearTimeout(timer) );
+    })
+}
+
 module.exports = {
     calcBigPayDaySlice,
     calcAdoptionBonus,
     cryptoFormat,
     detectTrustWallet,
+    fetchWithTimeout,
 }

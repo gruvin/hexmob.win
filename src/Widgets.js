@@ -23,23 +23,24 @@ export const CryptoVal = (props) => {
     let v = new BigNumber(props.value) 
     if (isNaN(v)) return ( <>NaN</> )
     
-    let { valueString:s, unit } = cryptoFormat(v, props.currency)
+    const { valueString:s, unit } = cryptoFormat(v, props.currency)
+    const showUnit = props.showUnit || false
 
     // mute fractional part (including the period)
     const r = s.match(/^(.*)(\.\d+)(.*)$/) 
     if (r && r.length > 1)
         return ( 
-            <div className="numeric" {...props}>
+            <div className="numeric">
                 { r[1] } 
                 <span style={{ opacity: "0.5" }}>
                     { r[2] }
                 </span>
                 { r[3] && r[3] }
-            { props.showUnit && <>&nbsp;{unit}</> }
+            { showUnit && <>&nbsp;{unit}</> }
             </div>
         ) 
     else 
-        return ( <div className="numeric">{s}{ props.showUnit && <>&nbsp;{unit}</> }</div> )
+        return ( <div className="numeric">{s}{ showUnit && <>&nbsp;{unit}</> }</div> )
 }
 
 export const WhatIsThis = (props) => {
@@ -292,10 +293,10 @@ export function Donaticator(props) {
                         <input
                             name="addr"
                             type="text"
-                            readonly="true"
+                            readOnly={true}
                             ref={target}
-                            className="donate_addr w-100 text-center btn btn-dark" 
                             title="copy to clipboard"
+                            className="donate_addr w-100 text-center btn btn-dark" 
                             value="0xD30542151ea34007c4c4ba9d653f4DC4707ad2d2"
                             onClick={ copyDonationAddress }
                         />
@@ -325,6 +326,15 @@ export function Donaticator(props) {
                     address copied to clipboard
                 </Tooltip>
             </Overlay>
+        </Container>
+    )
+}
+
+export const GitHubInfo = (props) => {
+    return (
+        <Container className="text-light text-center">
+            <strong>Open Source</strong> <span className="text-muted">GPLv3</span><br/>
+            <a href="https://github.com/gruvin/hexmob.win" target="_blank" rel="noopener noreferrer">GitHub</a>
         </Container>
     )
 }

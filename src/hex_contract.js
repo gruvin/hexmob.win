@@ -1,7 +1,7 @@
 const { BigNumber } = require('bignumber.js')
 
-const START_DATE_POSIX = 1575331200000
-const START_DATE = new Date(START_DATE_POSIX) // '2019-12-03 00:00:00Z' moble browser can't take it! :/
+const START_DATE_POSIX = 1575331200000  // some browsers cannot parse '2019-12-03 00:00:00[Z|GMT|UTC]' correctly (Safari)
+const START_DATE = new Date(START_DATE_POSIX)
 const GENESIS_BLOCK = 9041184
 const CLAIM_PHASE_START_DAY =  1
 const CLAIM_PHASE_DAYS =  (7 * 50)
