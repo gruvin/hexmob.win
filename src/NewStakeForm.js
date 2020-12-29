@@ -110,7 +110,6 @@ export class NewStakeForm extends React.Component {
             percentAPY = BigNumber(365).div(HEX.BIG_PAY_DAY + 1 - startDay).times(percentGain)
         }
 
-        debug('STATE: ', this.state)
         this.setState({
             longerPaysBetter,
             biggerPaysBetter,
