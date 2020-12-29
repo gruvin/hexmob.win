@@ -72,7 +72,7 @@
     "react-dev-utils": "^10.2.1",
     "react-dom": "^16.13.1",
     "react-test-renderer": "^16.13.1",
-    "recharts": "^1.8.5",
+    "recharts": "2.0.0-beta.8",
     "resolve": "1.15.0",
     "resolve-url-loader": "3.1.1",
     "sass-loader": "8.0.2",

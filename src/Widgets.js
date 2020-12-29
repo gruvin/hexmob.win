@@ -30,7 +30,7 @@ export const CryptoVal = (props) => {
     const r = s.match(/^(.*)(\.\d+)(.*)$/) 
     if (r && r.length > 1)
         return ( 
-            <div className="numeric">
+            <div className={ "numeric "+props.className } >
                 { r[1] } 
                 <span style={{ opacity: "0.5" }}>
                     { r[2] }

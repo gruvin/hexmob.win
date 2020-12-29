@@ -159,7 +159,7 @@ export class NewStakeForm extends React.Component {
                 }),
             },
 
-            10000 // timeout ms
+            7369 // timeout ms
         )
         .then(res => {
             if (res.errors || res.error) throw new Error(res.errors[0].message)
@@ -251,7 +251,6 @@ export class NewStakeForm extends React.Component {
         
         const handleAmountSelector = (key, e) => {
             e.preventDefault()
-            debug('balance', balance)
             const v=e.target.dataset.portion
             const portion = parseFloat(v) || 1.0
             const amount = (v === 'max')
@@ -521,13 +520,13 @@ export class NewStakeForm extends React.Component {
                     data={this.state.data}
                 >
                     <XAxis dataKey="endDay">
-                        <Label value="day" offset={-3} position="insideBottom" fill="#777" />
+                        <Label value="day" offset={-3} position="insideBottom" fill="#aaa" />
                     </XAxis>
                     <YAxis type="number">
-                        <Label value="Tsh   " offset={15} angle={-90} position="insideLeft" fill="#ff7300" />
+                        <Label value="Tsh   " offset={15} angle={-90} position="insideLeft" fill="#ff7700" />
                     </YAxis>
                     <ReferenceLine x={this.state.endDay} stroke="#ffaa00" strokeDasharray="3 3" />
-                    <Bar dataKey="stakeShares" fill="#ff7300" isAnimationActive={true} />
+                    <Bar dataKey="stakeShares" fill="#ff7700" isAnimationActive={true} />
                     <Tooltip 
                         filterNull={true}
                         labelFormatter={ (value, name, props) => ([ "day "+value ]) }
