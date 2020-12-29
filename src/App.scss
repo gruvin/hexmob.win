@@ -30,9 +30,11 @@
 
 @import url('https://fonts.googleapis.com/css2?family=Happy+Monkey&family=Jura:wght@500;700&family=Press+Start+2P&family=Titillium+Web:wght@400;700&family=Nosifer&display=swap');
 
-$hex-crimson: #ff4136;
-$hex-orange: #d66f25;
-$hex-yellow: #e5c400;
+/* $hex-crimson: #ff00ff; */
+/* $hex-yellow: #e0c000; */
+$hex-crimson: #ee0066;
+$hex-orange: #dd6622;
+$hex-yellow: #e0c000;
 $col-dark: #171515;
 $theme-colors: (
   "primary": $hex-orange,
@@ -227,7 +229,7 @@ button#connect_wallet:hover { border-style: inset; border-color: #fec}
 }
 
 .icon-error-bg {
-    background: url('/failure.png') 120px 80px no-repeat
+    background: url('/question_bubble.png') 160px 60px no-repeat
 }
 
 .tooltip-inner {
