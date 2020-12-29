@@ -98,9 +98,25 @@ const detectTrustWallet = () => {
     return (window.web3 && window.web3.currentProvider && window.web3.currentProvider.isTrust)
 }
 
+const fetchWithTimeout  = (url, params, timeout) => {
+    return new Promise( (resolve, reject) => {
+        // Set timeout timer
+        let timer = setTimeout(
+            () => reject( new Error('Request timed out') ),
+            timeout
+        );
+
+        fetch( url, params ).then(
+            response => resolve( response ),
+            err => reject( err )
+        ).finally( () => clearTimeout(timer) );
+    })
+}
+
 module.exports = {
     calcBigPayDaySlice,
     calcAdoptionBonus,
     cryptoFormat,
     detectTrustWallet,
+    fetchWithTimeout,
 }
