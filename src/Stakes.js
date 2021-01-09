@@ -263,6 +263,7 @@ class Stakes extends React.Component {
     }
 
     StakesList = (params) => {
+        const { currentDay } = this.props.contract.Data
         const stakeList = this.state.stakeList.slice() || null
         stakeList && stakeList.sort((a, b) => (a.progress < b.progress ? (a.progress !== b.progress ? 1 : 0) : -1 ))
 
@@ -270,41 +271,60 @@ class Stakes extends React.Component {
         let sharesTotal = new BigNumber(0)
         let bpdTotal = new BigNumber(0)
         let interestTotal = new BigNumber(0)
+        let percentGainTotal = new BigNumber(0)
+        let percentAPYTotal = new BigNumber(0)
 
         if (this.state.loadingStakes)
             return ( <p>loading ...</p> )
         else if (!stakeList.length)
             return ( <p>no stake data found for this address</p> )
-        else
+        else {
+            const stakeListOutput = stakeList.map((stakeData) => {
+                // debug('stakeData: %o', stakeData)
+                const startDay = Number(stakeData.lockedDay)
+                const endDay = startDay + Number(stakeData.stakedDays)
+
+                const _startDate = new Date(HEX.START_DATE)
+                const _endDate = new Date(HEX.START_DATE.getTime() + endDay * 24 * 3600 * 1000)
+                const startDate = _startDate.toLocaleDateString()
+                const endDate = _endDate.toLocaleDateString()
+
+                const interest = stakeData.payout.plus(stakeData.bigPayDay)
+
+                stakedTotal = stakedTotal.plus(stakeData.stakedHearts)
+                sharesTotal = sharesTotal.plus(stakeData.stakeShares)
+                bpdTotal = bpdTotal.plus(stakeData.bigPayDay)
+                interestTotal = interestTotal.plus(interest)
+
+                const stake = {
+                    ...stakeData,
+                    interest,
+                    startDay,
+                    endDay,
+                    startDate,
+                    endDate
+                }
+
+                const percentGain = stake.interest.div(stake.stakedHearts).times(100)
+                const daysServed = Math.min(currentDay - stake.startDay, stake.stakedDays)
+                const percentAPY = new BigNumber(365).div(daysServed).times(percentGain)
+                percentGainTotal = percentGainTotal.plus(percentGain)
+                percentAPYTotal = percentAPYTotal.plus(percentAPY)
+
+                return stake
+            })
+            const averagePercentGain = percentGainTotal.div(stakeListOutput.length)
+            const averagePercentAPY = percentAPYTotal.div(stakeListOutput.length)
+
             return (
             <>
                 {
-                    stakeList.map((stakeData) => {
-                        // debug('stakeData: %o', stakeData)
-                        const startDay = Number(stakeData.lockedDay)
-                        const endDay = startDay + Number(stakeData.stakedDays)
-
-                        const _startDate = new Date(HEX.START_DATE)
-                        const _endDate = new Date(HEX.START_DATE.getTime() + endDay * 24 * 3600 * 1000)
-                        const startDate = _startDate.toLocaleDateString()
-                        const endDate = _endDate.toLocaleDateString()
-
-                        stakedTotal = stakedTotal.plus(stakeData.stakedHearts)
-                        sharesTotal = sharesTotal.plus(stakeData.stakeShares)
-                        bpdTotal = bpdTotal.plus(stakeData.bigPayDay)
-                        interestTotal = interestTotal.plus(stakeData.payout).plus(stakeData.bigPayDay)
-                        const stake = {
-                            ...stakeData,
-                            startDay,
-                            endDay,
-                            startDate,
-                            endDate
-                        }
+                    stakeListOutput.map((stakeData) => {
                         return (
                             <StakeInfo 
                                 key={stakeData.stakeId}
                                 contract={window.contract} 
-                                stake={stake} 
+                                stake={stakeData} 
                                 eventCallback={params.eventCallback} 
                                 reloadStakes={this.loadAllStakes}
                             />
@@ -336,14 +356,23 @@ class Stakes extends React.Component {
                             <Col className="text-right"><strong>Interest</strong></Col>
                             <Col><CryptoVal value={interestTotal} showUnit /></Col>
                         </Row>
-                        <Row>
+                        <Row className="text-success">
                             <Col className="text-right"><strong>Current Value</strong></Col>
-                            <Col><CryptoVal value={stakedTotal.plus(interestTotal)} showUnit /></Col>
+                            <Col><strong><CryptoVal value={stakedTotal.plus(interestTotal)} showUnit /></strong></Col>
+                        </Row>
+                        <Row className="mt-2">
+                            <Col className="text-right"><strong>Average Gain</strong></Col>
+                            <Col>{averagePercentGain.toFixed(2)}%</Col>
+                        </Row>
+                        <Row>
+                            <Col className="text-right"><strong>Average APY</strong></Col>
+                            <Col>{averagePercentAPY.toFixed(2)}%</Col>
                         </Row>
                     </Card.Body>
                 </Card>
             </>
-        )
+            )
+        }
     }
 
     sortPastStakesStateByField = (keyField) => {
