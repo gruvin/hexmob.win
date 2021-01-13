@@ -21,13 +21,13 @@ const Blurb = () => {
                     <Col xs={12} sm={5} className="text-right">
                     <img className="d-none d-sm-inline-block"
                         style={{ maxWidth: "90%", maxHeight: "320px" }}
-                        alt="old version of TrustWallet on iPhone 11"
-                        src="/trustwallet-iphone11.png"
+                        alt="HEXmob in Safari using Metamask on iPhone 11"
+                        src="/safari-iphone11.png"
                     />
                     <Image className="d-block d-sm-none"
                         style={{ maxWidth: "100%" }}
-                        alt="TrustWallet on iPhone11"
-                        src="/trustwallet-iphone11-cropped.png"
+                        alt="HEXmob in Safari using Metamask on iPhone 11"
+                        src="/safari-iphone11-cropped.png"
                     />
                     </Col>
                     <Col xs={12} sm={7} className="py-3 text-center m-auto allign-middle">

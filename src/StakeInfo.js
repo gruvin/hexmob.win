@@ -41,23 +41,10 @@ export class StakeInfo extends React.Component {
         const interest = stake.payout.plus(stake.bigPayDay)
         const valueTotal = stake.stakedHearts.plus(interest)
 
-        if (stake.stakedHearts.toString() === "2247648431456") {
-            debug("INT: %j", { P:stake.stakedHearts.div(1e8).toString(), BPD: stake.bigPayDay.div(1e8).toString(), INT: interest.toString() })
-        }
-
         const percentGain = interest.div(stake.stakedHearts).times(100)
         const daysServed = Math.min(currentDay - stake.startDay, stake.stakedDays)
         const _endDate = new Date(HEX.START_DATE.getTime() + endDay * 24 * 3600 * 1000)
         const endDate = _endDate.toLocaleDateString()+' '+_endDate.toLocaleTimeString()
-        /*
-        const percentAPY = currentDay < stake.startDay 
-            ? 0 
-            : ( currentDay < stake.endDay 
-                ? 365 / Math.min(daysServed, 365) * percentGain
-                : percentGain / 365
-            )
-            */
-
         const percentAPY = new BigNumber(365).div(daysServed).times(percentGain)
 
         const pending = (currentDay < stake.lockedDay)
