@@ -227,6 +227,7 @@ class Stakes extends React.Component {
                         stakeId:        r.stakeId,
                         stakedHearts:   BigNumber(  data0.slice( 40, 111).toString(10)),
                         stakeShares:    BigNumber(  data0.slice(112, 183).toString(10)),
+                        payout:         BigNumber(  data1.slice(184, 255).toString(10)),
                         penalty:        BigNumber(  data1.slice(  0,  71).toString(10)),
                         servedDays:     Number(     data1.slice( 72,  87).toString(10)),
                         prevUnlocked:   Boolean(    data1.slice( 88,  95).toString(10))
