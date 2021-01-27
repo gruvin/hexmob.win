@@ -95,6 +95,7 @@ const cryptoFormat = (v, currency) => {
 }
 
 const detectTrustWallet = () => {
+    if (window.ethereum && window.ethereum.isMetaMask) return false
     return (window.web3 && window.web3.currentProvider && window.web3.currentProvider.isTrust)
 }
 
