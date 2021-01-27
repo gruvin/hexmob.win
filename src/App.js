@@ -81,13 +81,10 @@ class App extends React.Component {
 
         if (provider.isMetaMask) {
             const ethereum = window.ethereum
-            if (ethereum && ethereum.autoRefreshOnNetworkChange) 
+            if (ethereum.autoRefreshOnNetworkChange) 
                 ethereum.autoRefreshOnNetworkChange = false // will be default behavour in new MM api
 
-            // MetaMask has no 'close' or 'disconnect' event. Workaround ...
-            ethereum.on('disconnect', () => {
-                    this.resetApp()
-            })
+            ethereum.on('disconnect', () => { this.resetApp() })
 
             ethereum.on('accountsChanged', (accounts) => {
                 if (!accounts.length)                   // => legacy workaround for lack of event:[close|disconnect] (logged out)
@@ -127,7 +124,10 @@ class App extends React.Component {
             window.location.reload()
         })
 
-        window.web3.currentProvider.publicConfigStore && window.web3.currentProvider.publicConfigStore.on('update', this.updateETHBalance)
+        try {
+            window.web3hexmob.currentProvider.publicConfigStore.on('update', this.updateETHBalance)
+        } catch(e) {
+        }
     }
 
     subscribeEvents = () => {
@@ -186,10 +186,9 @@ class App extends React.Component {
 
     /* returns address or null */
     async establishWeb3Provider() {
-        debug('window.ethereum: %O', window.ethereum)
 
-        if (window.ethereum && !window.ethereum.chainId) window.ethereum.chainId = '0x1'
         debug('window.ethereum = %O', window.ethereum)
+        if (window.ethereum && !window.ethereum.chainId) window.ethereum.chainId = '0x1'
 
         // Check for non-web3modal injected providers (mobile dApp browsers)
         if (detectTrustWallet()) {                                                  // TrustWallet internal browser (now defunct)
@@ -239,20 +238,19 @@ class App extends React.Component {
 
         await this.setState({ chainId, network })
 
-        this.provider = new Web3.providers.WebsocketProvider(wssURL)
+        this.wssProvider = new Web3.providers.WebsocketProvider(wssURL)
         debug('web3 providers established')
 
-        window.web3 = new Web3(this.walletProvider) // window.web3 used for sending/signing transactions
-        this.web3 = new Web3(this.provider)         // this.web3 used for everything else (Infura)
+        window.web3hexmob = new Web3(this.walletProvider) // window.web3 used for sending/signing transactions
+        this.web3 = new Web3(this.wssProvider)         // this.web3 used for everything else (Infura)
 
-        if (!window.web3 || !this.web3) return debug('Unexpected error setting up Web3 instances')
+        if (!window.web3hexmob || !this.web3) return debug('Unexpected error setting up Web3 instances')
         
         // ref: https://soliditydeveloper.com/web3-1-2-5-revert-reason-strings
-        if (window.web3.eth.hasOwnProperty('handleRevert'))  window.web3.eth.handleRevert = true 
-        if (this.web3.eth.hasOwnProperty('handleRevert'))  this.web3.eth.handleRevert = true 
+        if (window.web3hexmob.eth.hasOwnProperty('handleRevert'))  window.web3hexmob.eth.handleRevert = true 
         debug('web3 providers connected')
 
-        // Different ewallets have different methods of supplying the user's active ETH address
+        // Different wallets have different methods of supplying the user's active ETH address
         var address = null
         if (this.walletProvider.isMetaMask) {               // MetaMask
             debug('web3modal provider is MetaMask')
@@ -271,7 +269,7 @@ class App extends React.Component {
         } else if (this.walletProvider.isCoinBase) {        // CoinBase
             debug('Provider is Coinbase')
             await this.walletProvider.enable()
-            const accounts = await window.web3.eth.getAccounts()
+            const accounts = await this.walletProvider.eth.getAccounts()
             address=accounts[0]
         } else if (detectTrustWallet()) {                   // TrustWallet internal browser (since removed 'cause Apple sux)
             debug('Provider is TrustWallet (internal browser)')
@@ -281,16 +279,16 @@ class App extends React.Component {
         } else if (this.walletProvider.isWalletConnect) {    // Wallet Connect
             debug('web3modal provider is WalletConnect (QR code)')
             address = this.walletProvider.accounts[0]
-        } else if (window.web3.currentProvider.isPortis) {
+        } else if (window.web3hexmob.currentProvider.isPortis) {
             await this.walletProvider.enable()
-            const accounts = await window.web3.eth.getAccounts()
+            const accounts = await this.walletProvider.eth.getAccounts()
             address = accounts[0]
-        } else if (window.web3.currentProvider.isImToken) { // imToken
+        } else if (window.web3hexmob.currentProvider.isImToken) { // imToken
             debug('imToken Wallet detected')
             const accounts = await window.ethereum.send('eth_requestAccounts') // EIP1102
             address = accounts[0]
         } else                                              // OTHERS (WalletConnect)
-            address = window.web3.eth.accounts[0]
+            address = window.web3hexmob.eth.accounts[0]
         return (address.toLowerCase().slice(0, 2) === '0x') ? address : null
     }
 
@@ -303,8 +301,9 @@ class App extends React.Component {
         const address = await this.establishWeb3Provider() 
         if (!address) return debug('No wallet address supplied - STOP')
 
-        window.contract = new window.web3.eth.Contract(HEX.ABI, HEX.CHAINS[this.state.chainId].address)    // wallet's provider
+        window.contract = new window.web3hexmob.eth.Contract(HEX.ABI, HEX.CHAINS[this.state.chainId].address)    // wallet's provider
         this.contract = new this.web3.eth.Contract(HEX.ABI, HEX.CHAINS[this.state.chainId].address)        // INFURA
+
         this.subscribeProvider(this.walletProvider)
 
         await this.setState({ 
