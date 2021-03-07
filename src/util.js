@@ -75,12 +75,24 @@ const cryptoFormat = (v, currency) => {
             break
         case 'HEX': 
             if (v.isZero())         s = '0.000'
-            else if (v.lt(1e6))     { unit = 'Hearts'; s = format(',.6f')(v).slice(0, 7) }
-            else if (v.lt(1e14))    s = format(',.6f')(v.div(1e08)).slice(0, 7)
-            else if (v.lt(1e17))    s = format(',.6f')(v.div(1e14)).slice(0, 6)+'M'
-            else if (v.lt(1e20))    s = format(',.6f')(v.div(1e17)).slice(0, 6)+'B'
-            else if (v.lt(1e23))    s = format(',.6f')(v.div(1e20)).slice(0, 6)+'T'
-            else                    s = format(',')(v.div(1e20))+'T'
+            else if (v.lt(1e6))     { unit = 'Hearts'; s = format(',.6f')(v.toPrecision(6, 1)) }
+            else if (v.lt(1e08))    s = format(',.4f')(v.div(1E08).toPrecision(4, 1)) // <         1 HEX
+            else if (v.lt(1e09))    s = format(',.4f')(v.div(1E08).toPrecision(5, 1)) // <        10 HEX
+            else if (v.lt(1e10))    s = format(',.4f')(v.div(1E08).toPrecision(6, 1)) // <       100 HEX
+            else if (v.lt(1e11))    s = format(',.3f')(v.div(1E08).toPrecision(6, 1)) // <     1,000 HEX
+            else if (v.lt(1e12))    s = format(',.2f')(v.div(1E08).toPrecision(6, 1)) // <    10,000 HEX
+            else if (v.lt(1e13))    s = format(',.1f')(v.div(1E08).toPrecision(6, 1)) // <   100,000 HEX
+            else if (v.lt(1e14))    s = format(',.1f')(v.div(1E08).toPrecision(6, 1)) // < 1,000,000 HEX
+            else if (v.lt(1e15))    s = format(',.4f')(v.div(1E14).toPrecision(5, 1))+'M'
+            else if (v.lt(1e16))    s = format(',.4f')(v.div(1E14).toPrecision(6, 1))+'M'
+            else if (v.lt(1e17))    s = format(',.3f')(v.div(1E14).toPrecision(6, 1))+'M'
+            else if (v.lt(1e18))    s = format(',.4f')(v.div(1E17).toPrecision(5, 1))+'B'
+            else if (v.lt(1e19))    s = format(',.4f')(v.div(1E17).toPrecision(6, 1))+'B'
+            else if (v.lt(1e20))    s = format(',.3f')(v.div(1E17).toPrecision(6, 1))+'B'
+            else if (v.lt(1e21))    s = format(',.4f')(v.div(1E20).toPrecision(5, 1))+'T'
+            else if (v.lt(1e22))    s = format(',.4f')(v.div(1E20).toPrecision(6, 1))+'T'
+            else if (v.lt(1e23))    s = format(',.3f')(v.div(1E20).toPrecision(6, 1))+'T'
+            else                    s = format(',')(v.div(1E20))+'T'
             s = s.replace(/(^[-,0-9]+)[.0]+(M|B|T)?$/, "$1$2") // nn.000 => nn
             break
         default: // NaN or Infinity

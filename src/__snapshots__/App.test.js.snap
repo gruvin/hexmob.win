@@ -6,7 +6,7 @@ Object {
   "contractGlobals": null,
   "contractReady": false,
   "currentProvider": "web3modal",
-  "debug": Array [],
+  "donation": "",
   "incomingReferrer": null,
   "network": "none",
   "referrer": "0xd30542151ea34007c4c4ba9d653f4dc4707ad2d2",
