@@ -45,12 +45,10 @@ const cryptoFormat = (v, currency) => {
             s = s.replace(/(^[-,0-9]+)[.0]+(M|B|T)?$/, "$1$2") // nn.000 => nn
             s = s.replace(/(^\d+\.\d{3})0+$/, "$1") // nn.123000 => nn.123
             break
-        case 'SHARES_PER_HEX':
-            unit = '/HEX'
-            v = BigNumber(v).times(1e8)
+        case 'TSHARE_PRICE':
+            unit = 'HEX / T-Share'
             if (v.isZero())         s = '0.000'
-            else if (v.lt( 1e3))    s = format(',.3f')(v.toFixed(3))
-            else if (v.lt( 1e6))    s = format(',.3f')(v.div(1e3).toFixed(3, 1))+'K'
+            else if (v.lt( 1e6))    s = format(',.0f')(v)
             else if (v.lt( 1e9))    s = format(',.3f')(v.div(1e6).toFixed(3, 1))+'M'
             else if (v.lt(1e12))    s = format(',.3f')(v.div(1e9).toFixed(3, 1))+'B'
             else if (v.lt(1e15))    s = format(',.3f')(v.div(1e12).toFixed(3, 1))+'T'
@@ -59,10 +57,12 @@ const cryptoFormat = (v, currency) => {
         case 'SHARES':
             unit = ' Shares'
             if (v.isZero())         s = '0.000'
+            /*
             else if (v.lt( 1e3))    s = format(',.3f')(v.toFixed(3))
             else if (v.lt( 1e6))    s = format(',.3f')(v.div(1e3).toFixed(3, 1))+'K'
             else if (v.lt( 1e9))    s = format(',.3f')(v.div(1e6).toFixed(3, 1))+'M'
             else if (v.lt(1e12))    s = format(',.3f')(v.div(1e9).toFixed(3, 1))+'B'
+            */
             else if (v.lt(1e15))    s = format(',.3f')(v.div(1e12).toFixed(3, 1))+'T'
             else                    s = format(',.0f')(v.div(1e12).toFixed(0))+'T'
             break

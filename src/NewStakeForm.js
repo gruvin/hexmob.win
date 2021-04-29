@@ -30,7 +30,7 @@ export class NewStakeForm extends React.Component {
             bonusTotal: BigNumber(0),
             effectiveHEX: BigNumber(0),
             stakeShares: BigNumber(0),
-            shareRate: BigNumber(100000),
+            shareRate: BigNumber(10000),
             bigPayDay: BigNumber(0),
             percentGain: 0.0,
             percentAPY: 0.0,
@@ -40,8 +40,7 @@ export class NewStakeForm extends React.Component {
     }
 
     async componentDidMount() {
-        const _shareRate = this.props.contract.Data.globals.shareRate || 100000
-        const shareRate = BigNumber('100000').div(_shareRate)
+        const shareRate = this.props.contract.Data.globals.shareRate.div(10) || BigNumber(10000)
         this.setState({ shareRate })
         this.lastStakeDays = null
         window._NEW = this // DEBUG remove me
@@ -90,9 +89,8 @@ export class NewStakeForm extends React.Component {
 
         const bonusTotal = longerPaysBetter.plus(biggerPaysBetter)
         const effectiveHEX = stakeAmount.plus(bonusTotal)
-        const _shareRate = globals.shareRate || 100000
-        const shareRate = BigNumber('100000').div(_shareRate)
-        const stakeShares = effectiveHEX.times(shareRate)
+        const shareRate = globals.shareRate.div(10) || BigNumber(10000)
+        const stakeShares = effectiveHEX.times(10000).div(shareRate)
 
         // Big Pay Day bonuses
 
@@ -451,9 +449,9 @@ export class NewStakeForm extends React.Component {
                                 <Col className="text-right"><strong><CryptoVal value={this.state.effectiveHEX} showUnit /></strong></Col>
                             </Row>
                             <Row className="mt-3">
-                                <Col>Share Rate</Col>
+                                <Col>Share Price</Col>
                                 <Col className="text-right">
-                                    <CryptoVal value={this.state.shareRate} currency="SHARES_PER_HEX" showUnit />
+                                    <CryptoVal value={this.state.shareRate} currency="TSHARE_PRICE" showUnit />
                                 </Col>
                             </Row>
                             <Row>
@@ -463,8 +461,8 @@ export class NewStakeForm extends React.Component {
                                             Stake Shares
                                             <span className="text-success"> = </span><br/>
                                             Effective HEX
-                                            <span className="text-success"> x </span>
-                                            Stake Bonuses
+                                            <span className="text-success h5"> ÷ </span>
+                                            Share Price
                                         </>
                                     }>
                                         <span className="h5 text-success">Stake Shares</span>
