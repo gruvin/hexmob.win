@@ -44,7 +44,7 @@ export class StakeInfo extends React.Component {
         const percentGain = interest.div(stake.stakedHearts).times(100)
         const daysServed = Math.min(currentDay - stake.startDay, stake.stakedDays)
         const _endDate = new Date(HEX.START_DATE.getTime() + endDay * 24 * 3600 * 1000)
-        const endDate = _endDate.toLocaleDateString()+' '+_endDate.toLocaleTimeString()
+        const endDate = _endDate.toLocaleDateString()+' '+_endDate.toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})
         const percentAPY = new BigNumber(365).div(daysServed).times(percentGain)
 
         const pending = (currentDay < stake.lockedDay)
