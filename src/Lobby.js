@@ -453,8 +453,14 @@ class Lobby extends React.Component {
                     <Accordion.Toggle as={Card.Header} eventKey="0">
                         <BurgerHeading>Transform<span className="d-none d-sm-inline"> (AA Lobby)</span></BurgerHeading>
                         <div className="float-right pr-1 text-success">
-                             <span className="text-muted small">AVAILABLE </span>
-                             <strong><CryptoVal value={this.props.wallet.balanceETH} currency="ETH" showUnit /></strong>
+                        { HEX.lobbyIsActive() ? 
+                            <> 
+                                <span className="text-muted small">AVAILABLE </span>
+                                <strong><CryptoVal value={this.props.wallet.balanceETH} currency="ETH" showUnit /></strong>
+                            </> : <> 
+                                <strong class="text-info">LOBBY CLOSED</strong> 
+                            </>
+                        }
                         </div>
                         <Container>
                             <ProgressBar id="lobby" 
