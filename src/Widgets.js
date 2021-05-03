@@ -8,7 +8,6 @@ import {
     Tooltip,
     Badge
 } from 'react-bootstrap'
-import './App.scss'
 import { BigNumber } from 'bignumber.js'
 import { EventEmitter } from 'events'
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'

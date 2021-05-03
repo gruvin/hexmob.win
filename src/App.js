@@ -470,7 +470,7 @@ class App extends React.Component {
                     <h3>Open BETA <span>{process.env.REACT_APP_VERSION || 'v0.0.0A'}</span></h3>
                 </Container>
                 <Container id="hexmob_body" fluid className="p-1">
-                    <Container className="p-1" style={{ maxWidth: '890px' }}>
+                    <Container className="p-1">
                         <this.AppContent />
                         { HEX.lobbyIsActive() &&
                             <Container className="p-1 my-3 text-center">

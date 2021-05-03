@@ -458,7 +458,7 @@ class Lobby extends React.Component {
                                 <span className="text-muted small">AVAILABLE </span>
                                 <strong><CryptoVal value={this.props.wallet.balanceETH} currency="ETH" showUnit /></strong>
                             </> : <> 
-                                <strong class="text-info">LOBBY CLOSED</strong> 
+                                <span className="text-muted small">CLOSED</span> 
                             </>
                         }
                         </div>

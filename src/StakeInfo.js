@@ -55,25 +55,25 @@ export class StakeInfo extends React.Component {
                     <Accordion.Toggle as={Card.Header} eventKey={stake.stakeId}>
                         <Container>
                             <Row>
-                                <Col xs={6} className="text-left">
+                                <Col xs={6} className="text-left pr-0">
                                     <span className="text-muted small">PRINCIPAL </span> 
                                     <strong className="text-info"><CryptoVal value={stake.stakedHearts} /></strong>
                                 </Col>
-                                <Col xs={6} className="text-right">
+                                <Col xs={6} className="text-right pl-0">
                                     <span className="text-muted small">VALUE </span> 
                                     <strong className="text-info"><CryptoVal value={valueTotal} /></strong>
                                 </Col>
                             </Row>
                             <Row className="mb-1">
-                                <Col xs={7} className="numeric">
-                                    <span className="text-muted small mr-1">ENDS </span>
-                                    <span style={{ fontSize: "0.9em" }}>{endDate}</span>
+                                <Col xs={7} className="pr-0">
+                                    <span className="text-muted small">ENDS </span>
+                                    <span className="numeric">{endDate}</span>
                                 </Col>
-                                <Col xs={5} className="text-right numeric">
+                                <Col xs={5} className="text-right pl-0">
                                     { pending ? <Badge variant="primary">PENDING</Badge> 
                                         : <>
-                                            <span className="text-muted small ">PROGRESS </span>
-                                            <span>{progress+"%"}</span>
+                                            <span className="text-muted small">PROGRESS </span>
+                                            <span className="numeric">{progress+"%"}</span>
                                         </>
                                     }
                                 </Col>
