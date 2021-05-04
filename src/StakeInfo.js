@@ -6,7 +6,11 @@ import {
     Accordion,
     Row,
     Col,
-    Badge
+    Badge,
+    Button,
+    Overlay,
+    OverlayTrigger,
+    Popover
 } from 'react-bootstrap'
 import './Stakes.scss'
 import HEX from './hex_contract'
@@ -18,6 +22,7 @@ const debug = require('debug')('StakeInfo')
 debug('loading')
 
 export class StakeInfo extends React.Component {
+
     render() {
         const { contract, stake } = this.props
         const { currentDay } = contract.Data
@@ -48,6 +53,25 @@ export class StakeInfo extends React.Component {
         const percentAPY = new BigNumber(365).div(daysServed).times(percentGain)
 
         const pending = (currentDay < stake.lockedDay)
+        let exitEnabled = (currentDay >= stakeDay)
+
+        const popoverEndStake = (
+            <Popover id="popover-basic" placement="auto">
+                <Popover.Content style={{ padding: 0 }}>
+                    <div id="early-end-stake-alert">
+                        <div className="bg-dark text-light p-3">
+                            <h4 className="text-danger">Emergency End Stake</h4>
+                            <p>
+                                Remember that you made a commitment to stay staked. This is an advanced feature 
+                                for advanced users. <strong><em>You should not proceed unless you <u>fully understand</u> what it 
+                                will do.</em></strong>
+                            </p>
+                        </div>
+                        <Button onClick={exitEnabled=true}>I UNDERSTAND</Button>
+                    </div>
+                </Popover.Content>
+            </Popover>
+        )
 
         return (
             <Accordion xs={12} sm={6} defaultActiveKey="0" key={stake.stakeId} className="my-2">
@@ -138,16 +162,25 @@ export class StakeInfo extends React.Component {
                             </Row>
                             <Row>
                                 <Col className="text-center mt-3">
-                                    <VoodooButton 
-                                        contract={window.contract}
-                                        method="stakeEnd" 
-                                        params={[stake.stakeIndex, stake.stakeId]}
-                                        options={{ from: stake.stakeOwner }}
-                                        variant={'exitbtn '+exitClass}
-                                        confirmationCallback={this.props.reloadStakes}
-                                    >
-                                        END STAKE
-                                    </VoodooButton>
+            <>
+            { (exitEnabled) 
+                ?
+                                        <VoodooButton 
+                                            contract={window.contract}
+                                            method="stakeEnd" 
+                                            params={[stake.stakeIndex, stake.stakeId]}
+                                            options={{ from: stake.stakeOwner }}
+                                            variant={'exitbtn '+exitClass}
+                                            confirmationCallback={this.props.reloadStakes}
+                                        >
+                                            { (currentDay < stakeDay) ? "EARLY " : ""}END STAKE
+                                        </VoodooButton>
+                :
+                                    <OverlayTrigger overlay={popoverEndStake}>
+                                        <Button>END STAKE</Button>
+                                    </OverlayTrigger>
+            }
+            </>
                                 </Col>
                             </Row>
                         </Card.Body>
