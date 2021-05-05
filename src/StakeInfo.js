@@ -1,4 +1,4 @@
-import React from 'react'
+import React, { createRef } from 'react'
 import { 
     Container,
     Card,
@@ -22,6 +22,13 @@ const debug = require('debug')('StakeInfo')
 debug('loading')
 
 export class StakeInfo extends React.Component {
+    constructor(props) {
+        super(props)
+        this.state = {
+            esShow: false
+        }
+        this.esRef = createRef()
+    }
 
     render() {
         const { contract, stake } = this.props
@@ -53,25 +60,7 @@ export class StakeInfo extends React.Component {
         const percentAPY = new BigNumber(365).div(daysServed).times(percentGain)
 
         const pending = (currentDay < stake.lockedDay)
-        let exitEnabled = (currentDay >= stakeDay)
-
-        const popoverEndStake = (
-            <Popover id="popover-basic" placement="auto">
-                <Popover.Content style={{ padding: 0 }}>
-                    <div id="early-end-stake-alert">
-                        <div className="bg-dark text-light p-3">
-                            <h4 className="text-danger">Emergency End Stake</h4>
-                            <p>
-                                Remember that you made a commitment to stay staked. This is an advanced feature 
-                                for advanced users. <strong><em>You should not proceed unless you <u>fully understand</u> what it 
-                                will do.</em></strong>
-                            </p>
-                        </div>
-                        <Button onClick={exitEnabled=true}>I UNDERSTAND</Button>
-                    </div>
-                </Popover.Content>
-            </Popover>
-        )
+        const earlyExit = (currentDay < stakeDay)
 
         return (
             <Accordion xs={12} sm={6} defaultActiveKey="0" key={stake.stakeId} className="my-2">
@@ -109,7 +98,7 @@ export class StakeInfo extends React.Component {
                         </Container>
                     </Accordion.Toggle>
                     <Accordion.Collapse eventKey={stake.stakeId} bg="secondary">
-                        <Card.Body>
+                        <Card.Body onClick={(e) => this.setState({ esShow: false})}>
                             <Row className="mt-2">
                                 <Col className="text-right"><strong>Start Day</strong></Col>
                                 <Col className="numeric">{stake.startDay+1}</Col>
@@ -161,26 +150,41 @@ export class StakeInfo extends React.Component {
                                 <Col className="numeric">{format(',')(percentAPY.toPrecision(5))}%</Col>
                             </Row>
                             <Row>
-                                <Col className="text-center mt-3">
-            <>
-            { (exitEnabled) 
-                ?
-                                        <VoodooButton 
-                                            contract={window.contract}
-                                            method="stakeEnd" 
-                                            params={[stake.stakeIndex, stake.stakeId]}
-                                            options={{ from: stake.stakeOwner }}
-                                            variant={'exitbtn '+exitClass}
-                                            confirmationCallback={this.props.reloadStakes}
-                                        >
-                                            { (currentDay < stakeDay) ? "EARLY " : ""}END STAKE
-                                        </VoodooButton>
-                :
-                                    <OverlayTrigger overlay={popoverEndStake}>
-                                        <Button>END STAKE</Button>
-                                    </OverlayTrigger>
-            }
-            </>
+                                <Col className="text-center mt-3" ref={this.esRef}>
+                                    <Overlay target={this.esRef.current} show={this.state.esShow}>
+                                        <Popover>
+                                            <Popover.Content className="p-0">
+                                                <div id="early-end-stake-alert">
+                                                    <div className="bg-dark text-light p-3">
+                                                        <h4 className="text-danger">Emergency End Stake</h4>
+                                                        <p>
+                                                            Remember that you made a commitment to stay staked. This is an advanced feature 
+                                                            for advanced users. <strong><em>You should not proceed</em> unless you <u>fully understand</u> what it 
+                                                            will do.</strong>
+                                                        </p>
+                                                    </div>
+                                                </div>
+                                            </Popover.Content>
+                                        </Popover>
+                                    </Overlay>
+                                    <VoodooButton
+                                        style={{ display: !earlyExit || this.state.esShow ? "inline-block" : "none" }}
+                                        contract={window.contract}
+                                        method="stakeEnd" 
+                                        params={[stake.stakeIndex, stake.stakeId]}
+                                        options={{ from: stake.stakeOwner }}
+                                        variant={'exitbtn '+exitClass}
+                                        confirmationCallback={() => this.props.reloadStakes()}
+                                        rejectionCallback={() => this.setState({ esShow: false })} 
+                                    >
+                                    { earlyExit && <>I UNDERSTAND — </>}END STAKE
+                                    </VoodooButton>
+                                    <Button 
+                                        variant={'exitbtn '+exitClass}
+                                        style={{ display: earlyExit && !this.state.esShow ? "inline-block" : "none" }}
+                                        onClick={(e) => { e.stopPropagation(); this.setState({ esShow: true })} }>
+                                        EARLY END STAKE
+                                    </Button>
                                 </Col>
                             </Row>
                         </Card.Body>

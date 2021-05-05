@@ -118,7 +118,19 @@ export class VoodooButton extends React.Component {
     }
 
     render() {
-        const { contract, method, params, options, inputValid, simulate, confirmationCallback, callbackArgs, ...other } = this.props
+        const { 
+            contract,
+            method,
+            params,
+            options,
+            inputValid,
+            simulate,
+            confirmationCallback,
+            rejectionCallback,
+            callbackArgs,
+            ...other 
+        } = this.props
+
         const dataValid = (typeof inputValid === 'undefined') ? true : inputValid
 
         const handleClick = async (contract, method, params, options, e ) => {
@@ -128,7 +140,7 @@ export class VoodooButton extends React.Component {
 
             await this.setState({
                 wait: true,
-                data: 'sending'
+                data: 'requesting'
             })
 
             const func = simulate ? sim : contract.methods[method]
@@ -139,12 +151,13 @@ export class VoodooButton extends React.Component {
                 func(...params).send(options)
                 setTimeout(async ()=>{
                     await this.setState({
-                        data: 'REQUESTED',
-                        hash: 'see Wallet log'
+                        data: "REQUESTED",
+                        hash: "see wallet's log"
                     })
                     setTimeout(async ()=>{
                         await this.setState({ wait: false, data: false, hash: null})
-                        typeof confirmationCallback === 'function' && confirmationCallback()
+                        typeof confirmationCallback === 'function' && confirmationCallback.apply(this, callbackArgs)
+                        typeof rejectionCallback === 'function' && rejectionCallback.apply(this, callbackArgs)
                     }, 18008)
                 }, 2000)
                 return false // that's all folks
@@ -168,7 +181,7 @@ export class VoodooButton extends React.Component {
                             data: false,
                             hash: null
                         }, () => {
-                            if (typeof confirmationCallback === 'function') confirmationCallback.apply(this, callbackArgs)
+                            typeof confirmationCallback === 'function' && confirmationCallback.apply(this, callbackArgs)
                         })
                     }
                     this.setState({ data: confirmationNumber+1 })
@@ -178,23 +191,19 @@ export class VoodooButton extends React.Component {
                 })
                 .on('error', async (err, receipt) => { // eg. rejected or out of gas
                     debug(`${method}::error: `, err, receipt)
-                    await this.setState({ 
-                        data: 'rejected',
-                        wait: false
-                    })
+                    await this.setState({ data: 'rejected', wait: true })
                     setTimeout(() => {
                         this.setState({ wait: false, data: false, hash: null})
-                    }, 3000)
+                        typeof rejectionCallback === 'function' && rejectionCallback.apply(this, callbackArgs)
+                    }, 2000)
                 })
                 .catch( async (err, receipt) => {
                     debug(`${method}::error: `, err, receipt)
-                    await this.setState({ 
-                        data: 'rejected',
-                        wait: false
-                    })
-                    setTimeout(() => this.setState({ 
-                        wait: false, data: false, hash: null
-                    }), 3000) 
+                    await this.setState({ data: 'rejected', wait: true })
+                    setTimeout(() => {
+                        this.setState({ wait: false, data: false, hash: null })
+                        typeof rejectionCallback === 'function' && rejectionCallback.apply(this, callbackArgs)
+                    }, 2000) 
                 })
             return false
         }
