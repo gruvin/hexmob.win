@@ -57,9 +57,6 @@
 
 /* EARLY EXIT BUTTON -- DANGER! */
 .btn-exitbtn.earlyexit { 
-    font-size: 1.4em;
-    font-weight: normal;
-    font-family: Nosifer, Alial, sans-serif !important;
     color: map-get($theme-colors, danger); 
     border: 2px map-get($theme-colors, secondary) solid; 
 }
