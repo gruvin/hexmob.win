@@ -55,5 +55,7 @@ $RSYNC -r --delete 'build/' ${DEST}
 echo "DONE"
 echo "Release files are in release/ dir. REMEMBER TO SIGN: gpg --yes -b ${RELEASE}"
 
+git checkout dev
+
 exit 0
 
