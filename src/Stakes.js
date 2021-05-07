@@ -332,7 +332,7 @@ class Stakes extends React.Component {
                     })
                 }
                 <Card xs={12} sm={6} bg="dark" className="m-0 p-1">
-                    <Card.Header className="bg-dark p-1 text-center text-info"><strong>Stake Totals</strong></Card.Header>
+                    <Card.Header className="bg-dark p-1 text-center text-info"><h3>Stake Totals</h3></Card.Header>
                     <Card.Body className="bg-dark p-1 rounded">
                         <Row>
                             <Col className="text-right"><strong>Staked</strong></Col>
@@ -342,6 +342,7 @@ class Stakes extends React.Component {
                             <Col className="text-right"><strong>Shares</strong></Col>
                             <Col><CryptoVal value={sharesTotal.times(1e8)} /></Col>
                         </Row>
+                        <>{ bpdTotal.toNumber() > 0 &&
                         <Row>
                             <Col className="text-right">
                                 <strong>
@@ -352,6 +353,7 @@ class Stakes extends React.Component {
                             </Col>
                             <Col><CryptoVal value={bpdTotal} showUnit /></Col>
                         </Row>
+                        }</>
                         <Row>
                             <Col className="text-right"><strong>Interest</strong></Col>
                             <Col><CryptoVal value={interestTotal} showUnit /></Col>
