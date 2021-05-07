@@ -175,6 +175,9 @@ button#connect_wallet:hover { border-style: inset; border-color: #fec}
     border: 0;
     border-radius: 3px !important;
 }
+.card-header-current { 
+    background: linear-gradient(135deg, map-get($theme-colors, info) 0, rgba(30,30,30,1) 18px);
+}
 .card-body,
 .card-header > .container {
     padding: .25em;

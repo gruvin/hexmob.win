@@ -1,9 +1,11 @@
-import React, { createRef } from 'react'
+import React, { createRef, useContext } from 'react'
 import { 
     Container,
     Card,
     ProgressBar,
     Accordion,
+    AccordionContext,
+    useAccordionToggle,
     Row,
     Col,
     Badge,
@@ -62,10 +64,27 @@ export class StakeInfo extends React.Component {
         const pending = (currentDay < stake.lockedDay)
         const earlyExit = (currentDay < stakeDay)
 
+        const ContextAwareToggle = ({ children, eventKey, callback }) => {
+            const currentEventKey = useContext(AccordionContext);
+            const decoratedOnClick = useAccordionToggle(
+                eventKey,
+                () => callback && callback(eventKey),
+            );
+            const isCurrentEventKey = currentEventKey === eventKey;
+            return (
+                <Card.Header
+                    className={(isCurrentEventKey ? "card-header-current" : "")}
+                    onClick={decoratedOnClick}
+                >
+                {children}
+                </Card.Header>
+            );
+        }
+
         return (
             <Accordion xs={12} sm={6} defaultActiveKey="0" key={stake.stakeId} className="my-2">
                 <Card bg="dark">
-                    <Accordion.Toggle as={Card.Header} eventKey={stake.stakeId}>
+                    <ContextAwareToggle eventKey={stake.stakeId}>
                         <Container>
                             <Row>
                                 <Col xs={6} className="text-left pr-0">
@@ -96,8 +115,8 @@ export class StakeInfo extends React.Component {
                                 : <ProgressBar variant={progressVariant} now={Math.ceil(progress)}  />
                             }
                         </Container>
-                    </Accordion.Toggle>
-                    <Accordion.Collapse eventKey={stake.stakeId} bg="secondary">
+                    </ContextAwareToggle>
+                    <Accordion.Collapse eventKey={stake.stakeId}>
                         <Card.Body onClick={(e) => this.setState({ esShow: false})}>
                             <Row className="mt-2">
                                 <Col className="text-right"><strong>Start Day</strong></Col>
