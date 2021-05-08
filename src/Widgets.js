@@ -3,6 +3,7 @@ import {
     Container,
     Card,
     Button,
+    ButtonGroup,
     Spinner,
     Overlay,
     Tooltip,
@@ -264,7 +265,7 @@ export function Donaticator(props) {
         const method = "transfer"
         const func = window.contract.methods[method]
 
-        await func( "0xD30542151ea34007c4c4ba9d653f4DC4707ad2d2", new BigNumber(amount).times(1e8).toString())
+        await func( "0x920b96701676cdAC9e2dB0b7c2979FF2577A0FA9", new BigNumber(amount).times(1e8).toString())
             .send({ from: props.fromAddress })
             .once('transactionHash', (hash) => debug(`${method}::txHash=${hash}`)) 
             .on('error', (err, receipt) => { // eg. rejected or out of gas
@@ -299,18 +300,20 @@ export function Donaticator(props) {
                     <h5 className="m-0">please support <strong>HEX<sup>mob</sup></strong></h5>
                     <div style={{ width: "20rem", margin: "auto" }}>
                         <input
+                            style={{ display: "inline-block" }}
                             name="addr"
                             type="text"
                             readOnly={true}
                             ref={target}
                             title="copy to clipboard"
                             className="donate_addr w-100 text-center btn btn-dark" 
-                            value="0xD30542151ea34007c4c4ba9d653f4DC4707ad2d2"
+                            value="0x920b96701676cdAC9e2dB0b7c2979FF2577A0FA9"
                             onClick={ copyDonationAddress }
                         />
                     </div>
                     { props.walletConnected && 
                     <>
+                        <ButtonGroup>
                         <input
                             name="amount"
                             type="number"
@@ -319,12 +322,24 @@ export function Donaticator(props) {
                             onBlur={ handleDonationAmount } 
                         />
                         <Button 
-                            variant="success" className="ml-1 py-1"
+                            variant="success" size="sm"
                             value="donate"
                             onClick={ handleDonate }
                         >
-                            donate now
+                            donate
                         </Button>
+                        </ButtonGroup>
+                        <div className="mt-3">{/*#7*/}
+                            <Button 
+                                variant="info" size="sm" className="text-dark"
+                                onClick={(e) => {
+                                    e.preventDefault(); 
+                                    window.open("https://etherscan.io/address/0x920b96701676cdAC9e2dB0b7c2979FF2577A0FA9")}
+                                }
+                            >
+                                view donations on etherscan.io
+                            </Button>
+                        </div>
                     </>
                     }
                 </form>
