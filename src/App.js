@@ -13,7 +13,7 @@ import { GitHubInfo } from './Widgets'
 import Stakes from './Stakes'
 import Lobby from './Lobby'
 import Blurb from './Blurb' 
-import { WhatIsThis, Donaticator } from './Widgets'
+import { WhatIsThis, Donaticator, MetamaskUtils } from './Widgets'
 import HEX from './hex_contract'
 import Web3 from 'web3';
 import Web3Modal, { getProviderInfo } from 'web3modal';
@@ -530,6 +530,7 @@ class App extends React.Component {
                     </Container>
                     <GitHubInfo />
                     <Donaticator walletConnected={this.state.walletConnected} fromAddress={this.state.wallet.address || null} />
+                    { (this.state.walletConnected && window.ethereum && window.ethereum.isMetaMask) && <MetamaskUtils /> }
                 </Container>
                 <Container id="hexmob_footer" fluid>
                     { this.state.walletConnected && <this.WalletStatus /> }

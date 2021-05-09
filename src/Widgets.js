@@ -7,7 +7,9 @@ import {
     Spinner,
     Overlay,
     Tooltip,
-    Badge
+    Badge,
+    Row,
+    Col
 } from 'react-bootstrap'
 import { BigNumber } from 'bignumber.js'
 import { EventEmitter } from 'events'
@@ -361,3 +363,72 @@ export const GitHubInfo = (props) => {
         </Container>
     )
 }
+
+export function MetamaskUtils(props) {
+    const addHEXtoken = async () => {
+        const tokenAddress = "0x2b591e99afe9f32eaa6214f7b7629768c40eeb39"
+        const tokenSymbol = "HEX"
+        const tokenDecimals = 8
+        const tokenImage = "https://ethhex.com/static/media/hex-icon.92333d74.png"
+
+        try {
+          // wasAdded is a boolean. Like any RPC method, an error may be thrown.
+          const wasAdded = await window.ethereum.request({
+            method: "wallet_watchAsset",
+            params: {
+              type: "ERC20", // Initially only supports ERC20, but eventually more!
+              options: {
+                address: tokenAddress, // The address that the token is at.
+                symbol: tokenSymbol, // A ticker symbol or shorthand, up to 5 chars.
+                decimals: tokenDecimals, // The number of decimals in the token
+                image: tokenImage, // A string url of the token logo
+              },
+            },
+          })
+
+          if (wasAdded) {
+            console.log("Thanks for your interest!")
+          } else {
+            console.log("Your loss!")
+          }
+        } catch (error) {
+          console.log(error)
+        }
+    }
+
+    const addPulseChain = async () => {
+        return false
+        await window.ethereum.request({
+            method: "wallet_addEthereumChain",
+            params: [{
+                chainId: "0x38", // A 0x-prefixed hexadecimal string
+                chainName: "BSC",
+                nativeCurrency: {
+                    name: "Pulse Chain [placeholder]",
+                    symbol: "BNB", // 2-6 characters long
+                    decimals: 18
+                },
+                rpcUrls: [ "https://bsc-dataseed.binance.org/" ],
+                blockExplorerUrls: [ "https://bscscan.com" ],
+                iconUrls: [] // Currently ignored.
+            }]
+        })
+    }
+
+    return (
+        <Container className="text-light text-center pt-2 m-3">
+            <Row className="mb-3">
+                <Col className="col-12">
+                    <h4>Metamask Helpers</h4>
+                </Col>
+                <Col className="text-right">
+                    <Button size="small" className="" onClick={addHEXtoken}>Add HEX Token</Button>
+                </Col>
+                <Col className="text-left">
+                    <Button size="small" onClick={addPulseChain}>Add Pulse Mainnet</Button>
+                </Col>
+            </Row>
+        </Container>
+    )
+}
+
