@@ -22,6 +22,7 @@ import WalletConnectProvider from '@walletconnect/web3-provider'
 import { detectTrustWallet } from './util'
 import './App.scss'
 const debug = require('debug')('App')
+const { format } = require('d3-format')
 const uriQuery = new URLSearchParams(window.location.search)
 if (uriQuery.has('debug')) {
     window.localStorage.setItem('debug', '*')
@@ -41,6 +42,7 @@ const INITIAL_STATE = {
     },
     contractReady: false,
     contractGlobals: null,
+    USDHEX: 0,
     donation: ""
 }
 
@@ -72,6 +74,8 @@ class App extends React.Component {
             incomingReferrer,
             referrer
         }
+        this.dayInterval = null
+        this.usdHexInterval = null
     }
 
     subscribeProvider = async (provider) => {
@@ -292,6 +296,13 @@ class App extends React.Component {
         return (address.toLowerCase().slice(0, 2) === '0x') ? address : null
     }
 
+    updateUsdHex() {
+        // https://github.com/HexCommunity/HEX-APIs
+        fetch("https://uniswapdataapi.azurewebsites.net/api/hexPrice")
+            .then(response => response.json())
+            .then(data => this.setState({ USDHEX: data.hexUsd }))
+    }
+
     async componentDidMount() {
         debug('process.env: ', process.env)
         window._APP = this // DEBUG remove me
@@ -360,7 +371,7 @@ class App extends React.Component {
 
         // update UI and contract currentDay every hour
         var lastHour = -1;
-        setInterval(async () => {
+        this.dayInterval = setInterval(async () => {
             if (!this.state.contractReady) return
             var d = new Date();
             var currentHour = d.getHours();
@@ -372,10 +383,17 @@ class App extends React.Component {
                 // TODO: other UI stuff should update here as well
             }
         }, 1000);
+
+        this.updateUsdHex()
+        this.usdHexInterval = setInterval(this.updateUsdHex.call(this), 10000)
     }
 
     componentWillUnmount = () => {
-        try { this.web3.eth.clearSubscriptions() } catch(e) { }
+        try { 
+            clearInterval(this.dayInterval)
+            clearInterval(this.usdHexInterval)
+            this.web3.eth.clearSubscriptions()
+        } catch(e) { }
     }
 
     resetApp = async () => {
@@ -457,8 +475,9 @@ class App extends React.Component {
             )
         }
     }
-    
+   
     render() {
+        const usdhex = this.state.USDHEX
         return (
             <>
                 <Container id="hexmob_header" fluid>
@@ -466,7 +485,7 @@ class App extends React.Component {
                     <div className="day">
                         <span className="text-muted small ml-3">DAY</span><span className="day-number">{this.state.currentDay}</span>
                     </div>
-                    <h2>...stake on the run</h2>
+                    <h2><span>HEX = </span>{ "$"+format(",.4f")(this.state.USDHEX) }</h2>
                     <h3>Open BETA <span>{process.env.REACT_APP_VERSION || 'v0.0.0A'}</span></h3>
                 </Container>
                 <Container id="hexmob_body" fluid className="p-1">
