@@ -416,8 +416,7 @@ export function MetamaskUtils(props) {
     }
 
     return (
-        <Container className="text-light text-center pt-2 m-3">
-            <Row className="mb-3">
+            <Row className="text-light text-center mb-3">
                 <Col className="col-12">
                     <h4>Metamask Helpers</h4>
                 </Col>
@@ -425,10 +424,9 @@ export function MetamaskUtils(props) {
                     <Button size="small" className="" onClick={addHEXtoken}>Add HEX Token</Button>
                 </Col>
                 <Col className="text-left">
-                    <Button size="small" onClick={addPulseChain}>Add Pulse Mainnet</Button>
+                    <Button size="small" onClick={addPulseChain}>Add Pulsenet</Button>
                 </Col>
             </Row>
-        </Container>
     )
 }
 

@@ -11,8 +11,7 @@ import {
     Badge,
     Button,
     Overlay,
-    OverlayTrigger,
-    Popover
+    Popover,
 } from 'react-bootstrap'
 import './Stakes.scss'
 import HEX from './hex_contract'
@@ -33,7 +32,7 @@ export class StakeInfo extends React.Component {
     }
 
     render() {
-        const { contract, stake } = this.props
+        const { contract, stake, usdhex} = this.props
         const { currentDay } = contract.Data
         const { startDay, endDay } = stake
         
@@ -159,6 +158,10 @@ export class StakeInfo extends React.Component {
                             <Row>
                                 <Col className="text-right"><strong>Value</strong></Col>
                                 <Col className="numeric"><strong><CryptoVal value={valueTotal} showUnit /></strong></Col>
+                            </Row>
+                            <Row>
+                                <Col className="text-success text-right"><strong>USD Value</strong></Col>
+                                <Col className="numeric text-success"><strong>{ "$"+format(",.2f")(valueTotal.div(1E8).times(usdhex).toNumber() )}</strong></Col>
                             </Row>
                             <Row>
                                 <Col className="text-right"><strong>% Gain</strong></Col>
