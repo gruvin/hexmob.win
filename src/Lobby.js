@@ -449,7 +449,7 @@ class Lobby extends React.Component {
 
         return (
             <Accordion id="lobby_accordion" className="my-3" >
-                <Card bg="secondary" text="light rounded">
+                <Card bg="secondary" text="light rounded pb-0">
                     <Accordion.Toggle as={Card.Header} eventKey="0">
                         <BurgerHeading>Transform<span className="d-none d-sm-inline"> (AA Lobby)</span></BurgerHeading>
                         <div className="float-right pr-1 text-success">

@@ -477,7 +477,7 @@ class Stakes extends React.Component {
                 className="text-left"
                 onSelect={handleAccordionSelect}
             >
-                <Card bg="secondary" text="light">
+                <Card bg="secondary" text="light pt-0">
                     <Accordion.Toggle as={Card.Header} eventKey="new_stake">
                         <BurgerHeading className="float-left">New Stake</BurgerHeading>
                         <div className="float-right pr-1 text-success">
@@ -511,7 +511,7 @@ class Stakes extends React.Component {
                         </Card.Body>
                    </Accordion.Collapse>
                 </Card>
-                <Card bg="secondary" text="light">
+                <Card bg="secondary" text="light pb-0">
                     <Accordion.Toggle as={Card.Header} eventKey="stake_history">
                         <BurgerHeading>Stake History</BurgerHeading>
                     </Accordion.Toggle>
