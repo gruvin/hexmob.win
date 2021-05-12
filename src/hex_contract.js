@@ -40,6 +40,7 @@ module.exports = {
         },
     },
     START_DATE,
+    START_TIMESTAMP: START_DATE_POSIX / 1000,
     CLAIM_PHASE_START_DAY,
     CLAIM_PHASE_DAYS,
     CLAIM_PHASE_END_DAY,

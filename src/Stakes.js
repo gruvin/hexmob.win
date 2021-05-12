@@ -28,7 +28,6 @@ class Stakes extends React.Component {
         this.eventLog = { }
         this.state = {
             selectedCard: 'current_stakes',
-            // selectedCard: 'new_stake',
             stakeCount: null,
             stakeList: null,
             loadingStakes: true,
