@@ -13,7 +13,7 @@ import { GitHubInfo } from './Widgets'
 import Stakes from './Stakes'
 import Lobby from './Lobby'
 import Blurb from './Blurb' 
-import { WhatIsThis, Donaticator } from './Widgets'
+import { WhatIsThis, Donaticator, MetamaskUtils } from './Widgets'
 import HEX from './hex_contract'
 import Web3 from 'web3';
 import Web3Modal, { getProviderInfo } from 'web3modal';
@@ -22,6 +22,7 @@ import WalletConnectProvider from '@walletconnect/web3-provider'
 import { detectTrustWallet } from './util'
 import './App.scss'
 const debug = require('debug')('App')
+const { format } = require('d3-format')
 const uriQuery = new URLSearchParams(window.location.search)
 if (uriQuery.has('debug')) {
     window.localStorage.setItem('debug', '*')
@@ -41,7 +42,11 @@ const INITIAL_STATE = {
     },
     contractReady: false,
     contractGlobals: null,
-    donation: ""
+    currentDay: Number(0),
+    USDHEX: Number(0.0),
+    donation: "",
+    totalHearts: new BigNumber(0),
+    USD: Number(0.0),
 }
 
 class App extends React.Component {
@@ -72,6 +77,17 @@ class App extends React.Component {
             incomingReferrer,
             referrer
         }
+        this.dayInterval = null
+        this.usdHexInterval = null
+        
+        const updateTotalHearts = this.updateTotalHearts.bind(this);
+    }
+
+    updateTotalHearts = (hearts) => {
+        this.setState({ 
+            totalHearts: hearts,
+            USD: hearts.idiv(1E8).times(this.state.USDHEX).toNumber(),
+        })
     }
 
     subscribeProvider = async (provider) => {
@@ -292,6 +308,13 @@ class App extends React.Component {
         return (address.toLowerCase().slice(0, 2) === '0x') ? address : null
     }
 
+    updateUsdHex() {
+        // https://github.com/HexCommunity/HEX-APIs
+        fetch("https://uniswapdataapi.azurewebsites.net/api/hexPrice")
+            .then(response => response.json())
+            .then(data => this.setState({ USDHEX: parseFloat(data.hexUsd) }))
+    }
+
     async componentDidMount() {
         debug('process.env: ', process.env)
         window._APP = this // DEBUG remove me
@@ -360,7 +383,7 @@ class App extends React.Component {
 
         // update UI and contract currentDay every hour
         var lastHour = -1;
-        setInterval(async () => {
+        this.dayInterval = setInterval(async () => {
             if (!this.state.contractReady) return
             var d = new Date();
             var currentHour = d.getHours();
@@ -372,10 +395,17 @@ class App extends React.Component {
                 // TODO: other UI stuff should update here as well
             }
         }, 1000);
+
+        this.updateUsdHex()
+        this.usdHexInterval = setInterval(this.updateUsdHex.call(this), 10000)
     }
 
     componentWillUnmount = () => {
-        try { this.web3.eth.clearSubscriptions() } catch(e) { }
+        try { 
+            clearInterval(this.dayInterval)
+            clearInterval(this.usdHexInterval)
+            this.web3.eth.clearSubscriptions()
+        } catch(e) { }
     }
 
     resetApp = async () => {
@@ -440,7 +470,7 @@ class App extends React.Component {
         } else {
             return (
                 <>
-                    <Stakes contract={this.contract} wallet={this.state.wallet} />
+                    <Stakes contract={this.contract} wallet={this.state.wallet} usdhex={this.state.USDHEX} updateTotalHearts={this.updateTotalHearts} />
                     <Lobby contract={this.contract} wallet={this.state.wallet} />
                     <Container className="text-center">
                         <Badge variant="secondary"><span className="text-mute small">CONTRACT ADDRESS </span>
@@ -457,17 +487,21 @@ class App extends React.Component {
             )
         }
     }
-    
+   
     render() {
         return (
             <>
                 <Container id="hexmob_header" fluid>
-                    <h1>HEX<sup>mob.win</sup></h1>
-                    <div className="day">
-                        <span className="text-muted small ml-3">DAY</span><span className="day-number">{this.state.currentDay}</span>
+                    <h1>HEX<sup className="text-muted">mob.win</sup></h1>
+                    <h3>{process.env.REACT_APP_VERSION || 'v0.0.0A'}</h3>
+                    <div id="usdhex" className="text-success">
+                        <span className="text-muted small mr-1">USD</span>
+                        <span className="numeric">{ "$" + ( this.state.USDHEX ? format(",.3f")(this.state.USDHEX) : "-.--") }</span>
                     </div>
-                    <h2>...stake on the run</h2>
-                    <h3>Open BETA <span>{process.env.REACT_APP_VERSION || 'v0.0.0A'}</span></h3>
+                    <div className="day">
+                        <span className="text-muted small mr-1">DAY</span>
+                        <span className="numeric text-info">{ this.state.currentDay ? this.state.currentDay : "---" }</span>
+                    </div>
                 </Container>
                 <Container id="hexmob_body" fluid className="p-1">
                     <Container className="p-1">
@@ -530,6 +564,7 @@ class App extends React.Component {
                     </Container>
                     <GitHubInfo />
                     <Donaticator walletConnected={this.state.walletConnected} fromAddress={this.state.wallet.address || null} />
+                    { (this.state.walletConnected && window.ethereum && window.ethereum.isMetaMask) && <MetamaskUtils /> }
                 </Container>
                 <Container id="hexmob_footer" fluid>
                     { this.state.walletConnected && <this.WalletStatus /> }

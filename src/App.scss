@@ -51,7 +51,7 @@ h6, .h6 { font-weight: bold }
 #hexmob_header {
     position: fixed;
     top: 0;
-    height: 36px;
+    height: 40px;
     background-color: black;
     padding: 0;
     margin: 0;
@@ -75,39 +75,36 @@ h6, .h6 { font-weight: bold }
     margin-left: 0.1em;
     vertical-align: none;
 }
-#hexmob_header h2 {
+#hexmob_header div#usdhex {
     position: absolute;
-    top: 0px;
-    right: 6px;
-    line-height: 44px;
-    font-size: 14px;
-    font-style: italic;
+    bottom: 0;
+    left: 0;
+    width: 100%;
+    display: inline-block;
+    text-align: center;
+}
+#hexmob_header > div > span:last-child {
+    font-size:120%;
+    font-weight: bold;
+}
+#hexmob_header div.day {
+    position: absolute;
+    bottom: 0;
+    right: 3px;
     margin: 0;
     padding: 0;
     display: block;
 }
-#hexmob_header div.day {
-    position: absolute;
-    top: 6px;
-    left: 0;
-    width: 90%;
-    display: inline-block;
-    text-align: center
-}
-
-#hexmob_header h3 {
+#hexmob_header h3 { /* version */
     position: absolute;
     overflow: hidden;
     display: block;
-    text-align: right;
     top: 0px;
-    right: 0;
-    height: 1.2em;
-    font-size: 12px;
-    padding-left: 3px;
-    background-color: white;
-    color: map-get($theme-colors, danger);
-    border-radius: 3px 0 0 3px;
+    right: 3px;
+    font-size: .7em;
+    color:#555;
+    margin:0;
+    padding:0;
 }
 #hexmob_header h3 span {
     padding: 0 6px;
@@ -150,13 +147,6 @@ button#connect_wallet:hover { border-style: inset; border-color: #fec}
 .btn-info:hover { color: #fff; }
 
 .numeric { font-family: Jura, "Courier New", monospace; display: inline; }
-.day-number { 
-    padding: 0;
-    color: map-get($theme-colors, info);
-    font-family: Jura, "Courier New", monospace;
-    font-size: 1.6em;
-    font-weight: bold;
-}
 
 .accordion .accordion > .card {
     border-width: 2px !important;
@@ -174,6 +164,9 @@ button#connect_wallet:hover { border-style: inset; border-color: #fec}
     background: linear-gradient(180deg, rgba(20,20,20,1) 0, rgba(0,0,0,1) 22px, rgba(50,50,50,1) 44px);
     border: 0;
     border-radius: 3px !important;
+}
+.card-header-current { 
+    background: linear-gradient(135deg, map-get($theme-colors, info) 0, rgba(30,30,30,1) 18px);
 }
 .card-body,
 .card-header > .container {

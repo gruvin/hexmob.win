@@ -1,16 +1,17 @@
-import React, { createRef } from 'react'
+import React, { createRef, useContext } from 'react'
 import { 
     Container,
     Card,
     ProgressBar,
     Accordion,
+    AccordionContext,
+    useAccordionToggle,
     Row,
     Col,
     Badge,
     Button,
     Overlay,
-    OverlayTrigger,
-    Popover
+    Popover,
 } from 'react-bootstrap'
 import './Stakes.scss'
 import HEX from './hex_contract'
@@ -31,7 +32,7 @@ export class StakeInfo extends React.Component {
     }
 
     render() {
-        const { contract, stake } = this.props
+        const { contract, stake, usdhex} = this.props
         const { currentDay } = contract.Data
         const { startDay, endDay } = stake
         
@@ -62,10 +63,27 @@ export class StakeInfo extends React.Component {
         const pending = (currentDay < stake.lockedDay)
         const earlyExit = (currentDay < stakeDay)
 
+        const ContextAwareToggle = ({ children, eventKey, callback }) => {
+            const currentEventKey = useContext(AccordionContext);
+            const decoratedOnClick = useAccordionToggle(
+                eventKey,
+                () => callback && callback(eventKey),
+            );
+            const isCurrentEventKey = currentEventKey === eventKey;
+            return (
+                <Card.Header
+                    className={(isCurrentEventKey ? "card-header-current" : "")}
+                    onClick={decoratedOnClick}
+                >
+                {children}
+                </Card.Header>
+            );
+        }
+
         return (
             <Accordion xs={12} sm={6} defaultActiveKey="0" key={stake.stakeId} className="my-2">
                 <Card bg="dark">
-                    <Accordion.Toggle as={Card.Header} eventKey={stake.stakeId}>
+                    <ContextAwareToggle eventKey={stake.stakeId}>
                         <Container>
                             <Row>
                                 <Col xs={6} className="text-left pr-0">
@@ -96,8 +114,8 @@ export class StakeInfo extends React.Component {
                                 : <ProgressBar variant={progressVariant} now={Math.ceil(progress)}  />
                             }
                         </Container>
-                    </Accordion.Toggle>
-                    <Accordion.Collapse eventKey={stake.stakeId} bg="secondary">
+                    </ContextAwareToggle>
+                    <Accordion.Collapse eventKey={stake.stakeId}>
                         <Card.Body onClick={(e) => this.setState({ esShow: false})}>
                             <Row className="mt-2">
                                 <Col className="text-right"><strong>Start Day</strong></Col>
@@ -140,6 +158,10 @@ export class StakeInfo extends React.Component {
                             <Row>
                                 <Col className="text-right"><strong>Value</strong></Col>
                                 <Col className="numeric"><strong><CryptoVal value={valueTotal} showUnit /></strong></Col>
+                            </Row>
+                            <Row>
+                                <Col className="text-success text-right"><strong>USD Value</strong></Col>
+                                <Col className="numeric text-success"><strong>{ "$"+format(",.2f")(valueTotal.div(1E8).times(usdhex).toNumber() )}</strong></Col>
                             </Row>
                             <Row>
                                 <Col className="text-right"><strong>% Gain</strong></Col>

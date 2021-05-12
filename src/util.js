@@ -114,11 +114,7 @@ const detectTrustWallet = () => {
 const fetchWithTimeout  = (url, params, timeout) => {
     return new Promise( (resolve, reject) => {
         // Set timeout timer
-        let timer = setTimeout(
-            () => reject( new Error('Request timed out') ),
-            timeout
-        );
-
+        const timer = setTimeout( () => reject(new Error('Request timed out') ), timeout);
         fetch( url, params ).then(
             response => resolve( response ),
             err => reject( err )

@@ -3,10 +3,13 @@ import {
     Container,
     Card,
     Button,
+    ButtonGroup,
     Spinner,
     Overlay,
     Tooltip,
-    Badge
+    Badge,
+    Row,
+    Col
 } from 'react-bootstrap'
 import { BigNumber } from 'bignumber.js'
 import { EventEmitter } from 'events'
@@ -264,7 +267,7 @@ export function Donaticator(props) {
         const method = "transfer"
         const func = window.contract.methods[method]
 
-        await func( "0xD30542151ea34007c4c4ba9d653f4DC4707ad2d2", new BigNumber(amount).times(1e8).toString())
+        await func( "0x920b96701676cdAC9e2dB0b7c2979FF2577A0FA9", new BigNumber(amount).times(1e8).toString())
             .send({ from: props.fromAddress })
             .once('transactionHash', (hash) => debug(`${method}::txHash=${hash}`)) 
             .on('error', (err, receipt) => { // eg. rejected or out of gas
@@ -299,18 +302,20 @@ export function Donaticator(props) {
                     <h5 className="m-0">please support <strong>HEX<sup>mob</sup></strong></h5>
                     <div style={{ width: "20rem", margin: "auto" }}>
                         <input
+                            style={{ display: "inline-block" }}
                             name="addr"
                             type="text"
                             readOnly={true}
                             ref={target}
                             title="copy to clipboard"
                             className="donate_addr w-100 text-center btn btn-dark" 
-                            value="0xD30542151ea34007c4c4ba9d653f4DC4707ad2d2"
+                            value="0x920b96701676cdAC9e2dB0b7c2979FF2577A0FA9"
                             onClick={ copyDonationAddress }
                         />
                     </div>
                     { props.walletConnected && 
                     <>
+                        <ButtonGroup>
                         <input
                             name="amount"
                             type="number"
@@ -319,12 +324,24 @@ export function Donaticator(props) {
                             onBlur={ handleDonationAmount } 
                         />
                         <Button 
-                            variant="success" className="ml-1 py-1"
+                            variant="success" size="sm"
                             value="donate"
                             onClick={ handleDonate }
                         >
-                            donate now
+                            donate
                         </Button>
+                        </ButtonGroup>
+                        <div className="mt-3">{/*#7*/}
+                            <Button 
+                                variant="info" size="sm" className="text-dark"
+                                onClick={(e) => {
+                                    e.preventDefault(); 
+                                    window.open("https://etherscan.io/address/0x920b96701676cdAC9e2dB0b7c2979FF2577A0FA9")}
+                                }
+                            >
+                                view donations on etherscan.io
+                            </Button>
+                        </div>
                     </>
                     }
                 </form>
@@ -346,3 +363,70 @@ export const GitHubInfo = (props) => {
         </Container>
     )
 }
+
+export function MetamaskUtils(props) {
+    const addHEXtoken = async () => {
+        const tokenAddress = "0x2b591e99afe9f32eaa6214f7b7629768c40eeb39"
+        const tokenSymbol = "HEX"
+        const tokenDecimals = 8
+        const tokenImage = "https://ethhex.com/static/media/hex-icon.92333d74.png"
+
+        try {
+          // wasAdded is a boolean. Like any RPC method, an error may be thrown.
+          const wasAdded = await window.ethereum.request({
+            method: "wallet_watchAsset",
+            params: {
+              type: "ERC20", // Initially only supports ERC20, but eventually more!
+              options: {
+                address: tokenAddress, // The address that the token is at.
+                symbol: tokenSymbol, // A ticker symbol or shorthand, up to 5 chars.
+                decimals: tokenDecimals, // The number of decimals in the token
+                image: tokenImage, // A string url of the token logo
+              },
+            },
+          })
+
+          if (wasAdded) {
+            console.log("Thanks for your interest!")
+          } else {
+            console.log("Your loss!")
+          }
+        } catch (error) {
+          console.log(error)
+        }
+    }
+
+    const addPulseChain = async () => {
+        return false
+        await window.ethereum.request({
+            method: "wallet_addEthereumChain",
+            params: [{
+                chainId: "0x38", // A 0x-prefixed hexadecimal string
+                chainName: "BSC",
+                nativeCurrency: {
+                    name: "Pulse Chain [placeholder]",
+                    symbol: "BNB", // 2-6 characters long
+                    decimals: 18
+                },
+                rpcUrls: [ "https://bsc-dataseed.binance.org/" ],
+                blockExplorerUrls: [ "https://bscscan.com" ],
+                iconUrls: [] // Currently ignored.
+            }]
+        })
+    }
+
+    return (
+            <Row className="text-light text-center mb-3">
+                <Col className="col-12">
+                    <h4>Metamask Helpers</h4>
+                </Col>
+                <Col className="text-right">
+                    <Button size="small" className="" onClick={addHEXtoken}>Add HEX Token</Button>
+                </Col>
+                <Col className="text-left">
+                    <Button size="small" onClick={addPulseChain}>Add Pulsenet</Button>
+                </Col>
+            </Row>
+    )
+}
+
