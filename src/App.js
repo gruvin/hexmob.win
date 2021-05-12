@@ -42,8 +42,11 @@ const INITIAL_STATE = {
     },
     contractReady: false,
     contractGlobals: null,
-    USDHEX: 0,
-    donation: ""
+    currentDay: Number(0),
+    USDHEX: Number(0.0),
+    donation: "",
+    totalHearts: new BigNumber(0),
+    USD: Number(0.0),
 }
 
 class App extends React.Component {
@@ -76,6 +79,15 @@ class App extends React.Component {
         }
         this.dayInterval = null
         this.usdHexInterval = null
+        
+        const updateTotalHearts = this.updateTotalHearts.bind(this);
+    }
+
+    updateTotalHearts = (hearts) => {
+        this.setState({ 
+            totalHearts: hearts,
+            USD: hearts.idiv(1E8).times(this.state.USDHEX).toNumber(),
+        })
     }
 
     subscribeProvider = async (provider) => {
@@ -300,7 +312,7 @@ class App extends React.Component {
         // https://github.com/HexCommunity/HEX-APIs
         fetch("https://uniswapdataapi.azurewebsites.net/api/hexPrice")
             .then(response => response.json())
-            .then(data => this.setState({ USDHEX: data.hexUsd }))
+            .then(data => this.setState({ USDHEX: parseFloat(data.hexUsd) }))
     }
 
     async componentDidMount() {
@@ -458,7 +470,7 @@ class App extends React.Component {
         } else {
             return (
                 <>
-                    <Stakes contract={this.contract} wallet={this.state.wallet} />
+                    <Stakes contract={this.contract} wallet={this.state.wallet} usdhex={this.state.USDHEX} updateTotalHearts={this.updateTotalHearts} />
                     <Lobby contract={this.contract} wallet={this.state.wallet} />
                     <Container className="text-center">
                         <Badge variant="secondary"><span className="text-mute small">CONTRACT ADDRESS </span>
@@ -477,16 +489,19 @@ class App extends React.Component {
     }
    
     render() {
-        const usdhex = this.state.USDHEX
         return (
             <>
                 <Container id="hexmob_header" fluid>
-                    <h1>HEX<sup>mob.win</sup></h1>
-                    <div className="day">
-                        <span className="text-muted small ml-3">DAY</span><span className="day-number">{this.state.currentDay}</span>
+                    <h1>HEX<sup className="text-muted">mob.win</sup></h1>
+                    <h3>{process.env.REACT_APP_VERSION || 'v0.0.0A'}</h3>
+                    <div id="usdhex" className="text-success">
+                        <span className="text-muted small mr-1">USD</span>
+                        <span className="numeric">{ "$" + ( this.state.USDHEX ? format(",.3f")(this.state.USDHEX) : "-.--") }</span>
                     </div>
-                    <h2><span>HEX = </span>{ "$"+format(",.4f")(this.state.USDHEX) }</h2>
-                    <h3>Open BETA <span>{process.env.REACT_APP_VERSION || 'v0.0.0A'}</span></h3>
+                    <div className="day">
+                        <span className="text-muted small mr-1">DAY</span>
+                        <span className="numeric text-info">{ this.state.currentDay ? this.state.currentDay : "---" }</span>
+                    </div>
                 </Container>
                 <Container id="hexmob_body" fluid className="p-1">
                     <Container className="p-1">

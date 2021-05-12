@@ -18,6 +18,7 @@ import { CryptoVal, BurgerHeading } from './Widgets'
 import { StakeInfo } from './StakeInfo'
 import BitSet from 'bitset'
 import crypto from 'crypto'
+const { format } = require('d3-format')
 
 const debug = require('debug')('Stakes')
 
@@ -35,6 +36,7 @@ class Stakes extends React.Component {
             showExitModal: false,
             currentDay: '---',
             pastStakesSortKey: { keyField: '', dir: -1 },
+            totalValue: new BigNumber(0),
         }
     }
 
@@ -179,6 +181,7 @@ class Stakes extends React.Component {
             })
         }
         await Promise.all(promises)
+
         return stakeList
     }
 
@@ -193,7 +196,20 @@ class Stakes extends React.Component {
         debug('loadAllStakes::assert this === window._STAKES: ', (this === window._STAKES)) 
         await this.setState({ loadingStakes: true })
         const stakeList = await Stakes.loadStakes(this.getStaticContext())
-        stakeList && this.setState({ stakeList, loadingStakes: false })
+        if (stakeList) {
+
+            let totalValue = new BigNumber(0)
+            stakeList.forEach(stakeData => {
+                const interest = stakeData.payout.plus(stakeData.bigPayDay)
+                totalValue = totalValue.plus(interest).plus(stakeData.stakedHearts)
+            })
+            //this.props.updateTotalHearts(totalValue)
+            this.setState({ 
+                loadingStakes: false,
+                stakeList,
+                totalValue
+            })
+        }
     }
 
     loadStakeHistory = () => {
@@ -278,103 +294,107 @@ class Stakes extends React.Component {
             return ( <p>loading ...</p> )
         else if (!stakeList.length)
             return ( <p>no stake data found for this address</p> )
-        else {
-            const stakeListOutput = stakeList.map((stakeData) => {
-                // debug('stakeData: %o', stakeData)
-                const startDay = Number(stakeData.lockedDay)
-                const endDay = startDay + Number(stakeData.stakedDays)
 
-                const _startDate = new Date(HEX.START_DATE)
-                const _endDate = new Date(HEX.START_DATE.getTime() + endDay * 24 * 3600 * 1000)
-                const startDate = _startDate.toLocaleDateString()
-                const endDate = _endDate.toLocaleDateString()
+        const stakeListOutput = stakeList.map((stakeData) => {
+            // debug('stakeData: %o', stakeData)
+            const startDay = Number(stakeData.lockedDay)
+            const endDay = startDay + Number(stakeData.stakedDays)
 
-                const interest = stakeData.payout.plus(stakeData.bigPayDay)
+            const _startDate = new Date(HEX.START_DATE)
+            const _endDate = new Date(HEX.START_DATE.getTime() + endDay * 24 * 3600 * 1000)
+            const startDate = _startDate.toLocaleDateString()
+            const endDate = _endDate.toLocaleDateString()
 
-                stakedTotal = stakedTotal.plus(stakeData.stakedHearts)
-                sharesTotal = sharesTotal.plus(stakeData.stakeShares)
-                bpdTotal = bpdTotal.plus(stakeData.bigPayDay)
-                interestTotal = interestTotal.plus(interest)
+            const interest = stakeData.payout.plus(stakeData.bigPayDay)
 
-                const stake = {
-                    ...stakeData,
-                    interest,
-                    startDay,
-                    endDay,
-                    startDate,
-                    endDate
-                }
+            stakedTotal = stakedTotal.plus(stakeData.stakedHearts)
+            sharesTotal = sharesTotal.plus(stakeData.stakeShares)
+            bpdTotal = bpdTotal.plus(stakeData.bigPayDay)
+            interestTotal = interestTotal.plus(interest)
 
-                const percentGain = stake.interest.div(stake.stakedHearts).times(100)
-                const daysServed = Math.min(currentDay - stake.startDay, stake.stakedDays)
-                const percentAPY = new BigNumber(365).div(daysServed).times(percentGain)
-                percentGainTotal = percentGainTotal.plus(percentGain)
-                percentAPYTotal = percentAPYTotal.plus(percentAPY)
+            const stake = {
+                ...stakeData,
+                interest,
+                startDay,
+                endDay,
+                startDate,
+                endDate
+            }
 
-                return stake
-            })
-            const averagePercentGain = percentGainTotal.div(stakeListOutput.length)
-            const averagePercentAPY = percentAPYTotal.div(stakeListOutput.length)
+            const percentGain = stake.interest.div(stake.stakedHearts).times(100)
+            const daysServed = Math.min(currentDay - stake.startDay, stake.stakedDays)
+            const percentAPY = new BigNumber(365).div(daysServed).times(percentGain)
+            percentGainTotal = percentGainTotal.plus(percentGain)
+            percentAPYTotal = percentAPYTotal.plus(percentAPY)
 
-            return (
-            <>
-                {
-                    stakeListOutput.map((stakeData) => {
-                        return (
-                            <StakeInfo 
-                                key={stakeData.stakeId}
-                                contract={window.contract} 
-                                stake={stakeData} 
-                                eventCallback={params.eventCallback} 
-                                reloadStakes={this.loadAllStakes}
-                            />
-                        )
-                    })
-                }
-                <Card xs={12} sm={6} bg="dark" className="m-0 p-1">
-                    <Card.Header className="bg-dark p-1 text-center text-info"><h4>Stake Summary</h4></Card.Header>
-                    <Card.Body className="bg-dark p-1 rounded">
-                        <Row>
-                            <Col className="text-right"><strong>Staked</strong></Col>
-                            <Col><CryptoVal value={stakedTotal} showUnit /></Col>
-                        </Row>
-                        <Row>
-                            <Col className="text-right"><strong>Shares</strong></Col>
-                            <Col><CryptoVal value={sharesTotal.times(1e8)} /></Col>
-                        </Row>
-                        <>{ bpdTotal.gt(0) &&
-                        <Row>
-                            <Col className="text-right">
-                                <strong>
-                                    <span className="text-info">Big</span>
-                                    <span className="text-warning">Pay</span>
-                                    <span className="text-danger">Day</span>
-                                </strong>
-                            </Col>
-                            <Col><CryptoVal value={bpdTotal} showUnit /></Col>
-                        </Row>
-                        }</>
-                        <Row>
-                            <Col className="text-right"><strong>Interest</strong></Col>
-                            <Col><CryptoVal value={interestTotal} showUnit /></Col>
-                        </Row>
-                        <Row className="text-success">
-                            <Col className="text-right"><strong>Current Value</strong></Col>
-                            <Col><strong><CryptoVal value={stakedTotal.plus(interestTotal)} showUnit /></strong></Col>
-                        </Row>
-                        <Row className="mt-2">
-                            <Col className="text-right"><strong>Average Gain</strong></Col>
-                            <Col>{averagePercentGain.toFixed(2)}%</Col>
-                        </Row>
-                        <Row>
-                            <Col className="text-right"><strong>Average APY</strong></Col>
-                            <Col>{averagePercentAPY.toFixed(2)}%</Col>
-                        </Row>
-                    </Card.Body>
-                </Card>
-            </>
-            )
-        }
+            return stake
+        })
+        const averagePercentGain = percentGainTotal.div(stakeListOutput.length)
+        const averagePercentAPY = percentAPYTotal.div(stakeListOutput.length)
+
+        return (
+        <>
+            {
+                stakeListOutput.map((stakeData) => {
+                    return (
+                        <StakeInfo 
+                            key={stakeData.stakeId}
+                            contract={window.contract} 
+                            stake={stakeData} 
+                            eventCallback={params.eventCallback} 
+                            reloadStakes={this.loadAllStakes}
+                            usdhex={this.props.usdhex}
+                        />
+                    )
+                })
+            }
+            <Card xs={12} sm={6} bg="dark" className="m-0 p-1">
+                <Card.Header className="bg-dark p-1 text-center text-info"><h4>Stake Summary</h4></Card.Header>
+                <Card.Body className="bg-dark p-1 rounded">
+                    <Row>
+                        <Col className="text-right"><strong>Staked</strong></Col>
+                        <Col><CryptoVal value={stakedTotal} showUnit /></Col>
+                    </Row>
+                    <Row>
+                        <Col className="text-right"><strong>Shares</strong></Col>
+                        <Col><CryptoVal value={sharesTotal.times(1e8)} /></Col>
+                    </Row>
+                    <>{ bpdTotal.gt(0) &&
+                    <Row>
+                        <Col className="text-right">
+                            <strong>
+                                <span className="text-info">Big</span>
+                                <span className="text-warning">Pay</span>
+                                <span className="text-danger">Day</span>
+                            </strong>
+                        </Col>
+                        <Col><CryptoVal value={bpdTotal} showUnit /></Col>
+                    </Row>
+                    }</>
+                    <Row>
+                        <Col className="text-right"><strong>Interest</strong></Col>
+                        <Col><CryptoVal value={interestTotal} showUnit /></Col>
+                    </Row>
+                    <Row>
+                        <Col className="text-right"><strong>Total Value</strong></Col>
+                        <Col><strong><CryptoVal value={stakedTotal.plus(interestTotal)} showUnit /></strong></Col>
+                    </Row>
+                    <Row className="text-success">
+                        <Col className="text-success text-right"><strong>USD Value</strong></Col>
+                        <Col className="text-success numeric"><strong>{ "$"+format(",.2f")( stakedTotal.plus(interestTotal).div(1E8).times(this.props.usdhex).toNumber() )}</strong></Col>
+                    </Row>
+                    <Row className="mt-2">
+                        <Col className="text-right"><strong>Average Gain</strong></Col>
+                        <Col className="numeric">{averagePercentGain.toFixed(2)}%</Col>
+                    </Row>
+                    <Row>
+                        <Col className="text-right"><strong>Average APY</strong></Col>
+                        <Col>{averagePercentAPY.toFixed(2)}%</Col>
+                    </Row>
+                </Card.Body>
+            </Card>
+        </>
+        )
     }
 
     sortPastStakesStateByField = (keyField) => {
@@ -478,6 +498,12 @@ class Stakes extends React.Component {
                 <Card bg="secondary" text="light">
                     <Accordion.Toggle as={Card.Header} eventKey="current_stakes">
                         <BurgerHeading>Active Stakes</BurgerHeading>
+                        <div className="float-right pr-1 text-success">
+                            <span className="text-muted small mr-1">USD</span>
+                            <span className="numeric">
+                                { "$"+format(",.2f")(this.state.totalValue.idiv(1E8).times(this.props.usdhex).toNumber())}
+                            </span>
+                        </div>
                     </Accordion.Toggle>
                     <Accordion.Collapse eventKey="current_stakes">
                         <Card.Body>
