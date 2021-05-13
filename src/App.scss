@@ -102,15 +102,10 @@ h6, .h6 { font-weight: bold }
     display: block;
     top: 0px;
     right: 3px;
-    font-size: .7em;
-    color:#555;
+    font-size: .8em;
+    color:#ccc;
     margin:0;
     padding:0;
-}
-#hexmob_header h3 span {
-    padding: 0 6px;
-    color: white;
-    background-color: map-get($theme-colors, danger);
 }
 #hexmob_body {
     position: fixed;
@@ -221,7 +216,7 @@ button#connect_wallet:hover { border-style: inset; border-color: #fec}
 #lobby.progress, #stakes_accordion .progress { height: 0.2rem }
 #lobby.progress .progress-bar { color: black; }
 
-.row-highlight-even .row:nth-child(even) {  background-color: #1b1313; }
+.row-highlight-even .row:nth-child(even) {  background-color: #1f1b25; }
 
 input.donate_addr {
     font-family: "Courier New", monospace;

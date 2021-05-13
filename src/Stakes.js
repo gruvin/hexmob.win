@@ -476,7 +476,7 @@ class Stakes extends React.Component {
                 className="text-left"
                 onSelect={handleAccordionSelect}
             >
-                <Card bg="secondary" text="light pt-0">
+                <Card bg="dark" text="light pt-0">
                     <Accordion.Toggle as={Card.Header} eventKey="new_stake">
                         <BurgerHeading className="float-left">New Stake</BurgerHeading>
                         <div className="float-right pr-1 text-success">
@@ -485,7 +485,7 @@ class Stakes extends React.Component {
                         </div>
                     </Accordion.Toggle>
                     <Accordion.Collapse eventKey="new_stake">
-                        <Card.Body>
+                        <Card.Body className="pt-3" style={{ backgroundColor:"#041711" }}>
                             <NewStakeForm 
                                 contract={window.contract} 
                                 wallet={this.props.wallet} 
@@ -505,7 +505,7 @@ class Stakes extends React.Component {
                         </div>
                     </Accordion.Toggle>
                     <Accordion.Collapse eventKey="current_stakes">
-                        <Card.Body>
+                        <Card.Body style={{ backgroundColor: "#353010" }}>
                             <this.StakesList eventCallback={this.eventCallback}/>
                         </Card.Body>
                    </Accordion.Collapse>

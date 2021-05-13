@@ -14,7 +14,7 @@ import { BigNumber } from 'bignumber.js'
 import HEX from './hex_contract'
 import { calcBigPayDaySlice, calcAdoptionBonus, fetchWithTimeout } from './util'
 import { CryptoVal, WhatIsThis, VoodooButton } from './Widgets' 
-import { Bar, BarChart, Label, Rectangle, ReferenceLine, Tooltip, XAxis, YAxis } from 'recharts'
+import { ResponsiveContainer, Bar, BarChart, Label, Rectangle, ReferenceLine, Tooltip, XAxis, YAxis } from 'recharts'
 
 const debug = require('debug')('NewStakeForm')
 debug('loading')
@@ -412,27 +412,29 @@ export class NewStakeForm extends React.Component {
                         </Container>
                     </Col>
                     <Col xs={12} sm={7}>
-                        <Container className="p-0 pl-2 lr-2" style={{ lineHeight: "1em" }}>
+                        <Container className="p-0 pl-2 lr-2" style={{ lineHeight: "1rem", maxWidth: "360px" }}>
                             <Row>
-                                <Col className="m-0 col-3 text-info h6">Start</Col>
+                                <Col className="m-0 col-3 text-info h4">Starts</Col>
                                 <Col className="col-3 pr-0"><span className="text-muted small">DAY </span>{this.state.startDay}</Col>
                                 <Col className="col-6 pr-0">{this.state.startDate} <span className="text-muted">{this.state.startTime}</span></Col>
                             </Row>
                             <Row>
-                                <Col className="m-0 col-3 text-info h6">End<span className="d-none d-sm-inline"> Day</span></Col>
+                                <Col className="m-0 col-3 text-info h4">Ends</Col>
                                 <Col className="col-3 pr-0"><span className="text-muted small">DAY </span>{this.state.endDay}</Col>
                                 <Col className="col-6 pr-0">{this.state.endDate} <span className="text-muted">{this.state.endTime}</span></Col>
                             </Row>
-                            <h5 className="mt-2 mb-0 text-info">Bonuses</h5>
                             <Row>
-                                <Col className="ml-0 ml-md-3">Bigger <span className="d-none d-md-inline">Pays</span> Better</Col>
-                                <Col className="text-right">+ <CryptoVal value={this.state.biggerPaysBetter} showUnit /></Col>
+                                <Col className="col-12 mt-2 mb-0 text-info h3">Bonus HEX!</Col>
                             </Row>
                             <Row>
-                                <Col className="ml-0 ml-md-3">Longer <span className="d-none d-md-inline">Pays</span> Better</Col>
-                                <Col className="text-right">+ <CryptoVal value={this.state.longerPaysBetter.toFixed(0)} showUnit /></Col>
+                                <Col className="ml-0 ml-md-3 numeric">Bigger <span className="d-none d-md-inline">Pays </span>Better</Col>
+                                <Col className="text-right">+ <CryptoVal value={this.state.biggerPaysBetter} /> <span className="text-muted">HEX</span></Col>
                             </Row>
-                            <Row className="mt-2">
+                            <Row>
+                                <Col className="ml-0 ml-md-3 numeric">Longer <span className="d-none d-md-inline">Pays </span>Better</Col>
+                                <Col className="text-right">+ <CryptoVal value={this.state.longerPaysBetter.toFixed(0)} /> <span className="text-muted">HEX</span></Col>
+                            </Row>
+                            <Row className="mt-2 py-1" style={{ backgroundColor: "#042e00" }}>
                                 <Col>
                                     <WhatIsThis showPill tooltip={
                                         <>
@@ -443,32 +445,32 @@ export class NewStakeForm extends React.Component {
                                             Stake Bonuses
                                         </>
                                     }>
-                                        <strong>Effective HEX</strong>
+                                        <span className="h4">Effective HEX</span>
                                     </WhatIsThis>
-                                    </Col>
-                                <Col className="text-right"><strong><CryptoVal value={this.state.effectiveHEX} showUnit /></strong></Col>
+                                </Col>
+                                <Col className="text-right text-success h3"><strong><CryptoVal value={this.state.effectiveHEX} /></strong> <span className="text-muted">HEX</span></Col>
                             </Row>
-                            <Row className="mt-3">
-                                <Col>Share Price</Col>
-                                <Col className="text-right">
-                                    <CryptoVal value={this.state.shareRate} currency="TSHARE_PRICE" showUnit />
+                            <Row className="my-2 text-danger">
+                                <Col>Share Rate</Col>
+                                <Col className="text-right numeric">
+                                    <strong><CryptoVal value={this.state.shareRate} currency="TSHARE_PRICE" /> <span className="text-muted">HEX</span></strong>
                                 </Col>
                             </Row>
                             <Row>
-                                <Col className="col-8">
+                                <Col className="col-6">
                                     <WhatIsThis showPill tooltip={
                                         <>
-                                            Stake Shares
+                                            T-Shares
                                             <span className="text-success"> = </span><br/>
                                             Effective HEX
-                                            <span className="text-success h5"> ÷ </span>
-                                            Share Price
+                                            <span className="text-success"> x </span>
+                                            Share Rate
                                         </>
                                     }>
-                                        <span className="h5 text-success">Stake Shares</span>
+                                        <span className="h5 text-success">Shares</span>
                                     </WhatIsThis>
                                 </Col>
-                                <Col className="col-4 text-right">
+                                <Col className="col-6 text-right">
                                     <CryptoVal className="h5 text-success" value={this.state.stakeShares} currency="SHARES" />
                                 </Col>
                             </Row>
@@ -508,11 +510,10 @@ export class NewStakeForm extends React.Component {
 
             { (this.state.data) && 
                     <Container className="p-0 pl-2 pr-2">
-                            <h6 className="mt-3 ml-3 text-info">Other Stakes Ending</h6>
+                        <h6 className="mt-3 ml-3 text-info">Other Stakes Ending</h6>
+                        <ResponsiveContainer width="90%" height={220}>    
                             <BarChart 
                                 className={ this.state.graphIconClass }
-                                width={365}
-                                height={220}
                                 margin={{ top: 16, right: 5, bottom: 16, left: 15 }}
                                 data={this.state.data}
                             >
@@ -535,6 +536,7 @@ export class NewStakeForm extends React.Component {
                                     cursor={<GraphCustomCursor/>}
                                 />
                             </BarChart>
+                        </ResponsiveContainer>
                     </Container>
             }
                 </Row>
