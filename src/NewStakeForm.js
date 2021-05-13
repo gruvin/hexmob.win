@@ -332,7 +332,6 @@ export class NewStakeForm extends React.Component {
                                 <Form.Label className="w-100 mb-0">
                                     Stake Amount in HEX
                                 </Form.Label> 
-                                <WhatIsThis placement="bottom" tooltip="Bigger pays better!">
                                     <InputGroup className="p-0 col-8 col-sm-12">
                                         <FormControl
                                             type="number"
@@ -359,11 +358,9 @@ export class NewStakeForm extends React.Component {
                                             <Dropdown.Item as="button" eventKey="new_stake" data-portion={0.05}>5%</Dropdown.Item>
                                         </DropdownButton>
                                     </InputGroup>
-                                </WhatIsThis>
                                 </Form.Group>
                                 <Form.Group controlId="stake_days" className="">
                                     <Form.Label className="mb-0">Stake Length in Days</Form.Label>
-                                    <WhatIsThis placement="top" tooltip="Longer pays better! (max 5555)">
                                         <InputGroup className="p-0 col-12">
                                             <FormControl
                                                 type="number"
@@ -393,21 +390,7 @@ export class NewStakeForm extends React.Component {
                                                 <Dropdown.Item as="button" eventKey="new_stake" data-days="1w">One Week</Dropdown.Item>
                                                 <Dropdown.Item as="button" eventKey="new_stake" data-days="min">MIN (one day)</Dropdown.Item>
                                             </DropdownButton>
-                                            <VoodooButton 
-                                                contract={this.props.contract}
-                                                method="stakeStart" 
-                                                params={[BigNumber(this.state.stakeAmount).times(1e8).toString(), this.state.stakeDays/*string*/]}
-                                                options={{ 
-                                                    from: this.props.wallet.address
-                                                }}
-                                                inputValid={ (BigNumber(this.state.stakeAmount).gt(0) && this.state.stakeDays > 0) }
-                                                confirmationCallback={this.resetFormAndReloadStakes}
-                                                variant="stake btn-start"
-                                            >
-                                                STAKE
-                                            </VoodooButton>
                                         </InputGroup>
-                                    </WhatIsThis>
                                 </Form.Group>
                         </Container>
                     </Col>
@@ -474,6 +457,21 @@ export class NewStakeForm extends React.Component {
                                     <CryptoVal className="h5 text-success" value={this.state.stakeShares} currency="SHARES" />
                                 </Col>
                             </Row>
+                        </Container>
+                        <Container className="text-right my-2">
+                            <VoodooButton 
+                                contract={this.props.contract}
+                                method="stakeStart" 
+                                params={[BigNumber(this.state.stakeAmount).times(1e8).toString(), this.state.stakeDays/*string*/]}
+                                options={{ 
+                                    from: this.props.wallet.address
+                                }}
+                                inputValid={ (BigNumber(this.state.stakeAmount).gt(0) && this.state.stakeDays > 0) }
+                                confirmationCallback={this.resetFormAndReloadStakes}
+                                variant="stake btn-start"
+                            >
+                                <strong>STAKE NOW</strong>
+                            </VoodooButton>
                         </Container>
 
                         { (currentDay < (HEX.BIG_PAY_DAY - 1)) && (
