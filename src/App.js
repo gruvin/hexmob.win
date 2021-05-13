@@ -466,9 +466,10 @@ class App extends React.Component {
                     <Stats contract={this.contract} wallet={this.state.wallet} usdhex={this.state.USDHEX} />
                     <Lobby contract={this.contract} wallet={this.state.wallet} />
                     <Container className="text-center">
-                        <Badge variant="secondary"><span className="text-mute small">CONTRACT ADDRESS </span>
+                        <Badge variant="secondary"><span className="text-bold">CONTRACT ADDRESS </span>
                         <br className="d-md-none"/>
-                        <a 
+                        <a  
+                            className="a-blue"
                             href="https://etherscan.io/address/{this.contract._address}" 
                             target="_blank"
                             rel="noopener noreferrer"
