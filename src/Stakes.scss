@@ -17,11 +17,14 @@
 /* START STAKE BUTTON */
 .btn-stake.btn-start { 
     color: map-get($theme-colors, success); 
-    border: 2px map-get($theme-colors, dark) solid; 
+    border: 2px map-get($theme-colors, success) solid; 
+}
+.btn-stake.btn-start:hover {
+    color: map-get($theme-colors, success); 
 }
 .btn-stake.btn-start:hover:enabled {
-    color: map-get($theme-colors, success); 
-    border-color: map-get($theme-colors, success); 
+    color: #ddd; 
+    background-color: #057702; 
 }
 
 /* LOBBY ENTER BUTTON */
