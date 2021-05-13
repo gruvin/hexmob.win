@@ -397,25 +397,25 @@ export class NewStakeForm extends React.Component {
                     <Col xs={12} sm={7}>
                         <Container className="p-0 pl-2 lr-2" style={{ lineHeight: "1rem", maxWidth: "360px" }}>
                             <Row>
-                                <Col className="m-0 col-3 text-info h4">Starts</Col>
+                                <Col className="col-3 m-0 pr-0 text-info h4">Starts</Col>
                                 <Col className="col-3 pr-0"><span className="text-muted small">DAY </span>{this.state.startDay}</Col>
-                                <Col className="col-6 pr-0">{this.state.startDate} <span className="text-muted">{this.state.startTime}</span></Col>
+                                <Col className="col-6 pr-0">{this.state.startDate} <span className="text-muted d-none d-md-inline">{this.state.startTime}</span></Col>
                             </Row>
                             <Row>
-                                <Col className="m-0 col-3 text-info h4">Ends</Col>
+                                <Col className="col-3 m-0 pr-0 text-info h4">Ends</Col>
                                 <Col className="col-3 pr-0"><span className="text-muted small">DAY </span>{this.state.endDay}</Col>
-                                <Col className="col-6 pr-0">{this.state.endDate} <span className="text-muted">{this.state.endTime}</span></Col>
+                                <Col className="col-6 pr-0">{this.state.endDate} <span className="text-muted d-none d-md-inline">{this.state.endTime}</span></Col>
                             </Row>
                             <Row>
                                 <Col className="col-12 mt-2 mb-0 text-info h3">Bonus HEX!</Col>
                             </Row>
                             <Row>
-                                <Col className="ml-0 ml-md-3 numeric">Bigger <span className="d-none d-md-inline">Pays </span>Better</Col>
-                                <Col className="text-right">+ <CryptoVal value={this.state.biggerPaysBetter} /> <span className="text-muted">HEX</span></Col>
+                                <Col className="col-7 ml-0 ml-md-3 numeric">Bigger Pays Better</Col>
+                                <Col className="col-5 text-right">+ <CryptoVal value={this.state.biggerPaysBetter} /> <span className="text-muted">HEX</span></Col>
                             </Row>
                             <Row>
-                                <Col className="ml-0 ml-md-3 numeric">Longer <span className="d-none d-md-inline">Pays </span>Better</Col>
-                                <Col className="text-right">+ <CryptoVal value={this.state.longerPaysBetter.toFixed(0)} /> <span className="text-muted">HEX</span></Col>
+                                <Col className="col-7 ml-0 ml-md-3 numeric">Longer Pays Better</Col>
+                                <Col className="col-5 text-right">+ <CryptoVal value={this.state.longerPaysBetter.toFixed(0)} /> <span className="text-muted">HEX</span></Col>
                             </Row>
                             <Row className="mt-2 py-1" style={{ backgroundColor: "#042e00" }}>
                                 <Col>
