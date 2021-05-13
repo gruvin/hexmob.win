@@ -107,7 +107,7 @@ class Stakes extends React.Component {
         }
         Promise.all([
             getTsrChunk(0),
-            getUniSwaps(0),
+            //getUniSwaps(0),
         ]).then(results => {
             const tsrData = results.flat()
             debug('tsrData.length:', tsrData.length)
