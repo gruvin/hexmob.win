@@ -1,13 +1,17 @@
 @import "./Theme.scss";
 
+.bg-stats { 
+    background-color: #221020 !important; 
+}
+
 .recharts-yAxis .recharts-cartesian-axis-tick-value {
     font-family: Jura, system-ui, monospace;
-    font-size: 0.8em;
-    fill: #82ca9d
+    font-size: 0.85rem;
+    fill: $col-light;
 }
 .recharts-xAxis .recharts-cartesian-axis-tick-value {
     font-family: Jura, system-ui, monospace;
-    font-size: 0.8em;
-    fill: map-get($theme-colors, info);
+    font-size: 0.8rem;
+    fill: #777;
 }
 

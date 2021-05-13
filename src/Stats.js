@@ -75,7 +75,7 @@ class Stakes extends React.Component {
                 const tsrDay = Math.floor((timestamp - HEX.START_TIMESTAMP) / (24*3600)) 
                 if (tsrDay == tsrPrevious) return false
                 tsrPrevious = tsrDay
-                tsrMap[tsrDay] = Number(shareRate) / 100000
+                tsrMap[tsrDay] = Number(shareRate) / 10
             })
             debug('tsrMap: %o', tsrMap)
             
@@ -101,7 +101,7 @@ class Stakes extends React.Component {
     render() {
         const { data } = this.state
         const formatter = (val) => {
-            return format(",.3f")(val)
+            return format(",d")(val)
         }
 
         return (
@@ -110,30 +110,31 @@ class Stakes extends React.Component {
                 className="text-left mt-3"
                 defaultActiveKey="0"
             >
-                <Card bg="secondary" text="light py-0">
+                <Card className="bg-stats" text="light py-0">
                     <Accordion.Toggle as={Card.Header} eventKey="0">
                         <BurgerHeading className="float-left">Stats</BurgerHeading>
-                        <div className="float-right pr-1 text-success">
-                             <span className="text-muted small">TS </span>
-                             <strong><CryptoVal value={0} showUnit /></strong>
+                        <div className="float-right pr-1 text-danger">
+                             <span className="text-muted small mr-1">T-Share Price USD</span>
+                             <span className="numeric">{ "$"+format(",.2f")(this.props.usdhex * this.props.contract.Data.globals.shareRate.div(10)) }</span>
                         </div>
                     </Accordion.Toggle>
                     <Accordion.Collapse eventKey="0">
                         <Card.Body>
+                            <h4 className="text-center mt-2">T-Share HEX Price by Day</h4>
                             <ResponsiveContainer width="100%" height={200}>
                                 <AreaChart width={730} height={250} data={data}
-                                    margin={{ top: 10, right: 30, left: 0, bottom: 0 }}>
+                                    margin={{ top: 10, right: 0, left: 30, bottom: 0 }}>
                                     <defs>
                                         <linearGradient id="colorTsr" x1="0" y1="0" x2="0" y2="1">
-                                        <stop offset="5%" stopColor="#82ca9d" stopOpacity={0.8}/>
-                                        <stop offset="95%" stopColor="#82ca9d" stopOpacity={0}/>
+                                        <stop offset="10%" stopColor="#ee00cc" stopOpacity={0.5}/>
+                                        <stop offset="60%" stopColor="#ff9900" stopOpacity={0.6}/>
+                                        <stop offset="95%" stopColor="#ffee00" stopOpacity={0.5}/>
                                         </linearGradient>
                                     </defs>
                                     <XAxis dataKey="day" />
-                                    <YAxis type="number" domain={[1, 'dataMax']} tickFormatter={formatter} />
-                                    <CartesianGrid strokeDasharray="3 3" />
-                                    <Tooltip />
-                                    <Area type="monotone" dataKey="tsr" stroke="#82ca9d" fillOpacity={1} fill="url(#colorTsr)" />
+                                    <YAxis type="number" orientation="right" domain={[10000, 'dataMax']} tickFormatter={formatter} />
+                                    <CartesianGrid stroke="#ffffff33" strokeDasharray="3 3" />
+                                    <Area type="monotone" dataKey="tsr" stroke="#ffffff33" fillOpacity={1} fill="url(#colorTsr)" />
                                 </AreaChart>
                             </ResponsiveContainer>
                         </Card.Body>
