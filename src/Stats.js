@@ -159,7 +159,7 @@ class Stakes extends React.Component {
                         <BurgerHeading className="float-left">Stats</BurgerHeading>
                         <div className="float-right pr-1 text-danger">
                              <span className="text-muted small mr-1">T-Share Price USD</span>
-                             <span className="numeric">{ "$"+format(",.2f")(this.props.usdhex * this.props.contract.Data.globals.shareRate.div(10)) }</span>
+                             <span className="numeric">{ "$"+format(",.0f")(this.props.usdhex * this.props.contract.Data.globals.shareRate.div(10)) }</span>
                         </div>
                     </Accordion.Toggle>
                     <Accordion.Collapse eventKey="0">
