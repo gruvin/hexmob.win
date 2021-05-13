@@ -5,6 +5,7 @@ $hex-crimson: #ee0066;
 $hex-orange: #dd6622;
 $hex-yellow: #e0c000;
 $col-dark: #171515;
+$col-light: #ddd;
 $theme-colors: (
   "primary": $hex-orange,
   "secondary": #333030,
@@ -12,7 +13,7 @@ $theme-colors: (
   "success": #80d631,
   "info": $hex-yellow,
   "warning": $hex-orange,
-  "danger": $hex-crimson
+  "danger": $hex-crimson,
 );
 
 .primary-bo-50 { background-color: #d66f257f !important; }
@@ -23,3 +24,4 @@ $theme-colors: (
 .warning-bo-50 { background-color: #d66f257f !important; }
 .danger-bo-50 { background-color: #ff41367f !important; }
 .bg-midgray { background-color: #272727 !important; }
+.a-blue { color: #007bff; }

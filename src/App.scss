@@ -1,3 +1,6 @@
+@import "./Theme.scss";
+@import "~bootstrap/scss/bootstrap";
+
 /* iPhone 11 1792x828px at 326ppi */
 @media only screen
     and (device-width: 414px)
@@ -23,29 +26,27 @@
     .xs-small { font-size: 0.80em }
 }
 @media (max-width: 320px){
-    .xxs-small { font-size: 0.67em }
+    .xs-small { font-size: 0.67em }
 }
 @media (min-width: 992px)  { .container, .container-sm, .container-md, .container-lg { max-width: 720px; } }
-@media (min-width: 1200px) { .container, .container-sm, .container-md, .container-lg { max-width: 720px; } }
+@media (min-width: 1200px) { .container, .container-sm, .container-md, .container-lg { max-width: 960px; } }
 
+/* Google Fonts */
 @import url('https://fonts.googleapis.com/css2?family=Happy+Monkey&family=Jura:wght@500;700&family=Press+Start+2P&family=Titillium+Web:wght@400;700&family=Nosifer&display=swap');
-
-@import "./Theme.scss";
-
-
-@import "~bootstrap/scss/bootstrap";
-
-.container md { max-width: 720px }
 
 body { 
     position: relative;
-    overflow-x: hidden;
-    overflow-y: auto;    
+    overflow: hidden;
     font-family: "Happy Monkey", sans-serif; 
-    background: $col-dark;
+    background: #0a090a;
     background-size: auto;
+    font-size: 16px;
     line-height: 1.5em; /* factory bootstrap has 1.5; with no siffix */
 }
+h1, .h1 { font-size: 1.50rem }
+h2, .h2 { font-size: 1.30rem; }
+h3, .h3 { font-size: 1.15rem; }
+h4, .h4 { font-size: 1.0rem; }
 h6, .h6 { font-weight: bold }
 
 #hexmob_header {
@@ -113,12 +114,13 @@ h6, .h6 { font-weight: bold }
 }
 #hexmob_body {
     position: fixed;
-    top: 36px;
+    top: 40px;
     bottom: 24px;
     padding: 0;
-    margin: 0;
+    margin: auto;
+    overflow-x: hidden;
     overflow-y: scroll;
-    min-width: 100%;
+    width: 100%;
 }
 
 #hexmob_footer {

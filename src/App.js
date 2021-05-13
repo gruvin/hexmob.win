@@ -11,6 +11,7 @@ import {
 } from 'react-bootstrap'
 import { GitHubInfo } from './Widgets'
 import Stakes from './Stakes'
+import Stats from './Stats'
 import Lobby from './Lobby'
 import Blurb from './Blurb' 
 import { WhatIsThis, Donaticator, MetamaskUtils } from './Widgets'
@@ -79,15 +80,6 @@ class App extends React.Component {
         }
         this.dayInterval = null
         this.usdHexInterval = null
-        
-        const updateTotalHearts = this.updateTotalHearts.bind(this);
-    }
-
-    updateTotalHearts = (hearts) => {
-        this.setState({ 
-            totalHearts: hearts,
-            USD: hearts.idiv(1E8).times(this.state.USDHEX).toNumber(),
-        })
     }
 
     subscribeProvider = async (provider) => {
@@ -470,12 +462,14 @@ class App extends React.Component {
         } else {
             return (
                 <>
-                    <Stakes contract={this.contract} wallet={this.state.wallet} usdhex={this.state.USDHEX} updateTotalHearts={this.updateTotalHearts} />
+                    <Stakes contract={this.contract} wallet={this.state.wallet} usdhex={this.state.USDHEX} />
+                    <Stats contract={this.contract} wallet={this.state.wallet} usdhex={this.state.USDHEX} />
                     <Lobby contract={this.contract} wallet={this.state.wallet} />
                     <Container className="text-center">
-                        <Badge variant="secondary"><span className="text-mute small">CONTRACT ADDRESS </span>
+                        <Badge variant="secondary"><span className="text-bold">CONTRACT ADDRESS </span>
                         <br className="d-md-none"/>
-                        <a 
+                        <a  
+                            className="a-blue"
                             href="https://etherscan.io/address/{this.contract._address}" 
                             target="_blank"
                             rel="noopener noreferrer"

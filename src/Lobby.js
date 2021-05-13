@@ -338,7 +338,7 @@ class Lobby extends React.Component {
             return (
                 <Container className="pl-0 pr-3 row-highlight-even">
                     <p className="text-center"><b>Transform History</b></p>
-                    <Row key="header" className="py-0 mx-0 xs-small xxs-small align-items-end">
+                    <Row key="header" className="py-0 mx-0 xs-small align-items-end">
                         <Col xs={1} sm={1} className="p-0"><a href="#sort_day" onClick={handleSortSelection}>Day</a></Col>
                         <Col xs={3} sm={2} className="p-0"><a href="#sort_availableHEX" onClick={handleSortSelection}>Available</a></Col>
 
@@ -362,7 +362,7 @@ class Lobby extends React.Component {
                         const { day, availableHEX, totalETH, HEXperETH, mintedHEXTotal, rawEntriesTotal } = dayData
 
                         return (
-                            <Row key={day} className={"py-0 mx-0 xs-small xxs-small"+(rawEntriesTotal.gt(0) ? " text-success" : "")}>
+                            <Row key={day} className={"py-0 mx-0 xs-small"+(rawEntriesTotal.gt(0) ? " text-success" : "")}>
                                 <Col xs={1} sm={1} className="px-0">{day+1}</Col>
                                 <Col xs={3} sm={2} className="px-0"><CryptoVal value={availableHEX} /></Col>
 
@@ -449,7 +449,7 @@ class Lobby extends React.Component {
 
         return (
             <Accordion id="lobby_accordion" className="my-3" >
-                <Card bg="secondary" text="light rounded">
+                <Card bg="secondary" text="light rounded pb-0">
                     <Accordion.Toggle as={Card.Header} eventKey="0">
                         <BurgerHeading>Transform<span className="d-none d-sm-inline"> (AA Lobby)</span></BurgerHeading>
                         <div className="float-right pr-1 text-success">

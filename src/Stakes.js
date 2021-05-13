@@ -28,7 +28,6 @@ class Stakes extends React.Component {
         this.eventLog = { }
         this.state = {
             selectedCard: 'current_stakes',
-            // selectedCard: 'new_stake',
             stakeCount: null,
             stakeList: null,
             loadingStakes: true,
@@ -426,7 +425,7 @@ class Stakes extends React.Component {
 
         return (
             <Container className="p-0 row-highlight-even">
-                <Row className="p-0 my-2 mx-0 xs-small xxs-small text-right font-weight-bold">
+                <Row className="p-0 my-2 mx-0 xs-small text-right font-weight-bold">
                     <Col xs={2} sm={2} className="p-0 text-center">
                         <a href="#sort_servedDays" onClick={handleSortSelection}>
                             Days<span className="d-none d-sm-inline"> Served</span>
@@ -442,7 +441,7 @@ class Stakes extends React.Component {
                 </Row>
             {pastStakes && pastStakes.map(stake => {
                 return (
-                    <Row key={stake.stakeId} className="p-0 m-0 xs-small xxs-small text-right">
+                    <Row key={stake.stakeId} className="p-0 m-0 xs-small text-right">
                         <Col xs={2} sm={2} className="p-0 text-center">{stake.servedDays}</Col>
                         <Col xs={3} sm={3} className="p-0"><CryptoVal value={stake.stakedHearts} showUnit /></Col>
                         <Col xs={3} sm={3} className="p-0"><CryptoVal value={stake.stakeShares.times(1e8)} /></Col>
@@ -477,7 +476,7 @@ class Stakes extends React.Component {
                 className="text-left"
                 onSelect={handleAccordionSelect}
             >
-                <Card bg="secondary" text="light">
+                <Card bg="secondary" text="light pt-0">
                     <Accordion.Toggle as={Card.Header} eventKey="new_stake">
                         <BurgerHeading className="float-left">New Stake</BurgerHeading>
                         <div className="float-right pr-1 text-success">
@@ -511,7 +510,7 @@ class Stakes extends React.Component {
                         </Card.Body>
                    </Accordion.Collapse>
                 </Card>
-                <Card bg="secondary" text="light">
+                <Card bg="secondary" text="light pb-0">
                     <Accordion.Toggle as={Card.Header} eventKey="stake_history">
                         <BurgerHeading>Stake History</BurgerHeading>
                     </Accordion.Toggle>
