@@ -102,15 +102,10 @@ h6, .h6 { font-weight: bold }
     display: block;
     top: 0px;
     right: 3px;
-    font-size: .7em;
-    color:#555;
+    font-size: .8em;
+    color:#ccc;
     margin:0;
     padding:0;
-}
-#hexmob_header h3 span {
-    padding: 0 6px;
-    color: white;
-    background-color: map-get($theme-colors, danger);
 }
 #hexmob_body {
     position: fixed;
