@@ -9,6 +9,7 @@ import {
     ProgressBar,
     Accordion,
 } from 'react-bootstrap'
+import './Stats.scss'
 import { BigNumber } from 'bignumber.js'
 import HEX from './hex_contract'
 import { CryptoVal, WhatIsThis, BurgerHeading } from './Widgets' 
@@ -39,7 +40,7 @@ class Stakes extends React.Component {
                     body: JSON.stringify({ 
                         query: `{
                             shareRateChanges(
-                                first: 100, skip: ${chunk * 100}
+                                first: 1000, skip: ${chunk * 1000}
                                 orderBy: timestamp,
                                 orderDirection: desc,
                             ) {
@@ -63,18 +64,10 @@ class Stakes extends React.Component {
         }
         Promise.all([
             getTsrChunk(0),
-            getTsrChunk(1),
-            getTsrChunk(2),
-            getTsrChunk(3),
-            getTsrChunk(4),
-            getTsrChunk(5),
-            getTsrChunk(6),
-            getTsrChunk(7),
-            getTsrChunk(8),
-            getTsrChunk(9),
         ]).then(results => {
             const tsrData = results.flat()
-            debug('graph: %o', tsrData, tsrData.length)
+            debug('tsrData.length:', tsrData.length)
+            debug('tsrData: %o', tsrData)
             const tsrMap = { }
             let tsrPrevious = 0
             tsrData.filter(e => {
@@ -82,13 +75,13 @@ class Stakes extends React.Component {
                 const tsrDay = Math.floor((timestamp - HEX.START_TIMESTAMP) / (24*3600)) 
                 if (tsrDay == tsrPrevious) return false
                 tsrPrevious = tsrDay
-                tsrMap[tsrDay] = Number(shareRate) / 10 - 10000
+                tsrMap[tsrDay] = Number(shareRate) / 100000
             })
             debug('tsrMap: %o', tsrMap)
             
             const data = [ ]
-            for (let day=0; day<=currentDay; day++) {
-                const usd = (Math.sin(day/40)+2)*1
+            for (let day=3; day<=currentDay; day++) {
+                const usd = (Math.sin(day/40)+2)/10
                 const tsr = tsrMap[day] || tsrPrevious
                 tsrPrevious = tsr
                 data.push({ day, tsr, usd })
@@ -107,6 +100,9 @@ class Stakes extends React.Component {
 
     render() {
         const { data } = this.state
+        const formatter = (val) => {
+            return format(",.3f")(val)
+        }
 
         return (
             <Accordion 
@@ -124,25 +120,20 @@ class Stakes extends React.Component {
                     </Accordion.Toggle>
                     <Accordion.Collapse eventKey="0">
                         <Card.Body>
-                            <ResponsiveContainer width="100%" height={400}>
+                            <ResponsiveContainer width="100%" height={200}>
                                 <AreaChart width={730} height={250} data={data}
                                     margin={{ top: 10, right: 30, left: 0, bottom: 0 }}>
                                     <defs>
-                                        <linearGradient id="colorUv" x1="0" y1="0" x2="0" y2="1">
-                                        <stop offset="5%" stopColor="#8884d8" stopOpacity={0.8}/>
-                                        <stop offset="95%" stopColor="#8884d8" stopOpacity={0}/>
-                                        </linearGradient>
-                                        <linearGradient id="colorPv" x1="0" y1="0" x2="0" y2="1">
+                                        <linearGradient id="colorTsr" x1="0" y1="0" x2="0" y2="1">
                                         <stop offset="5%" stopColor="#82ca9d" stopOpacity={0.8}/>
                                         <stop offset="95%" stopColor="#82ca9d" stopOpacity={0}/>
                                         </linearGradient>
                                     </defs>
                                     <XAxis dataKey="day" />
-                                    <YAxis />
+                                    <YAxis type="number" domain={[1, 'dataMax']} tickFormatter={formatter} />
                                     <CartesianGrid strokeDasharray="3 3" />
                                     <Tooltip />
-                                    <Area type="monotone" dataKey="usd" stroke="#8884d8" fillOpacity={1} fill="url(#colorUv)" />
-                                    <Area type="monotone" dataKey="tsr" stroke="#82ca9d" fillOpacity={1} fill="url(#colorPv)" />
+                                    <Area type="monotone" dataKey="tsr" stroke="#82ca9d" fillOpacity={1} fill="url(#colorTsr)" />
                                 </AreaChart>
                             </ResponsiveContainer>
                         </Card.Body>
