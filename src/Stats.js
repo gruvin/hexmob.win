@@ -62,8 +62,52 @@ class Stakes extends React.Component {
                 return tsrData
             })
         }
+
+        const getUniSwaps = (chunk) => {
+            return fetchWithTimeout('https://api.thegraph.com/subgraphs/name/uniswap/uniswap-v2', 
+                {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ 
+                        query: 
+                        `{
+                            swaps (
+                                where: {
+                                    pair:"0xf6dcdce0ac3001b2f67f750bc64ea5beb37b5824",
+                                }
+                                orderBy: timestamp
+                                orderDirection:desc
+                            ) {
+                                id
+                                amount0Out
+                                amount1In
+                            }
+                        }` 
+                    }),
+                },
+                7369 // timeout ms
+            )
+            .then(res => {
+                if (res.errors || res.error) throw new Error(res.errors[0].message)
+                return res.json()
+            })
+            .then(graphJSON => {
+                const swapsData = graphJSON.data.swaps
+                //debug('swapsDdata: %o', swapsData)
+                const prices = swapsData.filter(e => {
+                    const { amount1In, amount0Out } = e
+                    return ( amount1In != 0 && amount0Out != 0)
+                }).map(e => {
+                    const { amount1In, amount0Out } = e
+                    return Number(amount1In / amount0Out)
+                })
+                debug('prices: %o', prices)
+                return [] // swapsData
+            })
+        }
         Promise.all([
             getTsrChunk(0),
+            getUniSwaps(0),
         ]).then(results => {
             const tsrData = results.flat()
             debug('tsrData.length:', tsrData.length)
