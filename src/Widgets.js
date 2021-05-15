@@ -52,7 +52,7 @@ export const WhatIsThis = (props) => {
         <>
             <span ref={target} style={{ cursor: "pointer" }} onClick={()=>setShow(!show)}>
                 { props.children }
-                { (props.showPill) && <sup><Badge variant="info" pill>?</Badge></sup> }
+                { (props.showPill) && <sup><Badge variant="info" pill className="ml-1">?</Badge></sup> }
             </span>
             <Overlay 
                 target={target.current} show={show}

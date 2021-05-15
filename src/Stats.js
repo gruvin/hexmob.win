@@ -95,14 +95,16 @@ class Stakes extends React.Component {
                 const swapsData = graphJSON.data.swaps
                 //debug('swapsDdata: %o', swapsData)
                 const prices = swapsData.filter(e => {
-                    const { amount1In, amount0Out } = e
-                    return ( amount1In != 0 && amount0Out != 0)
+                    const { amount0In, amount1In, amount0Out, amount1Out } = e
+                    return (amount0In !== 0 || amount1In !== 0) && (amount0Out !== 0 || amount1Out !== 0)
                 }).map(e => {
-                    const { amount1In, amount0Out } = e
-                    return Number(amount1In / amount0Out)
+                    const { amount0In, amount1In, amount0Out, amount1Out } = e
+                    return parseInt(amount1In) !== 0 
+                        ? Number(parseInt(amount1In) / parseInt(amount0Out) * 100)
+                        : Number(parseInt(amount1Out) / parseInt(amount0In) * 100)
                 })
                 debug('prices: %o', prices)
-                return [] // swapsData
+                return [] // XXX: swapsData
             })
         }
         Promise.all([
@@ -114,12 +116,13 @@ class Stakes extends React.Component {
             debug('tsrData: %o', tsrData)
             const tsrMap = { }
             let tsrPrevious = 0
-            tsrData.filter(e => {
+            tsrData.forEach(e => {
                 const { shareRate, timestamp } = e
                 const tsrDay = Math.floor((timestamp - HEX.START_TIMESTAMP) / (24*3600)) 
-                if (tsrDay == tsrPrevious) return false
-                tsrPrevious = tsrDay
-                tsrMap[tsrDay] = Number(shareRate) / 10
+                if (tsrDay !== tsrPrevious) {
+                    tsrPrevious = tsrDay
+                    tsrMap[tsrDay] = Number(shareRate) / 10
+                }
             })
             debug('tsrMap: %o', tsrMap)
             
