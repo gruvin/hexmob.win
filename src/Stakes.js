@@ -485,7 +485,7 @@ class Stakes extends React.Component {
                         </div>
                     </Accordion.Toggle>
                     <Accordion.Collapse eventKey="new_stake">
-                        <Card.Body className="pt-3" style={{ backgroundColor:"#041711" }}>
+                        <Card.Body className="pt-3" style={{ backgroundColor:"#041011" }}>
                             <NewStakeForm 
                                 contract={window.contract} 
                                 wallet={this.props.wallet} 
