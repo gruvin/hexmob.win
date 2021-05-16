@@ -14,7 +14,7 @@ import { BigNumber } from 'bignumber.js'
 import HEX from './hex_contract'
 import { CryptoVal, WhatIsThis, BurgerHeading } from './Widgets' 
 import { fetchWithTimeout } from './util'
-import { ResponsiveContainer, Area, AreaChart, CartesianGrid, Label, Rectangle, ReferenceLine, Tooltip, XAxis, YAxis } from 'recharts'
+import { ResponsiveContainer, Area, AreaChart, Line, LineChart, CartesianGrid, Label, Rectangle, ReferenceLine, Tooltip, XAxis, YAxis } from 'recharts'
 
 const { format } = require('d3-format')
 
@@ -24,16 +24,18 @@ class Stakes extends React.Component {
     constructor(props) {
         super(props)
         this.state = {
-            data: []
+            TShareRates: [],
+            UNIv2usdhex: []
         }
     }
 
-    updateUsdTsrGraph = () => {
+    updateUsdTsrGraph() {
         const { currentDay } = this.props.contract.Data
         const { usdhex } = this.props
         const tsrDataset = [ ]
         const getTsrChunk = (chunk) => {
-            return fetchWithTimeout('https://api.thegraph.com/subgraphs/name/codeakk/hex', 
+            return new Promise((resolve, reject) => { 
+                fetchWithTimeout('https://api.thegraph.com/subgraphs/name/codeakk/hex', 
                 {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
@@ -52,68 +54,25 @@ class Stakes extends React.Component {
                     }),
                 },
                 7369 // timeout ms
-            )
-            .then(res => {
-                if (res.errors || res.error) throw new Error(res.errors[0].message)
-                return res.json()
-            })
-            .then(graphJSON => {
-                const tsrData = graphJSON.data.shareRateChanges
-                return tsrData
-            })
-        }
-
-        const getUniSwaps = (chunk) => {
-            return fetchWithTimeout('https://api.thegraph.com/subgraphs/name/uniswap/uniswap-v2', 
-                {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ 
-                        query: 
-                        `{
-                            swaps (
-                                where: {
-                                    pair:"0xf6dcdce0ac3001b2f67f750bc64ea5beb37b5824",
-                                }
-                                orderBy: timestamp
-                                orderDirection:desc
-                            ) {
-                                id
-                                amount0Out
-                                amount1In
-                            }
-                        }` 
-                    }),
-                },
-                7369 // timeout ms
-            )
-            .then(res => {
-                if (res.errors || res.error) throw new Error(res.errors[0].message)
-                return res.json()
-            })
-            .then(graphJSON => {
-                const swapsData = graphJSON.data.swaps
-                //debug('swapsDdata: %o', swapsData)
-                const prices = swapsData.filter(e => {
-                    const { amount0In, amount1In, amount0Out, amount1Out } = e
-                    return (amount0In !== 0 || amount1In !== 0) && (amount0Out !== 0 || amount1Out !== 0)
-                }).map(e => {
-                    const { amount0In, amount1In, amount0Out, amount1Out } = e
-                    return parseInt(amount1In) !== 0 
-                        ? Number(parseInt(amount1In) / parseInt(amount0Out) * 100)
-                        : Number(parseInt(amount1Out) / parseInt(amount0In) * 100)
+                )
+                .then(res => {
+                    if (res.error || res.errors) throw new Error(res.error || res.errors[0].message)
+                    return res.json()
                 })
-                debug('prices: %o', prices)
-                return [] // XXX: swapsData
+                .then(graphJSON => {
+                    resolve(graphJSON.data.shareRateChanges)
+                })
+                .catch(e => {
+                    debug('Stats: tsrData error: %o', e)
+                })
             })
         }
         Promise.all([
             getTsrChunk(0),
-            //getUniSwaps(0),
         ]).then(results => {
             const tsrData = results.flat()
-            debug('tsrData.length:', tsrData.length)
-            debug('tsrData: %o', tsrData)
+            //debug('tsrData.length:', tsrData.length)
+            //debug('tsrData: %o', tsrData)
             const tsrMap = { }
             let tsrPrevious = 0
             tsrData.forEach(e => {
@@ -124,16 +83,15 @@ class Stakes extends React.Component {
                     tsrMap[tsrDay] = Number(shareRate) / 10
                 }
             })
-            debug('tsrMap: %o', tsrMap)
+            //debug('tsrMap: %o', tsrMap)
             
-            const data = [ ]
+            const TShareRates = [ ]
             for (let day=3; day<=currentDay; day++) {
-                const usd = (Math.sin(day/40)+2)/10
                 const tsr = tsrMap[day] || tsrPrevious
                 tsrPrevious = tsr
-                data.push({ day, tsr, usd })
+                TShareRates.push({ day, tsr})
             }
-            this.setState({ data })
+            this.setState({ TShareRates })
         })
         .catch(e => {
             debug(`Graph API: ${e.message}`)
@@ -141,14 +99,76 @@ class Stakes extends React.Component {
         })
     }
 
-    componentDidMount () {
+    updateUNIv2Graph() {
+        const { currentDay } = this.props.contract.Data
+        const pastNinety = Math.floor(Number(new Date()/1000))-90*24*3600
+        const getUniPriceData = (chunk) => {
+            return new Promise((resolve, reject) => {
+                fetchWithTimeout('https://api.thegraph.com/subgraphs/name/uniswap/uniswap-v2', 
+                    {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ 
+                            query: 
+                            `{
+                                tokenDayDatas (
+                                    first: 1000, skip: ${chunk * 1000}
+                                    where: {
+                                        token:"0x2b591e99afe9f32eaa6214f7b7629768c40eeb39",
+                                        date_gt: ${pastNinety}
+                                    }
+                                    orderBy: date
+                                    orderDirection: asc
+                                ) {
+                                    id
+                                    date
+                                    priceUSD
+                                }
+                            }` 
+                        }),
+                    },
+                    7369 // timeout ms
+                )
+                .then(res => {
+                    if (res.error || res.errors) throw new Error(res.error || res.errors[0].message)
+                    return res.json()
+                })
+                .then(graphJSON => {
+                    const priceData = graphJSON.data.tokenDayDatas
+                    //debug('priceData: %o', priceData)
+                    const UNIv2usdhex = priceData.map(e => {
+                        const { priceUSD, date } = e
+                        const usd = Number(priceUSD) 
+                        const day = Math.floor((date - HEX.START_TIMESTAMP) / (24*3600)) 
+                        return { day, usd }
+                    })
+                    resolve(UNIv2usdhex)
+                })
+                .catch(e => {
+                    //debug('Stats: UNIv2usdhex error: %o', e)
+                })
+            })
+        }
+        Promise.all([
+            getUniPriceData(0),
+        ]).then(results => {
+            const UNIv2usdhex = results.flat()
+            this.setState({ UNIv2usdhex })
+        })
+    }
+
+    componentDidMount() {
         this.updateUsdTsrGraph()
+        this.updateUNIv2Graph()
     }
 
     render() {
-        const { data } = this.state
+        const { TShareRates, UNIv2usdhex } = this.state
         const formatter = (val) => {
             return format(",d")(val)
+        }
+        const usdFormatter = (val) => {
+            return format(",.2f")(val)
         }
 
         return (
@@ -169,7 +189,7 @@ class Stakes extends React.Component {
                         <Card.Body>
                             <h4 className="text-center mt-2">T-Share HEX Price by Day</h4>
                             <ResponsiveContainer width="100%" height={200}>
-                                <AreaChart width={730} height={250} data={data}
+                                <AreaChart width={730} height={250} data={TShareRates}
                                     margin={{ top: 10, right: 0, left: 30, bottom: 0 }}>
                                     <defs>
                                         <linearGradient id="colorTsr" x1="0" y1="0" x2="0" y2="1">
@@ -179,10 +199,20 @@ class Stakes extends React.Component {
                                         </linearGradient>
                                     </defs>
                                     <XAxis dataKey="day" />
-                                    <YAxis type="number" orientation="right" domain={[10000, 'dataMax']} tickFormatter={formatter} />
+                                    <YAxis type="number" orientation="right" domain={[ 10000, dataMax => ((Math.round(dataMax / 2000)+1) * 2000) ]} tickFormatter={formatter} />
                                     <CartesianGrid stroke="#ffffff33" strokeDasharray="3 3" />
                                     <Area type="monotone" dataKey="tsr" stroke="#ffffff33" fillOpacity={1} fill="url(#colorTsr)" />
                                 </AreaChart>
+                            </ResponsiveContainer>
+                            <h4 className="text-center mt-2">USD/HEX by Day</h4>
+                            <ResponsiveContainer width="100%" height={200}>
+                                <LineChart width={730} height={250} data={UNIv2usdhex}
+                                    margin={{ top: 10, right: 0, left: 30, bottom: 0 }}>
+                                    <XAxis dataKey="day" />
+                                    <YAxis type="number" orientation="right" domain={[ 0, dataMax => (dataMax * 1.5) ]} tickFormatter={usdFormatter} />
+                                    <CartesianGrid stroke="#ffffff33" strokeDasharray="3 3" />
+                                    <Line type="linear" dataKey="usd" strokeWidth={2} dot={false} stroke="#ffffff99" />
+                                </LineChart>
                             </ResponsiveContainer>
                         </Card.Body>
                    </Accordion.Collapse>

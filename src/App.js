@@ -145,7 +145,7 @@ class App extends React.Component {
             this.updateHEXBalance()
         }
         const eventCallbackUNIV2 = (error, result) => {
-            debug('UNI: event.Swap[error, result] => ', error, result )
+            //debug('UNI: event.Swap[error, result] => ', error, result )
             if (error) return
             const { amount0In, amount1In, amount0Out, amount1Out } = result.returnValues
             try {
@@ -154,7 +154,7 @@ class App extends React.Component {
                     : Number(parseInt(amount1Out) / parseInt(amount0In) * 100)
                 this.setState({ USDHEX })
             } catch(e) {
-                debug(`UNIV2 event USDHEX Exception: amount1In:${amount1In} amount0Out: ${amount0Out}`)
+                debug(`UNIV2:USDHEX Exception %o: amount1In:${amount1In} amount0Out: ${amount0Out}`, e)
             }
         }
         const onTransferFrom = this.contract.events.Transfer( {filter:{from:this.state.wallet.address}}, eventCallbackHEX).on('connected', (id) => debug('subbed: HEX from:', id))
