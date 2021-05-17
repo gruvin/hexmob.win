@@ -27,7 +27,12 @@ const debug = require('debug')('App')
 const { format } = require('d3-format')
 const uriQuery = new URLSearchParams(window.location.search)
 if (uriQuery.has('debug')) {
-    window.localStorage.setItem('debug', '*')
+    const d = uriQuery.get("debug")
+    if (d === "") {
+        window.localStorage.setItem('debug', '*')
+    } else {
+        window.localStorage.setItem('debug', d)
+    }
 } else {
     window.localStorage.removeItem('debug')
 }
