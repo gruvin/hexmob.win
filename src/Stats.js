@@ -1,22 +1,18 @@
 import React from 'react'
 import { 
-    Container,
-    Row, Col,
-    Card,
-    Button,
-    Modal,
-    Alert,
-    ProgressBar,
-    Accordion,
+    Card, Accordion,
 } from 'react-bootstrap'
+import { BurgerHeading } from './Widgets'
 import './Stats.scss'
-import { BigNumber } from 'bignumber.js'
 import HEX from './hex_contract'
-import { CryptoVal, WhatIsThis, BurgerHeading } from './Widgets' 
 import { fetchWithTimeout } from './util'
-import { ResponsiveContainer, Area, AreaChart, Line, LineChart, CartesianGrid, Label, Rectangle, ReferenceLine, Tooltip, XAxis, YAxis } from 'recharts'
-
+import { ResponsiveContainer, Area, AreaChart, Line, LineChart, CartesianGrid, XAxis, YAxis } from 'recharts'
 const { format } = require('d3-format')
+const axios = require('axios').create({
+    baseURL: '/',
+    timeout: 3000,
+    headers: { "Content-Type": "application/json", "Accept": "applicaiton/json"},
+});
 
 const debug = require('debug')('Stats')
 
@@ -31,15 +27,10 @@ class Stakes extends React.Component {
 
     updateUsdTsrGraph() {
         const { currentDay } = this.props.contract.Data
-        const { usdhex } = this.props
-        const tsrDataset = [ ]
         const getTsrChunk = (chunk) => {
             return new Promise((resolve, reject) => { 
-                fetchWithTimeout('https://api.thegraph.com/subgraphs/name/codeakk/hex', 
-                {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ 
+                axios.post('https://api.thegraph.com/subgraphs/name/codeakk/hex', 
+                    JSON.stringify({ 
                         query: `{
                             shareRateChanges(
                                 first: 1000, skip: ${chunk * 1000}
@@ -52,18 +43,13 @@ class Stakes extends React.Component {
                             }
                         }` 
                     }),
-                },
-                7369 // timeout ms
                 )
-                .then(res => {
-                    if (res.error || res.errors) throw new Error(res.error || res.errors[0].message)
-                    return res.json()
-                })
-                .then(graphJSON => {
-                    resolve(graphJSON.data.shareRateChanges)
+                .then(response => {
+                    debug("response: ", response)
+                    resolve(response.data.data.shareRateChanges)
                 })
                 .catch(e => {
-                    debug('Stats: tsrData error: %o', e)
+                    debug('Stats: tsrData error: ', e)
                 })
             })
         }
@@ -100,41 +86,31 @@ class Stakes extends React.Component {
     }
 
     updateUNIv2Graph() {
-        const { currentDay } = this.props.contract.Data
         const pastNinety = Math.floor(Number(new Date()/1000))-90*24*3600
         const getUniPriceData = (chunk) => {
             return new Promise((resolve, reject) => {
-                fetchWithTimeout('https://api.thegraph.com/subgraphs/name/uniswap/uniswap-v2', 
-                    {
-                        method: 'POST',
-                        headers: { 'Content-Type': 'application/json' },
-                        body: JSON.stringify({ 
-                            query: 
-                            `{
-                                tokenDayDatas (
-                                    first: 1000, skip: ${chunk * 1000}
-                                    where: {
-                                        token:"0x2b591e99afe9f32eaa6214f7b7629768c40eeb39",
-                                        date_gt: ${pastNinety}
-                                    }
-                                    orderBy: date
-                                    orderDirection: asc
-                                ) {
-                                    id
-                                    date
-                                    priceUSD
+                axios.post('https://api.thegraph.com/subgraphs/name/uniswap/uniswap-v2', 
+                    JSON.stringify({ 
+                        query: 
+                        `{
+                            tokenDayDatas (
+                                first: 1000, skip: ${chunk * 1000}
+                                where: {
+                                    token:"0x2b591e99afe9f32eaa6214f7b7629768c40eeb39",
+                                    date_gt: ${pastNinety}
                                 }
-                            }` 
-                        }),
-                    },
-                    7369 // timeout ms
+                                orderBy: date
+                                orderDirection: asc
+                            ) {
+                                id
+                                date
+                                priceUSD
+                            }
+                        }` 
+                    })
                 )
-                .then(res => {
-                    if (res.error || res.errors) throw new Error(res.error || res.errors[0].message)
-                    return res.json()
-                })
-                .then(graphJSON => {
-                    const priceData = graphJSON.data.tokenDayDatas
+                .then(response => {
+                    const priceData = response.data.data.tokenDayDatas
                     //debug('priceData: %o', priceData)
                     const UNIv2usdhex = priceData.map(e => {
                         const { priceUSD, date } = e
@@ -145,7 +121,7 @@ class Stakes extends React.Component {
                     resolve(UNIv2usdhex)
                 })
                 .catch(e => {
-                    //debug('Stats: UNIv2usdhex error: %o', e)
+                    debug('Stats: UNIv2usdhex error: ', e)
                 })
             })
         }

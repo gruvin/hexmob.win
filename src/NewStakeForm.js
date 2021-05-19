@@ -15,6 +15,11 @@ import HEX from './hex_contract'
 import { calcBigPayDaySlice, calcAdoptionBonus, fetchWithTimeout } from './util'
 import { CryptoVal, WhatIsThis, VoodooButton } from './Widgets' 
 import { ResponsiveContainer, Bar, BarChart, Label, Rectangle, ReferenceLine, Tooltip, XAxis, YAxis } from 'recharts'
+const axios = require('axios').create({
+    baseURL: '/',
+    timeout: 3000,
+    headers: { "Content-Type": "application/json", "Accept": "applicaiton/json"},
+});
 
 const debug = require('debug')('NewStakeForm')
 debug('loading')
@@ -138,26 +143,20 @@ export class NewStakeForm extends React.Component {
             graphIconClass: "icon-wait-bg"
         })
 
-        fetchWithTimeout('https://api.thegraph.com/subgraphs/name/codeakk/hex', 
-            {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ query: `{
-                        stakeStarts (
-                            where: {
-                                endDay_gte:${graphStartDay},
-                                endDay_lte:${graphEndDay}
-                            }
-                        )
-                        {
-                            stakeShares
-                            endDay
+        axios.post('https://api.thegraph.com/subgraphs/name/codeakk/hex', 
+            JSON.stringify({ query: `{
+                    stakeStarts (
+                        where: {
+                            endDay_gte:${graphStartDay},
+                            endDay_lte:${graphEndDay}
                         }
-                    }` 
-                }),
-            },
-
-            7369 // timeout ms
+                    )
+                    {
+                        stakeShares
+                        endDay
+                    }
+                }` 
+            })
         )
         .then(res => {
             if (res.errors || res.error) throw new Error(res.errors[0].message)

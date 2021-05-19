@@ -397,15 +397,16 @@ export function MetamaskUtils(props) {
     }
 
     const addPulseChain = async () => {
-        return false
+        if (!0) return
+        // test using binance Chain (BSC)
         await window.ethereum.request({
             method: "wallet_addEthereumChain",
             params: [{
-                chainId: "0x38", // A 0x-prefixed hexadecimal string
+                chainId: "0x38",
                 chainName: "BSC",
                 nativeCurrency: {
                     name: "Pulse Chain [placeholder]",
-                    symbol: "BNB", // 2-6 characters long
+                    symbol: "BNB",
                     decimals: 18
                 },
                 rpcUrls: [ "https://bsc-dataseed.binance.org/" ],
