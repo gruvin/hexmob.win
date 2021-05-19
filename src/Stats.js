@@ -5,7 +5,6 @@ import {
 import { BurgerHeading } from './Widgets'
 import './Stats.scss'
 import HEX from './hex_contract'
-import { fetchWithTimeout } from './util'
 import { ResponsiveContainer, Area, AreaChart, Line, LineChart, CartesianGrid, XAxis, YAxis } from 'recharts'
 const { format } = require('d3-format')
 const axios = require('axios').create({
@@ -153,7 +152,7 @@ class Stakes extends React.Component {
                 className="text-left mt-3"
                 defaultActiveKey="0"
             >
-                <Card className="bg-stats" text="light py-0">
+                <Card id="stats" text="light py-0">
                     <Accordion.Toggle as={Card.Header} eventKey="0">
                         <BurgerHeading className="float-left">Stats</BurgerHeading>
                         <div className="float-right pr-1 text-danger">

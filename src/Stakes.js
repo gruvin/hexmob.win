@@ -17,7 +17,6 @@ import { NewStakeForm } from './NewStakeForm'
 import { CryptoVal, BurgerHeading } from './Widgets' 
 import { StakeInfo } from './StakeInfo'
 import BitSet from 'bitset'
-import crypto from 'crypto'
 const { format } = require('d3-format')
 
 const debug = require('debug')('Stakes')
@@ -25,7 +24,6 @@ const debug = require('debug')('Stakes')
 class Stakes extends React.Component {
     constructor(props) {
         super(props)
-        this.eventLog = { }
         this.state = {
             selectedCard: 'current_stakes',
             stakeCount: null,
@@ -37,13 +35,6 @@ class Stakes extends React.Component {
             pastStakesSortKey: { keyField: '', dir: -1 },
             totalValue: new BigNumber(0),
         }
-    }
-
-    addToEventLog = (entry) => {
-        const hash = crypto.createHash('sha1').update(JSON.stringify(entry)).digest('hex')
-        if (this.eventLog[hash]) return false
-        this.eventLog[hash] = entry
-        return true
     }
 
     subscribeEvents = () => {
@@ -351,43 +342,41 @@ class Stakes extends React.Component {
                 <Card.Header className="bg-dark p-1 text-center text-info"><h4>Stake Summary</h4></Card.Header>
                 <Card.Body className="bg-dark p-1 rounded">
                     <Row>
-                        <Col className="text-right"><strong>Staked</strong></Col>
-                        <Col><CryptoVal value={stakedTotal} showUnit /></Col>
+                        <Col className="text-right font-weight-bold">Staked</Col>
+                        <Col><CryptoVal className="numeric" value={stakedTotal} showUnit /></Col>
                     </Row>
                     <Row>
-                        <Col className="text-right"><strong>Shares</strong></Col>
-                        <Col><CryptoVal value={sharesTotal.times(1e8)} /></Col>
+                        <Col className="text-right font-weight-bold">Shares</Col>
+                        <Col><CryptoVal className="numeric" value={sharesTotal.times(1e8)} /></Col>
                     </Row>
                     <>{ bpdTotal.gt(0) &&
                     <Row>
-                        <Col className="text-right">
-                            <strong>
-                                <span className="text-info">Big</span>
-                                <span className="text-warning">Pay</span>
-                                <span className="text-danger">Day</span>
-                            </strong>
+                        <Col className="text-right font-weight-bold">
+                            <span className="text-info">Big</span>
+                            <span className="text-warning">Pay</span>
+                            <span className="text-danger">Day</span>
                         </Col>
-                        <Col><CryptoVal value={bpdTotal} showUnit /></Col>
+                        <Col><CryptoVal className="numeric" value={bpdTotal} showUnit /></Col>
                     </Row>
                     }</>
                     <Row>
-                        <Col className="text-right"><strong>Interest</strong></Col>
-                        <Col><CryptoVal value={interestTotal} showUnit /></Col>
+                        <Col className="text-right font-weight-bold">Interest</Col>
+                        <Col><CryptoVal className="numeric" value={interestTotal} showUnit /></Col>
                     </Row>
                     <Row>
-                        <Col className="text-right"><strong>Total Value</strong></Col>
-                        <Col><strong><CryptoVal value={stakedTotal.plus(interestTotal)} showUnit /></strong></Col>
+                        <Col className="text-right font-weight-bold">Total Value</Col>
+                        <Col><CryptoVal className="numeric font-weight-bold" value={stakedTotal.plus(interestTotal)} showUnit /></Col>
                     </Row>
                     <Row className="text-success">
-                        <Col className="text-success text-right"><strong>USD Value</strong></Col>
-                        <Col className="text-success numeric"><strong>{ "$"+format(",.2f")( stakedTotal.plus(interestTotal).div(1E8).times(this.props.usdhex).toNumber() )}</strong></Col>
+                        <Col className="text-success text-right font-weight-bold">USD Value</Col>
+                        <Col className="text-success numeric font-weight-bold">{ "$"+format(",.2f")( stakedTotal.plus(interestTotal).div(1E8).times(this.props.usdhex).toNumber() )}</Col>
                     </Row>
                     <Row className="mt-2">
-                        <Col className="text-right"><strong>Average Gain</strong></Col>
+                        <Col className="text-right font-weight-bold">Average Gain</Col>
                         <Col className="numeric">{averagePercentGain.toFixed(2)}%</Col>
                     </Row>
                     <Row>
-                        <Col className="text-right"><strong>Average APY</strong></Col>
+                        <Col className="text-right font-weight-bold">Average APY</Col>
                         <Col>{averagePercentAPY.toFixed(2)}%</Col>
                     </Row>
                 </Card.Body>
@@ -443,9 +432,9 @@ class Stakes extends React.Component {
                 return (
                     <Row key={stake.stakeId} className="p-0 m-0 xs-small text-right">
                         <Col xs={2} sm={2} className="p-0 text-center">{stake.servedDays}</Col>
-                        <Col xs={3} sm={3} className="p-0"><CryptoVal value={stake.stakedHearts} showUnit /></Col>
-                        <Col xs={3} sm={3} className="p-0"><CryptoVal value={stake.stakeShares.times(1e8)} /></Col>
-                        <Col xs={3} sm={3} className="p-0"><CryptoVal value={stake.penalty} showUnit /></Col>
+                        <Col xs={3} sm={3} className="p-0"><CryptoVal className="numeric" value={stake.stakedHearts} showUnit /></Col>
+                        <Col xs={3} sm={3} className="p-0"><CryptoVal className="numeric" value={stake.stakeShares.times(1e8)} /></Col>
+                        <Col xs={3} sm={3} className="p-0"><CryptoVal className="numeric" value={stake.penalty} showUnit /></Col>
                     </Row>
                 )
             })
@@ -481,11 +470,11 @@ class Stakes extends React.Component {
                         <BurgerHeading className="float-left">New Stake</BurgerHeading>
                         <div className="float-right pr-1 text-success">
                              <span className="text-muted small">AVAILABLE </span>
-                             <strong><CryptoVal value={this.props.wallet.balance} showUnit /></strong>
+                             <CryptoVal className="numeric font-weight-bold" value={this.props.wallet.balance} showUnit />
                         </div>
                     </Accordion.Toggle>
                     <Accordion.Collapse eventKey="new_stake">
-                        <Card.Body className="pt-3" style={{ backgroundColor:"#041011" }}>
+                        <Card.Body className="new-stake-body">
                             <NewStakeForm 
                                 contract={window.contract} 
                                 wallet={this.props.wallet} 
@@ -499,13 +488,13 @@ class Stakes extends React.Component {
                         <BurgerHeading>Active Stakes</BurgerHeading>
                         <div className="float-right pr-1 text-success">
                             <span className="text-muted small mr-1">USD</span>
-                            <span className="numeric">
+                            <span className="numeric h2 font-weight-bold">
                                 { "$"+format(",.2f")(this.state.totalValue.idiv(1E8).times(this.props.usdhex).toNumber())}
                             </span>
                         </div>
                     </Accordion.Toggle>
                     <Accordion.Collapse eventKey="current_stakes">
-                        <Card.Body style={{ backgroundColor: "#353010" }}>
+                        <Card.Body className="active-stakes-body">
                             <this.StakesList eventCallback={this.eventCallback}/>
                         </Card.Body>
                    </Accordion.Collapse>
@@ -515,7 +504,7 @@ class Stakes extends React.Component {
                         <BurgerHeading>Stake History</BurgerHeading>
                     </Accordion.Toggle>
                     <Accordion.Collapse eventKey="stake_history">
-                        <Card.Body className="bg-dark">
+                        <Card.Body className="stake-history-body">
                             <this.StakesHistory />
                         </Card.Body>
                     </Accordion.Collapse>

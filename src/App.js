@@ -25,6 +25,11 @@ import { detectTrustWallet } from './util'
 import './App.scss'
 const debug = require('debug')('App')
 const { format } = require('d3-format')
+const axios = require('axios').create({
+    baseURL: '/',
+    timeout: 3000,
+    headers: { "Content-Type": "application/json", "Accept": "applicaiton/json"},
+});
 const uriQuery = new URLSearchParams(window.location.search)
 if (uriQuery.has('debug')) {
     const d = uriQuery.get("debug")
@@ -319,9 +324,10 @@ class App extends React.Component {
 
     updateUsdHex() {
         // https://github.com/HexCommunity/HEX-APIs
-        fetch("https://uniswapdataapi.azurewebsites.net/api/hexPrice")
-            .then(response => response.json())
+        axios.get("https://uniswapdataapi.azurewebsites.net/api/hexPrice")
+            .then(response => response.data)
             .then(data => this.setState({ USDHEX: parseFloat(data.hexUsd) }))
+            .catch(e => console.log('updateUsdHex: ', e))
     }
 
     async componentDidMount() {

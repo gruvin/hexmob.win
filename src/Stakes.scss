@@ -14,6 +14,10 @@
     border-radius: 5px;
 }
 
+.new-stake-body { background-color: #041011; }
+.active-stakes-body { background-color: #000c2f; }
+.stake-history-body { background-color: map-get($theme-colors, dark) }
+
 /* START STAKE BUTTON */
 .btn-stake.btn-start { 
     color: map-get($theme-colors, success); 
