@@ -32,17 +32,17 @@ export const CryptoVal = (props) => {
     const r = s.match(/^(.*)(\.\d+)(.*)$/) 
     if (r && r.length > 1)
         return ( 
-            <div className={ "numeric "+props.className } >
+            <span className={ props.className } >
                 { r[1] } 
                 <span style={{ opacity: "0.5" }}>
                     { r[2] }
                 </span>
                 { r[3] && r[3] }
             { showUnit && <>&nbsp;{unit}</> }
-            </div>
+            </span>
         ) 
     else 
-        return ( <div className="numeric">{s}{ showUnit && <>&nbsp;{unit}</> }</div> )
+        return ( <span className="numeric">{s}{ showUnit && <>&nbsp;{unit}</> }</span> )
 }
 
 export const WhatIsThis = (props) => {

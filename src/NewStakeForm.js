@@ -12,7 +12,7 @@ import {
 import './Stakes.scss'
 import { BigNumber } from 'bignumber.js'
 import HEX from './hex_contract'
-import { calcBigPayDaySlice, calcAdoptionBonus, fetchWithTimeout } from './util'
+import { calcBigPayDaySlice, calcAdoptionBonus } from './util'
 import { CryptoVal, WhatIsThis, VoodooButton } from './Widgets' 
 import { ResponsiveContainer, Bar, BarChart, Label, Rectangle, ReferenceLine, Tooltip, XAxis, YAxis } from 'recharts'
 const axios = require('axios').create({
@@ -158,11 +158,9 @@ export class NewStakeForm extends React.Component {
                 }` 
             })
         )
-        .then(res => {
-            if (res.errors || res.error) throw new Error(res.errors[0].message)
-            return res.json()
-        })
-        .then(graphJSON => {
+        .then(response => {
+            debug('response', response)
+            const { data: graphJSON } = response
             var collated = []
             for (let d = graphStartDay; d <= graphEndDay; d++)
                 collated[d - graphStartDay] = { endDay: d.toString(), stakeShares: 0 }  
@@ -174,7 +172,7 @@ export class NewStakeForm extends React.Component {
             this.setState({data: collated, graphIconClass: "" })
         })
         .catch(e => {
-            debug(`Graph API: ${e.message}`)
+            debug(`Graph API: ${e}`)
             this.setState({ graphIconClass: "icon-error-bg" })
         })
     }
