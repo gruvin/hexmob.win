@@ -32,17 +32,17 @@ export const CryptoVal = (props) => {
     const r = s.match(/^(.*)(\.\d+)(.*)$/) 
     if (r && r.length > 1)
         return ( 
-            <div className={ "numeric "+props.className } >
+            <span className={ props.className } >
                 { r[1] } 
                 <span style={{ opacity: "0.5" }}>
                     { r[2] }
                 </span>
                 { r[3] && r[3] }
             { showUnit && <>&nbsp;{unit}</> }
-            </div>
+            </span>
         ) 
     else 
-        return ( <div className="numeric">{s}{ showUnit && <>&nbsp;{unit}</> }</div> )
+        return ( <span className="numeric">{s}{ showUnit && <>&nbsp;{unit}</> }</span> )
 }
 
 export const WhatIsThis = (props) => {
@@ -52,7 +52,7 @@ export const WhatIsThis = (props) => {
         <>
             <span ref={target} style={{ cursor: "pointer" }} onClick={()=>setShow(!show)}>
                 { props.children }
-                { (props.showPill) && <sup><Badge variant="info" pill>?</Badge></sup> }
+                { (props.showPill) && <sup><Badge variant="info" pill className="ml-1">?</Badge></sup> }
             </span>
             <Overlay 
                 target={target.current} show={show}
@@ -397,15 +397,16 @@ export function MetamaskUtils(props) {
     }
 
     const addPulseChain = async () => {
-        return false
+        if (!0) return
+        // test using binance Chain (BSC)
         await window.ethereum.request({
             method: "wallet_addEthereumChain",
             params: [{
-                chainId: "0x38", // A 0x-prefixed hexadecimal string
+                chainId: "0x38",
                 chainName: "BSC",
                 nativeCurrency: {
                     name: "Pulse Chain [placeholder]",
-                    symbol: "BNB", // 2-6 characters long
+                    symbol: "BNB",
                     decimals: 18
                 },
                 rpcUrls: [ "https://bsc-dataseed.binance.org/" ],

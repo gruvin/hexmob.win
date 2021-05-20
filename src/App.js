@@ -16,6 +16,7 @@ import Lobby from './Lobby'
 import Blurb from './Blurb' 
 import { WhatIsThis, Donaticator, MetamaskUtils } from './Widgets'
 import HEX from './hex_contract'
+import UNIV2 from './univ2_contract' /* HEX/USDC pair */
 import Web3 from 'web3';
 import Web3Modal, { getProviderInfo } from 'web3modal';
 import WalletConnectProvider from '@walletconnect/web3-provider'
@@ -24,9 +25,19 @@ import { detectTrustWallet } from './util'
 import './App.scss'
 const debug = require('debug')('App')
 const { format } = require('d3-format')
+const axios = require('axios').create({
+    baseURL: '/',
+    timeout: 3000,
+    headers: { "Content-Type": "application/json", "Accept": "applicaiton/json"},
+});
 const uriQuery = new URLSearchParams(window.location.search)
 if (uriQuery.has('debug')) {
-    window.localStorage.setItem('debug', '*')
+    const d = uriQuery.get("debug")
+    if (d === "") {
+        window.localStorage.setItem('debug', '*')
+    } else {
+        window.localStorage.setItem('debug', d)
+    }
 } else {
     window.localStorage.removeItem('debug')
 }
@@ -139,12 +150,26 @@ class App extends React.Component {
     }
 
     subscribeEvents = () => {
-        const eventCallback = (error, result) => {
+        const eventCallbackHEX = (error, result) => {
             //debug('events.Transfer[error, result] => ', error, result.returnValues )
             this.updateHEXBalance()
         }
-        const onTransferFrom = this.contract.events.Transfer( {filter:{from:this.state.wallet.address}}, eventCallback).on('connected', (id) => debug('subbed: HEX from:', id))
-        const onTransferTo = this.contract.events.Transfer( {filter:{to:this.state.wallet.address}}, eventCallback).on('connected', (id) => debug('subbed: HEX to:', id))
+        const eventCallbackUNIV2 = (error, result) => {
+            //debug('UNI: event.Swap[error, result] => ', error, result )
+            if (error) return
+            const { amount0In, amount1In, amount0Out, amount1Out } = result.returnValues
+            try {
+                const USDHEX = parseInt(amount1In) !== 0 
+                    ? Number(parseInt(amount1In) / parseInt(amount0Out) * 100)
+                    : Number(parseInt(amount1Out) / parseInt(amount0In) * 100)
+                this.setState({ USDHEX })
+            } catch(e) {
+                debug(`UNIV2:USDHEX Exception %o: amount1In:${amount1In} amount0Out: ${amount0Out}`, e)
+            }
+        }
+        const onTransferFrom = this.contract.events.Transfer( {filter:{from:this.state.wallet.address}}, eventCallbackHEX).on('connected', (id) => debug('subbed: HEX from:', id))
+        const onTransferTo = this.contract.events.Transfer( {filter:{to:this.state.wallet.address}}, eventCallbackHEX).on('connected', (id) => debug('subbed: HEX to:', id))
+        const onSwap = this.univ2Contract.events.Swap( {fromBlock: "latest", toBlock: "latest" }, eventCallbackUNIV2).on('connected', (id) => debug('subbed: UNIV2 to:', id))
 
         const address = this.state.wallet.address
         const onAddressLog = this.web3.eth.subscribe('logs', {
@@ -165,7 +190,7 @@ class App extends React.Component {
         })
         .on("error", log => debug('SS::ERRROR: ', log))
 
-        this.subscriptions = [ onTransferFrom, onTransferTo, onAddressLog ]
+        this.subscriptions = [ onTransferFrom, onTransferTo, onAddressLog, onSwap ]
         this.updateETHBalance()
     }
 
@@ -247,16 +272,13 @@ class App extends React.Component {
         await this.setState({ chainId, network })
 
         this.wssProvider = new Web3.providers.WebsocketProvider(wssURL)
-        debug('web3 providers established')
-
-        window.web3hexmob = new Web3(this.walletProvider) // window.web3 used for sending/signing transactions
+        window.web3hexmob = new Web3(this.walletProvider) // window.web3hexmob used for sending/signing transactions
         this.web3 = new Web3(this.wssProvider)         // this.web3 used for everything else (Infura)
-
         if (!window.web3hexmob || !this.web3) return debug('Unexpected error setting up Web3 instances')
+        debug('web3 providers connected')
         
         // ref: https://soliditydeveloper.com/web3-1-2-5-revert-reason-strings
-        if (window.web3hexmob.eth.hasOwnProperty('handleRevert'))  window.web3hexmob.eth.handleRevert = true 
-        debug('web3 providers connected')
+        if (window.web3hexmob.eth.hasOwnProperty('handleRevert')) window.web3hexmob.eth.handleRevert = true 
 
         // Different wallets have different methods of supplying the user's active ETH address
         var address = null
@@ -302,9 +324,10 @@ class App extends React.Component {
 
     updateUsdHex() {
         // https://github.com/HexCommunity/HEX-APIs
-        fetch("https://uniswapdataapi.azurewebsites.net/api/hexPrice")
-            .then(response => response.json())
+        axios.get("https://uniswapdataapi.azurewebsites.net/api/hexPrice")
+            .then(response => response.data)
             .then(data => this.setState({ USDHEX: parseFloat(data.hexUsd) }))
+            .catch(e => console.log('updateUsdHex: ', e))
     }
 
     async componentDidMount() {
@@ -312,12 +335,14 @@ class App extends React.Component {
         window._APP = this // DEBUG remove me
         window._w3M = Web3Modal
         window._HEX = HEX
+        window._UNIV2 = UNIV2
 
         const address = await this.establishWeb3Provider() 
         if (!address) return debug('No wallet address supplied - STOP')
 
-        window.contract = new window.web3hexmob.eth.Contract(HEX.ABI, HEX.CHAINS[this.state.chainId].address)    // wallet's provider
-        this.contract = new this.web3.eth.Contract(HEX.ABI, HEX.CHAINS[this.state.chainId].address)        // INFURA
+        window.contract = new window.web3hexmob.eth.Contract(HEX.ABI, HEX.CHAINS[this.state.chainId].address)   // wallet provider
+        this.contract = new this.web3.eth.Contract(HEX.ABI, HEX.CHAINS[this.state.chainId].address)             // INFURA
+        this.univ2Contract = new this.web3.eth.Contract(UNIV2.ABI, UNIV2.CHAINS[this.state.chainId].address)    // INFURA
 
         this.subscribeProvider(this.walletProvider)
 
@@ -490,7 +515,7 @@ class App extends React.Component {
                     <h3>{process.env.REACT_APP_VERSION || 'v0.0.0A'}</h3>
                     <div id="usdhex" className="text-success">
                         <span className="text-muted small mr-1">USD</span>
-                        <span className="numeric">{ "$" + ( this.state.USDHEX ? format(",.3f")(this.state.USDHEX) : "-.--") }</span>
+                        <span className="numeric">{ "$" + ( this.state.USDHEX ? format(",.4f")(this.state.USDHEX) : "-.--") }</span>
                     </div>
                     <div className="day">
                         <span className="text-muted small mr-1">DAY</span>

@@ -1,5 +1,19 @@
 @import "./Theme.scss";
 @import "~bootstrap/scss/bootstrap";
+body { 
+    position: relative;
+    overflow: hidden;
+    font-family: "Happy Monkey", sans-serif; 
+    background: #0a090a;
+    background-size: auto;
+    font-size: 16px;
+    line-height: 1.5rem; /* factory bootstrap has 1.5; with no siffix */
+}
+h1, .h1 { font-size: 1.50rem }
+h2, .h2 { font-size: 1.30rem; }
+h3, .h3 { font-size: 1.15rem; }
+h4, .h4 { font-size: 1.0rem; }
+h6, .h6 { font-weight: bold }
 
 /* iPhone 11 1792x828px at 326ppi */
 @media only screen
@@ -34,20 +48,6 @@
 /* Google Fonts */
 @import url('https://fonts.googleapis.com/css2?family=Happy+Monkey&family=Jura:wght@500;700&family=Press+Start+2P&family=Titillium+Web:wght@400;700&family=Nosifer&display=swap');
 
-body { 
-    position: relative;
-    overflow: hidden;
-    font-family: "Happy Monkey", sans-serif; 
-    background: #0a090a;
-    background-size: auto;
-    font-size: 16px;
-    line-height: 1.5em; /* factory bootstrap has 1.5; with no siffix */
-}
-h1, .h1 { font-size: 1.50rem }
-h2, .h2 { font-size: 1.30rem; }
-h3, .h3 { font-size: 1.15rem; }
-h4, .h4 { font-size: 1.0rem; }
-h6, .h6 { font-weight: bold }
 
 #hexmob_header {
     position: fixed;
@@ -216,7 +216,7 @@ button#connect_wallet:hover { border-style: inset; border-color: #fec}
 #lobby.progress, #stakes_accordion .progress { height: 0.2rem }
 #lobby.progress .progress-bar { color: black; }
 
-.row-highlight-even .row:nth-child(even) {  background-color: #1f1b25; }
+.row-highlight-even .row:nth-child(even) {  background-color: #2b2b2b; }
 
 input.donate_addr {
     font-family: "Courier New", monospace;

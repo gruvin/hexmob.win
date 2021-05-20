@@ -51,8 +51,10 @@ export class StakeInfo extends React.Component {
             : exitClass === "termexit" ? "success"
             : "info" // latexit
 
+        const shares = stake.stakeShares
         const interest = stake.payout.plus(stake.bigPayDay)
         const valueTotal = stake.stakedHearts.plus(interest)
+        const usdValueTotal = valueTotal.div(1e8).times(usdhex).toNumber()
 
         const percentGain = interest.div(stake.stakedHearts).times(100)
         const daysServed = Math.min(currentDay - stake.startDay, stake.stakedDays)
@@ -87,18 +89,18 @@ export class StakeInfo extends React.Component {
                         <Container>
                             <Row>
                                 <Col xs={6} className="text-left pr-0">
-                                    <span className="text-muted small">PRINCIPAL </span> 
-                                    <strong className="text-info"><CryptoVal value={stake.stakedHearts} /></strong>
+                                    <CryptoVal className="numeric font-weight-bold text-info h2" value={shares} currency="SHARES" />
+                                    <span className="text-muted small"> SHARES</span> 
                                 </Col>
                                 <Col xs={6} className="text-right pl-0">
                                     <span className="text-muted small">VALUE </span> 
-                                    <strong className="text-info"><CryptoVal value={valueTotal} /></strong>
+                                    <span className="numeric h3 text-success">{"$"+format(",.2f")(usdValueTotal)}</span>
                                 </Col>
                             </Row>
                             <Row className="mb-1">
                                 <Col xs={7} className="pr-0">
                                     <span className="text-muted small">ENDS </span>
-                                    <span className="numeric">{endDate}</span>
+                                    <span className="small">{endDate}</span>
                                 </Col>
                                 <Col xs={5} className="text-right pl-0">
                                     { pending ? <Badge variant="primary">PENDING</Badge> 
@@ -135,11 +137,11 @@ export class StakeInfo extends React.Component {
                             </Row>
                             <Row>
                                 <Col className="text-right"><strong>Principal</strong></Col>
-                                <Col className="numeric"><CryptoVal value={stake.stakedHearts} showUnit /></Col>
+                                <Col><CryptoVal className="numeric" value={stake.stakedHearts} showUnit /></Col>
                             </Row>
                             <Row>
                                 <Col className="text-right"><strong>Shares</strong></Col>
-                                <Col className="numeric"><CryptoVal value={stake.stakeShares.times(1e8)} /></Col>
+                                <Col><CryptoVal className="numeric" value={stake.stakeShares.times(1e8)} /></Col>
                             </Row>
                         { stake.bigPayDay.gt(0) &&
                             <Row>
@@ -148,16 +150,16 @@ export class StakeInfo extends React.Component {
                                     <span className="text-warning">Pay</span>
                                     <span className="text-danger">Day</span>
                                 </strong></Col>
-                                <Col className="numeric"><CryptoVal value={stake.bigPayDay} showUnit /></Col>
+                                <Col><CryptoVal className="numeric" value={stake.bigPayDay} showUnit /></Col>
                             </Row>
                         }
                             <Row>
                                 <Col className="text-right"><strong>Interest</strong></Col>
-                                <Col className="numeric"><CryptoVal value={interest} showUnit /></Col>
+                                <Col><CryptoVal className="numeric" value={interest} showUnit /></Col>
                             </Row>
                             <Row>
                                 <Col className="text-right"><strong>Value</strong></Col>
-                                <Col className="numeric"><strong><CryptoVal value={valueTotal} showUnit /></strong></Col>
+                                <Col><strong><CryptoVal className="numeric" value={valueTotal} showUnit /></strong></Col>
                             </Row>
                             <Row>
                                 <Col className="text-success text-right"><strong>USD Value</strong></Col>

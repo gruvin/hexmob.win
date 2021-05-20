@@ -12,9 +12,14 @@ import {
 import './Stakes.scss'
 import { BigNumber } from 'bignumber.js'
 import HEX from './hex_contract'
-import { calcBigPayDaySlice, calcAdoptionBonus, fetchWithTimeout } from './util'
+import { calcBigPayDaySlice, calcAdoptionBonus } from './util'
 import { CryptoVal, WhatIsThis, VoodooButton } from './Widgets' 
 import { ResponsiveContainer, Bar, BarChart, Label, Rectangle, ReferenceLine, Tooltip, XAxis, YAxis } from 'recharts'
+const axios = require('axios').create({
+    baseURL: '/',
+    timeout: 3000,
+    headers: { "Content-Type": "application/json", "Accept": "applicaiton/json"},
+});
 
 const debug = require('debug')('NewStakeForm')
 debug('loading')
@@ -138,32 +143,24 @@ export class NewStakeForm extends React.Component {
             graphIconClass: "icon-wait-bg"
         })
 
-        fetchWithTimeout('https://api.thegraph.com/subgraphs/name/codeakk/hex', 
-            {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ query: `{
-                        stakeStarts (
-                            where: {
-                                endDay_gte:${graphStartDay},
-                                endDay_lte:${graphEndDay}
-                            }
-                        )
-                        {
-                            stakeShares
-                            endDay
+        axios.post('https://api.thegraph.com/subgraphs/name/codeakk/hex', 
+            JSON.stringify({ query: `{
+                    stakeStarts (
+                        where: {
+                            endDay_gte:${graphStartDay},
+                            endDay_lte:${graphEndDay}
                         }
-                    }` 
-                }),
-            },
-
-            7369 // timeout ms
+                    )
+                    {
+                        stakeShares
+                        endDay
+                    }
+                }` 
+            })
         )
-        .then(res => {
-            if (res.errors || res.error) throw new Error(res.errors[0].message)
-            return res.json()
-        })
-        .then(graphJSON => {
+        .then(response => {
+            debug('response', response)
+            const { data: graphJSON } = response
             var collated = []
             for (let d = graphStartDay; d <= graphEndDay; d++)
                 collated[d - graphStartDay] = { endDay: d.toString(), stakeShares: 0 }  
@@ -175,7 +172,7 @@ export class NewStakeForm extends React.Component {
             this.setState({data: collated, graphIconClass: "" })
         })
         .catch(e => {
-            debug(`Graph API: ${e.message}`)
+            debug(`Graph API: ${e}`)
             this.setState({ graphIconClass: "icon-error-bg" })
         })
     }
@@ -395,7 +392,7 @@ export class NewStakeForm extends React.Component {
                         </Container>
                     </Col>
                     <Col xs={12} sm={7}>
-                        <Container className="p-0 pl-2 lr-2" style={{ lineHeight: "1rem", maxWidth: "360px" }}>
+                        <Container className="p-0 pl-2 lr-2" style={{ maxWidth: "360px" }}>
                             <Row>
                                 <Col className="col-3 m-0 pr-0 text-info h4">Starts</Col>
                                 <Col className="col-3 pr-0"><span className="text-muted small">DAY </span>{this.state.startDay}</Col>
@@ -417,7 +414,7 @@ export class NewStakeForm extends React.Component {
                                 <Col className="col-7 ml-0 ml-md-3 numeric">Longer Pays Better</Col>
                                 <Col className="col-5 text-right">+ <CryptoVal value={this.state.longerPaysBetter.toFixed(0)} /> <span className="text-muted">HEX</span></Col>
                             </Row>
-                            <Row className="mt-2 py-1" style={{ backgroundColor: "#042e00" }}>
+                            <Row className="pt-2" style={{ backgroundColor: "#042e00" }}>
                                 <Col>
                                     <WhatIsThis showPill tooltip={
                                         <>
