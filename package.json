@@ -94,8 +94,8 @@
   "scripts": {
     "start": "NODE_ENV=production; if [ -f LOAD_ENV ]; then source LOAD_ENV; fi && node scripts/start.js",
     "startdev": "NODE_ENV=development source LOAD_ENV && node scripts/start.js",
-    "builddev": "NODE_ENV='development' source LOAD_ENV node scripts/build.js",
-    "build": "NODE_ENV='production'  source LOAD_ENV && node scripts/build.js",
+    "builddev": "NODE_ENV='development' if [ -f LOAD_ENV ]; then source LOAD_ENV; fi && node scripts/build.js",
+    "build": "NODE_ENV='production' if [ -f LOAD_ENV ]; then source LOAD_ENV; fi && node scripts/build.js",
     "deploy": "util/deploy.sh",
     "serve": "NODE_ENV='development' source LOAD_ENV && serve -s -p 5001 build",
     "test": "NODE_ENV='development' source LOAD_ENV && node scripts/test.js"
