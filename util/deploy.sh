@@ -9,9 +9,10 @@ if [[ ! -d build/ ]]; then
     exit 2
 fi
 
-read -k1 \?"Poduction or Dev deployment? [D/p]: "
+read -k1 DEPLOY_TYPE\?"Poduction or Dev deployment? [D/p]: "
 case "$DEPLOY_TYPE" in
     [Pp])
+        echo "\n"
         read AMSURE\?"PRODUCTION deployment! Enter \"yes\" to continue: "
         if [[ ! "yes" = "$AMSURE" ]]; then echo "Didn't think so." ; exit 0 ; fi
         DEST='hexmob:~/public_html' 
