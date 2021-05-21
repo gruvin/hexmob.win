@@ -292,15 +292,14 @@ export class NewStakeForm extends React.Component {
             }, handleDaysChange(e))
         }
 
-        const handleCursorClick = (props, e) => {
+        const handleCursorClick = (endDay, e) => {
             e.preventDefault()
             const { currentDay } = this.props.contract.Data
-            const endDay =  props.payload[0].payload.endDay
 
             this.setState({ 
                 stakeDays: (endDay - currentDay - 2).toString(),
                 endDay
-            }, ()=>{
+            }, () => {
                 this.updateFigures()
                 this.updateBarGraph()
             })
@@ -315,7 +314,7 @@ export class NewStakeForm extends React.Component {
                     x={x} y={y} 
                     width={width} 
                     height={height}
-                    onClick={(e) => handleCursorClick(props, e)}
+                    onClick={(e) => handleCursorClick(props.payload[0].payload.endDay, e)}
                 />
             )
         }
