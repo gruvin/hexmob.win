@@ -37,6 +37,7 @@ case "$DEPLOY_TYPE" in
                 rm -f ${RELEASE}/*
                 eval $TAR czf "${RELEASE}" build/
                 echo "Build done."
+                echo "Release files are in release/ dir. REMEMBER TO SIGN: gpg --yes -b ${RELEASE}"
                 ;;
             esac
         ;;
@@ -51,7 +52,6 @@ echo "RSYNC: sending build/* => ${DEST}"
 $RSYNC -r --delete 'build/' ${DEST}
 
 echo "DONE"
-echo "Release files are in release/ dir. REMEMBER TO SIGN: gpg --yes -b ${RELEASE}"
 
 git checkout dev
 
