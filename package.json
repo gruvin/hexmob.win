@@ -52,7 +52,7 @@
     "html-webpack-plugin": "4.0.0-beta.11",
     "identity-obj-proxy": "3.0.0",
     "isomorphic-fetch": "^3.0.0",
-    "jest": "^26.1.0",
+    "jest": "^26.6.3",
     "jest-resolve": "26.0.1",
     "mini-css-extract-plugin": "0.9.0",
     "node-sass": "4.14.1",
@@ -92,13 +92,11 @@
     "workbox-webpack-plugin": "4.3.1"
   },
   "scripts": {
-    "start": "NODE_ENV=production; if [ -f LOAD_ENV ]; then source LOAD_ENV; fi && node scripts/start.js",
-    "startdev": "NODE_ENV=development source LOAD_ENV && node scripts/start.js",
-    "builddev": "NODE_ENV='development' if [ -f LOAD_ENV ]; then source LOAD_ENV; fi && node scripts/build.js",
-    "build": "NODE_ENV='production' if [ -f LOAD_ENV ]; then source LOAD_ENV; fi && node scripts/build.js",
-    "deploy": "util/deploy.sh",
-    "serve": "NODE_ENV='development' source LOAD_ENV && serve -s -p 5001 build",
-    "test": "NODE_ENV='development' source LOAD_ENV && node scripts/test.js"
+    "start": "node scripts/start.js",
+    "build": "node scripts/build.js",
+    "serve": "serve -s -p 5001 build",
+    "test": "node scripts/test.js",
+    "deploy": "util/deploy.sh"
   },
   "eslintConfig": {
     "extends": "react-app"

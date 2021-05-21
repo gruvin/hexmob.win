@@ -4,22 +4,14 @@ GPG=/usr/local/bin/gpg
 RSYNC=/usr/bin/rsync
 TAR=/usr/bin/tar
 
-source LOAD_ENV
-if [[ "${NODE_ENV}" != "${REACT_APP_NODE_ENV}" ]]; then 
-    echo "ERROR: REACT_APP_NODE_ENV didn't get set by LOAD_ENV"
-    exit 1
-fi
 if [[ ! -d build/ ]]; then
     echo "ERROR: Need to be in root folder cotaining build/ dir"
     exit 2
 fi
-case "$NODE_ENV" in
-    development)
-        echo "Building production TEST for DEV server"
-        DEST='hexmob:~/dev.hexmob.win' 
-        yarn build 
-        ;;
-    production)
+
+read -k1 \?"Poduction or Dev deployment? [D/p]: "
+case "$DEPLOY_TYPE" in
+    [Pp])
         read AMSURE\?"PRODUCTION deployment! Enter \"yes\" to continue: "
         if [[ ! "yes" = "$AMSURE" ]]; then echo "Didn't think so." ; exit 0 ; fi
         DEST='hexmob:~/public_html' 
@@ -35,18 +27,23 @@ case "$NODE_ENV" in
             *) 
                 eval ${CHECKOUT_CMD}
                 if [[ $? -ne 0 ]]; then echo "\nWell that went badly :/\n"; exit -1; fi
-                echo "Building ${TAG} for production server"
+                echo "Building ${TAG} for production server deployment"
                 export REACT_APP_VERSION="${TAG}"
                 yarn build 
                 RELEASE="release/hexmob.win-${TAG}-build.tgz"
                 if [[ ! -d release ]]; then mkdir release; fi
-                echo "Creating ${RELEASE}"
+                echo "Creating empty ${RELEASE} folder"
+                rm -f ${RELEASE}/*
                 eval $TAR czf "${RELEASE}" build/
                 echo "Build done."
                 ;;
             esac
         ;;
-    *) print "Invalid NODE_ENV (${NODE_ENV})" && exit 1
+    *) # dev deploy by default
+        echo "Building test production set for DEV server"
+        DEST='hexmob:~/dev.hexmob.win' 
+        yarn build 
+        ;;
 esac
 
 echo "RSYNC: sending build/* => ${DEST}" 
