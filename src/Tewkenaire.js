@@ -54,43 +54,63 @@ class Tewkenaire extends React.Component {
         debug('stakeCount: ', stakeCount)
         debug('activeStakes: ', activeStakes)
 
-        const tewkStakes = await new Promise((resolve, reject) => {
-            const tewkStakes = []
-            let count = activeStakes;
-            for (let index = 0; index < stakeCount; index++) {
-                //debug('tmaxAddress: %s index: %d', tmaxAddress, index) 
-                const hexStake = this.hexContract.methods.stakeLists(tmaxAddress, index).call()
-                .then(async hexStake => {
-                    const { 
-                        stakeId,
-                        stakeShares
-                    } = hexStake
-                    const uniqueStakeId = this.web3.utils.hexToNumberString(this.web3.utils.soliditySha3(
-                        {
-                            'type': "uint40",
-                            'value': stakeId
-                        }, {
-                            'type': "uint72",
-                            'value': stakeShares
-                        })
-                    );
+        const tewkStakes = []
+        let count = activeStakes;
 
-                    // is this stake one of ours?
-                    const tmaxStake = await this.contract.methods.stakeLists(wallet.address, uniqueStakeId).call()
-                    const { stakeID } = tmaxStake
-                    if (stakeID != "0") {
-                        count--
-                        const ourStake = {
-                            stakeID,
-                            uniqueStakeId 
+        // Run through HEXMAX's HEX stakeList, searching for stakes that match our wallet.address (see stakeID+stakeShares sha3 hash, below).
+        // stop either at the end of the list or when we have found activeStakes no. of stakes
+        for ( // batches of 300
+            let batchStart = 0, batchEnd = 300; 
+            batchStart < stakeCount && batchEnd < stakeCount && count; 
+            batchStart=batchEnd+1, batchEnd=Math.min(batchEnd+301, stakeCount-1)
+        ) {
+            console.log(batchStart, batchEnd)
+            const tewkStakesBatch = await new Promise((resolve, reject) => {
+                if (!count) return resolve(tewkStakes)
+                for (let index = batchStart; index < batchEnd; index++) {
+                    //debug('tmaxAddress: %s index: %d', tmaxAddress, index) 
+                    const hexStake = this.hexContract.methods.stakeLists(tmaxAddress, index).call()
+                    .then(async hexStake => {
+                        const { 
+                            stakeId,
+                            stakeShares,
+                        } = hexStake
+                        const uniqueStakeId = this.web3.utils.hexToNumberString(this.web3.utils.soliditySha3(
+                            {
+                                'type': "uint40",
+                                'value': stakeId
+                            }, {
+                                'type': "uint72",
+                                'value': stakeShares
+                            })
+                        );
+
+                        // is this stake one of ours?
+                        const tmaxStake = await this.contract.methods.stakeLists(wallet.address, uniqueStakeId).call()
+                        const { stakeID } = tmaxStake
+                        if (stakeID != "0") {
+                            count--
+                            const ourStake = {
+                                hex: {
+                                    stakeOwner: tmaxAddress,
+                                    stakeIndex: index,
+                                    ...Object.fromEntries(Object.entries(hexStake).filter((key, val) => isNaN(parseInt(key)))), // strips out numberic keys
+                                },
+                                hexmax: {
+                                    stakeOwner: wallet.address,
+                                    stakeIndex: index,
+                                    stakeIdParam: stakeID,
+                                    uniqueID: uniqueStakeId,
+                                }
+                            }
+                            debug('pushing ourStake: %j', ourStake)
+                            tewkStakes.push(ourStake)
+                            if (!count) return resolve(tewkStakes)
                         }
-                        console.log('pushing ourStake: %j', ourStake)
-                        tewkStakes.push(ourStake)
-                        if (!count) return resolve(tewkStakes)
-                    }
-                })
-            }
-        })
+                    })
+                }
+            })
+        } // for batches
         debug('tewkStakes: ', tewkStakes)
         this.setState({ tewkStakes })
     }
