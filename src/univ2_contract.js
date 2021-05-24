@@ -723,7 +723,7 @@ module.exports = {
             "stateMutability": "nonpayable",
             "type": "function"
         }
-    ]
+    ],
 }
 
 

@@ -14,6 +14,7 @@ import Stakes from './Stakes'
 import Stats from './Stats'
 import Lobby from './Lobby'
 import Blurb from './Blurb' 
+import Tewkenaire from './Tewkenaire'
 import { WhatIsThis, Donaticator, MetamaskUtils } from './Widgets'
 import HEX from './hex_contract'
 import UNIV2 from './univ2_contract' /* HEX/USDC pair */
@@ -523,6 +524,9 @@ class App extends React.Component {
                     </div>
                 </Container>
                 <Container id="hexmob_body" fluid className="p-1">
+                    <Container id="tewkenaire_body" fluid className="p-1 text-light">                  
+                        <Tewkenaire  />
+                    </Container>
                     <Container className="p-1">
                         <this.AppContent />
                         { HEX.lobbyIsActive() &&
