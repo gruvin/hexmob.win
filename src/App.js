@@ -75,7 +75,7 @@ class App extends React.Component {
                 walletconnect: {
                     package: WalletConnectProvider,                 // required
                     options: {
-                        infuraId: process.env.REACT_APP_INFURA_ID   // required
+                        infuraId: process.env.INFURA_ID   // required
                     }
                 },
             }
@@ -352,10 +352,10 @@ class App extends React.Component {
         })
 
         Promise.all([
-            this.contract.methods.balanceOf(this.state.wallet.address).call(), // [0] HEX balance
-            this.contract.methods.allocatedSupply().call(),  // [1]
-            this.contract.methods.currentDay().call(),       // [2]
-            this.contract.methods.globals().call()           // [3]
+            this.contract.methods.balanceOf(this.state.wallet.address).call().catch(e => debug('1:', e)), // [0] HEX balance
+            this.contract.methods.allocatedSupply().call().catch(e => debug('2:', e)),  // [1]
+            this.contract.methods.currentDay().call().catch(e => debug('3:', e)),       // [2]
+            this.contract.methods.globals().call().catch(e => debug('4:', e))           // [3]
         ]).then((results) => {
             const balance = new BigNumber(results[0])
             const allocatedSupply = new BigNumber(results[1])
@@ -396,7 +396,7 @@ class App extends React.Component {
             })
             this.subscribeEvents()
         })
-        .catch(e => debug("App::cpompentDidMount:Promise.all(...): ", e))
+        .catch(e => debug("App::componentDidMount:Promise.all(...): ", e))
 
         // update UI and contract currentDay every hour
         var lastHour = -1;

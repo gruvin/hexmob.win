@@ -15,7 +15,7 @@ const axios = require('axios').create({
 
 const debug = require('debug')('Stats')
 
-class Stakes extends React.Component {
+class Stats extends React.Component {
     constructor(props) {
         super(props)
         this.state = {
@@ -197,4 +197,4 @@ class Stakes extends React.Component {
     }
 }
 
-export default Stakes
+export default Stats
