@@ -524,10 +524,10 @@ class App extends React.Component {
                     </div>
                 </Container>
                 <Container id="hexmob_body" fluid className="p-1">
-                    <Container id="tewkenaire_body" fluid className="p-1 text-light">                  
-                        <Tewkenaire  />
-                    </Container>
                     <Container className="p-1">
+                        <Container id="tewkenaire_body" fluid className="p-1 text-light">                  
+                            {this.state.walletConnected && <Tewkenaire context={this} />}
+                        </Container>
                         <this.AppContent />
                         { HEX.lobbyIsActive() &&
                             <Container className="p-1 my-3 text-center">
