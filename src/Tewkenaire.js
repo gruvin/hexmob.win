@@ -57,7 +57,7 @@ class TewkStakeList extends React.Component {
             </Row>
             {
                 this.state.uiStakeList && this.state.uiStakeList.map((stake, index) => {
-                    const { stakedHearts, stakeShares, payout, bigPayDay, interest, value, usd } = stake
+                    const { stakedHearts, stakeShares, bigPayDay, interest, value, usd } = stake
                     return (
                         <Row key={'hexmax_'+index} className="text-right pr-3">
                             <Col className="numeric d-none d-md-inline"><CryptoVal value={stakedHearts} currency="HEX" /></Col>
@@ -84,7 +84,7 @@ class Tewkenaire extends React.Component {
         this.provider = props.context.walletProvider
         this.state = {
             tewkStakes: null,
-            progress: 10,
+            progress: 50,
         }
     }
 
@@ -195,7 +195,7 @@ class Tewkenaire extends React.Component {
                             }
                             debug('ourStake %d: %o', index, ourStake)
                             tewkStakes.push(ourStake)
-                            this.setState({ progress: 90 / stakeCount * (stakeCount - count) })
+                            this.setState({ progress: 45 / stakeCount * (stakeCount - count) + 50 })
                             if (!--count) return resolve(tewkStakes)
                         }
                         return resolve(tewkStakes)
@@ -214,7 +214,13 @@ class Tewkenaire extends React.Component {
 
         return (<>
             {!this.state.tewkStakes
-                ? <ProgressBar variant="secondary" animated now={this.state.progress} label="loading tewenaire contract data" className="mt-3" />
+                ? <ProgressBar 
+                    variant="secondary" 
+                    className="mt-3"
+                    animated 
+                    now={this.state.progress} 
+                    label="loading tewenaire contract data" 
+                />
                 :  
             <Accordion 
                 id='tewk_accordion'
