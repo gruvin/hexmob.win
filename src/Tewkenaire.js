@@ -48,11 +48,11 @@ class TewkStakeList extends React.Component {
         // TODO: get interest data from HEX contract (XXX should use cached payout data from App.state)
         return (<>
             <Row className="text-right text-muted small pr-3">
-                <Col className="d-none d-md-inline">HEX PRINCIPAL</Col>
-                <Col>T-SHARES</Col>
-                <Col className="d-none d-md-inline"><span className="d-none d-md-inline">HEX </span>BigPayDay</Col>
-                <Col><span className="d-none d-md-inline">HEX </span>INTEREST</Col>
-                <Col><span className="d-none d-md-inline">HEX </span>VALUE</Col>
+                <Col className="d-none d-md-inline">PRINCIPAL</Col>
+                <Col>SHARES</Col>
+                <Col className="d-none d-md-inline">BigPayDay</Col>
+                <Col>INTEREST</Col>
+                <Col>VALUE</Col>
                 <Col className="text-right">USD<span className="d-none d-md-inline"> VALUE</span></Col>
             </Row>
             {
@@ -222,7 +222,7 @@ class Tewkenaire extends React.Component {
                 onSelect={handleAccordionSelect}
                 defaultActiveKey="tewkenaire"
             >
-                <Card bg="secondary" text="light">
+                <Card bg="secondary" text="light" className="p-0">
                     <Accordion.Toggle as={Card.Header} eventKey="tewkenaire">
                         <BurgerHeading>Tewkenaire</BurgerHeading>
                     </Accordion.Toggle>
