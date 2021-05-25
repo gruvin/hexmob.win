@@ -489,7 +489,7 @@ class App extends React.Component {
             return (
                 <>
                     <Stakes contract={this.contract} wallet={this.state.wallet} usdhex={this.state.USDHEX} />
-                    <Tewkenaire context={this} usdhex={this.state.USDHEX} />
+                    <Tewkenaire context={this} usdhex={0.035} />
                     <Stats contract={this.contract} wallet={this.state.wallet} usdhex={this.state.USDHEX} />
                     <Lobby contract={this.contract} wallet={this.state.wallet} />
                     <Container className="text-center">

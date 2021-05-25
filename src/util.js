@@ -95,8 +95,8 @@ const cryptoFormat = (v, currency) => {
             break
 
         case "USD":
-                unit = 'USD'
-            if (v.isZero)   s = '0.00'
+            unit = 'USD'
+            if (v.isZero())   s = '0.00'
             else s = format(',.2f')(v)
             break;
         default: // NaN or Infinity

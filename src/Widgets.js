@@ -27,16 +27,19 @@ export const CryptoVal = (props) => {
     
     const { valueString:s, unit } = cryptoFormat(v, props.currency)
     const showUnit = props.showUnit || false
+    const wholeNumber = props.wholeNumber || false
 
     // mute fractional part (including the period)
     const r = s.match(/^(.*)(\.\d+)(.*)$/) 
     if (r && r.length > 1)
         return ( 
             <span className={ props.className } >
-                { r[1] } 
+                { r[1] }
+            { !wholeNumber && 
                 <span style={{ opacity: "0.5" }}>
                     { r[2] }
                 </span>
+            }
                 { r[3] && r[3] }
             { showUnit && <>&nbsp;{unit}</> }
             </span>

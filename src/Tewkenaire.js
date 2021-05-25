@@ -22,49 +22,57 @@ class TewkStakeList extends React.Component {
     constructor(props) {
         super(props)
         this.state = {
-            stakeList: props.stakeList,
-            usdhex: props.usdhex
+            uiStakeList: null,
+            totalUSD: 0.0
         }
     }
 
-    componentWillReceiveProps(nextProps) {
-        debug("CWRP: ", nextProps)
-        const { stakeList, usdhex } = nextProps
-        this.setState({
-            stakeList: [].concat(stakeList),
-            usdhex
+    componentDidMount() {
+        const { parent, stakeList, usdhex } = this.props
+        let totalUSD = 0.0
+
+        const uiStakeList = stakeList.map((stake, index) => {
+            const { stakedHearts, stakeShares, payout, bigPayDay } = stake.hex
+            const interest = payout.plus(bigPayDay)
+            const value = stakedHearts.plus(interest)
+            const usd = value.div(1e8).times(usdhex)
+            totalUSD += usd.toNumber()
+            return { stakedHearts, stakeShares, payout, bigPayDay, interest, value, usd }
         })
-        this.forceUpdate()
+        this.setState({uiStakeList })
+        parent.setState({ totalUSD })
     }
 
     render() {
-        const { usdhex } = this.state
+
         // TODO: get interest data from HEX contract (XXX should use cached payout data from App.state)
         return (<>
-            {this.state.usdhex}
-            <Row className="text-muted small">
-                <Col>HEX PRINCIPAL</Col>
+            <Row className="text-right text-muted small pr-3">
+                <Col className="d-none d-md-inline">HEX PRINCIPAL</Col>
                 <Col>T-SHARES</Col>
-                <Col>HEX INTEREST</Col>
-                <Col>HEX VALUE</Col>
-                <Col>USD VALUE</Col>
+                <Col className="d-none d-md-inline"><span className="d-none d-md-inline">HEX </span>BigPayDay</Col>
+                <Col><span className="d-none d-md-inline">HEX </span>INTEREST</Col>
+                <Col><span className="d-none d-md-inline">HEX </span>VALUE</Col>
+                <Col className="text-right">USD<span className="d-none d-md-inline"> VALUE</span></Col>
             </Row>
             {
-                this.state.stakeList.map((stake, index) => {
-                    const { stakedHearts, stakeShares, payout, bigPayDay } = stake.hex
-                    const interest = payout.plus(bigPayDay)
-                    const value = stakedHearts.plus(interest)
-                    const usd = value.times(usdhex).toFixed(2)
+                this.state.uiStakeList && this.state.uiStakeList.map((stake, index) => {
+                    const { stakedHearts, stakeShares, payout, bigPayDay, interest, value, usd } = stake
                     return (
-                        <Row key={'hexmax_'+index} >
-                            <Col className="numeric"><CryptoVal value={stakedHearts} currency="HEX" /></Col>
+                        <Row key={'hexmax_'+index} className="text-right pr-3">
+                            <Col className="numeric d-none d-md-inline"><CryptoVal value={stakedHearts} currency="HEX" /></Col>
                             <Col className="numeric"><CryptoVal value={stakeShares} currency="SHARES" /></Col>
+                            <Col className="numeric d-none d-md-inline"><CryptoVal value={bigPayDay} currency="HEX" /></Col>
                             <Col className="numeric"><CryptoVal value={interest} currency="HEX" /></Col>
                             <Col className="numeric"><CryptoVal value={value} currency="HEX" /></Col>
-                            <Col className="numeric"><CryptoVal value={usd} currency="USD" /></Col>
+                            <Col className="numeric text-success">$
+                                <CryptoVal className="d-none d-md-inline" value={usd} currency="USD" />
+                                <CryptoVal className="d-md-none d-inline" value={usd} wholeNumber currency="USD" />
+                            </Col>
                         </Row>
                     )
                 })
+                
             }
         </>)
     }
@@ -77,7 +85,6 @@ class Tewkenaire extends React.Component {
         this.state = {
             tewkStakes: null,
             progress: 10,
-            usdhex: 0.0
         }
     }
 
@@ -90,16 +97,6 @@ class Tewkenaire extends React.Component {
         window._TMAX = this.contract
         
         this.loadHEXMAXstakes()
-    }
-
-    async componentWillReceiveProps(nextProps) {
-        debug("CWRP2: ", nextProps)
-        const tewkStakes = this.state.tewkStakes ? [].concat(this.state.tewkStakes) : null 
-        await this.setState({ 
-            tewkStakes,
-            usdhex: nextProps.usdhex
-         })
-        this.forceUpdate()
     }
 
     async loadHEXMAXstakes() {
@@ -176,14 +173,16 @@ class Tewkenaire extends React.Component {
                                 isAutoStake: Boolean(hexStake.isAutoStakte),
                                 progress,
                                 bigPayDay: new BigNumber(0),
-                                payout: new BigNumber(0)
+                                payout: new BigNumber(0),
                             }
                             // get payout data
                             const App = this.props.context
-                            const { interest, bigPayDay } = await Stakes.getStakePayoutData(
-                                { contract: App.contract }, stakeData)
-                            stakeData.payout = interest
+                            const {
+                                bigPayDay,
+                                interest
+                            } = await Stakes.getStakePayoutData({ contract: App.contract }, stakeData) 
                             stakeData.bigPayDay = bigPayDay
+                            stakeData.payout = interest
 
                             const ourStake = {
                                 hex: stakeData,
@@ -194,7 +193,7 @@ class Tewkenaire extends React.Component {
                                     uniqueID: uniqueStakeId,
                                 }
                             }
-                            debug('pushing ourStake: %o', ourStake)
+                            debug('ourStake %d: %o', index, ourStake)
                             tewkStakes.push(ourStake)
                             this.setState({ progress: 90 / stakeCount * (stakeCount - count) })
                             if (!--count) return resolve(tewkStakes)
@@ -236,9 +235,19 @@ class Tewkenaire extends React.Component {
                                 </Card.Body>
                             </Card>
                             <Card className="bg-dark mt-3">
-                                <Card.Header><em><strong>HEX<span className="text-success">MAX</span></strong></em></Card.Header>
+                                <Card.Header>
+                                    <Row>
+                                        <Col><em><strong>HEX<span className="text-success">MAX</span></strong></em></Col>
+                                        <Col className="text-right text-success">
+                                            <span class="text-muted small mr-1">USD</span>
+                                            <span className="numeric h2">$<strong>
+                                                <CryptoVal value={this.state.totalUSD} currency="USD" />
+                                            </strong></span>
+                                        </Col>
+                                    </Row>
+                                </Card.Header>
                                 <Card.Body>
-                                    <TewkStakeList stakeList={this.state.tewkStakes} usdhex={this.props.usdhex} />
+                                    <TewkStakeList parent={this} stakeList={this.state.tewkStakes} usdhex={this.props.usdhex} />
                                 </Card.Body>
                             </Card>
                             <Card className="bg-dark mt-3">
