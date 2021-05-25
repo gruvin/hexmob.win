@@ -93,6 +93,12 @@ const cryptoFormat = (v, currency) => {
             else                    s = format(',')(v.div(1E20))+'T'
             s = s.replace(/(^[-,0-9]+)[.0]+(M|B|T)?$/, "$1$2") // nn.000 => nn
             break
+
+        case "USD":
+                unit = 'USD'
+            if (v.isZero)   s = '0.00'
+            else s = format(',.2f')(v)
+            break;
         default: // NaN or Infinity
             unit = ''
             s = v.toString()

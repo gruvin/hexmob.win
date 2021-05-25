@@ -10,7 +10,7 @@ import {
     Badge,
     ProgressBar
 } from 'react-bootstrap'
-import { BurgerHeading } from './Widgets'
+import { BurgerHeading, CryptoVal } from './Widgets'
 import HEX from './hex_contract'
 import TMAX from './tmax_contract'
 import Web3 from 'web3';
@@ -119,6 +119,32 @@ class Tewkenaire extends React.Component {
         this.setState({ tewkStakes, progress: 100 })
     }
 
+    renderStakes(stakeList) {
+        // TODO: get interest data from HEX contract (XXX should use cached payout data from App.state)
+        return (<>
+            <Row className="text-muted small">
+                <Col>PRINCIPAL</Col>
+                <Col>T-SHARES</Col>
+                <Col>INTEREST</Col>
+                <Col>VALUE</Col>
+                <Col>USD</Col>
+            </Row>
+            { 
+                stakeList.map(stake => {
+                    return ( 
+                        <Row>
+                            <Col className="numeric"><CryptoVal value={stake.hex.stakedHearts} currency="HEX" /></Col>
+                            <Col className="numeric"><CryptoVal value={stake.hex.stakeShares} currency="SHARES" /></Col>
+                            <Col className="numeric"><CryptoVal value={"0.00"} currency="HEX" /></Col>
+                            <Col className="numeric"><CryptoVal value={"0.00"} currency="HEX" /></Col>
+                            <Col className="numeric"><CryptoVal value={"0.00"} currency="USD" /></Col>
+                        </Row>
+                    )
+                })
+            }
+        </>)
+    }
+
     render() {
         const handleAccordionSelect = (selectedCard) => {
         }
@@ -140,23 +166,18 @@ class Tewkenaire extends React.Component {
                     <Accordion.Collapse eventKey="tewkenaire">
                         <Card.Body className="tewkenaire-body">
                             <Card className="bg-dark mt-3">
-                                <Card.Header style={{ fontFamily: "Arial" }}><em><strong>HEX<span className="text-success">TEW</span></strong></em></Card.Header>
+                                <Card.Header style={{ fontFamily: "Arial" }} className="pl-1"><em><strong>HEX<span className="text-success">TEW</span></strong></em></Card.Header>
                                 <Card.Body>
                                     placeholder
                                 </Card.Body>
                             </Card>
                             <Card className="bg-dark mt-3">
                                 <Card.Header style={{ fontFamily: "Arial" }}><em><strong>HEX<span className="text-success">MAX</span></strong></em></Card.Header>
-                                <Card.Body>
-                            {
-                                this.state.tewkStakes.map(stake => {
-                                    return ( <div>{stake.hex.stakeId}</div> )
-                                })
-                            }
+                                <Card.Body> { this.renderStakes(this.state.tewkStakes) }
                                 </Card.Body>
                             </Card>
                             <Card className="bg-dark mt-3">
-                                <Card.Header style={{ fontFamily: "Arial" }}><em><strong><span className="text-success">INFINI</span>HEX</strong></em></Card.Header>
+                                <Card.Header style={{ fontFamily: "Arial" }}><em><strong>INFINI<span className="text-success">HEX</span></strong></em></Card.Header>
                                 <Card.Body>
                                     placeholder
                                 </Card.Body>
