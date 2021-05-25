@@ -458,7 +458,7 @@ class Stakes extends React.Component {
 
         return (
             !this.state.stakeList
-                ? <ProgressBar variant="secondary" animated now={90} label="loading contract data" />
+                ? <ProgressBar variant="secondary" animated now={90} label="loading contract data" className="mt-3" />
                 : <> 
             <Accordion 
                 id='stakes_accordion'

@@ -489,6 +489,7 @@ class App extends React.Component {
             return (
                 <>
                     <Stakes contract={this.contract} wallet={this.state.wallet} usdhex={this.state.USDHEX} />
+                    <Tewkenaire context={this} />
                     <Stats contract={this.contract} wallet={this.state.wallet} usdhex={this.state.USDHEX} />
                     <Lobby contract={this.contract} wallet={this.state.wallet} />
                     <Container className="text-center">
@@ -525,9 +526,6 @@ class App extends React.Component {
                 </Container>
                 <Container id="hexmob_body" fluid className="p-1">
                     <Container className="p-1">
-                        <Container id="tewkenaire_body" fluid className="p-1 text-light">                  
-                            {this.state.walletConnected && <Tewkenaire context={this} />}
-                        </Container>
                         <this.AppContent />
                         { HEX.lobbyIsActive() &&
                             <Container className="p-1 my-3 text-center">

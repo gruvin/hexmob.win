@@ -1,6 +1,7 @@
 import React from 'react'
 import { BigNumber } from 'bignumber.js'
 import {
+    Accordion,
     Container,
     Card,
     Row,
@@ -9,6 +10,7 @@ import {
     Badge,
     ProgressBar
 } from 'react-bootstrap'
+import { BurgerHeading } from './Widgets'
 import HEX from './hex_contract'
 import TMAX from './tmax_contract'
 import Web3 from 'web3';
@@ -19,7 +21,8 @@ class Tewkenaire extends React.Component {
         super(props)
         this.provider = window.web3.currentProvider || null
         this.state = {
-            tewkStakes: []
+            tewkStakes: null,
+            progress: 10
         }
     }
 
@@ -64,7 +67,7 @@ class Tewkenaire extends React.Component {
             batchStart < stakeCount && batchEnd < stakeCount && count; 
             batchStart=batchEnd+1, batchEnd=Math.min(batchEnd+301, stakeCount-1)
         ) {
-            console.log(batchStart, batchEnd)
+            debug(batchStart, batchEnd)
             const tewkStakesBatch = await new Promise((resolve, reject) => {
                 if (!count) return resolve(tewkStakes)
                 for (let index = batchStart; index < batchEnd; index++) {
@@ -105,6 +108,7 @@ class Tewkenaire extends React.Component {
                             }
                             debug('pushing ourStake: %j', ourStake)
                             tewkStakes.push(ourStake)
+                            this.setState({ progress: 90 / stakeCount * (stakeCount - count)   })
                             if (!count) return resolve(tewkStakes)
                         }
                     })
@@ -112,13 +116,57 @@ class Tewkenaire extends React.Component {
             })
         } // for batches
         debug('tewkStakes: ', tewkStakes)
-        this.setState({ tewkStakes })
+        this.setState({ tewkStakes, progress: 100 })
     }
 
     render() {
-        return (
-            <div>TEWKENAIRE</div>
-        )
+        const handleAccordionSelect = (selectedCard) => {
+        }
+
+        return (<>
+            {!this.state.tewkStakes
+                ? <ProgressBar variant="secondary" animated now={this.state.progress} label="loading tewenaire contract data" className="mt-3" />
+                :  
+            <Accordion 
+                id='tewk_accordion'
+                className="text-left mt-3"
+                onSelect={handleAccordionSelect}
+                defaultActiveKey="tewkenaire"
+            >
+                <Card bg="secondary" text="light">
+                    <Accordion.Toggle as={Card.Header} eventKey="tewkenaire">
+                        <BurgerHeading>Tewkenaire</BurgerHeading>
+                    </Accordion.Toggle>
+                    <Accordion.Collapse eventKey="tewkenaire">
+                        <Card.Body className="tewkenaire-body">
+                            <Card className="bg-dark mt-3">
+                                <Card.Header style={{ fontFamily: "Arial" }}><em><strong>HEX<span className="text-success">TEW</span></strong></em></Card.Header>
+                                <Card.Body>
+                                    placeholder
+                                </Card.Body>
+                            </Card>
+                            <Card className="bg-dark mt-3">
+                                <Card.Header style={{ fontFamily: "Arial" }}><em><strong>HEX<span className="text-success">MAX</span></strong></em></Card.Header>
+                                <Card.Body>
+                            {
+                                this.state.tewkStakes.map(stake => {
+                                    return ( <div>{stake.hex.stakeId}</div> )
+                                })
+                            }
+                                </Card.Body>
+                            </Card>
+                            <Card className="bg-dark mt-3">
+                                <Card.Header style={{ fontFamily: "Arial" }}><em><strong><span className="text-success">INFINI</span>HEX</strong></em></Card.Header>
+                                <Card.Body>
+                                    placeholder
+                                </Card.Body>
+                            </Card>
+                        </Card.Body>
+                   </Accordion.Collapse>
+                </Card>
+            </Accordion>
+            }
+        </>)
     }
 }
 
