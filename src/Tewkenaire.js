@@ -2,27 +2,82 @@ import React from 'react'
 import { BigNumber } from 'bignumber.js'
 import {
     Accordion,
-    Container,
+  //  Container,
     Card,
     Row,
     Col,
-    Button,
-    Badge,
+  //  Button,
+  //  Badge,
     ProgressBar
 } from 'react-bootstrap'
 import { BurgerHeading, CryptoVal } from './Widgets'
+import './Tewkenaire.scss'
 import HEX from './hex_contract'
 import TMAX from './tmax_contract'
 import Web3 from 'web3';
+import Stakes from './Stakes'
 const debug = require('debug')('TMax')
+
+class TewkStakeList extends React.Component {
+    constructor(props) {
+        super(props)
+        this.state = {
+            stakeList: props.stakeList,
+            usdhex: props.usdhex
+        }
+    }
+
+    componentWillReceiveProps(nextProps) {
+        debug("CWRP: ", nextProps)
+        const { stakeList, usdhex } = nextProps
+        this.setState({
+            stakeList: [].concat(stakeList),
+            usdhex
+        })
+        this.forceUpdate()
+    }
+
+    render() {
+        const { usdhex } = this.state
+        // TODO: get interest data from HEX contract (XXX should use cached payout data from App.state)
+        return (<>
+            {this.state.usdhex}
+            <Row className="text-muted small">
+                <Col>HEX PRINCIPAL</Col>
+                <Col>T-SHARES</Col>
+                <Col>HEX INTEREST</Col>
+                <Col>HEX VALUE</Col>
+                <Col>USD VALUE</Col>
+            </Row>
+            {
+                this.state.stakeList.map((stake, index) => {
+                    const { stakedHearts, stakeShares, payout, bigPayDay } = stake.hex
+                    const interest = payout.plus(bigPayDay)
+                    const value = stakedHearts.plus(interest)
+                    const usd = value.times(usdhex).toFixed(2)
+                    return (
+                        <Row key={'hexmax_'+index} >
+                            <Col className="numeric"><CryptoVal value={stakedHearts} currency="HEX" /></Col>
+                            <Col className="numeric"><CryptoVal value={stakeShares} currency="SHARES" /></Col>
+                            <Col className="numeric"><CryptoVal value={interest} currency="HEX" /></Col>
+                            <Col className="numeric"><CryptoVal value={value} currency="HEX" /></Col>
+                            <Col className="numeric"><CryptoVal value={usd} currency="USD" /></Col>
+                        </Row>
+                    )
+                })
+            }
+        </>)
+    }
+}
 
 class Tewkenaire extends React.Component {
     constructor(props) {
         super(props)
-        this.provider = window.web3.currentProvider || null
+        this.provider = props.context.walletProvider
         this.state = {
             tewkStakes: null,
-            progress: 10
+            progress: 10,
+            usdhex: 0.0
         }
     }
 
@@ -37,9 +92,18 @@ class Tewkenaire extends React.Component {
         this.loadHEXMAXstakes()
     }
 
+    async componentWillReceiveProps(nextProps) {
+        debug("CWRP2: ", nextProps)
+        const tewkStakes = this.state.tewkStakes ? [].concat(this.state.tewkStakes) : null 
+        await this.setState({ 
+            tewkStakes,
+            usdhex: nextProps.usdhex
+         })
+        this.forceUpdate()
+    }
+
     async loadHEXMAXstakes() {
-        const { contract, hexContract } = this
-        const { chainId, wallet } = this.props.context.state
+        const { chainId, wallet, currentDay } = this.props.context.state
         const tmaxAddress = TMAX.CHAINS[chainId].address
         debug('tmaxAddress: ', tmaxAddress)
 
@@ -58,21 +122,26 @@ class Tewkenaire extends React.Component {
         debug('activeStakes: ', activeStakes)
 
         const tewkStakes = []
-        let count = activeStakes;
+        let count = activeStakes
 
-        // Run through HEXMAX's HEX stakeList, searching for stakes that match our wallet.address (see stakeID+stakeShares sha3 hash, below).
-        // stop either at the end of the list or when we have found activeStakes no. of stakes
-        for ( // batches of 300
-            let batchStart = 0, batchEnd = 300; 
+        // Run through HEXMAX's HEX stakeList, searching for stakes that match our wallet.address 
+        // (see stakeID+stakeShares sha3 hash, below).
+        // Stop either at the end of the list (ouch!) or when we have found <activeStakes> no. of stakes.
+        // Time to brush up on loops of async functions and atomic array management in JS! :p
+        for ( // retrieve HEX stakes in batches of up to 100 ...
+            let batchStart = 0, batchEnd = 99; 
             batchStart < stakeCount && batchEnd < stakeCount && count; 
-            batchStart=batchEnd+1, batchEnd=Math.min(batchEnd+301, stakeCount-1)
-        ) {
+            batchStart=batchEnd+1, batchEnd=Math.min(batchEnd+101, stakeCount-1)
+        ) { // get one batch ...
             debug(batchStart, batchEnd)
-            const tewkStakesBatch = await new Promise((resolve, reject) => {
-                if (!count) return resolve(tewkStakes)
+
+            // eslint-disable-next-line
+            await new Promise((resolve, reject) => {
+ //               if (!count) return resolve(tewkStakes)
                 for (let index = batchStart; index < batchEnd; index++) {
                     //debug('tmaxAddress: %s index: %d', tmaxAddress, index) 
-                    const hexStake = this.hexContract.methods.stakeLists(tmaxAddress, index).call()
+                    this.hexContract.methods.stakeLists(tmaxAddress, index).call()
+                    // eslint-disable-next-line
                     .then(async hexStake => {
                         const { 
                             stakeId,
@@ -87,18 +156,37 @@ class Tewkenaire extends React.Component {
                                 'value': stakeShares
                             })
                         );
-
                         // is this stake one of ours?
                         const tmaxStake = await this.contract.methods.stakeLists(wallet.address, uniqueStakeId).call()
                         const { stakeID } = tmaxStake
-                        if (stakeID != "0") {
-                            count--
+                        if (stakeID !== "0") { // found one of ours
+                            
+                            const progress = (currentDay < hexStake.lockedDay) ? 0
+                            : Math.trunc(Math.min((currentDay - hexStake.lockedDay) / hexStake.stakedDays * 100000, 100000))
+        
+                            const stakeData = {
+                                stakeOwner: tmaxAddress,
+                                stakeIndex: index,
+                                stakeId: hexStake.stakeId,
+                                lockedDay: Number(hexStake.lockedDay),
+                                stakedDays: Number(hexStake.stakedDays),
+                                stakedHearts: new BigNumber(hexStake.stakedHearts),
+                                stakeShares: new BigNumber(hexStake.stakeShares),
+                                unlockedDay: Number(hexStake.unlockedDay),
+                                isAutoStake: Boolean(hexStake.isAutoStakte),
+                                progress,
+                                bigPayDay: new BigNumber(0),
+                                payout: new BigNumber(0)
+                            }
+                            // get payout data
+                            const App = this.props.context
+                            const { interest, bigPayDay } = await Stakes.getStakePayoutData(
+                                { contract: App.contract }, stakeData)
+                            stakeData.payout = interest
+                            stakeData.bigPayDay = bigPayDay
+
                             const ourStake = {
-                                hex: {
-                                    stakeOwner: tmaxAddress,
-                                    stakeIndex: index,
-                                    ...Object.fromEntries(Object.entries(hexStake).filter((key, val) => isNaN(parseInt(key)))), // strips out numberic keys
-                                },
+                                hex: stakeData,
                                 hexmax: {
                                     stakeOwner: wallet.address,
                                     stakeIndex: index,
@@ -106,43 +194,19 @@ class Tewkenaire extends React.Component {
                                     uniqueID: uniqueStakeId,
                                 }
                             }
-                            debug('pushing ourStake: %j', ourStake)
+                            debug('pushing ourStake: %o', ourStake)
                             tewkStakes.push(ourStake)
-                            this.setState({ progress: 90 / stakeCount * (stakeCount - count)   })
-                            if (!count) return resolve(tewkStakes)
+                            this.setState({ progress: 90 / stakeCount * (stakeCount - count) })
+                            if (!--count) return resolve(tewkStakes)
                         }
+                        return resolve(tewkStakes)
                     })
+                    .catch(e => { throw new Error(e) })
                 }
-            })
+            }) // await Promise
         } // for batches
         debug('tewkStakes: ', tewkStakes)
         this.setState({ tewkStakes, progress: 100 })
-    }
-
-    renderStakes(stakeList) {
-        // TODO: get interest data from HEX contract (XXX should use cached payout data from App.state)
-        return (<>
-            <Row className="text-muted small">
-                <Col>PRINCIPAL</Col>
-                <Col>T-SHARES</Col>
-                <Col>INTEREST</Col>
-                <Col>VALUE</Col>
-                <Col>USD</Col>
-            </Row>
-            { 
-                stakeList.map(stake => {
-                    return ( 
-                        <Row>
-                            <Col className="numeric"><CryptoVal value={stake.hex.stakedHearts} currency="HEX" /></Col>
-                            <Col className="numeric"><CryptoVal value={stake.hex.stakeShares} currency="SHARES" /></Col>
-                            <Col className="numeric"><CryptoVal value={"0.00"} currency="HEX" /></Col>
-                            <Col className="numeric"><CryptoVal value={"0.00"} currency="HEX" /></Col>
-                            <Col className="numeric"><CryptoVal value={"0.00"} currency="USD" /></Col>
-                        </Row>
-                    )
-                })
-            }
-        </>)
     }
 
     render() {
@@ -166,18 +230,19 @@ class Tewkenaire extends React.Component {
                     <Accordion.Collapse eventKey="tewkenaire">
                         <Card.Body className="tewkenaire-body">
                             <Card className="bg-dark mt-3">
-                                <Card.Header style={{ fontFamily: "Arial" }} className="pl-1"><em><strong>HEX<span className="text-success">TEW</span></strong></em></Card.Header>
+                                <Card.Header className="pl-1"><em><strong>HEX<span className="text-success">TEW</span></strong></em></Card.Header>
                                 <Card.Body>
                                     placeholder
                                 </Card.Body>
                             </Card>
                             <Card className="bg-dark mt-3">
-                                <Card.Header style={{ fontFamily: "Arial" }}><em><strong>HEX<span className="text-success">MAX</span></strong></em></Card.Header>
-                                <Card.Body> { this.renderStakes(this.state.tewkStakes) }
+                                <Card.Header><em><strong>HEX<span className="text-success">MAX</span></strong></em></Card.Header>
+                                <Card.Body>
+                                    <TewkStakeList stakeList={this.state.tewkStakes} usdhex={this.props.usdhex} />
                                 </Card.Body>
                             </Card>
                             <Card className="bg-dark mt-3">
-                                <Card.Header style={{ fontFamily: "Arial" }}><em><strong>INFINI<span className="text-success">HEX</span></strong></em></Card.Header>
+                                <Card.Header><em><strong>INFINI<span className="text-success">HEX</span></strong></em></Card.Header>
                                 <Card.Body>
                                     placeholder
                                 </Card.Body>
