@@ -135,10 +135,7 @@ class TewkStakeList extends React.Component {
                                 const {
                                     bigPayDay,
                                     interest
-                                } = { 
-                                    bigPayDay: new BigNumber(0),
-                                    interest: new BigNumber(0)
-                                } // await Stakes.getStakePayoutData({ contract: App.contract }, stakeData) 
+                                } = await Stakes.getStakePayoutData({ contract: App.contract }, stakeData) 
                                 stakeData.bigPayDay = bigPayDay
                                 stakeData.payout = interest
 
