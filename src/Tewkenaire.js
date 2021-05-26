@@ -25,7 +25,6 @@ class TewkStakeList extends React.Component {
         super(props)
         this.state = {
             uiStakeList: null,
-            totalUSD: 0.0
         }
     }
 
@@ -44,7 +43,7 @@ class TewkStakeList extends React.Component {
             return { stakedHearts, stakeShares, payout, bigPayDay, interest, value, usd }
         })
         this.setState({ uiStakeList })
-        parent.setState({ totalUSD })
+        eval(`parent.setState({ ${this.props.contractObject.SYMBOL+'_totalUSD'}: totalUSD })`)
     }
 
     async getTewkenaireStakes(contractObject) {
@@ -66,8 +65,8 @@ class TewkStakeList extends React.Component {
             activeStakes = playerStats.activeStakes
         })
 
-        debug('stakeCount: ', stakeCount)
-        debug('activeStakes: ', activeStakes)
+        debug(contractObject.SYMBOL+' stakeCount: ', stakeCount)
+        debug(contractObject.SYMBOL+' activeStakes: ', activeStakes)
 
         // Run through HEXMAX's HEX stakeList, searching for stakes that match our wallet.address 
         // (see stakeID+stakeShares sha3 hash, below).
@@ -82,7 +81,7 @@ class TewkStakeList extends React.Component {
             batchStart < stakeCount && batchEnd < stakeCount && count; 
             batchStart=batchEnd+1, batchEnd=Math.min(batchEnd+batchSize, stakeCount-1)
         ) { // get one batch ...
-            debug(batchStart, batchEnd)
+            debug(contractObject.SYMBOL+': ', batchStart, batchEnd)
             
             // eslint-disable-next-line
             await new Promise((resolve, reject) => {
@@ -152,7 +151,7 @@ class TewkStakeList extends React.Component {
                                 tewkStakes.push(ourStake)
                                 this.setState({ progress: 45 / stakeCount * (stakeCount - count) + 50 })
                                 count--
-                                debug("COUNT: ", count)
+                                //debug("COUNT: ", count)
                                 if (!count) return resolve()
                             }
                         })
@@ -163,7 +162,7 @@ class TewkStakeList extends React.Component {
                     })
                 } // for (batch)
             }) // await Promise
-            debug(contractObject.SYMBOL+" BATCH DONE! tewkSakes: ", tewkStakes)
+            // debug(contractObject.SYMBOL+" BATCH DONE! tewkSakes: ", tewkStakes)
             if (!count) return tewkStakes
         } // for (batches)
     }
@@ -210,14 +209,19 @@ class Tewkenaire extends React.Component {
         this.web3 = null
         this.hexContract = null
         this.state = {
-            progress: 50
+            progress: 50,
+            HEX2_totalUSD: 0.0,
+            HEX3_totalUSD: 0.0,
+            HEX4_totalUSD: 0.0,
+            HEX5_totalUSD: 0.0,
         }
     }
 
     async componentDidMount() {
         window._TEWK = this
         const { chainId } = this.props.parent.state
-        this.web3 = new Web3(this.props.parent.wssProvider) // Infura direct
+        this.web3 = new Web3(this.props.parent.wssProvider) // Infura using own api key
+        this.web3 = new Web3(window.ethereum) // Metamask (Infura)
         this.hexContract = await new this.web3.eth.Contract(HEX.ABI, HEX.CHAINS[chainId].address)
     }
 
@@ -239,19 +243,29 @@ class Tewkenaire extends React.Component {
                     <Accordion.Collapse eventKey="tewkenaire">
                         <Card.Body className="tewkenaire-body">
                             <Card className="bg-dark mt-3">
-                                <Card.Header className="pl-1"><em><strong>HEX<span className="text-success">TEW</span></strong></em></Card.Header>
+                                <Card.Header className="pl-1">
+                                    <Row>
+                                        <Col><em><strong>HEX<span className="text-success">TEW</span></strong></em></Col>
+                                        <Col className="text-right text-success">
+                                            <span className="text-muted small mr-1">USD</span>
+                                            <span className="numeric h2">$<strong>
+                                                <CryptoVal value={this.state.HEX2_totalUSD} currency="USD" />
+                                            </strong></span>
+                                        </Col>
+                                    </Row>
+                                </Card.Header>    
                                 <Card.Body>
                                     {this.hexContract && <TewkStakeList parent={this} contractObject={HEX2} usdhex={this.props.usdhex} />}
                                 </Card.Body>
                             </Card>
                             <Card className="bg-dark mt-3">
-                                <Card.Header>
+                                <Card.Header className="pl-1">
                                     <Row>
                                         <Col><em><strong>HEX<span className="text-success">MAX</span></strong></em></Col>
                                         <Col className="text-right text-success">
                                             <span className="text-muted small mr-1">USD</span>
                                             <span className="numeric h2">$<strong>
-                                                <CryptoVal value={this.state.totalUSD} currency="USD" />
+                                                <CryptoVal value={this.state.HEX4_totalUSD} currency="USD" />
                                             </strong></span>
                                         </Col>
                                     </Row>
@@ -261,7 +275,17 @@ class Tewkenaire extends React.Component {
                                 </Card.Body>
                             </Card>
                             <Card className="bg-dark mt-3">
-                                <Card.Header><em><strong>INFINI<span className="text-success">HEX</span></strong></em></Card.Header>
+                                <Card.Header className="pl-1">
+                                <Row>
+                                        <Col><em><strong>INFINI<span className="text-success">HEX</span></strong></em></Col>
+                                        <Col className="text-right text-success">
+                                            <span className="text-muted small mr-1">USD</span>
+                                            <span className="numeric h2">$<strong>
+                                                <CryptoVal value={this.state.HEX5_totalUSD} currency="USD" />
+                                            </strong></span>
+                                        </Col>
+                                    </Row>
+                                </Card.Header>
                                 <Card.Body>
                                     {this.hexContract && <TewkStakeList parent={this} contractObject={HEX5} usdhex={this.props.usdhex} />}
                                 </Card.Body>
