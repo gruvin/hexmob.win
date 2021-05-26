@@ -1,6 +1,7 @@
 // tewkenaire.io HEXXMAX
 
 module.exports = {
+    SYMBOL: "HEX4",
     CHAINS: {
         0x0: { name: 'none', address: "0x0000000000000000000000000000000000000000", rpcUrl: null },
         0x1: {
