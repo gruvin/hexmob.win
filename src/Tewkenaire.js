@@ -163,8 +163,8 @@ class TewkStakeList extends React.Component {
                         })
                     })
                     .catch(e => {
-                        debug("ERROR getTewkStakes: ", e)
-                        throw new Error(e) // return resolve(null) 
+                        debug("ERROR getTewkStakes: ", e.message)
+                        return resolve([]) 
                     })
                 } // for (batch)
             }) // await Promise

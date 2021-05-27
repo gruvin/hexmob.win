@@ -3,13 +3,14 @@ import {
     Container,
     Card,
     Button,
-    ButtonGroup,
+    InputGroup,
     Spinner,
     Overlay,
     Tooltip,
     Badge,
     Row,
-    Col
+    Col,
+    Form
 } from 'react-bootstrap'
 import { BigNumber } from 'bignumber.js'
 import { EventEmitter } from 'events'
@@ -258,12 +259,13 @@ export class VoodooButton extends React.Component {
 
 export function Donaticator(props) {
     const [show, setShow] = useState(false);
+    const [donateEnabled, setDonateEnabled] = useState(false);
+
     const [amount, setAmount] = useState("");
     const target = useRef(null);
 
     const handleDonate = async (e) => {
         e.preventDefault()
-
 
         if (isNaN(parseInt(amount))) return false
 
@@ -286,17 +288,13 @@ export function Donaticator(props) {
         setAmount(parseInt(e.target.value) || "")
     }
 
-    const copyDonationAddress = (e) => {
-        e.preventDefault()
-        const addr = document.querySelector("input.donate_addr")
-        addr.select()
-        document.execCommand("copy")
-        document.getSelection().removeAllRanges()
-        addr.blur()
+    const showCopied = (e) => {
         setShow(true)
-        setTimeout(() => setShow(false), 1000)
+        setTimeout(() => setShow(false), 3000)
     }
 
+    const donationAddress = "0x920b96701676cdAC9e2dB0b7c2979FF2577A0FA9"
+    
     return (
         <Container className="pt-2 mt-3">
             <Card.Body className="rounded text-center text-light pb-3 mb-3">
@@ -304,6 +302,7 @@ export function Donaticator(props) {
                 <form>
                     <h5 className="m-0">please support <strong>HEX<sup>mob</sup></strong></h5>
                     <div style={{ width: "20rem", margin: "auto" }}>
+                        <CopyToClipboard text={donationAddress} onCopy={showCopied}>
                         <input
                             style={{ display: "inline-block" }}
                             name="addr"
@@ -311,29 +310,35 @@ export function Donaticator(props) {
                             readOnly={true}
                             ref={target}
                             title="copy to clipboard"
-                            className="donate_addr w-100 text-center btn btn-dark" 
-                            value="0x920b96701676cdAC9e2dB0b7c2979FF2577A0FA9"
-                            onClick={ copyDonationAddress }
+                            className="donate_addr w-100 text-center btn btn-dark py-0" 
+                            value={donationAddress}
                         />
+                        </CopyToClipboard>
                     </div>
                     { props.walletConnected && 
                     <>
-                        <ButtonGroup>
-                        <input
-                            name="amount"
-                            type="number"
-                            placeholder="HEX amount" 
-                            size={12} 
-                            onBlur={ handleDonationAmount } 
-                        />
-                        <Button 
-                            variant="success" size="sm"
-                            value="donate"
-                            onClick={ handleDonate }
-                        >
-                            donate
-                        </Button>
-                        </ButtonGroup>
+                        <InputGroup style={{ maxWidth: "300px", margin: "auto" }}>
+                            <Form.Control
+                                as="input"
+                                name="amount"
+                                type="number"
+                                placeholder="HEX amount" 
+                                htmlSize="12"
+                                ref={target}
+                                onBlur={ handleDonationAmount }
+                                onChange={() => { setDonateEnabled(target.current.value !=="") }} 
+                            />
+                            <InputGroup.Append>
+                                <Button 
+                                    variant="success" size="sm"
+                                    value="donate"
+                                    disabled={!donateEnabled}
+                                    onClick={ handleDonate }
+                                >
+                                    DONATE NOW
+                                </Button>
+                            </InputGroup.Append>
+                        </InputGroup>
                         <div className="mt-3">{/*#7*/}
                             <Button 
                                 variant="info" size="sm" className="text-dark"
