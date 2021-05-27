@@ -175,8 +175,8 @@ class Stats extends React.Component {
                                     </defs>
                                     <XAxis dataKey="day" />
                                     <YAxis type="number" orientation="right" domain={[ 10000, dataMax => ((Math.round(dataMax / 2000)+1) * 2000) ]} tickFormatter={formatter} />
-                                    <CartesianGrid stroke="#ffffff33" strokeDasharray="3 3" />
-                                    <Area type="monotone" dataKey="tsr" stroke="#ffffff33" fillOpacity={1} fill="url(#colorTsr)" />
+                                    <CartesianGrid stroke="#ffffff22" strokeDasharray="3 3" />
+                                    <Area type="monotone" dataKey="tsr" stroke="#ffffff55" fillOpacity={1} fill="url(#colorTsr)" />
                                 </AreaChart>
                             </ResponsiveContainer>
                             <h4 className="text-center mt-2">USD/HEX by Day</h4>
@@ -185,8 +185,8 @@ class Stats extends React.Component {
                                     margin={{ top: 10, right: 0, left: 30, bottom: 0 }}>
                                     <XAxis dataKey="day" />
                                     <YAxis type="number" orientation="right" domain={[ 0, dataMax => (dataMax * 1.5) ]} tickFormatter={usdFormatter} />
-                                    <CartesianGrid stroke="#ffffff33" strokeDasharray="3 3" />
-                                    <Line type="linear" dataKey="usd" strokeWidth={2} dot={false} stroke="#ffffff99" />
+                                    <CartesianGrid stroke="#ffffff22" strokeDasharray="3 3" />
+                                    <Line type="linear" dataKey="usd" strokeWidth={2} dot={false} stroke="#ee00aa" />
                                 </LineChart>
                             </ResponsiveContainer>
                         </Card.Body>
