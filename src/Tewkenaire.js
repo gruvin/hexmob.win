@@ -6,7 +6,7 @@ import {
     Card,
     Row,
     Col,
-  //  Button,
+    Button,
   //  Badge,
     ProgressBar
 } from 'react-bootstrap'
@@ -25,12 +25,17 @@ class TewkStakeList extends React.Component {
         super(props)
         this.state = {
             uiStakeList: null,
+            progressBar: 0,
         }
     }
 
     async componentDidMount() {
         if (!this.props.contractObject) return
         window['_'+this.props.contractObject.SYMBOL] = this
+    }
+
+    scanTewk = async () => {
+        if (!this.props.contractObject) return false
         const { parent, contractObject, usdhex } = this.props
         let totalUSD = 0.0
         const tewkStakes = await this.getTewkenaireStakes(contractObject)
@@ -43,7 +48,7 @@ class TewkStakeList extends React.Component {
             return { stakedHearts, stakeShares, payout, bigPayDay, interest, value, usd }
         })
         this.setState({ uiStakeList })
-        eval(`parent.setState({ ${this.props.contractObject.SYMBOL+'_totalUSD'}: totalUSD })`)
+        parent.setState({ [this.props.contractObject.SYMBOL+'_totalUSD']: totalUSD })
     }
 
     async getTewkenaireStakes(contractObject) {
@@ -90,6 +95,8 @@ class TewkStakeList extends React.Component {
                     hexContract.methods.stakeLists(tewkAddress, index).call()
                     // eslint-disable-next-line
                     .then(async hexStake => {
+                        this.setState({ progressBar: (activeStakes - count) / stakeCount * 100})
+
                         c++
                         //if (contractObject.SYMBOL === "HEX4") debug("index: %d \tc:%d", index, c)
                         if (c === batchSize) return resolve()
@@ -109,7 +116,7 @@ class TewkStakeList extends React.Component {
                         );
                         // if (contractObject.SYMBOL === "HEX4") debug('uniqueStakeId: ', wallet.address, uniqueStakeId)
                         // is this stake one of ours?
-                        const tewkStake = tewkContract.methods.stakeLists(wallet.address, uniqueStakeId).call()
+                        tewkContract.methods.stakeLists(wallet.address, uniqueStakeId).call()
                         .then(async tewkStake => {
                             const { stakeID } = tewkStake
                             if (stakeID !== "0") { // found one of ours                                
@@ -149,7 +156,6 @@ class TewkStakeList extends React.Component {
                                 }
                                 debug(contractObject.SYMBOL+' ourStake %d: %o', index, ourStake)
                                 tewkStakes.push(ourStake)
-                                this.setState({ progress: 45 / stakeCount * (stakeCount - count) + 50 })
                                 count--
                                 //debug("COUNT: ", count)
                                 if (!count) return resolve()
@@ -168,10 +174,7 @@ class TewkStakeList extends React.Component {
     }
 
     render() {
-        if (!this.state.uiStakeList) return (<div>NO DATA</div>)
-
-        // TODO: get interest data from HEX contract (XXX should use cached payout data from App.state)
-        return (<>
+        if (this.state.uiStakeList) return (<>
             <Row className="text-right text-muted small pr-3">
                 <Col className="d-none d-md-inline">PRINCIPAL</Col>
                 <Col>SHARES</Col>
@@ -199,6 +202,10 @@ class TewkStakeList extends React.Component {
                 })               
             }
         </>)
+        else return (<>
+            <ProgressBar variant="secondary" animated now={this.state.progressBar} />
+            <Button onClick={this.scanTewk}>SCAN</Button>
+        </>)
     }
 }
 
@@ -209,7 +216,6 @@ class Tewkenaire extends React.Component {
         this.web3 = null
         this.hexContract = null
         this.state = {
-            progress: 50,
             HEX2_totalUSD: 0.0,
             HEX3_totalUSD: 0.0,
             HEX4_totalUSD: 0.0,
@@ -248,9 +254,9 @@ class Tewkenaire extends React.Component {
                                         <Col><em><strong>HEX<span className="text-success">TEW</span></strong></em></Col>
                                         <Col className="text-right text-success">
                                             <span className="text-muted small mr-1">USD</span>
-                                            <span className="numeric h2">$<strong>
-                                                <CryptoVal value={this.state.HEX2_totalUSD} currency="USD" />
-                                            </strong></span>
+                                            <span className="numeric h2">
+                                                $<strong><CryptoVal value={this.state.HEX2_totalUSD} currency="USD" /></strong>
+                                            </span>
                                         </Col>
                                     </Row>
                                 </Card.Header>    
@@ -264,9 +270,9 @@ class Tewkenaire extends React.Component {
                                         <Col><em><strong>HEX<span className="text-success">MAX</span></strong></em></Col>
                                         <Col className="text-right text-success">
                                             <span className="text-muted small mr-1">USD</span>
-                                            <span className="numeric h2">$<strong>
-                                                <CryptoVal value={this.state.HEX4_totalUSD} currency="USD" />
-                                            </strong></span>
+                                            <span className="numeric h2">
+                                                $<strong><CryptoVal value={this.state.HEX4_totalUSD} currency="USD" /></strong>
+                                            </span>
                                         </Col>
                                     </Row>
                                 </Card.Header>
@@ -280,9 +286,9 @@ class Tewkenaire extends React.Component {
                                         <Col><em><strong>INFINI<span className="text-success">HEX</span></strong></em></Col>
                                         <Col className="text-right text-success">
                                             <span className="text-muted small mr-1">USD</span>
-                                            <span className="numeric h2">$<strong>
-                                                <CryptoVal value={this.state.HEX5_totalUSD} currency="USD" />
-                                            </strong></span>
+                                            <span className="numeric h2">
+                                                $<strong><CryptoVal value={this.state.HEX5_totalUSD} currency="USD" /></strong>
+                                            </span>
                                         </Col>
                                     </Row>
                                 </Card.Header>
