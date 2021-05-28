@@ -16,7 +16,6 @@ import HEX from './hex_contract'
 import HEX2 from './hex2_contract'
 import HEX4 from './hex4_contract'
 import HEX5 from './hex5_contract'
-import Web3 from 'web3';
 import Stakes from './Stakes' // for collecting payout data
 const debug = require('debug')('Tewk')
 
@@ -112,7 +111,7 @@ class TewkStakeList extends React.Component {
 
                             fetchedCount++
                             //debug("activeStakes: %d\tindex: %d\tfetchedCount:%d", activeStakes, index, fetchedCount)
-                            if (fetchedCount === batchEnd) return resolve()
+                            if (fetchedCount > batchEnd) return resolve()
                             const { 
                                 stakeId,
                                 stakeShares,
@@ -221,7 +220,7 @@ class TewkStakeList extends React.Component {
         </>)
         else return (<>
             <ProgressBar variant={this.state.progressVariant} animated now={this.state.progressBar} label={this.state.progressLabel} />
-            {this.state.progressBar != 100 && 
+            {this.state.progressBar <= 100 && 
                 <Button 
                     className="mt-3"
                     variant="outline-info"
