@@ -139,7 +139,7 @@ checkBrowsers(paths.appPath, isInteractive)
       }
 
       console.log(chalk.cyan('Starting the development server...\n'));
-      openBrowser(urls.localUrlForBrowser + '?debug');
+      openBrowser(urls.localUrlForBrowser + '?debug&tewk');
     });
 
     ['SIGINT', 'SIGTERM'].forEach(function(sig) {

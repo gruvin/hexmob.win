@@ -24,7 +24,6 @@ import WalletConnectProvider from '@walletconnect/web3-provider'
 //import Portis from "@portis/web3";
 import { detectTrustWallet } from './util'
 import './App.scss'
-const debug = require('debug')('App')
 const { format } = require('d3-format')
 const axios = require('axios').create({
     baseURL: '/',
@@ -42,6 +41,7 @@ if (uriQuery.has('debug')) {
 } else {
     window.localStorage.removeItem('debug')
 }
+const debug = require('debug')('App')
 
 const INITIAL_STATE = {
     chainId: 0,
@@ -65,22 +65,11 @@ const INITIAL_STATE = {
 class App extends React.Component {
     constructor(props) {
         super(props)
-
+        debug("process.env.REACT_APP_INFURA_ID: ", process.env.REACT_APP_INFURA_ID)
         const m = window.location.href.match(/\?r=([^&]+)/)
         const incomingReferrer = (m && m.length > 1)
         const referrer = (incomingReferrer ? m[1] : '0xD30542151ea34007c4c4ba9d653f4DC4707ad2d2').toLowerCase()
 
-        this.web3modal = new Web3Modal({
-            cacheProvider: true,                                    // optional
-            providerOptions: {                                      // required
-                walletconnect: {
-                    package: WalletConnectProvider,                 // required
-                    options: {
-                        infuraId: process.env.INFURA_ID   // required
-                    }
-                },
-            }
-        })
         this.triggerWeb3Modal = false
         this.web3 = null
         this.subscriptions = [ ]
@@ -131,7 +120,7 @@ class App extends React.Component {
             provider.on("accountsChanged", async (accounts) => {
                 const newAddress = accounts[0]
                 debug('ADDRESS CHANGE: %s(old) => %s', this.state.wallet.address, newAddress)
-                await this.setState({ wallet: { ...this.state.wallet, address: newAddress } })
+                this.setState({ wallet: { ...this.state.wallet, address: newAddress } })
                 this.updateHEXBalance()
             })
         }
@@ -210,7 +199,7 @@ class App extends React.Component {
     }
 
     async selectWeb3ModalWallet() {
-        this.walletProvider = null
+        debug('inside selectWeb3ModalWallet()')
         try {
             return await this.web3modal.connect()
         } catch(e) { // user closed dialog withot selection 
@@ -250,7 +239,7 @@ class App extends React.Component {
                 this.triggerWeb3Modal = false
                 this.walletProvider = await this.selectWeb3ModalWallet()
                 const currentProvider = this.walletProvider ? getProviderInfo(this.walletProvider).name : '---'
-                await this.setState({ currentProvider })
+                this.setState({ currentProvider })
             }
         }
 
@@ -270,13 +259,15 @@ class App extends React.Component {
         const network = networkData.name || 'error'
         const wssURL = networkData.wssURL || null 
 
-        await this.setState({ chainId, network })
+        this.setState({ chainId, network })
 
         this.wssProvider = new Web3.providers.WebsocketProvider(wssURL)
-        window.web3hexmob = new Web3(this.walletProvider) // window.web3hexmob used for sending/signing transactions
-        this.web3 = new Web3(this.wssProvider)         // this.web3 used for everything else (Infura)
-        if (!window.web3hexmob || !this.web3) return debug('Unexpected error setting up Web3 instances')
-        debug('web3 providers connected')
+        window.web3hexmob = new Web3(this.walletProvider)   // window.web3hexmob used for sending/signing transactions
+        this.web3 = new Web3(this.wssProvider)              // this.web3 used for everything else (Infura)
+        if (!window.web3hexmob || !this.web3) throw new Error('Unexpected error setting up Web3 instances')
+
+        debug(`web3 providers connected [this.wssProvider=%O]`, this.wssProvider)
+        if (process.env.NODE_ENV === "development") window._w3 = this.web3
         
         // ref: https://soliditydeveloper.com/web3-1-2-5-revert-reason-strings
         if (window.web3hexmob.eth.hasOwnProperty('handleRevert')) window.web3hexmob.eth.handleRevert = true 
@@ -333,21 +324,35 @@ class App extends React.Component {
 
     async componentDidMount() {
         debug('process.env: ', process.env)
-        window._APP = this // DEBUG remove me
-        window._w3M = Web3Modal
-        window._HEX = HEX
-        window._UNIV2 = UNIV2
+        this.web3modal = new Web3Modal({
+            cacheProvider: true,                                    // optional
+            providerOptions: {                                      // required
+                walletconnect: {
+                    package: WalletConnectProvider,                 // required
+                    options: {
+                        infuraId: process.env.REACT_APP_INFURA_ID   // required
+                    }
+                },
+            }
+        })
+        if (uriQuery.get("reset")) { return this.resetApp() }
+
+        if (process.env.NODE_ENV === "development") {
+            window._APP = this
+            window._w3M = this.web3modal
+            window._HEX = HEX
+            window._UNIV2 = UNIV2
+        }
 
         const address = await this.establishWeb3Provider() 
         if (!address) return debug('No wallet address supplied - STOP')
 
-        window.contract = new window.web3hexmob.eth.Contract(HEX.ABI, HEX.CHAINS[this.state.chainId].address)   // wallet provider
-        this.contract = new this.web3.eth.Contract(HEX.ABI, HEX.CHAINS[this.state.chainId].address)             // INFURA
-        this.univ2Contract = new this.web3.eth.Contract(UNIV2.ABI, UNIV2.CHAINS[this.state.chainId].address)    // INFURA
-
+        window.contract = await new window.web3hexmob.eth.Contract(HEX.ABI, HEX.CHAINS[this.state.chainId].address)   // wallet provider
+        this.contract = await new this.web3.eth.Contract(HEX.ABI, HEX.CHAINS[this.state.chainId].address)             // INFURA
+        this.univ2Contract = await new this.web3.eth.Contract(UNIV2.ABI, UNIV2.CHAINS[this.state.chainId].address)    // INFURA
         this.subscribeProvider(this.walletProvider)
 
-        await this.setState({ 
+        this.setState({ 
             wallet: { ...this.state.wallet, address },
             walletConnected: true 
         })
@@ -427,8 +432,7 @@ class App extends React.Component {
     }
 
     resetApp = async () => {
-        const o = new Web3Modal()
-        o.clearCachedProvider()
+        this.web3modal && this.web3modal.clearCachedProvider()
         window.location.reload()
     }
 
@@ -439,14 +443,14 @@ class App extends React.Component {
 
     disconnectWallet = async () => {
         const provider = this.walletProvider || null
-        if (provider && provider.close) {
-            debug("DISCONNECT: App.disconnectWallet()")
-            await this.unsubscribeEvents()
-            await this.web3modal.clearCachedProvider()
-            await provider.close() 
-        } else {
-            this.resetApp()
+        try {
+            this.unsubscribeEvents()
+            this.web3modal.clearCachedProvider()
+            if (provider.disconnect) await provider.disconnect()
+            else if (provider.close) await provider.close()
+        } catch {
         }
+        this.resetApp()
     }
 
     WalletStatus = () => {

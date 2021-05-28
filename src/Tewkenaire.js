@@ -221,7 +221,15 @@ class TewkStakeList extends React.Component {
         </>)
         else return (<>
             <ProgressBar variant={this.state.progressVariant} animated now={this.state.progressBar} label={this.state.progressLabel} />
-            <Button variant="outline-info" size="sm" block className="mt-3" onClick={this.scanTewk}>Scan for Stakes</Button>
+            {this.state.progressBar != 100 && 
+                <Button 
+                    className="mt-3"
+                    variant="outline-info"
+                    size="sm" 
+                    block
+                    onClick={this.scanTewk}>{this.state.progressBar === 0 ? "Scan for Tewkenaire Stakes" : "Restart Tewkenaire Stakes Scan"}
+                </Button>
+            }
         </>)
     }
 }
@@ -230,7 +238,7 @@ class Tewkenaire extends React.Component {
     constructor(props) {
         super(props)
         this.provider = props.parent.walletProvider
-        this.web3 = null
+        this.web3 = props.parent.web3 
         this.hexContract = null
         this.state = {
             HEX2_totalUSD: 0.0,
@@ -243,8 +251,6 @@ class Tewkenaire extends React.Component {
     async componentDidMount() {
         window._TEWK = this
         const { chainId } = this.props.parent.state
-        this.web3 = new Web3(this.props.parent.wssProvider) // Infura using own api key
-        this.web3 = new Web3(window.ethereum) // Metamask (Infura)
         this.hexContract = await new this.web3.eth.Contract(HEX.ABI, HEX.CHAINS[chainId].address)
     }
 
