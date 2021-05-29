@@ -179,7 +179,7 @@ class Stats extends React.Component {
                                     <Area type="monotone" dataKey="tsr" stroke="#ffffff55" fillOpacity={1} fill="url(#colorTsr)" />
                                 </AreaChart>
                             </ResponsiveContainer>
-                            <h4 className="text-center mt-2">USD/HEX by Day</h4>
+                            <h4 className="text-center mt-3">90 Day USD/HEX</h4>
                             <ResponsiveContainer width="100%" height={200}>
                                 <LineChart width={730} height={250} data={UNIv2usdhex}
                                     margin={{ top: 10, right: 0, left: 30, bottom: 0 }}>

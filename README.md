@@ -42,7 +42,7 @@ gpg: Good signature from "Bryan Rentoul <gruvin@gmail.com>" [ultimate]
 
 ## How Can I Trust this dApp Interface?
 
-Oh! I'm so glad you asked! Hold on to your hat! Here we go ...
+I'm _so_ glad you asked! Hold on to your hat! Here we go ...
 
 ### Self Service Security Audit
 I'm just a lone guy, at the end of the Earth. I cannot hope to pay for any kind of proper code security audit. However, if you are so inclined, I have created a method for you to at least verify that what you get served over the web, matches what I have personally signed and published here on GitHub.
