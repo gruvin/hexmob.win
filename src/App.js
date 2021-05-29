@@ -65,13 +65,13 @@ const INITIAL_STATE = {
 class App extends React.Component {
     constructor(props) {
         super(props)
-        debug("process.env.REACT_APP_INFURA_ID: ", process.env.REACT_APP_INFURA_ID)
         const m = window.location.href.match(/\?r=([^&]+)/)
         const incomingReferrer = (m && m.length > 1)
         const referrer = (incomingReferrer ? m[1] : '0xD30542151ea34007c4c4ba9d653f4DC4707ad2d2').toLowerCase()
 
         this.triggerWeb3Modal = false
         this.web3 = null
+        this.wssProvider = null
         this.subscriptions = [ ]
         this.contract = null
         this.state = {
@@ -139,6 +139,17 @@ class App extends React.Component {
         }
     }
 
+    unsubscribeEvents = () => {
+        try {
+            this.web3.eth.clearSubscriptions()
+        } catch(e) {}
+    }
+    
+    handleSubscriptionError = (e, r) => {
+        debug("subscription error: ", r)
+        this.unsubscribeEvents()
+    }
+    
     subscribeEvents = () => {
         const eventCallbackHEX = (error, result) => {
             //debug('events.Transfer[error, result] => ', error, result.returnValues )
@@ -157,19 +168,23 @@ class App extends React.Component {
                 debug(`UNIV2:USDHEX Exception %o: amount1In:${amount1In} amount0Out: ${amount0Out}`, e)
             }
         }
-        const onTransferFrom = this.contract.events.Transfer( {filter:{from:this.state.wallet.address}}, eventCallbackHEX).on('connected', (id) => debug('subbed: HEX from:', id))
-        const onTransferTo = this.contract.events.Transfer( {filter:{to:this.state.wallet.address}}, eventCallbackHEX).on('connected', (id) => debug('subbed: HEX to:', id))
-        const onSwap = this.univ2Contract.events.Swap( {fromBlock: "latest", toBlock: "latest" }, eventCallbackUNIV2).on('connected', (id) => debug('subbed: UNIV2 to:', id))
+        const hexEvent = this.contract.events
+        hexEvent.Transfer( {filter:{from:this.state.wallet.address}}, eventCallbackHEX)
+            .on('connected', (id) => debug('subbed: HEX from:', id))
+            .on('error', this.handleSubscriptionError)
+        hexEvent.Transfer( {filter:{to:this.state.wallet.address}}, eventCallbackHEX)
+            .on('connected', (id) => debug('subbed: HEX to:', id))
+            .on('error', this.handleSubscriptionError)
+
+        const univ2Event = this.univ2Contract.events
+        univ2Event.Swap( {fromBlock: "latest", toBlock: "latest" }, eventCallbackUNIV2)
+            .on('connected', (id) => debug('subbed: UNIV2 to:', id))
+            .on('error', this.handleSubscriptionError)
 
         const address = this.state.wallet.address
-        const onAddressLog = this.web3.eth.subscribe('logs', {
+        this.web3.eth.subscribe('logs', {
             address,
             fromBlock: "0x9CAA35",
-        }, function(error, result){
-            if (!error)
-                debug('SS::result ', result)
-            else
-                debug('SS:ERROR:', error)
         })
         .on('connected', id => debug('SS::subbed: %s -- addr: %s', id, address))
         .on("message", (log) => {
@@ -178,14 +193,9 @@ class App extends React.Component {
         .on("changed", (log) => {
             debug('SS::changed: ', log);
         })
-        .on("error", log => debug('SS::ERRROR: ', log))
+        .on('error', this.handleSubscriptionError)
 
-        this.subscriptions = [ onTransferFrom, onTransferTo, onAddressLog, onSwap ]
         this.updateETHBalance()
-    }
-
-    unsubscribeEvents = () => {
-        this.scrubscriptions && this.scrubscriptions.forEach(s => s.unsubscribe())
     }
 
     updateETHBalance = async () => {
@@ -209,8 +219,6 @@ class App extends React.Component {
 
     /* returns address or null */
     async establishWeb3Provider() {
-
-        debug('window.ethereum = %O', window.ethereum)
         if (window.ethereum && !window.ethereum.chainId) window.ethereum.chainId = '0x1'
 
         // Check for non-web3modal injected providers (mobile dApp browsers)
@@ -262,6 +270,15 @@ class App extends React.Component {
         this.setState({ chainId, network })
 
         this.wssProvider = new Web3.providers.WebsocketProvider(wssURL)
+        this.wssProvider
+            .on('close', (e) => {
+                debug("WSS CONNECTION DOWN")
+                this.unsubscribeEvents()
+            })
+            .on('error', (e) => {
+                debug("WSS CONNECTION ERROR")
+            })
+
         window.web3hexmob = new Web3(this.walletProvider)   // window.web3hexmob used for sending/signing transactions
         this.web3 = new Web3(this.wssProvider)              // this.web3 used for everything else (Infura)
         if (!window.web3hexmob || !this.web3) throw new Error('Unexpected error setting up Web3 instances')
@@ -428,6 +445,7 @@ class App extends React.Component {
             clearInterval(this.dayInterval)
             clearInterval(this.usdHexInterval)
             this.web3.eth.clearSubscriptions()
+            this.contract.clearSubscriptions()
         } catch(e) { }
     }
 
@@ -492,7 +510,7 @@ class App extends React.Component {
         } else {
             return (
                 <>
-                    <Stakes contract={this.contract} wallet={this.state.wallet} usdhex={this.state.USDHEX} />
+                    <Stakes parent={this} contract={this.contract} wallet={this.state.wallet} usdhex={this.state.USDHEX} />
                     { uriQuery.has('address') &&
                         <Stakes 
                             className="mt-3"
@@ -501,8 +519,8 @@ class App extends React.Component {
                         />
                     }
                     { uriQuery.has('tewk') && <Tewkenaire parent={this} usdhex={this.state.USDHEX} />}
-                    <Stats contract={this.contract} wallet={this.state.wallet} usdhex={this.state.USDHEX} />
-                    <Lobby contract={this.contract} wallet={this.state.wallet} />
+                    { false && <Stats parent={this} contract={this.contract} wallet={this.state.wallet} usdhex={this.state.USDHEX} />}
+                    { false && <Lobby parent={this} contract={this.contract} wallet={this.state.wallet} />}
                     <Container className="text-center">
                         <Badge variant="secondary"><span className="text-bold">CONTRACT ADDRESS </span>
                         <br className="d-md-none"/>

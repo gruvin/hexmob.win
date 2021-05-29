@@ -37,8 +37,19 @@ class Stakes extends React.Component {
         }
     }
 
+    unsubscribeEvents = () => {
+        try {
+            this.props.contract.clearSubscriptions()
+        } catch(e) { }
+    }
+
+    handleSubscriptionError = (e, r) => {
+        debug("subscription error: ", r)
+        this.unsubscribeEvents()
+    }
+
     subscribeEvents = () => {
-        const onStakeStart = this.props.contract.events.StakeStart( {filter:{stakerAddr:this.props.wallet.address}}, (e, r) => {
+        this.props.contract.events.StakeStart( {filter:{stakerAddr:this.props.wallet.address}}, (e, r) => {
             if (e) { 
                 debug('ERR: events.StakeStart: ', e) 
                 return
@@ -51,8 +62,9 @@ class Stakes extends React.Component {
             this.loadAllStakes(this)
         })
         .on('connected', id => debug('subbed: StakeStart:', id))
+        .on('error', this.handleSubscriptionError)
 
-        const onStakeEnd = this.props.contract.events.StakeEnd({ filter:{ stakerAddr: this.props.wallet.address } }, (e, r) => {
+        this.props.contract.events.StakeEnd({ filter:{ stakerAddr: this.props.wallet.address } }, (e, r) => {
             if (e) { 
                 debug('ERR: events.StakeEnd:', e) 
                 return
@@ -63,12 +75,7 @@ class Stakes extends React.Component {
             this.loadAllStakes(this)
         })
         .on('connected', id => debug('subbed: StakeEnd:', id))
-
-        this.subscriptions = [ onStakeStart, onStakeEnd ]
-    }
-
-    unsubscribeEvents = () => {
-        this.subscriptions && this.subscriptions.forEach(s => s.unsubscribe())
+        .on('error', this.handleSubscriptionError)
     }
 
     static async getStakePayoutData(context, stakeData) {
