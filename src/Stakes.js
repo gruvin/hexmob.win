@@ -276,8 +276,8 @@ class Stakes extends React.Component {
 
         let stakedTotal = new BigNumber(0)
         let sharesTotal = new BigNumber(0)
-        let bpdTotal = new BigNumber(0)
         let interestTotal = new BigNumber(0)
+        let bigPayDayTotal = new BigNumber(0)
         let percentGainTotal = new BigNumber(0)
         let percentAPYTotal = new BigNumber(0)
 
@@ -296,23 +296,25 @@ class Stakes extends React.Component {
             const startDate = _startDate.toLocaleDateString()
             const endDate = _endDate.toLocaleDateString()
 
-            const interest = stakeData.payout.plus(stakeData.bigPayDay)
+            const interest = stakeData.payout
+            const bigPayDay = stakeData.bigPayDay
 
             stakedTotal = stakedTotal.plus(stakeData.stakedHearts)
             sharesTotal = sharesTotal.plus(stakeData.stakeShares)
-            bpdTotal = bpdTotal.plus(stakeData.bigPayDay)
+            bigPayDayTotal = bigPayDayTotal.plus(stakeData.bigPayDay)
             interestTotal = interestTotal.plus(interest)
 
             const stake = {
-                ...stakeData,
-                interest,
                 startDay,
                 endDay,
                 startDate,
-                endDate
+                endDate,
+                ...stakeData,
+                interest,
+                bigPayDay,
             }
 
-            const percentGain = stake.interest.div(stake.stakedHearts).times(100)
+            const percentGain = stake.bigPayDay.plus(interest).div(stake.stakedHearts).times(100)
             const daysServed = Math.min(currentDay - stake.startDay, stake.stakedDays)
             const percentAPY = new BigNumber(365).div(daysServed).times(percentGain)
             percentGainTotal = percentGainTotal.plus(percentGain)
@@ -350,23 +352,26 @@ class Stakes extends React.Component {
                         <Col className="text-right font-weight-bold">Shares</Col>
                         <Col><CryptoVal className="numeric" value={sharesTotal.times(1e8)} /></Col>
                     </Row>
-                    <>{ bpdTotal.gt(0) &&
+                    { bigPayDayTotal.gt(0) &&
                     <Row>
                         <Col className="text-right font-weight-bold">
                             <span className="text-info">Big</span>
                             <span className="text-warning">Pay</span>
                             <span className="text-danger">Day</span>
                         </Col>
-                        <Col><CryptoVal className="numeric" value={bpdTotal} showUnit /></Col>
+                        <Col><CryptoVal className="numeric" value={bigPayDayTotal} showUnit /></Col>
                     </Row>
-                    }</>
+                    }
                     <Row>
                         <Col className="text-right font-weight-bold">Interest</Col>
                         <Col><CryptoVal className="numeric" value={interestTotal} showUnit /></Col>
                     </Row>
                     <Row>
                         <Col className="text-right font-weight-bold">Total Value</Col>
-                        <Col><CryptoVal className="numeric font-weight-bold" value={stakedTotal.plus(interestTotal)} showUnit /></Col>
+                        <Col><CryptoVal 
+                                className="numeric font-weight-bold" 
+                                value={stakedTotal.plus(bigPayDayTotal).plus(interestTotal)} showUnit />
+                        </Col>
                     </Row>
                     <Row className="text-success">
                         <Col className="text-success text-right font-weight-bold">USD Value</Col>

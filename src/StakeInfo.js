@@ -52,15 +52,20 @@ export class StakeInfo extends React.Component {
             : "info" // latexit
 
         const shares = stake.stakeShares
-        const interest = stake.payout.plus(stake.bigPayDay)
-        const valueTotal = stake.stakedHearts.plus(interest)
+        const interest = stake.payout
+        const bigPayDay = stake.bigPayDay
+        const valueTotal = stake.stakedHearts.plus(interest).plus(stake.bigPayDay)
         const usdValueTotal = valueTotal.div(1e8).times(usdhex).toNumber()
 
-        const percentGain = interest.div(stake.stakedHearts).times(100)
+        const percentGain = bigPayDay.plus(interest).div(stake.stakedHearts).times(100)
         const daysServed = Math.min(currentDay - stake.startDay, stake.stakedDays)
+        const percentAPY = new BigNumber(365).div(daysServed).times(percentGain)
+
+        const _startDate = new Date(HEX.START_DATE.getTime() + startDay * 24 * 3600 * 1000)
+        const startDate = _startDate.toLocaleDateString()+' '+_startDate.toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})
+        
         const _endDate = new Date(HEX.START_DATE.getTime() + endDay * 24 * 3600 * 1000)
         const endDate = _endDate.toLocaleDateString()+' '+_endDate.toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})
-        const percentAPY = new BigNumber(365).div(daysServed).times(percentGain)
 
         const pending = (currentDay < stake.lockedDay)
         const earlyExit = (currentDay < stakeDay)
@@ -124,16 +129,20 @@ export class StakeInfo extends React.Component {
                                 <Col className="numeric">{stake.startDay+1}</Col>
                             </Row>
                             <Row>
+                                <Col className="text-right"><strong>Staked Days</strong></Col>
+                                <Col className="numeric">{stake.stakedDays}</Col>
+                            </Row>
+                            <Row>
                                 <Col className="text-right"><strong>End Day</strong></Col>
                                 <Col className="numeric">{stake.endDay+1}</Col>
                             </Row>
                             <Row>
-                                <Col className="text-right"><strong>End Date</strong></Col>
-                                <Col className="numeric">{endDate}</Col>
+                                <Col className="text-right"><strong>Start Date</strong></Col>
+                                <Col className="numeric">{startDate}</Col>
                             </Row>
                             <Row>
-                                <Col className="text-right"><strong>Staked Days</strong></Col>
-                                <Col className="numeric">{stake.stakedDays}</Col>
+                                <Col className="text-right"><strong>End Date</strong></Col>
+                                <Col className="numeric">{endDate}</Col>
                             </Row>
                             <Row>
                                 <Col className="text-right"><strong>Principal</strong></Col>
@@ -143,14 +152,14 @@ export class StakeInfo extends React.Component {
                                 <Col className="text-right"><strong>Shares</strong></Col>
                                 <Col><CryptoVal className="numeric" value={stake.stakeShares.times(1e8)} /></Col>
                             </Row>
-                        { stake.bigPayDay.gt(0) &&
+                        { bigPayDay.gt(0) &&
                             <Row>
                                 <Col className="text-right"><strong>
                                     <span className="text-info">Big</span>
                                     <span className="text-warning">Pay</span>
                                     <span className="text-danger">Day</span>
                                 </strong></Col>
-                                <Col><CryptoVal className="numeric" value={stake.bigPayDay} showUnit /></Col>
+                                <Col><CryptoVal className="numeric" value={bigPayDay} showUnit /></Col>
                             </Row>
                         }
                             <Row>
@@ -158,11 +167,11 @@ export class StakeInfo extends React.Component {
                                 <Col><CryptoVal className="numeric" value={interest} showUnit /></Col>
                             </Row>
                             <Row>
-                                <Col className="text-right"><strong>Value</strong></Col>
+                                <Col className="text-right"><strong>Total Value</strong></Col>
                                 <Col><strong><CryptoVal className="numeric" value={valueTotal} showUnit /></strong></Col>
                             </Row>
                             <Row>
-                                <Col className="text-success text-right"><strong>USD Value</strong></Col>
+                                <Col className="text-success text-right"><strong>Total USD</strong></Col>
                                 <Col className="numeric text-success"><strong>{ "$"+format(",.2f")(valueTotal.div(1E8).times(usdhex).toNumber() )}</strong></Col>
                             </Row>
                             <Row>
