@@ -423,7 +423,7 @@ class Stakes extends React.Component {
                 <Row className="p-0 my-2 mx-0 xs-small text-right font-weight-bold">
                     <Col xs={2} sm={2} className="p-0 text-center">
                         <a href="#sort_servedDays" onClick={handleSortSelection}>
-                            Days<span className="d-none d-sm-inline"> Served</span>
+                            Days<span className="d-none d-md-inline"> Served</span>
                         </a>
                     </Col>
                     <Col xs={3} sm={3} className="p-0">
