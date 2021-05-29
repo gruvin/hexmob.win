@@ -277,7 +277,7 @@ class App extends React.Component {
             .on('error', (e) => {
                 this.unsubscribeEvents()
                 this.web3.currentProvider.disconnect()
-                this.resetApp()
+                this.resetApp() // TODO: try to gracefully reconnect etc
             })
 
         window.web3hexmob = new Web3(this.walletProvider)   // window.web3hexmob used for sending/signing transactions
