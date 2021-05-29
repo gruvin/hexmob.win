@@ -146,8 +146,7 @@ class App extends React.Component {
     }
     
     handleSubscriptionError = (e, r) => {
-        debug("subscription error: ", r)
-        this.unsubscribeEvents()
+        debug("subscription error: ", e)
     }
     
     subscribeEvents = () => {
@@ -276,7 +275,9 @@ class App extends React.Component {
                 this.unsubscribeEvents()
             })
             .on('error', (e) => {
-                debug("WSS CONNECTION ERROR")
+                this.unsubscribeEvents()
+                this.web3.currentProvider.disconnect()
+                this.resetApp()
             })
 
         window.web3hexmob = new Web3(this.walletProvider)   // window.web3hexmob used for sending/signing transactions

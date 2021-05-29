@@ -44,8 +44,7 @@ class Stakes extends React.Component {
     }
 
     handleSubscriptionError = (e, r) => {
-        debug("subscription error: ", r)
-        this.unsubscribeEvents()
+        debug("subscription error: ", e)
     }
 
     subscribeEvents = () => {
