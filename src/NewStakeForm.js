@@ -45,10 +45,11 @@ export class NewStakeForm extends React.Component {
     }
 
     async componentDidMount() {
+        if (process.env.NODE_ENV === "development") window._NEW = this
         const shareRate = this.props.contract.Data.globals.shareRate.div(10) || BigNumber(10000)
         this.setState({ shareRate })
         this.lastStakeDays = null
-        window._NEW = this // DEBUG remove me
+        this.updateBarGraph()
     }
 
     resetForm = () => {
@@ -132,11 +133,9 @@ export class NewStakeForm extends React.Component {
     }
 
     updateBarGraph = () => {
-        const { startDay, endDay } = this.state
-        if (isNaN(startDay + endDay)) return
-        const numDataPoints = 31
-        const graphStartDay = Math.max(startDay, endDay - Math.floor(numDataPoints / 2))
-        const graphEndDay = graphStartDay + numDataPoints
+        const { currentDay } = this.props.contract.Data
+        const graphStartDay = currentDay + 2
+        const graphEndDay = graphStartDay + 1000
         
         this.setState({ 
             data: [], 
@@ -146,6 +145,7 @@ export class NewStakeForm extends React.Component {
         axios.post('https://api.thegraph.com/subgraphs/name/codeakk/hex', 
             JSON.stringify({ query: `{
                     stakeStarts (
+                        first: 1000
                         where: {
                             endDay_gte:${graphStartDay},
                             endDay_lte:${graphEndDay}
@@ -159,17 +159,30 @@ export class NewStakeForm extends React.Component {
             })
         )
         .then(response => {
-            debug('response', response)
-            const { data: graphJSON } = response
+            const { stakeStarts } = response.data.data
+            debug('Stake Ends Graph response -- stakeStarts: %O', stakeStarts)
+            const dataLength = stakeStarts.length
+            const dataPoints = 100
+            const pointsPerPeriod = Math.floor(dataLength / dataPoints)
             var collated = []
-            for (let d = graphStartDay; d <= graphEndDay; d++)
-                collated[d - graphStartDay] = { endDay: d.toString(), stakeShares: 0 }  
-            graphJSON.data.stakeStarts.forEach(oRow => {
-                const TShares = new BigNumber(oRow.stakeShares).div(10e12).toNumber()
-                let index = parseInt(oRow.endDay) - graphStartDay
-                collated[index].stakeShares += TShares
-            })
-            this.setState({data: collated, graphIconClass: "" })
+            let sumTShares = new BigNumber(0)
+            let previousPeriod = 0
+            for (let d = 0; d < dataLength; d++) {
+                const period = Math.floor(d / pointsPerPeriod)
+                if (period !== previousPeriod) {
+                    const endDay = graphStartDay + Math.floor(period * dataPoints)
+                    collated[period-1] = {
+                        endDay: endDay.toString(), 
+                        stakeTShares: Math.round(sumTShares.div(1e12).toNumber(), 0)
+                    }
+                    sumTShares = BigNumber(0)
+                    previousPeriod = period
+                }
+                // debug("XXX: ", d, stakeStarts[d])
+                const stakeShares = new BigNumber(stakeStarts[d].stakeShares)
+                sumTShares = sumTShares.plus(stakeShares)
+            }
+             this.setState({data: collated, graphIconClass: "" })
         })
         .catch(e => {
             debug(`Graph API: ${e}`)
@@ -301,7 +314,7 @@ export class NewStakeForm extends React.Component {
                 endDay
             }, () => {
                 this.updateFigures()
-                this.updateBarGraph()
+                //this.updateBarGraph()
             })
         }
 
@@ -514,11 +527,12 @@ export class NewStakeForm extends React.Component {
                                 <XAxis dataKey="endDay">
                                     <Label value="day" offset={-3} position="insideBottom" fill="#aaa" />
                                 </XAxis>
-                                <YAxis type="number">
-                                    <Label value="Tsh   " offset={15} angle={-90} position="insideLeft" fill="#ff7700" />
+
+                                <YAxis type="number" domain={[ 0, dataMax => ((Math.round(dataMax / 10)+1) * 10) ]} >
+                                    <Label value="TShares   " offset={0} angle={-90} position="insideLeft" fill="#ff7700" />
                                 </YAxis>
                                 <ReferenceLine x={this.state.endDay} stroke="#ffaa00" strokeDasharray="3 3" />
-                                <Bar dataKey="stakeShares" fill="#ff7700" isAnimationActive={true} />
+                                <Bar dataKey="stakeTShares" stroke="#ff7700" fill="#ff7700" isAnimationActive={true} />
                                 <Tooltip 
                                     filterNull={true}
                                     labelFormatter={ (value, name, props) => ([ "day "+value ]) }

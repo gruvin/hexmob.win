@@ -357,6 +357,7 @@ class App extends React.Component {
 
         if (process.env.NODE_ENV === "development") {
             window._APP = this
+            window._w3 = this.web3
             window._w3M = this.web3modal
             window._HEX = HEX
             window._UNIV2 = UNIV2
@@ -366,8 +367,8 @@ class App extends React.Component {
         if (!address) return debug('No wallet address supplied - STOP')
 
         window.contract = await new window.web3hexmob.eth.Contract(HEX.ABI, HEX.CHAINS[this.state.chainId].address)   // wallet provider
-        this.contract = await new this.web3.eth.Contract(HEX.ABI, HEX.CHAINS[this.state.chainId].address)             // INFURA
-        this.univ2Contract = await new this.web3.eth.Contract(UNIV2.ABI, UNIV2.CHAINS[this.state.chainId].address)    // INFURA
+        this.contract = new this.web3.eth.Contract(HEX.ABI, HEX.CHAINS[this.state.chainId].address)             // INFURA
+        this.univ2Contract = new this.web3.eth.Contract(UNIV2.ABI, UNIV2.CHAINS[this.state.chainId].address)    // INFURA
         this.subscribeProvider(this.walletProvider)
 
         this.setState({ 
@@ -376,11 +377,15 @@ class App extends React.Component {
         })
 
         Promise.all([
-            this.contract.methods.balanceOf(this.state.wallet.address).call().catch(e => debug('1:', e)), // [0] HEX balance
-            this.contract.methods.allocatedSupply().call().catch(e => debug('2:', e)),  // [1]
-            this.contract.methods.currentDay().call().catch(e => debug('3:', e)),       // [2]
-            this.contract.methods.globals().call().catch(e => debug('4:', e))           // [3]
-        ]).then((results) => {
+            this.contract.methods.balanceOf(this.state.wallet.address).call().catch(e => debug('balanceOf: %O', e.message)),
+            this.contract.methods.allocatedSupply().call().catch(e => debug('allocatedSupply: %O', e.message)),
+            this.contract.methods.currentDay().call().catch(e => debug('currentDay: %O', e.message)),
+            this.contract.methods.globals().call().catch(e => debug('globals: %O', e.message))
+        ])
+        .catch(e => {
+
+        })
+        .then((results) => {
             const balance = new BigNumber(results[0])
             const allocatedSupply = new BigNumber(results[1])
             const currentDay = Number(results[2])

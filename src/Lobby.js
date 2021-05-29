@@ -287,6 +287,7 @@ class Lobby extends React.Component {
     }
 
     componentDidMount = () => {
+        if (process.env.NODE_ENV === "development") window._LOBBY = this
         this.getToday()
         this.getHistory() // state.lobbyData
         this.subscribeEvents()

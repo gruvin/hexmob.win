@@ -133,6 +133,7 @@ class Stats extends React.Component {
     }
 
     componentDidMount() {
+        if (process.env.NODE_ENV === "development")  window._STATS = this
         this.updateUsdTsrGraph()
         this.updateUNIv2Graph()
     }

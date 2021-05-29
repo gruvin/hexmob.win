@@ -250,7 +250,7 @@ class Stakes extends React.Component {
     }
 
     componentDidMount() {
-        window._STAKES = this // DEBUG REMOVE ME
+        if (process.env.NODE_ENV === "development") window._STAKES = this
         Promise.all([
             this.loadAllStakes(this.props.publicAddress || null),
             this.loadStakeHistory(this.props.publicAddress || null),
@@ -462,6 +462,7 @@ class Stakes extends React.Component {
             <Accordion 
                 id='stakes_accordion'
                 className="text-left"
+                defaultActiveKey="new_stake"
             >
             {!this.props.publicAddress &&
                 <Card bg="dark" text="light pt-0">

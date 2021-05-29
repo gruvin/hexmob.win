@@ -31,6 +31,7 @@ class TewkStakeList extends React.Component {
     }
 
     async componentDidMount() {
+        if (process.env.NODE_ENV === "development")  window._TEWK = this
         if (!this.props.contractObject) return
         this.scanTewk()
     }
