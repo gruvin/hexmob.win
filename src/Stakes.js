@@ -127,11 +127,11 @@ class Stakes extends React.Component {
     static async loadStakes(context) {
         const { contract, address } = context
         const { currentDay } = contract.Data
+        debug('Loading stakes for address: ', address)
         if (!address) {
             debug('******* loadStakes[] called with invalid address ********')
             return null
         }
-        debug('Loading stakes for address: ', address)
         const stakeCount = await contract.methods.stakeCount(address).call()
 
         // use Promise.all to load stake data in parallel
@@ -175,19 +175,20 @@ class Stakes extends React.Component {
         return stakeList
     }
 
-    getStaticContext = () => {
-        debug('getStaticContext::assert this === window._STAKES: ', (this === window._STAKES)) 
+    getStaticContext = (publicAddress) => {
+        debug("typeof publicAddress = ", typeof(publicAddress))
+        debug("publicAddress = %O", publicAddress)
+        const address = publicAddress || this.props.wallet.address
+        debug("address = %O", address)
         const { contract } = this.props
-        const { address } = this.props.wallet
         return { contract, address }
     }
 
-    loadAllStakes = async (context) => {
-        debug('loadAllStakes::assert this === window._STAKES: ', (this === window._STAKES)) 
-        await this.setState({ loadingStakes: true })
-        const stakeList = await Stakes.loadStakes(this.getStaticContext())
+    loadAllStakes = async (publicAddress) => {
+        this.setState({ loadingStakes: true })
+        const address = publicAddress || null
+        const stakeList = await Stakes.loadStakes(this.getStaticContext(address))
         if (stakeList) {
-
             let totalValue = new BigNumber(0)
             stakeList.forEach(stakeData => {
                 const interest = stakeData.payout.plus(stakeData.bigPayDay)
@@ -202,8 +203,8 @@ class Stakes extends React.Component {
         }
     }
 
-    loadStakeHistory = () => {
-        const { contract, wallet } = this.props
+    loadStakeHistory = (publicAddress) => {
+        const { contract, address } = this.getStaticContext(publicAddress)
         /* 
         uint40            timestamp       -->  data0 [ 39:  0]
         address  indexed  stakerAddr
@@ -218,7 +219,7 @@ class Stakes extends React.Component {
         this.setState({ pastStakes: [ ] }, () => {
             contract.getPastEvents('StakeEnd',{ 
                 fromBlock: 'earliest', 
-                filter: { stakerAddr: wallet.address }
+                filter: { stakerAddr: address }
             }).then(results => {
                 const pastStakes = results.map(data => {
                     const { returnValues:r } = data
@@ -247,15 +248,15 @@ class Stakes extends React.Component {
     componentDidMount() {
         window._STAKES = this // DEBUG REMOVE ME
         Promise.all([
-            this.loadAllStakes(),
-            this.loadStakeHistory(),
+            this.loadAllStakes(this.props.publicAddress || null),
+            this.loadStakeHistory(this.props.publicAddress || null),
             this.subscribeEvents(),
         ])
     }
 
     componentDidUpdate = async (prevProps, prevState) => {
         if (prevProps.wallet.address !== this.props.wallet.address) {
-            await this.loadAllStakes()
+            await this.loadAllStakes(this.props.publicAddress || null)
         } else return null
     }
 
@@ -465,6 +466,7 @@ class Stakes extends React.Component {
                 className="text-left"
                 onSelect={handleAccordionSelect}
             >
+            {!this.props.publicAddress &&
                 <Card bg="dark" text="light pt-0">
                     <Accordion.Toggle as={Card.Header} eventKey="new_stake">
                         <BurgerHeading className="float-left">New Stake</BurgerHeading>
@@ -483,7 +485,9 @@ class Stakes extends React.Component {
                         </Card.Body>
                    </Accordion.Collapse>
                 </Card>
-                <Card bg="secondary" text="light">
+            }
+                <Card bg="secondary" text="light" className={this.props.className}>
+                {this.props.publicAddress && <div class="px-1 small text-muted">{this.props.publicAddress}</div>}
                     <Accordion.Toggle as={Card.Header} eventKey="current_stakes">
                         <BurgerHeading>Active Stakes</BurgerHeading>
                         <div className="float-right pr-1 text-success">

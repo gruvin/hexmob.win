@@ -335,7 +335,7 @@ class App extends React.Component {
                 },
             }
         })
-        if (uriQuery.get("reset")) { return this.resetApp() }
+        if (uriQuery.has("reset")) { return this.resetApp() }
 
         if (process.env.NODE_ENV === "development") {
             window._APP = this
@@ -493,6 +493,13 @@ class App extends React.Component {
             return (
                 <>
                     <Stakes contract={this.contract} wallet={this.state.wallet} usdhex={this.state.USDHEX} />
+                    { uriQuery.has('address') &&
+                        <Stakes 
+                            className="mt-3"
+                            publicAddress={uriQuery.get('address')} 
+                            contract={this.contract} wallet={this.state.wallet} usdhex={this.state.USDHEX}
+                        />
+                    }
                     { uriQuery.has('tewk') && <Tewkenaire parent={this} usdhex={this.state.USDHEX} />}
                     <Stats contract={this.contract} wallet={this.state.wallet} usdhex={this.state.USDHEX} />
                     <Lobby contract={this.contract} wallet={this.state.wallet} />
