@@ -38,18 +38,16 @@ class Stakes extends React.Component {
     }
 
     unsubscribeEvents = () => {
-        try {
-            this.props.contract.clearSubscriptions()
-        } catch(e) { }
+        try { this.props.contract.clearSubscriptions()} catch(e) { }
     }
 
     handleSubscriptionError = (e, r) => {
-        debug("subscription error: ", e)
+        debug("websock subscription error: ", e)
     }
 
     subscribeEvents = () => {
         this.props.contract.events.StakeStart( {filter:{stakerAddr:this.props.wallet.address}}, (e, r) => {
-            if (e) { 
+        if (e) { 
                 debug('ERR: events.StakeStart: ', e) 
                 return
             }
@@ -94,7 +92,7 @@ class Stakes extends React.Component {
         // iterate over daily payouts history
         let payout = new BigNumber(0)
 
-        dailyData.forEach((mapped_dailyData, dayIndex) => {
+        dailyData.forEach((mapped_dailyData) => {
             const data = new BigNumber(mapped_dailyData).toString(16).padStart(64, '0')
             const day = { // extract dailyData struct from uint256 mapping
                 payoutTotal: new BigNumber(data.slice(46,64), 16),
@@ -270,12 +268,7 @@ class Stakes extends React.Component {
         this.unsubscribeEvents()
     }
 
-    // start/end stake event call come here from new_stakes or StakeInfo.js
-    eventCallback = (eventName, data) => {
-        debug('Stakes.js::eventCallback:', eventName, data)
-    }
-
-    StakesList = (params) => {
+     StakesList = (params) => {
         const { currentDay } = this.props.contract.Data
         const stakeList = this.state.stakeList.slice() || null
         stakeList && stakeList.sort((a, b) => (a.progress < b.progress ? (a.progress !== b.progress ? 1 : 0) : -1 ))
@@ -340,7 +333,6 @@ class Stakes extends React.Component {
                             key={stakeData.stakeId}
                             contract={window.contract} 
                             stake={stakeData} 
-                            eventCallback={params.eventCallback} 
                             reloadStakes={this.loadAllStakes}
                             usdhex={this.props.usdhex}
                         />
@@ -463,11 +455,6 @@ class Stakes extends React.Component {
         const thisStake = this.state.stakeContext // if any
         const IsEarlyExit = (thisStake.stakeId && currentDay < (thisStake.lockedDay + thisStake.stakedDays)) 
 
-        const handleAccordionSelect = (selectedCard) => {
-//            selectedCard && this.setState({ selectedCard })
-        //    this.setState({ selectedCard })
-        }
-
         return (
             !this.state.stakeList
                 ? <ProgressBar variant="secondary" animated now={90} label="loading contract data" className="mt-3" />
@@ -475,7 +462,6 @@ class Stakes extends React.Component {
             <Accordion 
                 id='stakes_accordion'
                 className="text-left"
-                onSelect={handleAccordionSelect}
             >
             {!this.props.publicAddress &&
                 <Card bg="dark" text="light pt-0">
@@ -510,7 +496,7 @@ class Stakes extends React.Component {
                     </Accordion.Toggle>
                     <Accordion.Collapse eventKey="current_stakes">
                         <Card.Body className="active-stakes-body">
-                            <this.StakesList eventCallback={this.eventCallback}/>
+                            <this.StakesList/>
                         </Card.Body>
                    </Accordion.Collapse>
                 </Card>
