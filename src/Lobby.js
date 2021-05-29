@@ -16,7 +16,6 @@ import Timer from 'react-compound-timer'
 import crypto from 'crypto'
 
 const debug = require('debug')('Lobby')
-debug('loading')
 
 class Lobby extends React.Component {
     constructor(props) {
@@ -49,8 +48,19 @@ class Lobby extends React.Component {
         return true
     }
 
+    unsubscribeEvents = () => {
+        try {
+            this.web3.eth.clearSubscriptions()
+        } catch(e) {}
+    }
+    
+    handleSubscriptionError = (e, r) => {
+        debug("subscription error: ", r)
+        this.unsubscribeEvents()
+    }
+    
     subscribeEvents = () => {
-        const onXfLobbyEnter = this.props.contract.events.XfLobbyEnter( {filter:{memberAddr:this.props.wallet.address}}, async (e, r) => {
+        this.props.contract.events.XfLobbyEnter( {filter:{memberAddr:this.props.wallet.address}}, async (e, r) => {
             if (e) { 
                 debug('ERR: events.XfLobbyEnter:', e) 
                 return
@@ -59,12 +69,7 @@ class Lobby extends React.Component {
             this.getToday()
         })
         .on('connected', (id) => debug('subbed: XfLobbyEnter:', id))
-
-        this.subscriptions = [ onXfLobbyEnter ]
-    }
-
-    unsubscribeEvents = () => {
-        this.subscriptions && this.subscriptions.forEach(s => s.unsubscribe())
+        .on('error', this.handleSubscriptionError)
     }
     
     getDayEntries = (day, address) => {

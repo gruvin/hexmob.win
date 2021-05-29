@@ -519,8 +519,8 @@ class App extends React.Component {
                         />
                     }
                     { uriQuery.has('tewk') && <Tewkenaire parent={this} usdhex={this.state.USDHEX} />}
-                    { false && <Stats parent={this} contract={this.contract} wallet={this.state.wallet} usdhex={this.state.USDHEX} />}
-                    { false && <Lobby parent={this} contract={this.contract} wallet={this.state.wallet} />}
+                    <Stats parent={this} contract={this.contract} wallet={this.state.wallet} usdhex={this.state.USDHEX} />
+                    <Lobby parent={this} contract={this.contract} wallet={this.state.wallet} />
                     <Container className="text-center">
                         <Badge variant="secondary"><span className="text-bold">CONTRACT ADDRESS </span>
                         <br className="d-md-none"/>
