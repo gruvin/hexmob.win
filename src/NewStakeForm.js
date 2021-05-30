@@ -132,62 +132,78 @@ export class NewStakeForm extends React.Component {
         this.props.reloadStakes()
     }
 
-    updateBarGraph = () => {
+    updateBarGraph = async () => {
         const { currentDay } = this.props.contract.Data
-        const graphStartDay = currentDay + 2
-        const graphEndDay = graphStartDay + 1000
         
         this.setState({ 
             data: [], 
             graphIconClass: "icon-wait-bg"
         })
 
-        axios.post('https://api.thegraph.com/subgraphs/name/codeakk/hex', 
-            JSON.stringify({ query: `{
-                    stakeStarts (
-                        first: 1000
-                        where: {
-                            endDay_gte:${graphStartDay},
-                            endDay_lte:${graphEndDay}
-                        }
+        const dataPoints = 101
+        const graphStartDay = currentDay + 2
+        const pointsPerPeriod = Math.floor(5555 / dataPoints)
+        debug("pointsPerPeriod: ", pointsPerPeriod)
+        let collated = []
+        new Promise(async (resolve, reject)=> {
+            let indexCounter = 0
+            for (let batch = 0; batch < 6; batch++) {
+                const chunkSize = batch < 5 ? 1000 : (555 + pointsPerPeriod)
+                const batchStart = graphStartDay + (1000 * batch)
+                const batchEnd = batchStart + chunkSize
+                debug("batch no.: %d, batchStart: %d, batchEnd: %d, chunkSize: %d", batch, batchStart, batchEnd, chunkSize)
+                let response
+                try {
+                    response = await axios.post('https://api.thegraph.com/subgraphs/name/codeakk/hex', 
+                        JSON.stringify({ query: `{
+                                stakeStarts (
+                                    first: ${chunkSize}
+                                    where: {
+                                        endDay_gte:${batchStart},
+                                        endDay_lte:${batchEnd}
+                                    }
+                                )
+                                {
+                                    stakeShares
+                                    endDay
+                                }
+                            }` 
+                        })
                     )
-                    {
-                        stakeShares
-                        endDay
+                } catch(e) { return reject(response.error) }
+                const { stakeStarts } = response.data.data
+                stakeStarts.sort((a, b) => a.endDay > b.endDay)
+                debug('Stake Ends Graph response -- stakeStarts: %O', stakeStarts)
+                const dataLength = stakeStarts.length
+                let sumTShares = new BigNumber(0)
+                let previousPeriod = 0
+                for (let d = 0; d < dataLength; d++) {
+                    const period = Math.floor(indexCounter / pointsPerPeriod)
+                    if (period !== previousPeriod) {
+                        debug('Completed period: ', period-1)
+                        const endDay = Math.floor(period * pointsPerPeriod) + graphStartDay
+                        collated[period-1] = {
+                            endDay: endDay.toString(), 
+                            stakeTShares: Math.round(sumTShares.div(1e12).toNumber(), 0)
+                        }
+                        sumTShares = BigNumber(0)
+                        previousPeriod = period
                     }
-                }` 
-            })
-        )
-        .then(response => {
-            const { stakeStarts } = response.data.data
-            debug('Stake Ends Graph response -- stakeStarts: %O', stakeStarts)
-            const dataLength = stakeStarts.length
-            const dataPoints = 100
-            const pointsPerPeriod = Math.floor(dataLength / dataPoints)
-            var collated = []
-            let sumTShares = new BigNumber(0)
-            let previousPeriod = 0
-            for (let d = 0; d < dataLength; d++) {
-                const period = Math.floor(d / pointsPerPeriod)
-                if (period !== previousPeriod) {
-                    const endDay = graphStartDay + Math.floor(period * dataPoints)
-                    collated[period-1] = {
-                        endDay: endDay.toString(), 
-                        stakeTShares: Math.round(sumTShares.div(1e12).toNumber(), 0)
-                    }
-                    sumTShares = BigNumber(0)
-                    previousPeriod = period
+                    // debug("XXX: ", d, stakeStarts[d])
+                    const stakeShares = new BigNumber(stakeStarts[d].stakeShares)
+                    sumTShares = sumTShares.plus(stakeShares)
+                    indexCounter++
                 }
-                // debug("XXX: ", d, stakeStarts[d])
-                const stakeShares = new BigNumber(stakeStarts[d].stakeShares)
-                sumTShares = sumTShares.plus(stakeShares)
             }
-             this.setState({data: collated, graphIconClass: "" })
+            const dataPadStart = [], dataPadEnd = []
+            for (let day = graphStartDay + pointsPerPeriod; day < parseInt(collated[0].endDay); day += pointsPerPeriod) dataPadStart.push({ endDay: day.toString(), stakeShares: 0})
+            for (let day = parseInt(collated[collated.length-1].endDay); day < (graphStartDay + 5555); day += pointsPerPeriod) dataPadEnd.push({ endDay: (day+pointsPerPeriod).toString(), stakeShares: 0})
+            return resolve([...dataPadStart, ...collated, ...dataPadEnd])
+        }) // Promise.all
+        .then(data => {
+            this.setState({data, graphIconClass: "" })
         })
-        .catch(e => {
-            debug(`Graph API: ${e}`)
-            this.setState({ graphIconClass: "icon-error-bg" })
-        })
+        .catch(e => debug)
     }
 
     render() {
