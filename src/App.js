@@ -382,9 +382,6 @@ class App extends React.Component {
             this.contract.methods.currentDay().call().catch(e => debug('currentDay: %O', e.message)),
             this.contract.methods.globals().call().catch(e => debug('globals: %O', e.message))
         ])
-        .catch(e => {
-
-        })
         .then((results) => {
             const balance = new BigNumber(results[0])
             const allocatedSupply = new BigNumber(results[1])
@@ -425,8 +422,11 @@ class App extends React.Component {
             })
             this.subscribeEvents()
         })
-        .catch(e => debug("App::componentDidMount:Promise.all(...): ", e))
+        .catch(e => {
+            throw new Error("componentDidMount:Promise.all(...): " + e.message)
+        })
 
+        
         // update UI and contract currentDay every hour
         var lastHour = -1;
         this.dayInterval = setInterval(async () => {

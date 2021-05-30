@@ -19,13 +19,23 @@ class Stats extends React.Component {
     constructor(props) {
         super(props)
         this.state = {
-            TShareRates: [],
+            tShareRates: [],
             UNIv2usdhex: []
         }
     }
 
     updateUsdTsrGraph() {
         const { currentDay } = this.props.contract.Data
+
+        // check local cache first
+        try {
+            const cacheData = JSON.parse(window.localStorage.getItem("cache_tShareRates"))
+            const{ lastDay, data } = cacheData
+            debug("tShareRates: using cache")
+            // TODO: retrieve only data we don't already have
+            if (lastDay >= currentDay) return this.setState({ tShareRates: data })
+        } catch(e) { }
+
         const getTsrChunk = (chunk) => {
             return new Promise((resolve, reject) => { 
                 axios.post('https://api.thegraph.com/subgraphs/name/codeakk/hex', 
@@ -70,13 +80,20 @@ class Stats extends React.Component {
             })
             //debug('tsrMap: %o', tsrMap)
             
-            const TShareRates = [ ]
+            const tShareRates = [ ]
             for (let day=3; day<=currentDay; day++) {
                 const tsr = tsrMap[day] || tsrPrevious
                 tsrPrevious = tsr
-                TShareRates.push({ day, tsr})
+                tShareRates.push({ day, tsr})
             }
-            this.setState({ TShareRates })
+            this.setState({ tShareRates })
+            window.localStorage.setItem(
+                "cache_tShareRates",
+                JSON.stringify({
+                    lastDay: currentDay,
+                    data: tShareRates    
+                })
+            )
         })
         .catch(e => {
             debug(`Graph API: ${e.message}`)
@@ -85,6 +102,17 @@ class Stats extends React.Component {
     }
 
     updateUNIv2Graph() {
+        const { currentDay } = this.props.contract.Data
+
+        // check local cache first
+        try {
+            const cacheData = JSON.parse(window.localStorage.getItem("cache_UNIv2usdhex"))
+            const{ lastDay, data } = cacheData
+            debug("UNIv2usdhex: using cache")
+            // TODO: retrieve only data we don't already have
+            if (lastDay >= currentDay) return this.setState({ UNIv2usdhex: data })
+        } catch(e) { }
+
         const pastNinety = Math.floor(Number(new Date()/1000))-90*24*3600
         const getUniPriceData = (chunk) => {
             return new Promise((resolve, reject) => {
@@ -129,6 +157,13 @@ class Stats extends React.Component {
         ]).then(results => {
             const UNIv2usdhex = results.flat()
             this.setState({ UNIv2usdhex })
+            window.localStorage.setItem(
+                "cache_UNIv2usdhex",
+                JSON.stringify({
+                    lastDay: currentDay,
+                    data: UNIv2usdhex    
+                })
+            )
         })
     }
 
@@ -139,7 +174,7 @@ class Stats extends React.Component {
     }
 
     render() {
-        const { TShareRates, UNIv2usdhex } = this.state
+        const { tShareRates, UNIv2usdhex } = this.state
         const formatter = (val) => {
             return format(",d")(val)
         }
@@ -165,7 +200,7 @@ class Stats extends React.Component {
                         <Card.Body>
                             <h4 className="text-center mt-2">T-Share HEX Price by Day</h4>
                             <ResponsiveContainer width="100%" height={200}>
-                                <AreaChart width={730} height={250} data={TShareRates}
+                                <AreaChart width={730} height={250} data={tShareRates}
                                     margin={{ top: 10, right: 0, left: 30, bottom: 0 }}>
                                     <defs>
                                         <linearGradient id="colorTsr" x1="0" y1="0" x2="0" y2="1">
@@ -177,7 +212,12 @@ class Stats extends React.Component {
                                     <XAxis dataKey="day" />
                                     <YAxis type="number" orientation="right" domain={[ 10000, dataMax => ((Math.round(dataMax / 2000)+1) * 2000) ]} tickFormatter={formatter} />
                                     <CartesianGrid stroke="#ffffff22" strokeDasharray="3 3" />
-                                    <Area type="monotone" dataKey="tsr" stroke="#ffffff55" fillOpacity={1} fill="url(#colorTsr)" />
+                                    <Area 
+                                        type="monotone"
+                                        dataKey="tsr"
+                                        stroke="#ffffff55" fillOpacity={1} fill="url(#colorTsr)"
+                                        isAnimationActive={false}
+                                    />
                                 </AreaChart>
                             </ResponsiveContainer>
                             <h4 className="text-center mt-3">90 Day USD/HEX</h4>
@@ -187,7 +227,11 @@ class Stats extends React.Component {
                                     <XAxis dataKey="day" />
                                     <YAxis type="number" orientation="right" domain={[ 0, dataMax => (dataMax * 1.5) ]} tickFormatter={usdFormatter} />
                                     <CartesianGrid stroke="#ffffff22" strokeDasharray="3 3" />
-                                    <Line type="linear" dataKey="usd" strokeWidth={2} dot={false} stroke="#ee00aa" />
+                                    <Line
+                                        type="linear" dataKey="usd"
+                                        strokeWidth={2} dot={false} stroke="#ee00aa"
+                                        isAnimationActive={false}
+                                    />
                                 </LineChart>
                             </ResponsiveContainer>
                         </Card.Body>

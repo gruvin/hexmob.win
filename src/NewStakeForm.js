@@ -135,6 +135,15 @@ export class NewStakeForm extends React.Component {
     updateBarGraph = async () => {
         const { currentDay } = this.props.contract.Data
         
+        // check local cache first
+        try {
+            const cacheData = JSON.parse(window.localStorage.getItem("cache_endStakes"))
+            const{ storedDay, data } = cacheData
+            debug("using cache")
+            // TODO: retrieve only data we don't already have
+            if (storedDay >= currentDay) return this.setState({ data, graphIconClass: "" })
+        } catch(e) { }
+
         this.setState({ 
             data: [], 
             graphIconClass: "icon-wait-bg"
@@ -144,12 +153,17 @@ export class NewStakeForm extends React.Component {
         const graphStartDay = currentDay + 2
         const pointsPerPeriod = Math.floor(5555 / dataPoints)
         debug("pointsPerPeriod: ", pointsPerPeriod)
-        let collated = []
+        const collated = []
+        for(let i=1; i <= dataPoints; i++) collated.push({ 
+            endDay: (i * pointsPerPeriod + graphStartDay).toString(), 
+            stakeShares: 0
+        })
+        debug('INITIAL COLLATED: ', [...collated])
         new Promise(async (resolve, reject)=> {
             let indexCounter = 0
             for (let batch = 0; batch < 6; batch++) {
-                const chunkSize = batch < 5 ? 1000 : (555 + pointsPerPeriod)
-                const batchStart = graphStartDay + (1000 * batch)
+                const chunkSize = 1000
+                const batchStart = graphStartDay + (batch * 1000)
                 const batchEnd = batchStart + chunkSize
                 debug("batch no.: %d, batchStart: %d, batchEnd: %d, chunkSize: %d", batch, batchStart, batchEnd, chunkSize)
                 let response
@@ -164,7 +178,8 @@ export class NewStakeForm extends React.Component {
                                     }
                                 )
                                 {
-                                    stakeShares
+                                    stakedHearts
+                                    stakeTShares
                                     endDay
                                 }
                             }` 
@@ -178,30 +193,37 @@ export class NewStakeForm extends React.Component {
                 let sumTShares = new BigNumber(0)
                 let previousPeriod = 0
                 for (let d = 0; d < dataLength; d++) {
-                    const period = Math.floor(indexCounter / pointsPerPeriod)
+                    const endDay = Number(stakeStarts[d].endDay)
+                    const period = Math.floor(endDay / pointsPerPeriod)
+                    if (period > dataPoints) break
                     if (period !== previousPeriod) {
                         debug('Completed period: ', period-1)
-                        const endDay = Math.floor(period * pointsPerPeriod) + graphStartDay
                         collated[period-1] = {
                             endDay: endDay.toString(), 
-                            stakeTShares: Math.round(sumTShares.div(1e12).toNumber(), 0)
+                            stakeTShares: sumTShares.toNumber()
                         }
-                        sumTShares = BigNumber(0)
+                        sumTShares = new BigNumber(0)
                         previousPeriod = period
                     }
-                    // debug("XXX: ", d, stakeStarts[d])
-                    const stakeShares = new BigNumber(stakeStarts[d].stakeShares)
-                    sumTShares = sumTShares.plus(stakeShares)
+                    const stakeTShares = new BigNumber(stakeStarts[d].stakeTShares)
+                    const stakedHearts = new BigNumber(stakeStarts[d].stakedHearts)
+                    if (period === 100) debug("XXX: ", indexCounter, stakeTShares.toNumber(), stakedHearts.idiv(1e8).toFixed(2) )
+                    //sumTShares = sumTShares.plus(stakeTShares)
+                    sumTShares = sumTShares.plus(stakedHearts.idiv(1e8))
                     indexCounter++
                 }
             }
-            const dataPadStart = [], dataPadEnd = []
-            for (let day = graphStartDay + pointsPerPeriod; day < parseInt(collated[0].endDay); day += pointsPerPeriod) dataPadStart.push({ endDay: day.toString(), stakeShares: 0})
-            for (let day = parseInt(collated[collated.length-1].endDay); day < (graphStartDay + 5555); day += pointsPerPeriod) dataPadEnd.push({ endDay: (day+pointsPerPeriod).toString(), stakeShares: 0})
-            return resolve([...dataPadStart, ...collated, ...dataPadEnd])
+            return resolve(collated)
         }) // Promise.all
         .then(data => {
             this.setState({data, graphIconClass: "" })
+            window.localStorage.setItem(
+                "cache_endStakes",
+                JSON.stringify({
+                    storedDay: currentDay,
+                    data
+                })
+            )  
         })
         .catch(e => debug)
     }
