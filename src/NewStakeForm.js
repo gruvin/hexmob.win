@@ -48,8 +48,6 @@ export class NewStakeForm extends React.Component {
         if (process.env.NODE_ENV === "development") window._NEW = this
         const shareRate = this.props.contract.Data.globals.shareRate.div(10) || BigNumber(10000)
         this.setState({ shareRate })
-        this.lastStakeDays = null
-        this.updateBarGraph()
     }
 
     resetForm = () => {
@@ -134,96 +132,76 @@ export class NewStakeForm extends React.Component {
 
     updateBarGraph = async () => {
         const { currentDay } = this.props.contract.Data
-        
-        // check local cache first
-        try {
-            const cacheData = JSON.parse(window.localStorage.getItem("cache_endStakes"))
-            const{ storedDay, data } = cacheData
-            debug("using cache")
-            // TODO: retrieve only data we don't already have
-            if (storedDay >= currentDay) return this.setState({ data, graphIconClass: "" })
-        } catch(e) { }
-
+        const stakeDays = parseInt(this.state.stakeDays)
         this.setState({ 
             data: [], 
             graphIconClass: "icon-wait-bg"
         })
+        if (!stakeDays) return
 
-        const dataPoints = 101
-        const graphStartDay = currentDay + 2
-        const pointsPerPeriod = Math.floor(5555 / dataPoints)
-        debug("pointsPerPeriod: ", pointsPerPeriod)
+        const centerOffset = 50
+        const graphStartDay = Math.max(currentDay + stakeDays - centerOffset, currentDay) + 3
+        const graphEndDay = graphStartDay + centerOffset
+        const dataPoints = graphEndDay - graphStartDay
+        debug("graphStartDay: ", graphStartDay)
+        debug("graphEndDay: ", graphEndDay)
+        debug("day: ", graphEndDay - graphStartDay)
         const collated = []
-        for(let i=1; i <= dataPoints; i++) collated.push({ 
-            endDay: (i * pointsPerPeriod + graphStartDay).toString(), 
-            stakeShares: 0
+        for(let i=0; i < dataPoints; i++) collated.push({ 
+            endDay: (i + graphStartDay).toString(), 
+            stakeTShares: 0,
+            stakedHex: 0
         })
         debug('INITIAL COLLATED: ', [...collated])
+
         new Promise(async (resolve, reject)=> {
-            let indexCounter = 0
-            for (let batch = 0; batch < 6; batch++) {
-                const chunkSize = 1000
-                const batchStart = graphStartDay + (batch * 1000)
-                const batchEnd = batchStart + chunkSize
-                debug("batch no.: %d, batchStart: %d, batchEnd: %d, chunkSize: %d", batch, batchStart, batchEnd, chunkSize)
-                let response
+            const outputData = []
+            let dataPoint = 0
+            collated.forEach((day, dayIndex) => {
                 try {
-                    response = await axios.post('https://api.thegraph.com/subgraphs/name/codeakk/hex', 
-                        JSON.stringify({ query: `{
-                                stakeStarts (
-                                    first: ${chunkSize}
-                                    where: {
-                                        endDay_gte:${batchStart},
-                                        endDay_lte:${batchEnd}
-                                    }
-                                )
+                    // GRAPH NOTES:
+                    //    first must be <= 1000
+                    //    skip must be <= 5000
+                    axios.post('https://api.thegraph.com/subgraphs/name/codeakk/hex', 
+                            JSON.stringify({ query: `
                                 {
-                                    stakedHearts
-                                    stakeTShares
-                                    endDay
+                                    stakeStarts (
+                                        first: 1000
+                                        where: {
+                                            endDay:${day.endDay},
+                                        }
+                                    )
+                                    {
+                                        stakedHearts
+                                        stakeTShares
+                                        endDay
+                                    }
                                 }
-                            }` 
-                        })
+                                ` 
+                            })
                     )
-                } catch(e) { return reject(response.error) }
-                const { stakeStarts } = response.data.data
-                stakeStarts.sort((a, b) => a.endDay > b.endDay)
-                debug('Stake Ends Graph response -- stakeStarts: %O', stakeStarts)
-                const dataLength = stakeStarts.length
-                let sumTShares = new BigNumber(0)
-                let previousPeriod = 0
-                for (let d = 0; d < dataLength; d++) {
-                    const endDay = Number(stakeStarts[d].endDay)
-                    const period = Math.floor(endDay / pointsPerPeriod)
-                    if (period > dataPoints) break
-                    if (period !== previousPeriod) {
-                        debug('Completed period: ', period-1)
-                        collated[period-1] = {
-                            endDay: endDay.toString(), 
-                            stakeTShares: sumTShares.toNumber()
+                    .then(response => {
+                        const stakeStarts = response.data.data ? response.data.data.stakeStarts : []
+                        debug("stakeStarts.length: ", stakeStarts.length)
+                        debug('GRAPH stakeStarts %d (day: %s) -- %O', dataPoint, day.endDay, stakeStarts)
+                        let stakeTShares = BigNumber(0)
+                        let stakedHex = BigNumber(0)
+                        stakeStarts.forEach(stakeStart => {
+                            stakeTShares = stakeTShares.plus(stakeStart.stakeTShares)
+                            stakedHex = BigNumber(stakeStart.stakedHearts).idiv(1e8).plus(stakedHex)
+                        })
+                        outputData[dayIndex] = { 
+                            endDay: Number(day.endDay),
+                            stakeTShares: stakeTShares.toNumber(),
+                            stakedHex: stakedHex.toNumber()
                         }
-                        sumTShares = new BigNumber(0)
-                        previousPeriod = period
-                    }
-                    const stakeTShares = new BigNumber(stakeStarts[d].stakeTShares)
-                    const stakedHearts = new BigNumber(stakeStarts[d].stakedHearts)
-                    if (period === 100) debug("XXX: ", indexCounter, stakeTShares.toNumber(), stakedHearts.idiv(1e8).toFixed(2) )
-                    //sumTShares = sumTShares.plus(stakeTShares)
-                    sumTShares = sumTShares.plus(stakedHearts.idiv(1e8))
-                    indexCounter++
-                }
-            }
-            return resolve(collated)
+                        if(!(++dataPoint < dataPoints)) return resolve(outputData)
+                    })
+                } catch(e) { return reject(e.message) }
+            }) // forEach
         }) // Promise.all
         .then(data => {
             this.setState({data, graphIconClass: "" })
-            window.localStorage.setItem(
-                "cache_endStakes",
-                JSON.stringify({
-                    storedDay: currentDay,
-                    data
-                })
-            )  
         })
         .catch(e => debug)
     }
@@ -346,13 +324,13 @@ export class NewStakeForm extends React.Component {
         const handleCursorClick = (endDay, e) => {
             e.preventDefault()
             const { currentDay } = this.props.contract.Data
-
+            debug(`endDay: %d, currentDay: %d, result:%s`, endDay, currentDay, (endDay - currentDay - 2).toString())
             this.setState({ 
                 stakeDays: (endDay - currentDay - 2).toString(),
                 endDay
             }, () => {
                 this.updateFigures()
-                //this.updateBarGraph()
+                this.updateBarGraph()
             })
         }
 
