@@ -533,7 +533,7 @@ export class NewStakeForm extends React.Component {
 
             { (this.state.data) && 
                     <Container className="p-0 pl-2 pr-2">
-                        <h6 className="mt-3 ml-3 text-info">Other Stakes Ending</h6>
+                        <h6 className="mt-3 ml-3 text-info">Stakes Ending by Day</h6>
                         <ResponsiveContainer width="90%" height={220}>    
                             <BarChart 
                                 className={ this.state.graphIconClass }
@@ -545,7 +545,7 @@ export class NewStakeForm extends React.Component {
                                 </XAxis>
 
                                 <YAxis type="number" domain={[ 0, dataMax => ((Math.round(dataMax / 10)+1) * 10) ]} >
-                                    <Label value="TShares   " offset={0} angle={-90} position="insideLeft" fill="#ff7700" />
+                                    <Label value="T-Shares" offset={0} angle={-90} position="insideLeft" fill="#ff7700" />
                                 </YAxis>
                                 <ReferenceLine x={this.state.endDay} stroke="#ffaa00" strokeDasharray="3 3" />
                                 <Bar dataKey="stakeTShares" stroke="#ff7700" fill="#ff7700" isAnimationActive={true} />
