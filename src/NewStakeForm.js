@@ -407,11 +407,11 @@ export class NewStakeForm extends React.Component {
                             </Row>
                             <Row>
                                 <Col className="col-7 ml-0 ml-md-3 numeric">Bigger Pays Better</Col>
-                                <Col className="col-5 text-right">+ <CryptoVal value={this.state.biggerPaysBetter} /> <span className="text-muted">HEX</span></Col>
+                                <Col className="col-5 pl-0 text-right">+ <CryptoVal value={this.state.biggerPaysBetter} showUnit /></Col>
                             </Row>
                             <Row>
                                 <Col className="col-7 ml-0 ml-md-3 numeric">Longer Pays Better</Col>
-                                <Col className="col-5 text-right">+ <CryptoVal value={this.state.longerPaysBetter.toFixed(0)} /> <span className="text-muted">HEX</span></Col>
+                                <Col className="col-5 pl-0 text-right">+ <CryptoVal value={this.state.longerPaysBetter.toFixed(0)} showUnit /></Col>
                             </Row>
                             <Row className="pt-2" style={{ backgroundColor: "#042e00" }}>
                                 <Col>

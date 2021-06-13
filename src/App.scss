@@ -143,6 +143,7 @@ button#connect_wallet:hover { border-style: inset; border-color: #fec}
 .btn-info:hover { color: #fff; }
 
 .numeric { font-family: Jura, "Courier New", monospace; display: inline; }
+.unit { @extend .text-muted; }
 
 .accordion .accordion > .card {
     border-width: 2px !important;
@@ -237,14 +238,10 @@ input.donate_addr {
     margin: 0;
     border-radius: 5px;
 }
-#early-end-stake-alert > div {
-}
+// #early-end-stake-alert > div {
+// }
 
 @keyframes Danger {
-0% {
-    background-position: 0 50%;
-}
-100% {
-    background-position: 100% 50%;
-}
+    0% { background-position: 0 50%; }
+    100% { background-position: 100% 50%; }
 }

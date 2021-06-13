@@ -42,11 +42,11 @@ export const CryptoVal = (props) => {
                 </span>
             }
                 { r[3] && r[3] }
-            { showUnit && <>&nbsp;{unit}</> }
+            { showUnit && <span className="unit">&nbsp;{unit}</span>}
             </span>
         ) 
     else 
-        return ( <span className="numeric">{s}{ showUnit && <>&nbsp;{unit}</> }</span> )
+        return ( <span className="numeric">{s}{ showUnit && <span className="unit">&nbsp;{unit}</span> }</span> )
 }
 
 export const WhatIsThis = (props) => {
