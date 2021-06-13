@@ -53,8 +53,8 @@ I'm just a lone guy, at the end of the Earth. I cannot hope to pay for any kind 
 ```
 % gpg --import 0x8F351354BCBE9993-gruvingmailcom-public-key.asc
 ```
-- Download the two `hexmob.win-*` files from the [latest release](https://github.com/gruvin/hexmob.win/releases/latest), which shouod be the current website version.
-- Use the `.sig` file to verify the code is as it was when signed by the author (ME)
+- Download the two `hexmob.win-*` files from the [latest release](https://github.com/gruvin/hexmob.win/releases/latest), which should be the current website version.
+- Use the `.sig` file to verify the code is as it was when signed by the author (Me)
 ```
 % gpg --verify hexmob.win-0.2.12B-build.tgz.sig hexmob.win-0.2.12B-build.tgz
 gpg: Signature made Wed  9 Dec 14:10:31 2020 NZDT
