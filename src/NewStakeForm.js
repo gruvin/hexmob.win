@@ -393,28 +393,28 @@ export class NewStakeForm extends React.Component {
                     <Col xs={12} sm={7}>
                         <Container className="p-0 pl-2 lr-2" style={{ maxWidth: "360px" }}>
                             <Row>
-                                <Col className="col-3 m-0 pr-0 text-info h4">Starts</Col>
+                                <Col className="col-3 m-0 pl-2 pr-0 text-info h4">Starts</Col>
                                 <Col className="col-3 pr-0"><span className="text-muted small">DAY </span>{this.state.startDay}</Col>
                                 <Col className="col-6 pr-0">{this.state.startDate} <span className="text-muted d-none d-md-inline">{this.state.startTime}</span></Col>
                             </Row>
                             <Row>
-                                <Col className="col-3 m-0 pr-0 text-info h4">Ends</Col>
+                                <Col className="col-3 m-0 pl-2 pr-0 text-info h4">Ends</Col>
                                 <Col className="col-3 pr-0"><span className="text-muted small">DAY </span>{this.state.endDay}</Col>
                                 <Col className="col-6 pr-0">{this.state.endDate} <span className="text-muted d-none d-md-inline">{this.state.endTime}</span></Col>
                             </Row>
                             <Row>
-                                <Col className="col-12 mt-2 mb-0 text-info h3">Bonus HEX!</Col>
+                                <Col className="col-12 mt-2 mb-0 pl-2 text-info h3">Bonus HEX (effective)</Col>
                             </Row>
                             <Row>
-                                <Col className="col-7 ml-0 ml-md-3 numeric">Bigger Pays Better</Col>
-                                <Col className="col-5 pl-0 text-right">+ <CryptoVal value={this.state.biggerPaysBetter} showUnit /></Col>
+                                <Col className="col-7 ml-0 numeric">Bigger Pays Better</Col>
+                                <Col className="col-5 pl-0 pl-0 text-right">+ <CryptoVal value={this.state.biggerPaysBetter} showUnit /></Col>
                             </Row>
                             <Row>
-                                <Col className="col-7 ml-0 ml-md-3 numeric">Longer Pays Better</Col>
+                                <Col className="col-7 ml-0 numeric">Longer Pays Better</Col>
                                 <Col className="col-5 pl-0 text-right">+ <CryptoVal value={this.state.longerPaysBetter.toFixed(0)} showUnit /></Col>
                             </Row>
                             <Row className="pt-2" style={{ backgroundColor: "#042e00" }}>
-                                <Col>
+                                <Col className="pl-2">
                                     <WhatIsThis showPill tooltip={
                                         <>
                                             Effective HEX
@@ -429,14 +429,14 @@ export class NewStakeForm extends React.Component {
                                 </Col>
                                 <Col className="text-right text-success h3"><strong><CryptoVal value={this.state.effectiveHEX} /></strong> <span className="text-muted">HEX</span></Col>
                             </Row>
-                            <Row className="my-2 text-danger">
-                                <Col>Share Rate</Col>
-                                <Col className="text-right numeric">
+                            <Row className="my-2 text-danger justify-content-end">
+                                <Col className="col-4 pl-2">Share Rate</Col>
+                                <Col className="col-4 pl-2 text-right numeric">
                                     <strong><CryptoVal value={this.state.shareRate} currency="TSHARE_PRICE" /> <span className="text-muted">HEX</span></strong>
                                 </Col>
                             </Row>
-                            <Row>
-                                <Col className="col-6">
+                            <Row className="justify-content-end">
+                                <Col className="col-4 pl-2">
                                     <WhatIsThis showPill tooltip={
                                         <>
                                             T-Shares
@@ -449,7 +449,7 @@ export class NewStakeForm extends React.Component {
                                         <span className="h5 text-success">Shares</span>
                                     </WhatIsThis>
                                 </Col>
-                                <Col className="col-6 text-right">
+                                <Col className="col-4 text-right">
                                     <CryptoVal className="h5 text-success" value={this.state.stakeShares} currency="SHARES" />
                                 </Col>
                             </Row>
