@@ -546,7 +546,7 @@ class App extends React.Component {
             <>
                 <Container id="hexmob_header" fluid>
                 { window.location.hostname === "go.tshare.app" 
-                    ? <h1>GO<span className="text-muted small">.tshare.app</span></h1>
+                    ? <h1>go<span className="text-muted small">.tshare.app</span></h1>
                     : <h1>HEX<sup className="text-muted">mob.win</sup></h1>
                 }
                     <h3>{process.env.REACT_APP_VERSION || 'v0.0.0A'}</h3>
