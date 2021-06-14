@@ -545,7 +545,7 @@ class App extends React.Component {
         return (
             <>
                 <Container id="hexmob_header" fluid>
-                { window.location.hostname !== "go.tshare.app" 
+                { window.location.hostname === "go.tshare.app" 
                     ? <h1>STAKES<sup className="text-muted small"> my</sup></h1>
                     : <h1>HEX<sup className="text-muted">mob.win</sup></h1>
                 }
