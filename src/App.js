@@ -43,7 +43,7 @@ if (uriQuery.has('debug')) {
 }
 const debug = require('debug')('App')
 
-document.title = (window.location.hostname !== "go.tshare.app") ? "Go Stake! @ TShare.app" : "HEXmob™ — Join the Staker Class"
+document.title = (window.location.hostname === "go.tshare.app") ? "Go Stake! @ TShare.app" : "HEXmob™ — Join the Staker Class"
 
 const INITIAL_STATE = {
     chainId: 0,
@@ -545,7 +545,7 @@ class App extends React.Component {
         return (
             <>
                 <Container id="hexmob_header" fluid>
-                { window.location.hostname !== "go.tshare.app" 
+                { window.location.hostname === "go.tshare.app" 
                     ? <h1>GO<span className="text-muted small">.tshare.app</span></h1>
                     : <h1>HEX<sup className="text-muted">mob.win</sup></h1>
                 }
