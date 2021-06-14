@@ -3,7 +3,8 @@ GIT=/usr/local/bin/git
 GPG=/usr/local/bin/gpg
 RSYNC=/usr/bin/rsync
 TAR=/usr/bin/tar
-DEST='hexmob:~/public_html' 
+# DEST='hexmob:~/public_html' 
+DEST='tsa:~/go.tshare.app' 
 
 if [[ ! -d build/ ]]; then
     echo "ERROR: Need to be in root folder cotaining build/ dir"
