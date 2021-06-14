@@ -3,7 +3,8 @@ GIT=/usr/local/bin/git
 GPG=/usr/local/bin/gpg
 RSYNC=/usr/bin/rsync
 TAR=/usr/bin/tar
-DEST='hexmob:~/public_html' 
+DEST_HEXMOB='hexmob:~/public_html' 
+DEST_TSA='tsa:~/public_html' 
 
 if [[ ! -d build/ ]]; then
     echo "ERROR: Need to be in root folder cotaining build/ dir"
@@ -48,8 +49,11 @@ case "$DEPLOY_TYPE" in
         ;;
 esac
 
-echo "RSYNC: sending build/* => ${DEST}" 
-$RSYNC -r --delete 'build/' ${DEST}
+echo "RSYNC: sending build/* => ${DEST_HEXMOB}" 
+$RSYNC -r --delete 'build/' ${DEST_HEXMOB}
+
+echo "RSYNC: sending build/* => ${DEST_TSA}" 
+$RSYNC -r --delete 'build/' ${DEST_TSA}
 
 echo "DONE"
 
