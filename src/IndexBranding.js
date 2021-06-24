@@ -18,7 +18,7 @@ const IndexBranding = () => {
         <link rel="apple-touch-icon" sizes="152x152" href="/tsa/apple-icon-152x152.png" />
         <link rel="apple-touch-icon" sizes="180x180" href="/tsa/apple-icon-180x180.png" />
 
-        <link rel="icon" type="image/png" href="/tsa/favicon.png" /> 
+        <link rel="icon" type="image/png" href="/tsa/favicon.ico" /> 
         <link rel="icon" type="image/png" sizes="192x192" href="/tsa/android-icon-192x192.png" />
         <link rel="icon" type="image/png" sizes="32x32" href="/tsa/favicon-32x32.png" />
         <link rel="icon" type="image/png" sizes="96x96" href="/tsa/favicon-96x96.png" />
@@ -57,7 +57,7 @@ const IndexBranding = () => {
         <link rel="apple-touch-icon" sizes="152x152" href="/hexmob/apple-icon-152x152.png" />
         <link rel="apple-touch-icon" sizes="180x180" href="/hexmob/apple-icon-180x180.png" />
 
-        <link rel="icon" type="image/png" href="/hexmob/favicon.png" />
+        <link rel="icon" type="image/png" href="/hexmob/favicon.ico" />
         <link rel="icon" type="image/png" sizes="192x192"  href="/hexmob/android-icon-192x192.png" />
         <link rel="icon" type="image/png" sizes="32x32" href="/hexmob/favicon-32x32.png" />
         <link rel="icon" type="image/png" sizes="96x96" href="/hexmob/favicon-96x96.png" />
