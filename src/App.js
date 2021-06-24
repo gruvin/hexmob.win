@@ -544,13 +544,18 @@ class App extends React.Component {
     }
    
     render() {
+        const headerLogo = document.getElementById("header_logo")
+        if (headerLogo) headerLogo.style.backgroundImage = (window.location.hostname === "go.tshare.app")
+            ? "url('/tsa/android-icon-96x96.png')"
+            : "url('/hexmob/android-icon-96x96.png')"
+
         return (
             <>
                 <IndexBranding />
                 <Container id="hexmob_header" fluid>
                 { window.location.hostname === "go.tshare.app" 
-                    ? <h1>STAKES<sup className="text-muted small"> my</sup></h1>
-                    : <h1>HEX<sup className="text-muted">mob.win</sup></h1>
+                    ? <h1 id="header_logo">STAKES<sup className="text-muted small"> my</sup></h1>
+                    : <h1 id="header_logo">HEX<sup className="text-muted">mob.win</sup></h1>
                 }
                     <h3>{process.env.REACT_APP_VERSION || 'v0.0.0A'}</h3>
                     <div id="usdhex" className="text-success">
