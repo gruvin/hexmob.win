@@ -1,5 +1,4 @@
 import React from 'react'
-import { BigNumber } from 'bignumber.js'
 import { 
     Container,
     Card,
@@ -9,6 +8,8 @@ import {
     Badge,
     ProgressBar
 } from 'react-bootstrap'
+import IndexBranding from './IndexBranding'
+import { BigNumber } from 'bignumber.js'
 import { GitHubInfo } from './Widgets'
 import Stakes from './Stakes'
 import Stats from './Stats'
@@ -24,6 +25,7 @@ import WalletConnectProvider from '@walletconnect/web3-provider'
 //import Portis from "@portis/web3";
 import { detectTrustWallet } from './util'
 import './App.scss'
+//const BN = BigNumber
 const { format } = require('d3-format')
 const axios = require('axios').create({
     baseURL: '/',
@@ -34,12 +36,12 @@ const uriQuery = new URLSearchParams(window.location.search)
 if (uriQuery.has('debug')) {
     const d = uriQuery.get("debug")
     if (d === "") {
-        window.localStorage.setItem('debug', '*')
+        localStorage.setItem('debug', '*')
     } else {
-        window.localStorage.setItem('debug', d)
+        localStorage.setItem('debug', d)
     }
 } else {
-    window.localStorage.removeItem('debug')
+    localStorage.removeItem('debug')
 }
 const debug = require('debug')('App')
 
@@ -544,6 +546,7 @@ class App extends React.Component {
     render() {
         return (
             <>
+                <IndexBranding />
                 <Container id="hexmob_header" fluid>
                 { window.location.hostname === "go.tshare.app" 
                     ? <h1>STAKES<sup className="text-muted small"> my</sup></h1>

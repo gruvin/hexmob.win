@@ -25,7 +25,7 @@ class Stakes extends React.Component {
     constructor(props) {
         super(props)
         this.state = {
-            selectedCard: 'current_stakes',
+            selectedCard: '',
             stakeCount: null,
             stakeList: null,
             loadingStakes: true,
@@ -250,7 +250,9 @@ class Stakes extends React.Component {
     }
 
     componentDidMount() {
-        window._STAKES = this // DEBUG REMOVE ME
+        if (localStorage && localStorage.getItem('debug')) window._STAKES = this // DEBUG REMOVE ME
+        if (window.location.pathname === "/stakes") this.setState({ selectedCard: "current_stakes" })
+
         Promise.all([
             this.loadAllStakes(this.props.publicAddress || null),
             this.loadStakeHistory(this.props.publicAddress || null),
@@ -462,6 +464,7 @@ class Stakes extends React.Component {
             <Accordion 
                 id='stakes_accordion'
                 className="text-left"
+                defaultActiveKey={this.state.selectedCard}
             >
             {!this.props.publicAddress &&
                 <Card bg="dark" text="light pt-0">
