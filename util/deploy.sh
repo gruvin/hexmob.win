@@ -2,6 +2,7 @@
 GIT=/usr/local/bin/git
 GPG=/usr/local/bin/gpg
 RSYNC=/usr/bin/rsync
+SCP=/usr/bin/scp
 TAR=/usr/bin/tar
 DEST_HEXMOB='hexmob:~/public_html' 
 DEST_TSA='tsa:~/go.tshare.app' 
@@ -28,10 +29,27 @@ case "$DEPLOY_TYPE" in
                 ;;
             *) 
                 eval ${CHECKOUT_CMD}
-                if [[ $? -ne 0 ]]; then echo "\nWell that went badly :/\n"; exit -1; fi
+                if [[ $? -ne 0 ]]; then echo "\nWell that went badly :/\n"; exit -1; fi                
+
                 echo "Building ${TAG} for production server deployment"
                 export REACT_APP_VERSION="${TAG}"
-                yarn build 
+
+                # do double branding stuff (two builds)
+                cp public/index.html public/index.html-orig
+
+                echo "BUILDING HEXMOB VERSION"
+                cp public/index-tsa.html public/index.html
+                yarn build
+                if [ -d build-tsa ]; then rm -rf build-tsa; fi
+                mv build/ build-tsa
+                mkdir build
+                
+                echo "BUILDING TSHAREAPP VERSION"
+                cp public/index-hexmob.html public/index.html
+                yarn build
+                cp public/index.html-orig public/index.html
+                rm -f public/index.html-orig
+
                 RELEASE="release/hexmob.win-${TAG}-build.tgz"
                 if [[ ! -d release ]]; then mkdir release; fi
                 echo "Creating empty ${RELEASE} folder"
@@ -52,8 +70,8 @@ esac
 echo "RSYNC: sending build/* => ${DEST_HEXMOB}" 
 $RSYNC -r --delete 'build/' ${DEST_HEXMOB}
 
-echo "RSYNC: sending build/* => ${DEST_TSA}" 
-$RSYNC -r --delete 'build/' ${DEST_TSA}
+echo "RSYNC: sending build-tsa/* => ${DEST_TSA}" 
+$RSYNC -r --delete 'build-tsa/' ${DEST_TSA}
 
 echo "DONE"
 

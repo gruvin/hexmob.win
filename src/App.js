@@ -8,7 +8,6 @@ import {
     Badge,
     ProgressBar
 } from 'react-bootstrap'
-import IndexBranding from './IndexBranding'
 import { BigNumber } from 'bignumber.js'
 import { GitHubInfo } from './Widgets'
 import Stakes from './Stakes'
@@ -551,7 +550,6 @@ class App extends React.Component {
 
         return (
             <>
-                <IndexBranding />
                 <Container id="hexmob_header" fluid>
                 { window.location.hostname === "go.tshare.app" 
                     ? <h1 id="header_logo">HEX<sup className="text-muted small">tshare.app</sup></h1>
