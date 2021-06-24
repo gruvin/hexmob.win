@@ -14,7 +14,7 @@ const Blurb = () => {
                     <Col className="text-center">
                         {
                             window.location.hostname === "go.tshare.app"
-                            ? <h3 className="text-muted">go.TShare.App</h3>
+                            ? <h3 className="text-muted">go.TShare.app</h3>
                             : <h3 className="text-muted">HEX<sup>mob.win</sup></h3>
                         }
                         <h3>“a mobile friendly HEX staking interface”</h3>
