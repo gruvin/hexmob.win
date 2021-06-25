@@ -487,7 +487,7 @@ class Stakes extends React.Component {
                 </Card>
             }
                 <Card bg="secondary" text="light" className={this.props.className}>
-                {this.props.publicAddress && <div class="px-1 small text-muted">{this.props.publicAddress}</div>}
+                {this.props.publicAddress && <div className="px-1 small text-muted">{this.props.publicAddress}</div>}
                     <Accordion.Toggle as={Card.Header} eventKey="current_stakes">
                         <BurgerHeading>Active Stakes</BurgerHeading>
                         <div className="float-right pr-1 text-success">
