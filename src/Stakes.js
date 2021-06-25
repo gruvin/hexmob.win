@@ -252,7 +252,11 @@ class Stakes extends React.Component {
     componentDidMount() {
         if (localStorage && localStorage.getItem('debug')) window._STAKES = this // DEBUG REMOVE ME
         if (window.location.pathname === "/stakes") this.setState({ selectedCard: "current_stakes" })
+<<<<<<< HEAD
 
+=======
+debug("PA:", this.props.publicAddress)
+>>>>>>> a0ba5fb (upstream merged)
         Promise.all([
             this.loadAllStakes(this.props.publicAddress || null),
             this.loadStakeHistory(this.props.publicAddress || null),
@@ -337,6 +341,7 @@ class Stakes extends React.Component {
                             stake={stakeData} 
                             reloadStakes={this.loadAllStakes}
                             usdhex={this.props.usdhex}
+                            readOnly={this.props.publicAddress !== ""}
                         />
                     )
                 })
@@ -466,7 +471,7 @@ class Stakes extends React.Component {
                 className="text-left"
                 defaultActiveKey={this.state.selectedCard}
             >
-            {!this.props.publicAddress &&
+            {!this.props.publicAddress && // NewStakeForm not shown for read only ?address=
                 <Card bg="dark" text="light pt-0">
                     <Accordion.Toggle as={Card.Header} eventKey="new_stake">
                         <BurgerHeading className="float-left">New Stake</BurgerHeading>
