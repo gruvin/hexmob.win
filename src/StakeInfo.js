@@ -200,6 +200,7 @@ export class StakeInfo extends React.Component {
                                             </Popover.Content>
                                         </Popover>
                                     </Overlay>
+                                    {!this.props.readOnly && <>
                                     <VoodooButton
                                         style={{ display: !earlyExit || this.state.esShow ? "inline-block" : "none" }}
                                         contract={window.contract}
@@ -218,6 +219,7 @@ export class StakeInfo extends React.Component {
                                         onClick={(e) => { e.stopPropagation(); this.setState({ esShow: true })} }>
                                         EARLY END STAKE
                                     </Button>
+                                    </>}
                                 </Col>
                             </Row>
                         </Card.Body>

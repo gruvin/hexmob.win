@@ -252,11 +252,6 @@ class Stakes extends React.Component {
     componentDidMount() {
         if (localStorage && localStorage.getItem('debug')) window._STAKES = this // DEBUG REMOVE ME
         if (window.location.pathname === "/stakes") this.setState({ selectedCard: "current_stakes" })
-<<<<<<< HEAD
-
-=======
-debug("PA:", this.props.publicAddress)
->>>>>>> a0ba5fb (upstream merged)
         Promise.all([
             this.loadAllStakes(this.props.publicAddress || null),
             this.loadStakeHistory(this.props.publicAddress || null),
@@ -341,7 +336,7 @@ debug("PA:", this.props.publicAddress)
                             stake={stakeData} 
                             reloadStakes={this.loadAllStakes}
                             usdhex={this.props.usdhex}
-                            readOnly={this.props.publicAddress !== ""}
+                            readOnly={this.props.publicAddress}
                         />
                     )
                 })
