@@ -49,6 +49,7 @@ jspm_packages/
 typings/
 *.tsbuildinfo
 build/
+build-tsa/
 
 # Optional npm cache directory
 .npm
