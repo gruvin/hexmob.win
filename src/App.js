@@ -116,7 +116,7 @@ class App extends React.Component {
                 debug('provider::event:close')
             })
 
-            provider.on("stop", async (networkId: number) => { // WalletConnect: fires when remote wallet is disconnected
+            provider.on("stop", async (networkId) => { // WalletConnect: fires when remote wallet is disconnected
                 this.resetApp()
             })
             
@@ -132,7 +132,7 @@ class App extends React.Component {
             window.location.reload()
         })
 
-        provider.on("chainChanged", async (networkId: number) => {
+        provider.on("chainChanged", async (networkId) => {
             window.location.reload()
         })
 
