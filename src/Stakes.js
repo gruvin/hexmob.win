@@ -195,7 +195,6 @@ class Stakes extends React.Component {
                 const interest = stakeData.payout.plus(stakeData.bigPayDay)
                 totalValue = totalValue.plus(interest).plus(stakeData.stakedHearts)
             })
-            //this.props.updateTotalHearts(totalValue)
             this.setState({ 
                 loadingStakes: false,
                 stakeList,
@@ -266,7 +265,7 @@ class Stakes extends React.Component {
         this.unsubscribeEvents()
     }
 
-     StakesList = (params) => {
+    StakesList = (params) => {
         const { currentDay } = this.props.contract.Data
         const stakeList = this.state.stakeList.slice() || null
         stakeList && stakeList.sort((a, b) => (a.progress < b.progress ? (a.progress !== b.progress ? 1 : 0) : -1 ))
@@ -330,7 +329,7 @@ class Stakes extends React.Component {
                         <StakeInfo 
                             key={stakeData.stakeId}
                             contract={window.contract} 
-                            stake={stakeData} 
+                            stake={stakeData}
                             reloadStakes={this.loadAllStakes}
                             usdhex={this.props.usdhex}
                             readOnly={this.props.publicAddress}
@@ -372,7 +371,7 @@ class Stakes extends React.Component {
                     </Row>
                     <Row className="text-success">
                         <Col className="text-success text-right font-weight-bold">USD Value</Col>
-                        <Col className="text-success numeric font-weight-bold">{ "$"+format(",.2f")( stakedTotal.plus(interestTotal).div(1E8).times(this.props.usdhex).toNumber() )}</Col>
+                        <Col className="text-success numeric font-weight-bold">{"$"+format(",.2f")(this.state.totalValue.idiv(1E8).times(this.props.usdhex).toNumber())}</Col>
                     </Row>
                     <Row className="mt-2">
                         <Col className="text-right font-weight-bold">Average Gain</Col>
