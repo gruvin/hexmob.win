@@ -63,24 +63,20 @@ const INITIAL_STATE = {
     donation: "",
     totalHearts: new BigNumber(0),
     USD: Number(0.0),
+    referrer: "",
+    accounts: [],
 }
 
 class App extends React.Component {
     constructor(props) {
         super(props)
-        const m = window.location.href.match(/\?r=([^&]+)/)
-        const incomingReferrer = (m && m.length > 1)
-        const referrer = (incomingReferrer ? m[1] : '0xD30542151ea34007c4c4ba9d653f4DC4707ad2d2').toLowerCase()
-
         this.triggerWeb3Modal = false
         this.web3 = null
         this.wssProvider = null
         this.subscriptions = [ ]
         this.contract = null
         this.state = {
-            ...INITIAL_STATE,
-            incomingReferrer,
-            referrer
+            ...INITIAL_STATE
         }
         this.dayInterval = null
         this.usdHexInterval = null
@@ -356,7 +352,13 @@ class App extends React.Component {
                 },
             }
         })
+        const referrer = (uriQuery.get('r') || "").toLowerCase()
         if (uriQuery.has("reset")) { return this.resetApp() }
+        if (uriQuery.has('account')) {
+            const uriAccounts = uriQuery.getAll('account')
+            const accounts = uriAccounts.map(account => { const s = account.split(":"); return { address: s[0], name: s[1] || "" }})
+            this.setState({ accounts })
+        }
 
         if (process.env.NODE_ENV === "development") {
             window._APP = this
@@ -374,6 +376,7 @@ class App extends React.Component {
         this.subscribeProvider(this.walletProvider)
 
         this.setState({ 
+            referrer,
             wallet: { ...this.state.wallet, address },
             walletConnected: true 
         })
@@ -512,16 +515,19 @@ class App extends React.Component {
                 <ProgressBar variant="secondary" animated now={60} label="initializing" />
             )
         } else {
+
             return (
                 <>
                     <Stakes parent={this} contract={this.contract} wallet={this.state.wallet} usdhex={this.state.USDHEX} />
-                    { uriQuery.has('address') &&
-                        <Stakes 
+                    {this.state.accounts.length > 0 && this.state.accounts.map(account => (
+                        <Stakes
+                            key={`public:${account.address}`}
                             className="mt-3"
-                            publicAddress={uriQuery.get('address')} 
+                            publicAddress={account.address} 
+                            publicName={account.name}
                             contract={this.contract} wallet={this.state.wallet} usdhex={this.state.USDHEX}
                         />
-                    }
+                    ))}
                     { uriQuery.has('tewk') && <Tewkenaire parent={this} usdhex={this.state.USDHEX} />}
                     <Stats parent={this} contract={this.contract} wallet={this.state.wallet} usdhex={this.state.USDHEX} />
                     <Lobby parent={this} contract={this.contract} wallet={this.state.wallet} />
@@ -578,7 +584,7 @@ class App extends React.Component {
                                         to TRANSFORM&nbsp;ETH in the <b>AA&nbsp;Lobby</b>&nbsp;(above)<br/>
                                         <small>standard 10% bonus from Dev's referral addr</small>
                                     </div>
-                                    { this.state.incomingReferrer && <div className="small"><em>fwd: {this.state.referrer}</em></div> }
+                                    { this.state.referrer !== "" && <div className="small"><em>fwd: {this.state.referrer}</em></div> }
                                 </Card.Body>
                             </Container>
                         }
