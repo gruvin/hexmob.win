@@ -68,10 +68,10 @@ case "$DEPLOY_TYPE" in
 esac
 
 echo "RSYNC: sending build/* => ${DEST_HEXMOB}" 
-$RSYNC -r --exclude=.DS_Store --exclude=.Trashes --delete --delete-excluded 'build/' ${DEST_HEXMOB}
+$RSYNC -r --exclude=.htaccess --exclude=.DS_Store --exclude=.Trashes --delete  'build/' ${DEST_HEXMOB}
 
 echo "RSYNC: sending build-tsa/* => ${DEST_TSA}" 
-$RSYNC -r --exclude=.DS_Store --exclude=.Trashes --delete --delete --delete-excluded 'build-tsa/' ${DEST_TSA}
+$RSYNC -r --exclude=.htaccess --exclude=.DS_Store --exclude=.Trashes --delete --delete  'build-tsa/' ${DEST_TSA}
 
 echo "DONE"
 

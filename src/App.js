@@ -44,8 +44,6 @@ if (uriQuery.has('debug')) {
 }
 const debug = require('debug')('App')
 
-document.title = (window.location.hostname === "go.tshare.app") ? "HEX Stakes — TShare.app" : "HEXmob™ — The Staker Class"
-
 const INITIAL_STATE = {
     chainId: 0,
     network: 'none',
@@ -75,11 +73,13 @@ class App extends React.Component {
         this.wssProvider = null
         this.subscriptions = [ ]
         this.contract = null
-        this.state = {
-            ...INITIAL_STATE
-        }
+        this.state = { ...INITIAL_STATE }
         this.dayInterval = null
         this.usdHexInterval = null
+
+        window.hostIsHM = window.location.hostname === "hexmob.win"
+        window.hostIsTSA = window.location.hostname === "go.tshare.app"
+        window.metamaskOnline = () => this.state.walletConnected && window.ethereum && window.ethereum.isMetaMask
     }
 
     subscribeProvider = async (provider) => {
@@ -550,14 +550,14 @@ class App extends React.Component {
    
     render() {
         const headerLogo = document.getElementById("header_logo")
-        if (headerLogo) headerLogo.style.backgroundImage = (window.location.hostname === "go.tshare.app")
+        if (headerLogo) headerLogo.style.backgroundImage = window.hostIsTSA
             ? "url('/tsa/android-icon-96x96.png')"
             : "url('/hexmob/android-icon-96x96.png')"
 
         return (
             <>
                 <Container id="hexmob_header" fluid>
-                { window.location.hostname === "go.tshare.app" 
+                { window.hostIsTSA === "go.tshare.app" 
                     ? <h1 id="header_logo">HEX<sup className="text-muted small">tshare.app</sup></h1>
                     : <h1 id="header_logo">HEX<sup className="text-muted">mob.win</sup></h1>
                 }
@@ -597,8 +597,8 @@ class App extends React.Component {
                                     <div>
                                         <img className="d-inline-block" src="/buy-eth.png" alt="buy ethereum here" style={{ verticalAlign: "middle" }} />
                                         <div className="d-inline-block text-enter" style={{ verticalAlign: "middle", marginLeft: "28px" }}>
-                                            <h3>Buy ETH</h3>
-                                            using Credit Card
+                                            <h1>Buy ETH</h1>
+                                            (Debit Card)
                                         </div>
                                     </div>
                                 </Card.Body>
@@ -613,7 +613,7 @@ class App extends React.Component {
                                         style={{ verticalAlign: "middle", height: "96px" }} 
                                     />
                                     <div className="text-right d-inline-block" style={{ verticalAlign: "middle" }}>
-                                        <h3>Swap ETH for HEX</h3>
+                                        <h1>Swap ETH for HEX</h1>
                                     </div>
                                 </Card.Body>
                             </Container>
@@ -631,8 +631,8 @@ class App extends React.Component {
 
                     </Container>
                     <GitHubInfo />
-                    <Donaticator walletConnected={this.state.walletConnected} fromAddress={this.state.wallet.address || null} />
-                    { (this.state.walletConnected && window.ethereum && window.ethereum.isMetaMask) && <MetamaskUtils /> }
+                    { window.hostIsHM && <Donaticator walletConnected={this.state.walletConnected} fromAddress={this.state.wallet.address || null} />}
+                    { !window.hostIsTSA && window.metamaskOnline() && <MetamaskUtils /> }
                 </Container>
                 <Container id="hexmob_footer" fluid>
                     { this.state.walletConnected && <this.WalletStatus /> }
