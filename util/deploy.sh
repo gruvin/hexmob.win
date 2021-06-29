@@ -34,29 +34,35 @@ case "$DEPLOY_TYPE" in
                 echo "Building ${TAG} for production server deployment"
                 export REACT_APP_VERSION="${TAG}"
 
-                # do double branding stuff (two builds)
+                # do dual branding stuff (two builds)
                 cp public/index.html public/index.html-orig
+                cp src/theme.scss src/theme.scss-orig
 
-                echo "BUILDING HEXMOB VERSION"
+                echo "Building go.TShare.app version ..."
                 cp public/index-tsa.html public/index.html
+                cp src/theme-tsa.scss src/theme.scss
                 yarn build
                 if [ -d build-tsa ]; then rm -rf build-tsa; fi
                 mv build/ build-tsa
-                mkdir build
+                echo "Done."
                 
-                echo "BUILDING TSHAREAPP VERSION"
+                echo "Building hexmob.win version"
                 cp public/index-hexmob.html public/index.html
+                cp src/theme-hexmob.scss src/theme.scss
                 yarn build
-                cp public/index.html-orig public/index.html
-                rm -f public/index.html-orig
+                echo "Done."
 
-                RELEASE="release/hexmob.win-${TAG}-build.tgz"
-                if [[ ! -d release ]]; then mkdir release; fi
-                echo "Creating empty ${RELEASE} folder"
-                rm -f ${RELEASE}/*
-                eval $TAR czf "${RELEASE}" build/
-                echo "Build done."
-                echo "Release files are in release/ dir. REMEMBER TO SIGN: gpg --yes -b ${RELEASE}"
+                mv public/index.html-orig public/index.html
+                mv src/theme.scss-orig src/theme.scss
+                echo "Dual build completed."
+
+                echo "Constructing release files in ./release/ ..."
+                RELEASE_TGZ="release/hexmob.win-${TAG}-build.tgz"
+                if [ ! -d release ]; then mkdir release; fi
+                rm -f release/*
+                eval $TAR czf "${RELEASE_TGZ}" build/
+                echo "LIVE DEPLOYMENT COMPLETED."
+                echo "Remember to sign release tarbal: gpg --yes -b ${RELEASE_TGZ}"
                 ;;
             esac
         ;;
