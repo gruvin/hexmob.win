@@ -1,4 +1,4 @@
-@import "./Theme.scss";
+@use "theme" as bs;
 
 .form-label { font-weight: bold; }
 .btn {
@@ -16,15 +16,15 @@
 
 .new-stake-body { background-color: #041011; }
 .active-stakes-body { background-color: #000c2f; }
-.stake-history-body { background-color: map-get($theme-colors, dark) }
+.stake-history-body { background-color: map-get(bs.$theme-colors, dark) }
 
 /* START STAKE BUTTON */
 .btn-stake.btn-start { 
-    color: map-get($theme-colors, success); 
-    border: 2px map-get($theme-colors, success) solid; 
+    color: map-get(bs.$theme-colors, success); 
+    border: 2px map-get(bs.$theme-colors, success) solid; 
 }
 .btn-stake.btn-start:hover {
-    color: map-get($theme-colors, success); 
+    color: map-get(bs.$theme-colors, success); 
 }
 .btn-stake.btn-start:hover:enabled {
     color: #ddd; 
@@ -33,74 +33,74 @@
 
 /* LOBBY ENTER BUTTON */
 .btn-lobby.btn-enter { 
-    color: map-get($theme-colors, info); 
-    border: 2px map-get($theme-colors, dark) solid; 
+    color: map-get(bs.$theme-colors, info); 
+    border: 2px map-get(bs.$theme-colors, dark) solid; 
 }
 .btn-lobby.btn-enter:hover:enabled {
-    color: map-get($theme-colors, info); 
-    border-color: map-get($theme-colors, info); 
+    color: map-get(bs.$theme-colors, info); 
+    border-color: map-get(bs.$theme-colors, info); 
 }
 
 /* LOBBY MINT BUTTON */
 .btn-lobby.btn-mint { 
-    color: map-get($theme-colors, success); 
-    border: 2px map-get($theme-colors, dark) solid; 
-    background-color: map-get($theme-colors, dark); 
+    color: map-get(bs.$theme-colors, success); 
+    border: 2px map-get(bs.$theme-colors, dark) solid; 
+    background-color: map-get(bs.$theme-colors, dark); 
 }
 .btn-lobby.btn-mint:hover:enabled {
-    color: map-get($theme-colors, success); 
-    border-color: map-get($theme-colors, success); 
+    color: map-get(bs.$theme-colors, success); 
+    border-color: map-get(bs.$theme-colors, success); 
 }
 
 /* PENDING EXIT BUTTON */
 .btn-exitbtn.pendingexit { 
-    color: map-get($theme-colors, info); 
-    border: 2px map-get($theme-colors, secondary) solid; 
+    color: map-get(bs.$theme-colors, info); 
+    border: 2px map-get(bs.$theme-colors, secondary) solid; 
 }
 .btn-exitbtn.pendingexit:hover {
-    color: map-get($theme-colors, info); 
-    border-color: map-get($theme-colors, info); 
+    color: map-get(bs.$theme-colors, info); 
+    border-color: map-get(bs.$theme-colors, info); 
 }
 
 /* EARLY EXIT BUTTON -- DANGER! */
 .btn-exitbtn.earlyexit { 
-    color: map-get($theme-colors, danger); 
-    border: 2px map-get($theme-colors, secondary) solid; 
+    color: map-get(bs.$theme-colors, danger); 
+    border: 2px map-get(bs.$theme-colors, secondary) solid; 
 }
 .btn-exitbtn.earlyexit:hover {
-    color: map-get($theme-colors, danger); 
-    border-color: map-get($theme-colors, danger); 
+    color: map-get(bs.$theme-colors, danger); 
+    border-color: map-get(bs.$theme-colors, danger); 
 }
 
 /* EARLY BUT PAST MID TERM EXIT BUTTON */
 .btn-exitbtn.midexit { 
-    color: map-get($theme-colors, warning); 
-    border: 2px map-get($theme-colors, secondary) solid; 
+    color: map-get(bs.$theme-colors, warning); 
+    border: 2px map-get(bs.$theme-colors, secondary) solid; 
 }
 .btn-exitbtn.midexit:hover {
-    color: map-get($theme-colors, warning); 
-    border-color: map-get($theme-colors, warning); 
+    color: map-get(bs.$theme-colors, warning); 
+    border-color: map-get(bs.$theme-colors, warning); 
 }
 
 /* AT TERM PLUS UP TO ONE WEEK LATE EXIT BUTTON */
 .btn-exitbtn.termexit {
-    color: map-get($theme-colors, success); 
-    border: 2px map-get($theme-colors, secondary) solid; 
+    color: map-get(bs.$theme-colors, success); 
+    border: 2px map-get(bs.$theme-colors, secondary) solid; 
 }
 .btn-exitbtn.termexit:hover {
-    color: map-get($theme-colors, success); 
-    border-color: map-get($theme-colors, success); 
+    color: map-get(bs.$theme-colors, success); 
+    border-color: map-get(bs.$theme-colors, success); 
 }
 
 /* LATER THAN TERM PLUS ONE WEEK EXIT BUTTON */
 .btn-exitbtn.lateexit {
-    color: map-get($theme-colors, success); 
+    color: map-get(bs.$theme-colors, success); 
     padding-left: 22px;
-    border-color: map-get($theme-colors, secondary); 
+    border-color: map-get(bs.$theme-colors, secondary); 
     background-size: 10px 26px;
 }
 .btn-exitbtn.lateexit:hover {
-    color: map-get($theme-colors, success); 
-    border-color: map-get($theme-colors, success); 
+    color: map-get(bs.$theme-colors, success); 
+    border-color: map-get(bs.$theme-colors, success); 
 }
 

@@ -1,0 +1,15 @@
+$hex-crimson: #ee00aa;
+$hex-orange: #dd6622;
+$hex-yellow: #e0c000;
+$hm-success: #80d631;
+$col-dark: #252525;
+$col-light: #ddd;
+$theme-colors: (
+  "primary": $hex-orange,
+  "secondary": #333030,
+  "dark": $col-dark,
+  "success": $hm-success,
+  "info": $hex-yellow,
+  "warning": $hex-orange,
+  "danger": $hex-crimson,
+);

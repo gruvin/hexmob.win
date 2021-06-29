@@ -1,5 +1,8 @@
-@import "./Theme.scss";
-@import "~bootstrap/scss/bootstrap";
+@use "theme" as bs;
+@forward '~bootstrap/scss/bootstrap' with (
+    $theme-colors: bs.$theme-colors
+);
+
 body { 
     position: relative;
     overflow: hidden;
@@ -139,7 +142,7 @@ button#connect_wallet {
     font-weight: bold;
     margin-top: 10px;
     color: #ffffe7;
-    background-color: map-get($theme-colors, warning);
+    background-color: map-get(bs.$theme-colors, warning);
     padding: 4px 18px;
     border: 6px #ddbbaa outset;
     border-radius: 14px;
@@ -162,7 +165,7 @@ button#connect_wallet {
 }
 .card-header { 
     cursor: pointer;
-    background: map-get($theme-colors, secondary);
+    background: map-get(bs.$theme-colors, secondary);
     color: #eee; font-weight: bold;
     margin: 0;
     padding: 0;
@@ -171,7 +174,7 @@ button#connect_wallet {
     border-radius: 3px !important;
 }
 .card-header-current { 
-    background: linear-gradient(135deg, map-get($theme-colors, info) 0, rgba(30,30,30,1) 18px);
+    background: linear-gradient(135deg, map-get(bs.$theme-colors, info) 0, rgba(30,30,30,1) 18px);
 }
 .card-body,
 .card-header > .container {
@@ -219,8 +222,8 @@ button#connect_wallet {
     max-width: 365px;
     padding: 1em .5em;
     border-radius: 5px;
-    color: map-get($theme-colors, info);
-    background-color: map-get($theme-colors, black);
+    color: map-get(bs.$theme-colors, info);
+    background-color: map-get(bs.$theme-colors, black);
 }
 .tooltip.show {
     opacity: 0.95;
@@ -234,7 +237,7 @@ input.donate_addr {
     font-family: "Courier New", monospace;
     font-size: 0.65rem;
     color: #ccc;
-    background-color: $col-dark;
+    background-color: map-get(bs.$theme-colors, warning);
     border: 0;
 }
 
@@ -257,3 +260,24 @@ input.donate_addr {
     0% { background-position: 0 50%; }
     100% { background-position: 100% 50%; }
 }
+
+// 20% opacity
+.bg-primary-darkened    { background-color: #{map-get(bs.$theme-colors, primary)}33 !important; }
+.bg-secondary-darkened  { background-color: #{map-get(bs.$theme-colors, secondary)}33 !important; }
+.bg-dark-darkened       { background-color: #{map-get(bs.$theme-colors, dark)}33 !important; }
+.bg-success-darkened    { background-color: #{map-get(bs.$theme-colors, success)}33 !important; }
+.bg-info-darkened       { background-color: #{map-get(bs.$theme-colors, info)}33 !important; }
+.bg-warning-darkened    { background-color: #{map-get(bs.$theme-colors, warning)}33 !important; }
+.bg-danger-darkened     { background-color: #{map-get(bs.$theme-colors, danger)}33 !important; }
+.bg-light-darkened      { background-color: #{map-get(bs.$theme-colors, light)}33 !important; }
+
+// 50% opacity
+.bg-primary-faded    { background-color: #{map-get(bs.$theme-colors, primary)}7f !important; }
+.bg-secondary-faded  { background-color: #{map-get(bs.$theme-colors, secondary)}7f !important; }
+.bg-dark-faded       { background-color: #{map-get(bs.$theme-colors, dark)}7f !important; }
+.bg-success-faded    { background-color: #{map-get(bs.$theme-colors, success)}7f !important; }
+.bg-info-faded       { background-color: #{map-get(bs.$theme-colors, info)}7f !important; }
+.bg-warning-faded    { background-color: #{map-get(bs.$theme-colors, warning)}7f !important; }
+.bg-danger-faded     { background-color: #{map-get(bs.$theme-colors, danger)}7f !important; }
+.bg-light-faded      { background-color: #{map-get(bs.$theme-colors, light)}7f !important; }
+

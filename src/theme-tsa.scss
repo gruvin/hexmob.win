@@ -3,6 +3,7 @@ $hex-orange: #dd6622;
 $hex-yellow: #e0c000;
 $tsa-blue: #009dff;
 $tsa-cyan: #00ccff;
+$tsa-green: #36e9c2;
 $tsa-crimson: #da15e9;
 $tsa-red: #b6114e;
 $col-dark: #252525;
@@ -11,7 +12,7 @@ $theme-colors: (
   "primary": $tsa-cyan,
   "secondary": #333030,
   "dark": $col-dark,
-  "success": #36e9c2,
+  "success": $tsa-green,
   "info": $tsa-blue,
   "warning": $tsa-crimson,
   "danger": $tsa-red,

@@ -592,7 +592,7 @@ class App extends React.Component {
                         { !detectTrustWallet() && /* TrustWallet won't follow external links */
                         <>
                             <Container className="py-2 my-3">
-                                <Card.Body as={Button} variant="info" className="w-100 rounded text-light info-bo-50 border-0" 
+                                <Card.Body as={Button} variant="info" className="w-100 rounded text-light bg-info-faded border-0" 
                                     href="https://changelly.com/?ref_id=1b7z255j4rfbxsyd#buy" target="_blank" rel="noopener noreferrer"
                                 >
                                     <div>
@@ -605,7 +605,7 @@ class App extends React.Component {
                                 </Card.Body>
                             </Container>
                             <Container className="py-3 my-3">
-                                <Card.Body as={Button} className="w-100 rounded text-light bg-midgray border-0" 
+                                <Card.Body as={Button} className="w-100 rounded text-light bg-dark border-0" 
                                     href="https://ethhex.com" target="_blank" rel="noopener noreferrer"
                                 >
                                     <img 

@@ -413,7 +413,7 @@ export class NewStakeForm extends React.Component {
                                 <Col className="col-7 ml-0 numeric">Longer Pays Better</Col>
                                 <Col className="col-5 pl-0 text-right">+ <CryptoVal value={this.state.longerPaysBetter.toFixed(0)} showUnit /></Col>
                             </Row>
-                            <Row className="pt-2" style={{ backgroundColor: "#042e00" }}>
+                            <Row className="pt-2 bg-success-darkened">
                                 <Col className="pl-2">
                                     <WhatIsThis showPill tooltip={
                                         <>
