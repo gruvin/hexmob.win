@@ -77,8 +77,9 @@ class App extends React.Component {
         this.dayInterval = null
         this.usdHexInterval = null
 
-        window.hostIsHM = window.location.hostname === "hexmob.win"
-        window.hostIsTSA = window.location.hostname === "go.tshare.app"
+        const { hostname } = window.location
+        window.hostIsHM = hostname === "hexmob.win"
+        window.hostIsTSA = hostname === "go.tshare.app" || hostname === "localhost" 
         window.metamaskOnline = () => this.state.walletConnected && window.ethereum && window.ethereum.isMetaMask
     }
 
@@ -557,8 +558,8 @@ class App extends React.Component {
         return (
             <>
                 <Container id="hexmob_header" fluid>
-                { window.hostIsTSA === "go.tshare.app" 
-                    ? <h1 id="header_logo">HEX<sup className="text-muted small">tshare.app</sup></h1>
+                { window.hostIsTSA
+                    ? <h1 id="header_logo">HEX<sup className="text-muted small"> tshare.app</sup></h1>
                     : <h1 id="header_logo">HEX<sup className="text-muted">mob.win</sup></h1>
                 }
                     <h3>{process.env.REACT_APP_VERSION || 'v0.0.0A'}</h3>

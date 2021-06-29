@@ -75,7 +75,7 @@ export const WhatIsThis = (props) => {
 export const BurgerHeading = (props) => {
     return (
         <div className="burger-heading">
-            <img src="/hex-burger.png" alt="" />
+            <img src={window.hostIsHM ? "/hex-burger.png" : "tsa-burger.png"} alt="" />
             <span>{props.children}</span>
         </div>
     )

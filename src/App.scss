@@ -57,55 +57,61 @@ h6, .h6 { font-weight: bold }
     margin: 0;
     color: white;
     font-family: 'Titillium Web', Arial, sans-serif;
+    
+    h1 {
+        display: inline-block;
+        position: relative;
+        font-size: 24px;
+        font-weight: bold;
+        margin: 0;
+        padding: 0 0 0 32px;
+        background: rgba(0, 0, 0, 0) url(/favicon-96x96.png) no-repeat top left;
+        background-size: auto 30px;
+
+        sup {
+            position: relative;
+            font-size: 14px;
+            top: -10px;
+            margin-left: 0.1em;
+            vertical-align: none;
+        }
+    }
+    h3 { /* version */
+        position: absolute;
+        overflow: hidden;
+        display: block;
+        top: 0px;
+        right: 3px;
+        font-size: .8em;
+        color:#ccc;
+        margin:0;
+        padding:0;
+    }
+
+    div > span:last-child {
+        font-size:120%;
+        font-weight: bold;
+    }
+
+    #usdhex {
+        position: absolute;
+        bottom: 0;
+        left: 0;
+        width: 100%;
+        display: inline-block;
+        text-align: center;
+    }
+
+    .day {
+        position: absolute;
+        bottom: 0;
+        right: 3px;
+        margin: 0;
+        padding: 0;
+        display: block;
+    }
 }
-#hexmob_header h1 {
-    display: inline-block;
-    position: relative;
-    font-size: 24px;
-    font-weight: bold;
-    margin: 0;
-    padding: 0 0 0 32px;
-    background: rgba(0, 0, 0, 0) url(/favicon-96x96.png) no-repeat top left;
-    background-size: auto 30px;
-}
-#hexmob_header h1 sup {
-    position: relative;
-    font-size: 14px;
-    top: -10px;
-    margin-left: 0.1em;
-    vertical-align: none;
-}
-#hexmob_header div#usdhex {
-    position: absolute;
-    bottom: 0;
-    left: 0;
-    width: 100%;
-    display: inline-block;
-    text-align: center;
-}
-#hexmob_header > div > span:last-child {
-    font-size:120%;
-    font-weight: bold;
-}
-#hexmob_header div.day {
-    position: absolute;
-    bottom: 0;
-    right: 3px;
-    margin: 0;
-    padding: 0;
-    display: block;
-}
-#hexmob_header h3 { /* version */
-    position: absolute;
-    overflow: hidden;
-    display: block;
-    top: 0px;
-    right: 3px;
-    font-size: .8em;
-    color:#ccc;
-    margin:0;
-    padding:0;
-}
+
 #hexmob_body {
     position: fixed;
     top: 40px;
@@ -138,8 +144,10 @@ button#connect_wallet {
     border: 6px #ddbbaa outset;
     border-radius: 14px;
     text-transform: uppercase;
+
+    &:hover { border-style: inset; border-color: #fec}
 }
-button#connect_wallet:hover { border-style: inset; border-color: #fec}
+
 .btn-info:hover { color: #fff; }
 
 .numeric { font-family: Jura, "Courier New", monospace; display: inline; }
@@ -169,22 +177,26 @@ button#connect_wallet:hover { border-style: inset; border-color: #fec}
 .card-header > .container {
     padding: .25em;
 }
+
 .burger-heading {
     display: inline-block;
     font-family: 'Titillium Web', Arial, sans-serif;
     font-size: 1.35rem;
     font-weight: bold;
     padding: .1em .25em;
-}
-.burger-heading > img:first-child {
-    display: inline-block;
-    height: 1.4em;
-    vertical-align: middle;
-    margin: 0 6px 0 0
-}
-.burger-heading > span:first-child {
-    vertical-align: middle;
-    font-size: 1.4em
+
+    > img:first-child {
+        display: inline-block;
+        height: 1.4em;
+        vertical-align: middle;
+        margin: 0 6px 0 0
+    }
+    
+    > span:first-child {
+        vertical-align: middle;
+        font-size: 1.4em
+    }
+
 }
 
 .spinner-border {
