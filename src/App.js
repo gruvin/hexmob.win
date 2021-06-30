@@ -530,7 +530,7 @@ class App extends React.Component {
                     <Stats parent={this} contract={this.contract} wallet={this.state.wallet} usdhex={this.state.USDHEX} />
                     <Lobby parent={this} contract={this.contract} wallet={this.state.wallet} />
                     <Container className="text-center">
-                        <Badge variant="secondary"><span className="text-bold">CONTRACT ADDRESS </span>
+                        <Badge variant="dark"><span className="text-bold">CONTRACT ADDRESS </span>
                         <br className="d-md-none"/>
                         <a  
                             className="a-blue"
