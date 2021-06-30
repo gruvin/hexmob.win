@@ -44,6 +44,7 @@ case "$DEPLOY_TYPE" in
                 yarn build
                 if [ -d build-tsa ]; then rm -rf build-tsa; fi
                 mv build/ build-tsa
+                mkdir build
                 echo "Done."
                 
                 echo "Building hexmob.win version"
@@ -56,33 +57,47 @@ case "$DEPLOY_TYPE" in
                 mv src/theme.scss-orig src/theme.scss
                 echo "Dual build completed."
 
-                echo "Constructing release files in ./release/ ..."
+                echo "RSYNC: sending build/* => ${DEST_HEXMOB}" 
+                $RSYNC -r --exclude=.htaccess --exclude=.DS_Store --exclude=.Trashes --delete 'build/' ${DEST_HEXMOB}
+
+                echo "RSYNC: sending build-tsa/* => ${DEST_TSA}" 
+                $RSYNC -r --exclude=.htaccess --exclude=.DS_Store --exclude=.Trashes --delete 'build-tsa/' ${DEST_TSA}
+
+                echo "Preparing release files in ./release/ ..."
                 RELEASE_TGZ="release/hexmob.win-${TAG}-build.tgz"
                 if [ ! -d release ]; then mkdir release; fi
                 rm -f release/*
                 eval $TAR czf "${RELEASE_TGZ}" build/
+
                 echo "LIVE DEPLOYMENT COMPLETED."
                 echo "Remember to sign release tarbal: gpg --yes -b ${RELEASE_TGZ}"
+
+                git checkout dev
+                git stash pop
                 ;;
-            esac
+        esac
         ;;
+
     *) # dev deploy by default
-        echo "Building test production set for DEV server"
-        DEST='hexmob:~/dev.hexmob.win' 
+        echo "Building test production set for dev.hexmob.win"
+        # do dual branding stuff (two builds)
+        cp public/index.html public/index.html-orig
+        cp src/theme.scss src/theme.scss-orig
+        cp public/index-hexmob.html public/index.html
+        cp src/theme-hexmob.scss src/theme.scss
+        yarn build
+        mv public/index.html-orig public/index.html
+        mv src/theme.scss-orig src/theme.scss
+        echo "Done."
+
+        DEST_DEV='hexmob:~/dev.hexmob.win' 
         yarn build 
+        echo "RSYNC: sending build/* => ${DEST_DEV}" 
+        $RSYNC -r --exclude=.htaccess --exclude=.DS_Store --exclude=.Trashes --delete 'build/' ${DEST_DEV}
         ;;
 esac
 
-echo "RSYNC: sending build/* => ${DEST_HEXMOB}" 
-$RSYNC -r --exclude=.htaccess --exclude=.DS_Store --exclude=.Trashes --delete 'build/' ${DEST_HEXMOB}
-
-echo "RSYNC: sending build-tsa/* => ${DEST_TSA}" 
-$RSYNC -r --exclude=.htaccess --exclude=.DS_Store --exclude=.Trashes --delete 'build-tsa/' ${DEST_TSA}
-
-echo "DONE"
-
-git checkout dev
-git stash pop
+echo "JOB COMPLETED"
 
 exit 0
 
