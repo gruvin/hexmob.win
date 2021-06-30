@@ -79,7 +79,7 @@ case "$DEPLOY_TYPE" in
         ;;
 
     *) # dev deploy by default
-        echo "Building test production set for dev.hexmob.win"
+        echo -n "\nBuilding test production set for dev.hexmob.win"
         # do dual branding stuff (two builds)
         cp public/index.html public/index.html-orig
         cp src/theme.scss src/theme.scss-orig
