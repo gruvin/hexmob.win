@@ -190,11 +190,23 @@ export class StakeInfo extends React.Component {
                                                 <div id="early-end-stake-alert">
                                                     <div className="bg-dark text-light p-3">
                                                         <h4 className="text-danger">Emergency End Stake</h4>
-                                                        <p>
-                                                            Remember that you made a commitment to stay staked. This is an advanced feature 
-                                                            for advanced users. <strong><em>You should not proceed</em> unless you <u>fully understand</u> what it 
-                                                            will do.</strong>
-                                                        </p>
+                                                        <div>
+                                                            Remember that you made a commitment to stay staked. This is an 
+                                                            advanced feature. <strong><em>You should not proceed </em> 
+                                                            unless you <u>understand</u> <em>exactly</em> what it 
+                                                            will do</strong>. Ending a stake early could potentially<br/>
+                                                            <div 
+                                                                className="text-light text-uppercase text-center bg-danger"
+                                                                style={{
+                                                                    marginTop: "8px",
+                                                                    padding: "2px 0.8em",
+                                                                    fontSize: "0.95em",
+                                                                    fontWeight: "bold",
+                                                                    borderRadius: "5px",
+                                                                    margin: "auto"
+                                                                }}
+                                                            >lose&nbsp;your&nbsp;entire&nbsp;principal</div>
+                                                        </div>
                                                     </div>
                                                 </div>
                                             </Popover.Content>
@@ -207,7 +219,7 @@ export class StakeInfo extends React.Component {
                                         method="stakeEnd" 
                                         params={[stake.stakeIndex, stake.stakeId]}
                                         options={{ from: stake.stakeOwner }}
-                                        variant={'exitbtn '+exitClass}
+                                        variant={'exitbtn bg-danger'}
                                         confirmationCallback={() => this.props.reloadStakes()}
                                         rejectionCallback={() => this.setState({ esShow: false })} 
                                     >

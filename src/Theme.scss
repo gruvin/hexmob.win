@@ -3,17 +3,34 @@ $hex-orange: #dd6622;
 $hex-yellow: #e0c000;
 $tsa-blue: #009dff;
 $tsa-cyan: #00ccff;
+$tsa-green: #36e9c2;
 $tsa-crimson: #da15e9;
-$tsa-red: #b6114e;
+$tsa-red: #ff005d;
 $col-dark: #252525;
 $col-light: rgb(184, 218, 226);
 $theme-colors: (
   "primary": $tsa-cyan,
   "secondary": #333030,
   "dark": $col-dark,
-  "success": #36e9c2,
+  "success": $tsa-green,
   "info": $tsa-blue,
   "warning": $tsa-crimson,
   "danger": $tsa-red,
   "light": $col-light,
+
+  "primary-faded":  scale-color($tsa-blue,    $lightness: -50%),
+  "secondary-faded":scale-color(#333030,    $lightness: -50%),
+  "success-faded":  scale-color($tsa-green,   $lightness: -50%),
+  "info-faded":     scale-color($tsa-cyan,    $lightness: -50%),
+  "warning-faded":  scale-color($tsa-crimson, $lightness: -50%),
+  "danger-faded":   scale-color($tsa-red,     $lightness: -50%),
+  "light-faded":    scale-color($col-light,   $lightness: -50%),
+
+  "primary-darkened":  scale-color($tsa-blue,    $lightness: -80%),
+  "secondary-darkened":scale-color(#333030,    $lightness: -80%),
+  "success-darkened":  scale-color($tsa-green,   $lightness: -80%),
+  "info-darkened":     scale-color($tsa-cyan,    $lightness: -80%),
+  "warning-darkened":  scale-color($tsa-crimson, $lightness: -80%),
+  "danger-darkened":   scale-color($tsa-red,     $lightness: -80%),
+  "light-darkened":    scale-color($col-light,   $lightness: -80%),
 );

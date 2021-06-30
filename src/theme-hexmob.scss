@@ -1,15 +1,31 @@
 $hex-crimson: #ee00aa;
 $hex-orange: #dd6622;
 $hex-yellow: #e0c000;
-$hm-success: #80d631;
+$hex-success: #80d631;
 $col-dark: #252525;
 $col-light: #ddd;
 $theme-colors: (
   "primary": $hex-orange,
   "secondary": #333030,
   "dark": $col-dark,
-  "success": $hm-success,
+  "success": $hex-success,
   "info": $hex-yellow,
   "warning": $hex-orange,
   "danger": $hex-crimson,
+
+  "primary-faded":  scale-color($hex-orange,  $lightness: -50%),
+  "secondary-faded":scale-color(#333030,    $lightness: -50%),
+  "success-faded":  scale-color($hex-success, $lightness: -50%),
+  "info-faded":     scale-color($hex-yellow,  $lightness: -50%),
+  "warning-faded":  scale-color($hex-orange,  $lightness: -50%),
+  "danger-faded":   scale-color($hex-crimson, $lightness: -50%),
+  "light-faded":    scale-color($col-light,   $lightness: -50%),
+
+  "primary-darkened":  scale-color($hex-orange,  $lightness: -80%),
+  "secondary-darkened":scale-color(#333030,    $lightness: -80%),
+  "success-darkened":  scale-color($hex-success, $lightness: -80%),
+  "info-darkened":     scale-color($hex-yellow,  $lightness: -80%),
+  "warning-darkened":  scale-color($hex-orange,  $lightness: -80%),
+  "danger-darkened":   scale-color($hex-crimson, $lightness: -80%),
+  "light-darkened":    scale-color($col-light,   $lightness: -80%),
 );

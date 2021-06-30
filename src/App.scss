@@ -245,10 +245,16 @@ input.donate_addr {
     max-width: 310px; /* Max Width of the popover (depending on the container!) */
 }
 #early-end-stake-alert {
-    -webkit-animation: Danger 5s linear infinite forwards;
-    animation: Danger 5s linear infinite forwards;
-    background: repeating-linear-gradient(135deg, #f80, #ff0, #ff0, #f80, red, red, #f80 20px);
-    background-size: 200%;
+    -webkit-animation: Danger 3s linear infinite forwards;
+    animation: Danger 3s linear infinite forwards;
+    // background: repeating-linear-gradient(135deg, #f80, #ff0, #ff0, #f80, red, red, #f80 20px);
+    background: repeating-linear-gradient(
+        135deg, 
+        map-get(bs.$theme-colors, info),
+        map-get(bs.$theme-colors, danger),
+        map-get(bs.$theme-colors, info) 20px,
+    );
+    background-size: 164%;
     padding: 5px;
     margin: 0;
     border-radius: 5px;
@@ -260,24 +266,3 @@ input.donate_addr {
     0% { background-position: 0 50%; }
     100% { background-position: 100% 50%; }
 }
-
-// 20% opacity
-.bg-primary-darkened    { background-color: #{map-get(bs.$theme-colors, primary)}33 !important; }
-.bg-secondary-darkened  { background-color: #{map-get(bs.$theme-colors, secondary)}33 !important; }
-.bg-dark-darkened       { background-color: #{map-get(bs.$theme-colors, dark)}33 !important; }
-.bg-success-darkened    { background-color: #{map-get(bs.$theme-colors, success)}33 !important; }
-.bg-info-darkened       { background-color: #{map-get(bs.$theme-colors, info)}33 !important; }
-.bg-warning-darkened    { background-color: #{map-get(bs.$theme-colors, warning)}33 !important; }
-.bg-danger-darkened     { background-color: #{map-get(bs.$theme-colors, danger)}33 !important; }
-.bg-light-darkened      { background-color: #{map-get(bs.$theme-colors, light)}33 !important; }
-
-// 50% opacity
-.bg-primary-faded    { background-color: #{map-get(bs.$theme-colors, primary)}7f !important; }
-.bg-secondary-faded  { background-color: #{map-get(bs.$theme-colors, secondary)}7f !important; }
-.bg-dark-faded       { background-color: #{map-get(bs.$theme-colors, dark)}7f !important; }
-.bg-success-faded    { background-color: #{map-get(bs.$theme-colors, success)}7f !important; }
-.bg-info-faded       { background-color: #{map-get(bs.$theme-colors, info)}7f !important; }
-.bg-warning-faded    { background-color: #{map-get(bs.$theme-colors, warning)}7f !important; }
-.bg-danger-faded     { background-color: #{map-get(bs.$theme-colors, danger)}7f !important; }
-.bg-light-faded      { background-color: #{map-get(bs.$theme-colors, light)}7f !important; }
-

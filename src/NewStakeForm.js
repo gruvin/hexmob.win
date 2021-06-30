@@ -502,9 +502,9 @@ export class NewStakeForm extends React.Component {
                         ) }
                     </Col>
 
-            { (this.state.data) && 
+                { (this.state.data) && 
                     <Container className="p-0 pl-2 pr-2">
-                        <h6 className="mt-3 ml-3 text-info">Other Stakes Ending</h6>
+                        <h6 className="mt-3 ml-3 text-info">Future Market Supply (TShares)</h6>
                         <ResponsiveContainer width="90%" height={220}>    
                             <BarChart 
                                 className={ this.state.graphIconClass }
@@ -532,7 +532,7 @@ export class NewStakeForm extends React.Component {
                             </BarChart>
                         </ResponsiveContainer>
                     </Container>
-            }
+                }
                 </Row>
             </Form>
             
