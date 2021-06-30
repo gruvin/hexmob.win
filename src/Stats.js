@@ -164,21 +164,22 @@ class Stats extends React.Component {
                         <Card.Body>
                             <h4 className="text-center mt-2">T-Share HEX Price by Day</h4>
                             <ResponsiveContainer width="100%" height={200}>
-                                <AreaChart width={730} height={250} data={TShareRates}
+                                <AreaChart id="tsr-chart" width={730} height={250} data={TShareRates}
                                     margin={{ top: 10, right: 0, left: 30, bottom: 0 }}>
                                     <defs>
                                         <linearGradient id="colorTsr" x1="0" y1="0" x2="0" y2="1">
-                                        <stop offset="10%" stopOpacity={0.5}/>
-                                        <stop offset="60%" stopOpacity={0.6}/>
-                                        <stop offset="95%" stopOpacity={0.5}/>
+                                            <stop offset="10%" stopOpacity={0.5}/>
+                                            <stop offset="60%" stopOpacity={0.6}/>
+                                            <stop offset="95%" stopOpacity={0.5}/>
                                         </linearGradient>
                                     </defs>
                                     <XAxis dataKey="day" />
                                     <YAxis type="number" orientation="right" domain={[ 10000, dataMax => ((Math.round(dataMax / 2000)+1) * 2000) ]} tickFormatter={formatter} />
                                     <CartesianGrid stroke="#ffffff22" strokeDasharray="3 3" />
-                                    <Area type="monotone" dataKey="tsr" stroke="#ffffff55" fillOpacity={1} fill="url(#colorTsr)" />
+                                    <Area id="area-plot" type="monotone" dataKey="tsr" fillOpacity={1} fill="url(#colorTsr)" />
                                 </AreaChart>
                             </ResponsiveContainer>
+
                             <h4 className="text-center mt-3">90 Day USD/HEX</h4>
                             <ResponsiveContainer width="100%" height={200}>
                                 <LineChart width={730} height={250} data={UNIv2usdhex}
