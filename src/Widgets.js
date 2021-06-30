@@ -10,7 +10,8 @@ import {
     Badge,
     Row,
     Col,
-    Form
+    Form,
+    Image,
 } from 'react-bootstrap'
 import { BigNumber } from 'bignumber.js'
 import { EventEmitter } from 'events'
@@ -75,7 +76,7 @@ export const WhatIsThis = (props) => {
 export const BurgerHeading = (props) => {
     return (
         <div className="burger-heading">
-            <img src={window.hostIsHM ? "/hex-burger.png" : "tsa-burger.png"} alt="" />
+            <img src={window.hostIsTSA ? "/tsa-burger.png" : "hex-burger.png"} alt="" />
             <span>{props.children}</span>
         </div>
     )

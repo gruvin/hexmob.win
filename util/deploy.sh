@@ -4,6 +4,7 @@ GPG=/usr/local/bin/gpg
 RSYNC=/usr/bin/rsync
 SCP=/usr/bin/scp
 TAR=/usr/bin/tar
+DEST_DEV='hexmob:~/dev.hexmob.win' 
 DEST_HEXMOB='hexmob:~/public_html' 
 DEST_TSA='tsa:~/go.tshare.app' 
 
@@ -90,8 +91,6 @@ case "$DEPLOY_TYPE" in
         mv src/theme.scss-orig src/theme.scss
         echo "Done."
 
-        DEST_DEV='hexmob:~/dev.hexmob.win' 
-        yarn build 
         echo "RSYNC: sending build/* => ${DEST_DEV}" 
         $RSYNC -r --exclude=.htaccess --exclude=.DS_Store --exclude=.Trashes --delete 'build/' ${DEST_DEV}
         ;;
