@@ -31,6 +31,10 @@ export class StakeInfo extends React.Component {
         this.esRef = createRef()
     }
 
+    componentDidMount() {
+        if (localStorage.getItem('debug')) window._SI = this
+    }
+
     render() {
         const { contract, stake, usdhex} = this.props
         const { currentDay } = contract.Data

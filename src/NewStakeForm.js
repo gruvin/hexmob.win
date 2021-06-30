@@ -45,10 +45,10 @@ export class NewStakeForm extends React.Component {
     }
 
     async componentDidMount() {
+        if (localStorage.getItem('debug')) window._NSF = this
         const shareRate = this.props.contract.Data.globals.shareRate.div(10) || BigNumber(10000)
         this.setState({ shareRate })
         this.lastStakeDays = null
-        window._NEW = this // DEBUG remove me
     }
 
     resetForm = () => {

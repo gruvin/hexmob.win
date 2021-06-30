@@ -248,7 +248,7 @@ class Tewkenaire extends React.Component {
     }
 
     async componentDidMount() {
-        window._TEWK = this
+        if (localStorage.getItem('debug')) window._TEWK = this
         const { chainId } = this.props.parent.state
         this.hexContract = await new this.web3.eth.Contract(HEX.ABI, HEX.CHAINS[chainId].address)
     }

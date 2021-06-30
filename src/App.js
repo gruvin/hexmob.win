@@ -85,6 +85,7 @@ class App extends React.Component {
 
     subscribeProvider = async (provider) => {
         if (!provider.on) {
+            debug('WARNING: web3hexmob.on != f()')
             return
         }
 
@@ -93,19 +94,19 @@ class App extends React.Component {
             if (ethereum.autoRefreshOnNetworkChange) 
                 ethereum.autoRefreshOnNetworkChange = false // will be default behavour in new MM api
 
-            ethereum.on('disconnect', () => { this.resetApp() })
-
+            ethereum.on('disconnect', () => { debug("wallet disconnected => reset"); this.resetApp() })
+            ethereum.on('chainChanged', () => { debug("wallet chainChanged => reset"); this.resetApp() })
             ethereum.on('accountsChanged', (accounts) => {
-                if (!accounts.length)                   // => legacy workaround for lack of event:[close|disconnect] (logged out)
-                    this.resetApp()
-                else 
-                {                                       // => event:accountsChanged actual
+                // if (!accounts.length)                   // => legacy workaround for lack of event:[close|disconnect] (logged out)
+                //     this.resetApp()
+                // else 
+                // {                                       // => event:accountsChanged actual
                     const newAddress = accounts[0]
                     debug('ADDRESS CHANGE [metamask]: %s(old) => %s', this.state.wallet.address, newAddress)
                     this.setState({ 
                         wallet: { ...this.state.wallet, address: accounts[0] } 
                     }, this.updateHEXBalance)
-                }
+                // }
             })
         } else { // WalletConnect (and others?) ...
 
@@ -361,7 +362,7 @@ class App extends React.Component {
             this.setState({ accounts })
         }
 
-        if (process.env.NODE_ENV === "development") {
+        if (localStorage.getItem('debug')) {
             window._APP = this
             window._w3M = this.web3modal
             window._HEX = HEX

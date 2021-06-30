@@ -133,6 +133,7 @@ class Stats extends React.Component {
     }
 
     componentDidMount() {
+        if (localStorage.getItem('debug')) window._STATS = this
         this.updateUsdTsrGraph()
         this.updateUNIv2Graph()
     }
