@@ -11,7 +11,6 @@ import {
     Row,
     Col,
     Form,
-    Image,
 } from 'react-bootstrap'
 import { BigNumber } from 'bignumber.js'
 import { EventEmitter } from 'events'

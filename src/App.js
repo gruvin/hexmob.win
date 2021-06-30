@@ -130,22 +130,12 @@ class App extends React.Component {
             window.location.reload()
         })
 
-        provider.on("chainChanged", async (networkId) => {
-            window.location.reload()
-        })
-
         try {
             window.web3hexmob.currentProvider.publicConfigStore.on('update', this.updateETHBalance)
         } catch(e) {
         }
     }
 
-    unsubscribeEvents = () => {
-        try {
-            this.web3.eth.clearSubscriptions()
-        } catch(e) {}
-    }
-    
     handleSubscriptionError = (e, r) => {
         debug("subscription error: ", e)
     }
@@ -198,6 +188,13 @@ class App extends React.Component {
         this.updateETHBalance()
     }
 
+    unsubscribeEvents = () => {
+        try {
+            this.web3.eth.clearSubscriptions()
+            this.contract.clearSubscriptions()
+        } catch(e) {}
+    }
+    
     updateETHBalance = async () => {
         const balance = await this.web3.eth.getBalance(this.state.wallet.address)
         this.setState({ wallet: { ...this.state.wallet, balanceETH: new BigNumber(balance) } })
@@ -450,11 +447,10 @@ class App extends React.Component {
     }
 
     componentWillUnmount = () => {
-        try { 
+        try {
             clearInterval(this.dayInterval)
             clearInterval(this.usdHexInterval)
-            this.web3.eth.clearSubscriptions()
-            this.contract.clearSubscriptions()
+            this.unsubscribeEvents()
         } catch(e) { }
     }
 
