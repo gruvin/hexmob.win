@@ -9,7 +9,7 @@ import {
     Row,
     Col
 } from 'react-bootstrap'
-import './Stakes.scss'
+import './NewStakeForm.scss'
 import { BigNumber } from 'bignumber.js'
 import HEX from './hex_contract'
 import { calcBigPayDaySlice, calcAdoptionBonus } from './util'

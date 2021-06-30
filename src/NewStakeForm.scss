@@ -1,0 +1,17 @@
+@use "theme" as bs;
+
+.btn-stake {
+    &.btn-start { 
+        /* START STAKE BUTTON */
+        color: map-get(bs.$theme-colors, success); 
+        border: 2px map-get(bs.$theme-colors, success) solid; 
+        &:hover {
+            color: map-get(bs.$theme-colors, success); 
+        }
+        &:hover:enabled {
+            color: #ddd; 
+            background-color: #057702; 
+        }
+    }
+}
+

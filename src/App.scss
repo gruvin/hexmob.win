@@ -151,7 +151,12 @@ button#connect_wallet {
     &:hover { border-style: inset; border-color: #fec}
 }
 
-.btn-info:hover { color: #fff; }
+.form-label { font-weight: bold; }
+.btn {
+    font-family: 'Titillium Web', Arial, sans-serif; 
+    &-sm { padding: 0.1rem .2rem; line-height: 1em; } 
+    &-info:hover { color: #fff; }
+}
 
 .numeric { font-family: Jura, "Courier New", monospace; display: inline; }
 .unit { @extend .text-muted; }
