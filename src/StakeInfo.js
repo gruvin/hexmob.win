@@ -193,7 +193,7 @@ export class StakeInfo extends React.Component {
                                             <Popover.Content className="p-0">
                                                 <div id="early-end-stake-alert">
                                                     <div className="bg-dark text-light p-3">
-                                                        <h4 className="text-danger">Emergency End Stake</h4>
+                                                        <h4 className="text-danger text-uppercase">Emergency End Stake</h4>
                                                         <div>
                                                             Remember that you made a commitment to stay staked. This is an 
                                                             advanced feature. <strong><em>You should not proceed </em> 
