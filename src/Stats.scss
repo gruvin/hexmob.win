@@ -15,8 +15,9 @@
     fill: #777;
 }
 
-#colorTsr {
+svg#tsr-chart {
     stop:nth-child(1) { stop-color: map-get(bs.$theme-colors, danger); }
     stop:nth-child(2) { stop-color: map-get(bs.$theme-colors, warning); }
     stop:nth-child(3) { stop-color: map-get(bs.$theme-colors, info);   }
+    #area-plot { stroke: map-get(bs.$theme-colors, warning-darkened); }
 }
