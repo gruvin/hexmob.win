@@ -65,19 +65,23 @@ case "$DEPLOY_TYPE" in
                 echo "Remember to sign release tarbal: gpg --yes -b ${RELEASE_TGZ}"
                 ;;
             esac
+
+            echo "RSYNC: sending build/* => ${DEST_HEXMOB}" 
+            $RSYNC -r --exclude=.htaccess --exclude=.DS_Store --exclude=.Trashes --delete 'build/' ${DEST_HEXMOB}
+
+            echo "RSYNC: sending build-tsa/* => ${DEST_TSA}" 
+            $RSYNC -r --exclude=.htaccess --exclude=.DS_Store --exclude=.Trashes --delete 'build-tsa/' ${DEST_TSA}
+
         ;;
     *) # dev deploy by default
         echo "Building test production set for DEV server"
-        DEST='hexmob:~/dev.hexmob.win' 
+        DEST_HEXMOB='hexmob:~/dev.hexmob.win' 
+        echo "RSYNC: sending build/* => ${DEST_HEXMOB}" 
+        $RSYNC -r --exclude=.htaccess --exclude=.DS_Store --exclude=.Trashes --delete 'build/' ${DEST_HEXMOB}
         yarn build 
         ;;
 esac
 
-echo "RSYNC: sending build/* => ${DEST_HEXMOB}" 
-$RSYNC -r --exclude=.htaccess --exclude=.DS_Store --exclude=.Trashes --delete 'build/' ${DEST_HEXMOB}
-
-echo "RSYNC: sending build-tsa/* => ${DEST_TSA}" 
-$RSYNC -r --exclude=.htaccess --exclude=.DS_Store --exclude=.Trashes --delete 'build-tsa/' ${DEST_TSA}
 
 echo "DONE"
 
