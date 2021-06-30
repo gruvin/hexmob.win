@@ -7,7 +7,7 @@ import {
     ProgressBar,
     Accordion
 } from 'react-bootstrap'
-import './Stakes.scss'
+import './Lobby.scss'
 import HEX from './hex_contract'
 import { BigNumber } from 'bignumber.js'
 import { CryptoVal, BurgerHeading, VoodooButton } from './Widgets' 

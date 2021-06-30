@@ -504,7 +504,7 @@ export class NewStakeForm extends React.Component {
 
                 { (this.state.data) && 
                     <Container className="p-0 pl-2 pr-2">
-                        <h6 className="mt-3 ml-3 text-info">Future Market Supply (TShares)</h6>
+                        <h6 className="mt-3 ml-3 text-info">Future Market Supply (Stakes Ending)</h6>
                         <ResponsiveContainer width="90%" height={220}>    
                             <BarChart 
                                 className={ this.state.graphIconClass }
@@ -515,10 +515,10 @@ export class NewStakeForm extends React.Component {
                                     <Label value="day" offset={-3} position="insideBottom" fill="#aaa" />
                                 </XAxis>
                                 <YAxis type="number">
-                                    <Label value="Tsh   " offset={15} angle={-90} position="insideLeft" fill="#ff7700" />
+                                    <Label value="Tsh   " offset={15} angle={-90} position="insideLeft" />
                                 </YAxis>
-                                <ReferenceLine x={this.state.endDay} stroke="#ffaa00" strokeDasharray="3 3" />
-                                <Bar dataKey="stakeShares" fill="#ff7700" isAnimationActive={true} />
+                                <ReferenceLine x={this.state.endDay} strokeDasharray="3 3" />
+                                <Bar dataKey="stakeShares" isAnimationActive={true} />
                                 <Tooltip 
                                     filterNull={true}
                                     labelFormatter={ (value, name, props) => ([ "day "+value ]) }

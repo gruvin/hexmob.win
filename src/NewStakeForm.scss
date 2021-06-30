@@ -15,3 +15,7 @@
     }
 }
 
+.xAxis .recharts-label { fill: map-get(bs.$theme-colors, light); } 
+.yAxis .recharts-label { fill: map-get(bs.$theme-colors, success); } 
+.recharts-bar { fill: map-get(bs.$theme-colors, info )}
+.recharts-reference-line-line { stroke: map-get(bs.$theme-colors, warning )}
