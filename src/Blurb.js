@@ -13,7 +13,7 @@ const Blurb = () => {
                 <Row>
                     <Col className="text-center">
                         {
-                            window.location.hostname === "go.tshare.app"
+                            window.hostIsTSA
                             ? <h3 className="text-muted">go.TShare.app</h3>
                             : <h3 className="text-muted">HEX<sup>mob.win</sup></h3>
                         }
@@ -23,16 +23,16 @@ const Blurb = () => {
                 </Row>
                 <Row className="h-100">
                     <Col xs={12} sm={5} className="text-right">
-                    <img className="d-none d-sm-inline-block"
-                        style={{ maxWidth: "90%", maxHeight: "320px" }}
-                        alt="HEXmob in Safari using Metamask on iPhone 11"
-                        src="/safari-iphone11.png"
-                    />
-                    <Image className="d-block d-sm-none"
-                        style={{ maxWidth: "100%" }}
-                        alt="HEXmob in Safari using Metamask on iPhone 11"
-                        src="/safari-iphone11-cropped.png"
-                    />
+                        <Image className="d-none d-sm-inline-block"
+                            style={{ maxWidth: "90%", maxHeight: "320px" }}
+                            alt="MetaMask browser screenshot on iPhone 11"
+                            src={(window.hostIsTSA ? "/tsa" : "/hexmob") + "/mm-iphone11.png"}
+                        />
+                        <Image className="d-block d-sm-none m-auto"
+                            style={{ maxWidth: "100%" }}
+                            alt="MetaMask browser screenshot on  iPhone 11"
+                            src={(window.hostIsTSA ? "/tsa" : "/hexmob") + "/mm-iphone11-cropped.png"}
+                        />
                     </Col>
                     <Col xs={12} sm={7} className="py-3 text-center m-auto allign-middle">
                         <p className="m-0"><small>compatible wallets include ...</small></p>

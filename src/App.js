@@ -78,7 +78,7 @@ class App extends React.Component {
         this.usdHexInterval = null
 
         const { hostname } = window.location
-        window.hostIsHM = hostname === "hexmob.win"
+        window.hostIsHM = hostname === "hexmob.win" //|| hostname === "localhost" 
         window.hostIsTSA = hostname === "go.tshare.app" || hostname === "localhost" 
         window.metamaskOnline = () => this.state.walletConnected && window.ethereum && window.ethereum.isMetaMask
     }
@@ -94,19 +94,19 @@ class App extends React.Component {
             if (ethereum.autoRefreshOnNetworkChange) 
                 ethereum.autoRefreshOnNetworkChange = false // will be default behavour in new MM api
 
-            ethereum.on('disconnect', () => { debug("wallet disconnected => reset"); this.resetApp() })
+            ethereum.on('disconnect', () => { debug("RPC disconnected => reset"); this.resetApp() })
             ethereum.on('chainChanged', () => { debug("wallet chainChanged => reset"); this.resetApp() })
             ethereum.on('accountsChanged', (accounts) => {
-                // if (!accounts.length)                   // => legacy workaround for lack of event:[close|disconnect] (logged out)
-                //     this.resetApp()
-                // else 
-                // {                                       // => event:accountsChanged actual
+                if (!accounts.length)                   // => legacy workaround for lack of event:[close|disconnect] (logged out)
+                    this.resetApp()
+                else 
+                {                                       // => event:accountsChanged actual
                     const newAddress = accounts[0]
                     debug('ADDRESS CHANGE [metamask]: %s(old) => %s', this.state.wallet.address, newAddress)
                     this.setState({ 
                         wallet: { ...this.state.wallet, address: accounts[0] } 
                     }, this.updateHEXBalance)
-                // }
+                }
             })
         } else { // WalletConnect (and others?) ...
 
