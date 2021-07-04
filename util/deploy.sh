@@ -59,12 +59,12 @@ case "$DEPLOY_TYPE" in
                 echo "Dual build completed."
 
                 echo "RSYNC: sending build/* => ${DEST_HEXMOB}" 
-                $RSYNC -r --exclude=.htaccess --exclude=.DS_Store --exclude=.Trashes --delete 'build/' ${DEST_HEXMOB}
+                $RSYNC -r --exclude='.ht*' --exclude='.DS*' --exclude='.Trashes' --delete 'build/' ${DEST_HEXMOB}
 
                 echo "RSYNC: sending build-tsa/* => ${DEST_TSA}" 
-                $RSYNC -r --exclude=.htaccess --exclude=.DS_Store --exclude=.Trashes --delete 'build-tsa/' ${DEST_TSA}
+                $RSYNC -r --exclude='.ht*' --exclude='.DS*' --exclude='.Trashes' --delete 'build-tsa/' ${DEST_TSA}
 
-                echo "Preparing release files in ./release/ ..."
+                echo "Preparing HEXMOB release files in ./release/ ..."
                 RELEASE_TGZ="release/hexmob.win-${TAG}-build.tgz"
                 if [ ! -d release ]; then mkdir release; fi
                 rm -f release/*
@@ -92,7 +92,7 @@ case "$DEPLOY_TYPE" in
         echo "Done."
 
         echo "RSYNC: sending build/* => ${DEST_DEV}" 
-        $RSYNC -r --exclude=.htaccess --exclude=.DS_Store --exclude=.Trashes --delete 'build/' ${DEST_DEV}
+        $RSYNC -r --exclude='.ht*' --exclude='.DS*' --exclude='.Trashes' --delete 'build/' ${DEST_DEV}
         ;;
 esac
 
