@@ -133,6 +133,7 @@ class Stats extends React.Component {
     }
 
     componentDidMount() {
+        if (localStorage.getItem('debug')) window._STATS = this
         this.updateUsdTsrGraph()
         this.updateUNIv2Graph()
     }
@@ -168,8 +169,8 @@ class Stats extends React.Component {
                                     margin={{ top: 10, right: 0, left: 30, bottom: 0 }}>
                                     <defs>
                                         <linearGradient id="colorTsr" x1="0" y1="0" x2="0" y2="1">
-                                            <stop offset="10%" stopOpacity={0.5}/>
-                                            <stop offset="60%" stopOpacity={0.6}/>
+                                            <stop offset="10%" stopOpacity={0.9}/>
+                                            <stop offset="60%" stopOpacity={0.7}/>
                                             <stop offset="95%" stopOpacity={0.5}/>
                                         </linearGradient>
                                     </defs>

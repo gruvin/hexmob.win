@@ -31,6 +31,10 @@ export class StakeInfo extends React.Component {
         this.esRef = createRef()
     }
 
+    componentDidMount() {
+        if (localStorage.getItem('debug')) window._SI = this
+    }
+
     render() {
         const { contract, stake, usdhex} = this.props
         const { currentDay } = contract.Data
@@ -189,12 +193,12 @@ export class StakeInfo extends React.Component {
                                             <Popover.Content className="p-0">
                                                 <div id="early-end-stake-alert">
                                                     <div className="bg-dark text-light p-3">
-                                                        <h4 className="text-danger">Emergency End Stake</h4>
+                                                        <h2 className="text-danger text-uppercase text-center">Emergency End Stake</h2>
                                                         <div>
                                                             Remember that you made a commitment to stay staked. This is an 
                                                             advanced feature. <strong><em>You should not proceed </em> 
                                                             unless you <u>understand</u> <em>exactly</em> what it 
-                                                            will do</strong>. Ending a stake early could potentially<br/>
+                                                            will do</strong>. Ending a stake early could potentially ...<br/>
                                                             <div 
                                                                 className="text-light text-uppercase text-center bg-danger"
                                                                 style={{

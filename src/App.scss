@@ -151,7 +151,12 @@ button#connect_wallet {
     &:hover { border-style: inset; border-color: #fec}
 }
 
-.btn-info:hover { color: #fff; }
+.form-label { font-weight: bold; }
+.btn {
+    font-family: 'Titillium Web', Arial, sans-serif; 
+    &-sm { padding: 0.1rem .2rem; line-height: 1em; } 
+    &-info:hover { color: #fff; }
+}
 
 .numeric { font-family: Jura, "Courier New", monospace; display: inline; }
 .unit { @extend .text-muted; }
@@ -162,23 +167,23 @@ button#connect_wallet {
 }
 .card {
     padding-bottom: 0.25em;
-}
-.card-header { 
-    cursor: pointer;
-    background: map-get(bs.$theme-colors, secondary);
-    color: #eee; font-weight: bold;
-    margin: 0;
-    padding: 0;
-    background: linear-gradient(180deg, rgba(20,20,20,1) 0, rgba(0,0,0,1) 22px, rgba(50,50,50,1) 44px);
-    border: 0;
-    border-radius: 3px !important;
-}
-.card-header-current { 
-    background: linear-gradient(135deg, map-get(bs.$theme-colors, info) 0, rgba(30,30,30,1) 18px);
-}
-.card-body,
-.card-header > .container {
-    padding: .25em;
+    
+    &-header { 
+        cursor: pointer;
+        background: map-get(bs.$theme-colors, secondary);
+        color: #eee; font-weight: bold;
+        margin: 0;
+        padding: 0;
+        background: linear-gradient(180deg, rgba(20,20,20,1) 0, rgba(0,0,0,1) 22px, rgba(50,50,50,1) 44px);
+        border: 0;
+        border-radius: 3px !important;
+        &-current { 
+            background: linear-gradient(135deg, map-get(bs.$theme-colors, info) 0, rgba(30,30,30,1) 18px);
+        }
+    }
+    &-body, & > .container {
+        padding: .25em;
+    }
 }
 
 .burger-heading {
@@ -228,8 +233,8 @@ button#connect_wallet {
 .tooltip.show {
     opacity: 0.95;
 }
-#lobby.progress, #stakes_accordion .progress { height: 0.2rem }
-#lobby.progress .progress-bar { color: black; }
+.progress { height: 0.2rem }
+.progress-bar { color: black; }
 
 .row-highlight-even .row:nth-child(even) {  background-color: #2b2b2b; }
 
@@ -243,26 +248,4 @@ input.donate_addr {
 
 .popover{
     max-width: 310px; /* Max Width of the popover (depending on the container!) */
-}
-#early-end-stake-alert {
-    -webkit-animation: Danger 3s linear infinite forwards;
-    animation: Danger 3s linear infinite forwards;
-    // background: repeating-linear-gradient(135deg, #f80, #ff0, #ff0, #f80, red, red, #f80 20px);
-    background: repeating-linear-gradient(
-        135deg, 
-        map-get(bs.$theme-colors, info),
-        map-get(bs.$theme-colors, danger),
-        map-get(bs.$theme-colors, info) 20px,
-    );
-    background-size: 164%;
-    padding: 5px;
-    margin: 0;
-    border-radius: 5px;
-}
-// #early-end-stake-alert > div {
-// }
-
-@keyframes Danger {
-    0% { background-position: 0 50%; }
-    100% { background-position: 100% 50%; }
 }

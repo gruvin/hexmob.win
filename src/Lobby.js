@@ -7,7 +7,7 @@ import {
     ProgressBar,
     Accordion
 } from 'react-bootstrap'
-import './Stakes.scss'
+import './Lobby.scss'
 import HEX from './hex_contract'
 import { BigNumber } from 'bignumber.js'
 import { CryptoVal, BurgerHeading, VoodooButton } from './Widgets' 
@@ -38,7 +38,6 @@ class Lobby extends React.Component {
             lobbySortKey: { keyField: '', dir: -1 },
             walletETHBalance: new BigNumber(0)
         }
-        window._LOBBY = this // DEBUG REMOVE ME
     }
 
     addToEventLog = (entry) => {
@@ -287,6 +286,7 @@ class Lobby extends React.Component {
     }
 
     componentDidMount = () => {
+        if (localStorage.getItem('debug')) window._LOBBY = this
         this.getToday()
         this.getHistory() // state.lobbyData
         this.subscribeEvents()

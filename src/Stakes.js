@@ -246,7 +246,7 @@ class Stakes extends React.Component {
     }
 
     componentDidMount() {
-        if (localStorage && localStorage.getItem('debug')) window._STAKES = this // DEBUG REMOVE ME
+        if (localStorage.getItem('debug')) window._STAKES = this
         if (window.location.pathname === "/stakes") this.setState({ selectedCard: "current_stakes" })
         Promise.all([
             this.loadAllStakes(this.props.publicAddress || null),

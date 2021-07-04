@@ -1,0 +1,21 @@
+@use "theme" as bs;
+
+.btn-stake {
+    &.btn-start { 
+        /* START STAKE BUTTON */
+        color: map-get(bs.$theme-colors, success); 
+        border: 2px map-get(bs.$theme-colors, success) solid; 
+        &:hover {
+            color: map-get(bs.$theme-colors, success); 
+        }
+        &:hover:enabled {
+            color: #ddd; 
+            background-color: #057702; 
+        }
+    }
+}
+
+.xAxis .recharts-label { fill: map-get(bs.$theme-colors, light); } 
+.yAxis .recharts-label { fill: map-get(bs.$theme-colors, success); } 
+.recharts-bar { fill: map-get(bs.$theme-colors, info )}
+.recharts-reference-line-line { stroke: map-get(bs.$theme-colors, warning )}

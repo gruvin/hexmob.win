@@ -78,13 +78,14 @@ class App extends React.Component {
         this.usdHexInterval = null
 
         const { hostname } = window.location
-        window.hostIsHM = hostname === "hexmob.win"
+        window.hostIsHM = hostname === "hexmob.win" //|| hostname === "localhost" 
         window.hostIsTSA = hostname === "go.tshare.app" || hostname === "localhost" 
         window.metamaskOnline = () => this.state.walletConnected && window.ethereum && window.ethereum.isMetaMask
     }
 
     subscribeProvider = async (provider) => {
         if (!provider.on) {
+            debug('WARNING: web3hexmob.on != f()')
             return
         }
 
@@ -93,8 +94,8 @@ class App extends React.Component {
             if (ethereum.autoRefreshOnNetworkChange) 
                 ethereum.autoRefreshOnNetworkChange = false // will be default behavour in new MM api
 
-            ethereum.on('disconnect', () => { this.resetApp() })
-
+            ethereum.on('disconnect', () => { debug("RPC disconnected => reset"); this.resetApp() })
+            ethereum.on('chainChanged', () => { debug("wallet chainChanged => reset"); this.resetApp() })
             ethereum.on('accountsChanged', (accounts) => {
                 if (!accounts.length)                   // => legacy workaround for lack of event:[close|disconnect] (logged out)
                     this.resetApp()
@@ -129,22 +130,12 @@ class App extends React.Component {
             window.location.reload()
         })
 
-        provider.on("chainChanged", async (networkId) => {
-            window.location.reload()
-        })
-
         try {
             window.web3hexmob.currentProvider.publicConfigStore.on('update', this.updateETHBalance)
         } catch(e) {
         }
     }
 
-    unsubscribeEvents = () => {
-        try {
-            this.web3.eth.clearSubscriptions()
-        } catch(e) {}
-    }
-    
     handleSubscriptionError = (e, r) => {
         debug("subscription error: ", e)
     }
@@ -197,6 +188,13 @@ class App extends React.Component {
         this.updateETHBalance()
     }
 
+    unsubscribeEvents = () => {
+        try {
+            this.web3.eth.clearSubscriptions()
+            this.contract.clearSubscriptions()
+        } catch(e) {}
+    }
+    
     updateETHBalance = async () => {
         const balance = await this.web3.eth.getBalance(this.state.wallet.address)
         this.setState({ wallet: { ...this.state.wallet, balanceETH: new BigNumber(balance) } })
@@ -361,7 +359,7 @@ class App extends React.Component {
             this.setState({ accounts })
         }
 
-        if (process.env.NODE_ENV === "development") {
+        if (localStorage.getItem('debug')) {
             window._APP = this
             window._w3M = this.web3modal
             window._HEX = HEX
@@ -449,11 +447,10 @@ class App extends React.Component {
     }
 
     componentWillUnmount = () => {
-        try { 
+        try {
             clearInterval(this.dayInterval)
             clearInterval(this.usdHexInterval)
-            this.web3.eth.clearSubscriptions()
-            this.contract.clearSubscriptions()
+            this.unsubscribeEvents()
         } catch(e) { }
     }
 
@@ -533,7 +530,7 @@ class App extends React.Component {
                     <Stats parent={this} contract={this.contract} wallet={this.state.wallet} usdhex={this.state.USDHEX} />
                     <Lobby parent={this} contract={this.contract} wallet={this.state.wallet} />
                     <Container className="text-center">
-                        <Badge variant="secondary"><span className="text-bold">CONTRACT ADDRESS </span>
+                        <Badge variant="dark"><span className="text-bold">CONTRACT ADDRESS </span>
                         <br className="d-md-none"/>
                         <a  
                             className="a-blue"
@@ -559,7 +556,7 @@ class App extends React.Component {
             <>
                 <Container id="hexmob_header" fluid>
                 { window.hostIsTSA
-                    ? <h1 id="header_logo">HEX<sup className="text-muted small"> tshare.app</sup></h1>
+                    ? <h1 id="header_logo">GO<sup className="text-muted small"> .tshare.app</sup></h1>
                     : <h1 id="header_logo">HEX<sup className="text-muted">mob.win</sup></h1>
                 }
                     <h3>{process.env.REACT_APP_VERSION || 'v0.0.0A'}</h3>
