@@ -556,7 +556,7 @@ class App extends React.Component {
             <>
                 <Container id="hexmob_header" fluid>
                 { window.hostIsTSA
-                    ? <h1 id="header_logo">HEX<sup className="text-muted small"> tshare.app</sup></h1>
+                    ? <h1 id="header_logo">GO<sup className="text-muted small"> .tshare.app</sup></h1>
                     : <h1 id="header_logo">HEX<sup className="text-muted">mob.win</sup></h1>
                 }
                     <h3>{process.env.REACT_APP_VERSION || 'v0.0.0A'}</h3>
