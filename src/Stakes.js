@@ -325,7 +325,7 @@ class Stakes extends React.Component {
         <>
             <Card xs={12} sm={6} className="mt-2 bg-info-darkened rounded">
                 <Card.Body className="p-1 rounded text-light">
-                    <h2 className="text-center">Stakes Summary</h2>
+                    <h2 className="text-center">Stake Totals Summary</h2>
                     <Row>
                         <Col className="text-right font-weight-bold">Staked</Col>
                         <Col><CryptoVal className="numeric" value={stakedTotal} showUnit /></Col>
