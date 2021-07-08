@@ -45,6 +45,7 @@ h6, .h6 { font-weight: bold }
 @media (max-width: 320px){
     .xs-small { font-size: 0.67em }
 }
+@media (min-width: 576px)  { .container, .container-sm, .container-md, .container-lg { max-width: 570px; } }
 @media (min-width: 992px)  { .container, .container-sm, .container-md, .container-lg { max-width: 720px; } }
 @media (min-width: 1200px) { .container, .container-sm, .container-md, .container-lg { max-width: 960px; } }
 
