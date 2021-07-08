@@ -47,7 +47,7 @@ h6, .h6 { font-weight: bold }
 }
 @media (min-width: 576px)  { .container, .container-sm, .container-md, .container-lg { max-width: 570px; } }
 @media (min-width: 992px)  { .container, .container-sm, .container-md, .container-lg { max-width: 720px; } }
-@media (min-width: 1200px) { .container, .container-sm, .container-md, .container-lg { max-width: 960px; } }
+@media (min-width: 1200px) { .container, .container-sm, .container-md, .container-lg { max-width: 720px; } }
 
 /* Google Fonts */
 @import url('https://fonts.googleapis.com/css2?family=Happy+Monkey&family=Jura:wght@500;700&family=Press+Start+2P&family=Titillium+Web:wght@400;700&family=Nosifer&display=swap');

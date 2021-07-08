@@ -25,7 +25,7 @@ class Stakes extends React.Component {
     constructor(props) {
         super(props)
         this.state = {
-            selectedCard: '',
+            selectedCard: "current_stakes",
             stakeCount: null,
             stakeList: null,
             loadingStakes: true,
