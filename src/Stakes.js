@@ -47,14 +47,8 @@ class Stakes extends React.Component {
 
     subscribeEvents = () => {
         this.props.contract.events.StakeStart( {filter:{stakerAddr:this.props.wallet.address}}, (e, r) => {
-        if (e) { 
-                debug('ERR: events.StakeStart: ', e) 
-                return
-            }
+        if (e) { debug('ERR: events.StakeStart: ', e); return; }
             debug('events.StakeStart[e, r]: ', e, r)
-
-            if (r && !this.addToEventLog(r)) return
-
             debug('CALLING loadAllStakes: this.props.wallet: %O', this.props.wallet)
             this.loadAllStakes(this)
         })
@@ -62,12 +56,8 @@ class Stakes extends React.Component {
         .on('error', this.handleSubscriptionError)
 
         this.props.contract.events.StakeEnd({ filter:{ stakerAddr: this.props.wallet.address } }, (e, r) => {
-            if (e) { 
-                debug('ERR: events.StakeEnd:', e) 
-                return
-            }
+            if (e) { debug('ERR: events.StakeEnd:', e); return; }
             debug('events.StakeEnd[e, r]: ', e, r)
-            if (!this.addToEventLog(r)) return
             debug('CALLING loadAllStakes: this.props.wallet: %O', this.props.wallet)
             this.loadAllStakes(this)
         })
@@ -321,6 +311,8 @@ class Stakes extends React.Component {
         const averagePercentGain = percentGainTotal.div(stakeListOutput.length)
         const averagePercentAPY = percentAPYTotal.div(stakeListOutput.length)
 
+        const numStakes = stakeList.length
+
         return (
         <>
             <Card xs={12} sm={6} className="mt-2 bg-info-darkened rounded">
@@ -373,7 +365,7 @@ class Stakes extends React.Component {
             </Card>
             <Card className="mt-2 text-light bg-success-darkened rounded">
                 <Card.Body>
-                    <h2 className="text-center">Active Stakes</h2>
+                    <h2 className="text-center">{numStakes || "No"} Active Stake{numStakes > 1 && <>s</>}</h2>
                     <div className="text-center small">tap each stake for more detail</div>
                     {stakeListOutput.map((stakeData) => {
                         return (
