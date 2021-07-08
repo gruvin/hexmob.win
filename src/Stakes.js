@@ -324,8 +324,8 @@ class Stakes extends React.Component {
         return (
         <>
             <Card xs={12} sm={6} className="mt-2 bg-info-darkened rounded">
-                <Card.Body className="p-1 rounded text-light text-center">
-                    <h2>Stakes Summary</h2>
+                <Card.Body className="p-1 rounded text-light">
+                    <h2 className="text-center">Stakes Summary</h2>
                     <Row>
                         <Col className="text-right font-weight-bold">Staked</Col>
                         <Col><CryptoVal className="numeric" value={stakedTotal} showUnit /></Col>
@@ -350,9 +350,11 @@ class Stakes extends React.Component {
                     </Row>
                     <Row>
                         <Col className="text-right font-weight-bold">Total Value</Col>
-                        <Col><CryptoVal 
+                        <Col>
+                            <CryptoVal 
                                 className="numeric font-weight-bold" 
-                                value={stakedTotal.plus(bigPayDayTotal).plus(interestTotal)} showUnit />
+                                value={stakedTotal.plus(bigPayDayTotal).plus(interestTotal)} showUnit
+                            />
                         </Col>
                     </Row>
                     <Row className="text-success">
@@ -369,9 +371,9 @@ class Stakes extends React.Component {
                     </Row>
                 </Card.Body>
             </Card>
-            <Card className="mt-2 text-center text-light bg-success-darkened rounded">
+            <Card className="mt-2 text-light bg-success-darkened rounded">
                 <Card.Body>
-                    <h2>Active Stakes</h2>
+                    <h2 className="text-center">Active Stakes</h2>
                     <div className="text-center small">tap each stake for more detail</div>
                     {stakeListOutput.map((stakeData) => {
                         return (
