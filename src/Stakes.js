@@ -466,7 +466,7 @@ class Stakes extends React.Component {
             <Accordion 
                 id='stakes_accordion'
                 className="text-left"
-                defaultActiveKey={this.state.selectedCard}
+                defaultActiveKey={this.props.openActive ? this.state.selectedCard : ""}
             >
             {!this.props.publicAddress && // NewStakeForm not shown for read only ?address=
                 <Card className="new-stake" text="light pt-0">

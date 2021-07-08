@@ -516,7 +516,13 @@ class App extends React.Component {
 
             return (
                 <>
-                    <Stakes parent={this} contract={this.contract} wallet={this.state.wallet} usdhex={this.state.USDHEX} />
+                    <Stakes 
+                        parent={this}
+                        contract={this.contract}
+                        wallet={this.state.wallet}
+                        usdhex={this.state.USDHEX}
+                        openActive={!uriQuery.has('closed')}
+                    />
                     {this.state.accounts.length > 0 && this.state.accounts.map(account => (
                         <Stakes
                             key={`public:${account.address}`}
