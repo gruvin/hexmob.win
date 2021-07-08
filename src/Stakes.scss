@@ -69,24 +69,25 @@
             }
         }
     }
+}
 
-    & #early-end-stake-alert {
-        -webkit-animation: Danger 3s linear infinite forwards;
-        animation: dangerAnimation 3s linear infinite forwards;
-        background: repeating-linear-gradient(
-            135deg, 
-            map-get(bs.$theme-colors, info),
-            map-get(bs.$theme-colors, danger),
-            map-get(bs.$theme-colors, info) 20px,
-        );
-        background-size: 164%;
-        padding: 5px;
-        margin: 0;
-        border-radius: 5px;
-    }
+#early-end-stake-alert {
+    -webkit-animation: Danger 3s linear infinite forwards;
+    animation: dangerAnimation 3s linear infinite forwards;
+    background-color: map-get(bs.$theme-colors, danger);
+    background: repeating-linear-gradient(
+        135deg, 
+        map-get(bs.$theme-colors, info),
+        map-get(bs.$theme-colors, danger),
+        map-get(bs.$theme-colors, info) 20px,
+    );
+    background-size: 164%;
+    padding: 5px;
+    margin: 0;
+    border-radius: 5px;
+}
 
-    @keyframes dangerAnimation {
-        0% { background-position: 0 50%; }
-        100% { background-position: 100% 50%; }
-    }
+@keyframes dangerAnimation {
+    0% { background-position: 0 50%; }
+    100% { background-position: 100% 50%; }
 }
