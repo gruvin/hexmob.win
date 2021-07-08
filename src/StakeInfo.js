@@ -106,7 +106,7 @@ export class StakeInfo extends React.Component {
                                     <span className="numeric h3 text-success">{"$"+format(",.2f")(usdValueTotal)}</span>
                                 </Col>
                             </Row>
-                            <Row className="mb-1">
+                            <Row>
                                 <Col xs={7} className="pr-0">
                                     <span className="text-muted small">ENDS </span>
                                     <span className="small">{endDate}</span>
@@ -120,10 +120,12 @@ export class StakeInfo extends React.Component {
                                     }
                                 </Col>
                             </Row>
+                            <div className="pb-1">
                             { pending 
                                 ? <ProgressBar variant={progressVariant} now={100} striped />
                                 : <ProgressBar variant={progressVariant} now={Math.ceil(progress)}  />
                             }
+                            </div>
                         </Container>
                     </ContextAwareToggle>
                     <Accordion.Collapse eventKey={stake.stakeId}>

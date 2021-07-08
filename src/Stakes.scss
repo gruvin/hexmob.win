@@ -1,7 +1,12 @@
 @use "theme" as bs;
 
 .new-stake-body { background-color: #041011; }
-.active-stakes-body { background-color: #000c2f; }
+.active-stakes-body { 
+    background-color: #000c2f;
+    
+    & .progress { height: 0.2rem }
+    & .progress-bar { color: black; }
+}
 .stake-history-body { background-color: map-get(bs.$theme-colors, dark) }
 
 .btn-exitbtn,
