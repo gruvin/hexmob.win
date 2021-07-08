@@ -1,95 +1,92 @@
 @use "theme" as bs;
 
-.new-stake-body { background-color: #041011; }
-.active-stakes-body { 
-    background-color: #000c2f;
-    
+#stakes_accordion {
     & .progress { height: 0.2rem }
     & .progress-bar { color: black; }
-}
-.stake-history-body { background-color: map-get(bs.$theme-colors, dark) }
+    & .card.new-stake { background-color: #041011; }
+    & .card.active-stakes { background-color: #000c2f; }
+    & .card.stake-history { background-color: map-get(bs.$theme-colors, dark) }
 
-.btn-exitbtn,
-.btn-stake,
-.btn-lobby {
-    padding: 0 12px; 
-    font-weight: bold !important;
-    font-size: 1.4em;
-    border-radius: 5px;
-}
+    & .btn-exitbtn,
+    & .btn-stake,
+    & .btn-lobby {
+        padding: 0 12px; 
+        font-weight: bold !important;
+        font-size: 1.4em;
+        border-radius: 5px;
+    }
 
-.btn-exitbtn {
-
-    &.pendingexit { 
-        /* PENDING EXIT BUTTON */
-        color: map-get(bs.$theme-colors, info); 
-        border: 2px map-get(bs.$theme-colors, secondary) solid; 
-        &:hover {
+    & .btn-exitbtn {
+        &.pendingexit { 
+            /* PENDING EXIT BUTTON */
             color: map-get(bs.$theme-colors, info); 
-            border-color: map-get(bs.$theme-colors, info); 
+            border: 2px map-get(bs.$theme-colors, secondary) solid; 
+            &:hover {
+                color: map-get(bs.$theme-colors, info); 
+                border-color: map-get(bs.$theme-colors, info); 
+            }
         }
-    }
 
-    &.earlyexit { 
-        /* EARLY EXIT BUTTON -- DANGER! */
-        color: map-get(bs.$theme-colors, danger); 
-        border: 2px map-get(bs.$theme-colors, secondary) solid; 
-        &:hover {
+        &.earlyexit { 
+            /* EARLY EXIT BUTTON -- DANGER! */
             color: map-get(bs.$theme-colors, danger); 
-            border-color: map-get(bs.$theme-colors, danger); 
+            border: 2px map-get(bs.$theme-colors, secondary) solid; 
+            &:hover {
+                color: map-get(bs.$theme-colors, danger); 
+                border-color: map-get(bs.$theme-colors, danger); 
+            }
         }
-    }
 
-    &.midexit { 
-        /* EARLY BUT PAST MID TERM EXIT BUTTON */
-        color: map-get(bs.$theme-colors, warning); 
-        border: 2px map-get(bs.$theme-colors, secondary) solid; 
-        &:hover {
+        &.midexit { 
+            /* EARLY BUT PAST MID TERM EXIT BUTTON */
             color: map-get(bs.$theme-colors, warning); 
-            border-color: map-get(bs.$theme-colors, warning); 
+            border: 2px map-get(bs.$theme-colors, secondary) solid; 
+            &:hover {
+                color: map-get(bs.$theme-colors, warning); 
+                border-color: map-get(bs.$theme-colors, warning); 
+            }
         }
-    }
 
-    &.termexit {
-        /* AT TERM PLUS UP TO ONE WEEK LATE EXIT BUTTON */
-        color: map-get(bs.$theme-colors, success); 
-        border: 2px map-get(bs.$theme-colors, secondary) solid; 
-        &:hover {
+        &.termexit {
+            /* AT TERM PLUS UP TO ONE WEEK LATE EXIT BUTTON */
             color: map-get(bs.$theme-colors, success); 
-            border-color: map-get(bs.$theme-colors, success); 
+            border: 2px map-get(bs.$theme-colors, secondary) solid; 
+            &:hover {
+                color: map-get(bs.$theme-colors, success); 
+                border-color: map-get(bs.$theme-colors, success); 
+            }
         }
-    }
 
-    &.lateexit {
-        /* LATER THAN TERM PLUS ONE WEEK EXIT BUTTON */
-        color: map-get(bs.$theme-colors, success); 
-        padding-left: 22px;
-        border-color: map-get(bs.$theme-colors, secondary); 
-        background-size: 10px 26px;
-        &:hover {
+        &.lateexit {
+            /* LATER THAN TERM PLUS ONE WEEK EXIT BUTTON */
             color: map-get(bs.$theme-colors, success); 
-            border-color: map-get(bs.$theme-colors, success); 
+            padding-left: 22px;
+            border-color: map-get(bs.$theme-colors, secondary); 
+            background-size: 10px 26px;
+            &:hover {
+                color: map-get(bs.$theme-colors, success); 
+                border-color: map-get(bs.$theme-colors, success); 
+            }
         }
     }
-}
 
-#early-end-stake-alert {
-    -webkit-animation: Danger 3s linear infinite forwards;
-    animation: Danger 3s linear infinite forwards;
-    // background: repeating-linear-gradient(135deg, #f80, #ff0, #ff0, #f80, red, red, #f80 20px);
-    background: repeating-linear-gradient(
-        135deg, 
-        map-get(bs.$theme-colors, info),
-        map-get(bs.$theme-colors, danger),
-        map-get(bs.$theme-colors, info) 20px,
-    );
-    background-size: 164%;
-    padding: 5px;
-    margin: 0;
-    border-radius: 5px;
-}
+    & #early-end-stake-alert {
+        -webkit-animation: Danger 3s linear infinite forwards;
+        animation: dangerAnimation 3s linear infinite forwards;
+        background: repeating-linear-gradient(
+            135deg, 
+            map-get(bs.$theme-colors, info),
+            map-get(bs.$theme-colors, danger),
+            map-get(bs.$theme-colors, info) 20px,
+        );
+        background-size: 164%;
+        padding: 5px;
+        margin: 0;
+        border-radius: 5px;
+    }
 
-@keyframes Danger {
-    0% { background-position: 0 50%; }
-    100% { background-position: 100% 50%; }
+    @keyframes dangerAnimation {
+        0% { background-position: 0 50%; }
+        100% { background-position: 100% 50%; }
+    }
 }
