@@ -7,7 +7,8 @@ import {
     Dropdown,
     DropdownButton,
     Row,
-    Col
+    Col,
+    Image,
 } from 'react-bootstrap'
 import './NewStakeForm.scss'
 import { BigNumber } from 'bignumber.js'
@@ -15,6 +16,8 @@ import HEX from './hex_contract'
 import { calcBigPayDaySlice, calcAdoptionBonus } from './util'
 import { CryptoVal, WhatIsThis, VoodooButton } from './Widgets' 
 import { ResponsiveContainer, Bar, BarChart, Label, Rectangle, ReferenceLine, Tooltip, XAxis, YAxis } from 'recharts'
+import imgGameLogo from './assets/game-logo.png'
+
 const axios = require('axios').create({
     baseURL: '/',
     timeout: 3000,
@@ -143,31 +146,34 @@ export class NewStakeForm extends React.Component {
             graphIconClass: "icon-wait-bg"
         })
 
+        // We are only allowed 1,000 result per shot but there can be more than 2,000
+        // stakes ending over the period of interest
+        const query = `{
+            stakeStarts (
+                first: 1000
+                where: {
+                    endDay_gte:${graphStartDay},
+                    endDay_lte:${graphEndDay}
+                }
+            )
+            {
+                stakedHearts
+                endDay
+            }
+        }`
         axios.post('https://api.thegraph.com/subgraphs/name/codeakk/hex', 
-            JSON.stringify({ query: `{
-                    stakeStarts (
-                        where: {
-                            endDay_gte:${graphStartDay},
-                            endDay_lte:${graphEndDay}
-                        }
-                    )
-                    {
-                        stakeShares
-                        endDay
-                    }
-                }` 
-            })
+            JSON.stringify({ query })
         )
         .then(response => {
             debug('response', response)
             const { data: graphJSON } = response
             var collated = []
             for (let d = graphStartDay; d <= graphEndDay; d++)
-                collated[d - graphStartDay] = { endDay: d.toString(), stakeShares: 0 }  
+                collated[d - graphStartDay] = { endDay: d.toString(), stakedHex: 0 }  
             graphJSON.data.stakeStarts.forEach(oRow => {
-                const TShares = new BigNumber(oRow.stakeShares).div(10e12).toNumber()
+                const stakedHex = new BigNumber(oRow.stakedHearts).div(1E14).toNumber()
                 let index = parseInt(oRow.endDay) - graphStartDay
-                collated[index].stakeShares += TShares
+                collated[index].stakedHex += stakedHex
             })
             this.setState({data: collated, graphIconClass: "" })
         })
@@ -324,81 +330,89 @@ export class NewStakeForm extends React.Component {
                 <Row className="overflow-auto">
                     <Col xs={12} sm={5}>
                         <Container className="p-0 pl-2 pr-2">
-                            <Form.Group controlId="stake_amount" className="">
-                                <Form.Label className="w-100 mb-0">
-                                    Stake Amount in HEX
-                                </Form.Label> 
-                                    <InputGroup className="p-0 col-8 col-sm-12">
-                                        <FormControl
-                                            type="number"
-                                            value={this.state.stakeAmount || ""}
-                                            placeholder="amount in HEX"
-                                            aria-label="amount to stake in HEX"
-                                            aria-describedby="basic-addon1"
-                                            onChange={handleAmountChange}
-                                        />
-                                        <DropdownButton
-                                            as={InputGroup.Append}
-                                            variant="dark"
-                                            key="percent_balance_selector"
-                                            title="HEX"
-                                            className="numeric"
-                                            onSelect={handleAmountSelector}
-                                        >
-                                            <Dropdown.Item as="button" eventKey="new_stake" data-portion="max">MAX</Dropdown.Item>
-                                            <Dropdown.Item as="button" eventKey="new_stake" data-portion={1.00}>100%</Dropdown.Item>
-                                            <Dropdown.Item as="button" eventKey="new_stake" data-portion={0.75}>75%</Dropdown.Item>
-                                            <Dropdown.Item as="button" eventKey="new_stake" data-portion={0.50}>50%</Dropdown.Item>
-                                            <Dropdown.Item as="button" eventKey="new_stake" data-portion={0.25}>25%</Dropdown.Item>
-                                            <Dropdown.Item as="button" eventKey="new_stake" data-portion={0.10}>10%</Dropdown.Item>
-                                            <Dropdown.Item as="button" eventKey="new_stake" data-portion={0.05}>5%</Dropdown.Item>
-                                        </DropdownButton>
-                                    </InputGroup>
-                                </Form.Group>
-                                <Form.Group controlId="stake_days" className="">
-                                    <Form.Label className="mb-0">Stake Length in Days</Form.Label>
-                                        <InputGroup className="p-0 col-12">
-                                            <FormControl
-                                                type="number"
-                                                placeholder="min one day" 
-                                                value={this.state.stakeDays <= 0 ? '' : this.state.stakeDays}
-                                                aria-label="number of days to stake min one day"
-                                                onChange={handleDaysChange} 
-                                                onBlur={handleDaysBlur}
-                                            />
-                                            <DropdownButton
-                                                as={InputGroup.Append}
-                                                variant="dark"
-                                                key="days_selector"
-                                                title="DAYS"
-                                                onSelect={handleDaysSelector}
-                                                className="mr-3 numeric"
-                                            >
-                                                <Dropdown.Item as="button" eventKey="new_stake" data-days="max">MAX (about 15yrs & 11wks)</Dropdown.Item>
-                                                <Dropdown.Item as="button" eventKey="new_stake" data-days="10y">Ten Years</Dropdown.Item>
-                                                <Dropdown.Item as="button" eventKey="new_stake" data-days="5y">Five Years</Dropdown.Item>
-                                                <Dropdown.Item as="button" eventKey="new_stake" data-days="3y">Three Years</Dropdown.Item>
-                                                <Dropdown.Item as="button" eventKey="new_stake" data-days="2y">Two Years</Dropdown.Item>
-                                                <Dropdown.Item as="button" eventKey="new_stake" data-days="1y">One Year</Dropdown.Item>
-                                                <Dropdown.Item as="button" eventKey="new_stake" data-days="6m">Six Months</Dropdown.Item>
-                                                <Dropdown.Item as="button" eventKey="new_stake" data-days="3m">Three Months</Dropdown.Item>
-                                                <Dropdown.Item as="button" eventKey="new_stake" data-days="1m">One Month</Dropdown.Item>
-                                                <Dropdown.Item as="button" eventKey="new_stake" data-days="1w">One Week</Dropdown.Item>
-                                                <Dropdown.Item as="button" eventKey="new_stake" data-days="min">MIN (one day)</Dropdown.Item>
-                                            </DropdownButton>
-                                        </InputGroup>
-                                </Form.Group>
+                            <Row>
+                                <Col xs={6} sm={12} className="">
+                                    <Form.Group controlId="stake_amount" className="">
+                                        <Form.Label className="w-100 mb-0">
+                                            Stake Amount<span className="d-none d-sm-inline"> in HEX</span>
+                                        </Form.Label> 
+                                        <InputGroup className="p-0">
+                                                <FormControl
+                                                    className="p-1"
+                                                    type="number"
+                                                    value={this.state.stakeAmount || ""}
+                                                    placeholder="amount in HEX"
+                                                    aria-label="amount to stake in HEX"
+                                                    aria-describedby="basic-addon1"
+                                                    onChange={handleAmountChange}
+                                                />
+                                                <DropdownButton
+                                                    as={InputGroup.Append}
+                                                    variant="dark"
+                                                    key="percent_balance_selector"
+                                                    title="HEX"
+                                                    className="numeric"
+                                                    onSelect={handleAmountSelector}
+                                                >
+                                                    <Dropdown.Item as="button" eventKey="new_stake" data-portion="max">MAX</Dropdown.Item>
+                                                    <Dropdown.Item as="button" eventKey="new_stake" data-portion={1.00}>100%</Dropdown.Item>
+                                                    <Dropdown.Item as="button" eventKey="new_stake" data-portion={0.75}>75%</Dropdown.Item>
+                                                    <Dropdown.Item as="button" eventKey="new_stake" data-portion={0.50}>50%</Dropdown.Item>
+                                                    <Dropdown.Item as="button" eventKey="new_stake" data-portion={0.25}>25%</Dropdown.Item>
+                                                    <Dropdown.Item as="button" eventKey="new_stake" data-portion={0.10}>10%</Dropdown.Item>
+                                                    <Dropdown.Item as="button" eventKey="new_stake" data-portion={0.05}>5%</Dropdown.Item>
+                                                </DropdownButton>
+                                            </InputGroup>
+                                    </Form.Group>
+                                </Col>
+                                <Col xs={6} sm={12}className="">
+                                    <Form.Group controlId="stake_days" className="">
+                                        <Form.Label className="mb-0">Stake Length<span className="d-none d-sm-inline"> in Days</span></Form.Label>
+                                        <InputGroup className="p-0">
+                                                <FormControl
+                                                    className="p-1"
+                                                    type="number"
+                                                    placeholder="min one day" 
+                                                    value={this.state.stakeDays <= 0 ? '' : this.state.stakeDays}
+                                                    aria-label="number of days to stake min one day"
+                                                    onChange={handleDaysChange} 
+                                                    onBlur={handleDaysBlur}
+                                                />
+                                                <DropdownButton
+                                                    as={InputGroup.Append}
+                                                    variant="dark"
+                                                    key="days_selector"
+                                                    title="DAYS"
+                                                    onSelect={handleDaysSelector}
+                                                    className="numeric"
+                                                >
+                                                    <Dropdown.Item as="button" eventKey="new_stake" data-days="max">MAX (about 15yrs & 11wks)</Dropdown.Item>
+                                                    <Dropdown.Item as="button" eventKey="new_stake" data-days="10y">Ten Years</Dropdown.Item>
+                                                    <Dropdown.Item as="button" eventKey="new_stake" data-days="5y">Five Years</Dropdown.Item>
+                                                    <Dropdown.Item as="button" eventKey="new_stake" data-days="3y">Three Years</Dropdown.Item>
+                                                    <Dropdown.Item as="button" eventKey="new_stake" data-days="2y">Two Years</Dropdown.Item>
+                                                    <Dropdown.Item as="button" eventKey="new_stake" data-days="1y">One Year</Dropdown.Item>
+                                                    <Dropdown.Item as="button" eventKey="new_stake" data-days="6m">Six Months</Dropdown.Item>
+                                                    <Dropdown.Item as="button" eventKey="new_stake" data-days="3m">Three Months</Dropdown.Item>
+                                                    <Dropdown.Item as="button" eventKey="new_stake" data-days="1m">One Month</Dropdown.Item>
+                                                    <Dropdown.Item as="button" eventKey="new_stake" data-days="1w">One Week</Dropdown.Item>
+                                                    <Dropdown.Item as="button" eventKey="new_stake" data-days="min">MIN (one day)</Dropdown.Item>
+                                                </DropdownButton>
+                                            </InputGroup>
+                                    </Form.Group>
+                                </Col>
+                            </Row>
                         </Container>
                     </Col>
                     <Col xs={12} sm={7}>
-                        <Container className="p-0 pl-2 lr-2" style={{ maxWidth: "360px" }}>
+                        <Container className="px-0 pl-md-2 ml-0" style={{ maxWidth: "23rem" }}>
                             <Row>
-                                <Col className="col-3 m-0 pl-2 pr-0 text-info h4">Starts</Col>
+                                <Col className="col-3 m-0 pl-2 pr-0 text-info h4">Start</Col>
                                 <Col className="col-3 pr-0"><span className="text-muted small">DAY </span>{this.state.startDay}</Col>
                                 <Col className="col-6 pr-0">{this.state.startDate} <span className="text-muted d-none d-md-inline">{this.state.startTime}</span></Col>
                             </Row>
                             <Row>
-                                <Col className="col-3 m-0 pl-2 pr-0 text-info h4">Ends</Col>
+                                <Col className="col-3 m-0 pl-2 pr-0 text-info h4">End</Col>
                                 <Col className="col-3 pr-0"><span className="text-muted small">DAY </span>{this.state.endDay}</Col>
                                 <Col className="col-6 pr-0">{this.state.endDate} <span className="text-muted d-none d-md-inline">{this.state.endTime}</span></Col>
                             </Row>
@@ -430,7 +444,12 @@ export class NewStakeForm extends React.Component {
                                 <Col className="text-right text-success h3"><strong><CryptoVal value={this.state.effectiveHEX} /></strong> <span className="text-muted">HEX</span></Col>
                             </Row>
                             <Row className="my-2 text-danger justify-content-end">
-                                <Col className="col-4 pl-2">Share Rate</Col>
+                                <Image 
+                                    src={imgGameLogo} title="play the game!" 
+                                    style={{ position: "absolute", cursor: "pointer", width: "7rem", left: "0.4rem", paddingLeft: 0 }}
+                                    onClick={() => window.location.href="https://tshare.app?step=1"}
+                                />
+                                <Col className="col-4 col-xs-4 col-sm-5 col-md-4">Share Rate</Col>
                                 <Col className="col-4 pl-2 text-right numeric">
                                     <strong><CryptoVal value={this.state.shareRate} currency="TSHARE_PRICE" /> <span className="text-muted">HEX</span></strong>
                                 </Col>
@@ -504,7 +523,7 @@ export class NewStakeForm extends React.Component {
 
                 { (this.state.data) && 
                     <Container className="p-0 pl-2 pr-2">
-                        <h6 className="mt-3 ml-3 text-info">Future Market Supply (Stakes Ending)</h6>
+                        <h6 className="mt-3 ml-3 text-info">Future Market Supply<span className="text-muted small"> APPROX</span></h6>
                         <ResponsiveContainer width="90%" height={220}>    
                             <BarChart 
                                 className={ this.state.graphIconClass }
@@ -514,11 +533,11 @@ export class NewStakeForm extends React.Component {
                                 <XAxis dataKey="endDay">
                                     <Label value="day" offset={-3} position="insideBottom" fill="#aaa" />
                                 </XAxis>
-                                <YAxis type="number">
-                                    <Label value="Tsh   " offset={15} angle={-90} position="insideLeft" />
-                                </YAxis>
+                                <YAxis type="number"
+                                    label={{ value: "Million HEX", position: "insideLeft", angle: -90 }}
+                                />
                                 <ReferenceLine x={this.state.endDay} strokeDasharray="3 3" />
-                                <Bar dataKey="stakeShares" isAnimationActive={true} />
+                                <Bar dataKey="stakedHex" isAnimationActive={true} />
                                 <Tooltip 
                                     filterNull={true}
                                     labelFormatter={ (value, name, props) => ([ "day "+value ]) }
