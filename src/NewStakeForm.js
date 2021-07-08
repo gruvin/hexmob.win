@@ -331,7 +331,7 @@ export class NewStakeForm extends React.Component {
                                     <InputGroup className="p-0 col-8 col-sm-12">
                                         <FormControl
                                             type="number"
-                                            value={this.state.stakeAmount}
+                                            value={this.state.stakeAmount || ""}
                                             placeholder="amount in HEX"
                                             aria-label="amount to stake in HEX"
                                             aria-describedby="basic-addon1"
