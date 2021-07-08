@@ -323,23 +323,9 @@ class Stakes extends React.Component {
 
         return (
         <>
-            {
-                stakeListOutput.map((stakeData) => {
-                    return (
-                        <StakeInfo 
-                            key={stakeData.stakeId}
-                            contract={window.contract} 
-                            stake={stakeData}
-                            reloadStakes={this.loadAllStakes}
-                            usdhex={this.props.usdhex}
-                            readOnly={this.props.publicAddress}
-                        />
-                    )
-                })
-            }
-            <Card xs={12} sm={6} bg="dark" className="m-0 p-1">
-                <Card.Header className="bg-dark p-1 text-center text-info"><h4>Stake Summary</h4></Card.Header>
-                <Card.Body className="bg-dark p-1 rounded">
+            <Card xs={12} sm={6} className="mt-2 bg-info-darkened rounded">
+                <Card.Body className="p-1 rounded text-light text-center">
+                    <h2>Stakes Summary</h2>
                     <Row>
                         <Col className="text-right font-weight-bold">Staked</Col>
                         <Col><CryptoVal className="numeric" value={stakedTotal} showUnit /></Col>
@@ -381,6 +367,24 @@ class Stakes extends React.Component {
                         <Col className="text-right font-weight-bold">Average APY</Col>
                         <Col>{averagePercentAPY.toFixed(2)}%</Col>
                     </Row>
+                </Card.Body>
+            </Card>
+            <Card className="mt-2 text-center text-light bg-success-darkened rounded">
+                <Card.Body>
+                    <h2>Active Stakes</h2>
+                    <div className="text-center small">tap each stake for more detail</div>
+                    {stakeListOutput.map((stakeData) => {
+                        return (
+                            <StakeInfo 
+                                key={stakeData.stakeId}
+                                contract={window.contract} 
+                                stake={stakeData}
+                                reloadStakes={this.loadAllStakes}
+                                usdhex={this.props.usdhex}
+                                readOnly={this.props.publicAddress}
+                            />
+                        )
+                    })}
                 </Card.Body>
             </Card>
         </>
@@ -463,7 +467,7 @@ class Stakes extends React.Component {
                 defaultActiveKey={this.state.selectedCard}
             >
             {!this.props.publicAddress && // NewStakeForm not shown for read only ?address=
-                <Card bg="dark" text="light pt-0">
+                <Card className="new-stake" text="light pt-0">
                     <Accordion.Toggle as={Card.Header} eventKey="new_stake">
                         <BurgerHeading className="float-left">New Stake</BurgerHeading>
                         <div className="float-right pr-1 text-success">
@@ -472,7 +476,7 @@ class Stakes extends React.Component {
                         </div>
                     </Accordion.Toggle>
                     <Accordion.Collapse eventKey="new_stake">
-                        <Card.Body className="new-stake-body">
+                        <Card.Body>
                             <NewStakeForm 
                                 contract={window.contract} 
                                 wallet={this.props.wallet} 
@@ -482,7 +486,7 @@ class Stakes extends React.Component {
                    </Accordion.Collapse>
                 </Card>
             }
-                <Card bg="secondary" text="light" className={this.props.className}>
+                <Card text="light" className={"active-stakes "+this.props.className}>
                 {this.props.publicAddress && 
                     <div className="px-1 text-light text-center small">                        
                         <span className="text-muted">{this.props.publicName || "address"} </span>{this.props.publicAddress}
@@ -498,17 +502,17 @@ class Stakes extends React.Component {
                         </div>
                     </Accordion.Toggle>
                     <Accordion.Collapse eventKey="current_stakes">
-                        <Card.Body className="active-stakes-body">
+                        <Card.Body className="p-0">
                             <this.StakesList/>
                         </Card.Body>
                    </Accordion.Collapse>
                 </Card>
-                <Card bg="secondary" text="light pb-0">
+                <Card className="stake-history text-light pb-0">
                     <Accordion.Toggle as={Card.Header} eventKey="stake_history">
                         <BurgerHeading>Stake History</BurgerHeading>
                     </Accordion.Toggle>
                     <Accordion.Collapse eventKey="stake_history">
-                        <Card.Body className="stake-history-body">
+                        <Card.Body>
                             <this.StakesHistory />
                         </Card.Body>
                     </Accordion.Collapse>

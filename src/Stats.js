@@ -148,11 +148,7 @@ class Stats extends React.Component {
         }
 
         return (
-            <Accordion 
-                id='stats_accordion'
-                className="text-left mt-3"
-                defaultActiveKey="0"
-            >
+            <Accordion id='stats_accordion' className="text-left mt-3">
                 <Card id="stats" text="light py-0">
                     <Accordion.Toggle as={Card.Header} eventKey="0">
                         <BurgerHeading className="float-left">Stats</BurgerHeading>

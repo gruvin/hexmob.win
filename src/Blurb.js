@@ -37,7 +37,7 @@ const Blurb = () => {
                     <Col xs={12} sm={7} className="py-3 text-center m-auto allign-middle">
                         <p className="m-0"><small>compatible wallets include ...</small></p>
                         <p>
-                            <Image src="/mm-wordmark.svg" alt="Metamask" height={96} /><br />
+                            <Image src="/mm-wordmark.svg" alt="Metamask" height={72} /><br />
                             <strong>iOS, Android, MacOS, Linux, Windows</strong><br/>
                             Safari, Chrome, Firefox, Brave, more
                         </p>
@@ -45,7 +45,7 @@ const Blurb = () => {
                             Trust, Coinbase, Crypto.com, imToken, Portis, Rainbow and any wallet implementing ...
                         </p>
                         <h3>
-                            <img width={100} src="/walletconnect.svg" alt="" /> WalletConnect
+                            <img height={32} src="/walletconnect.svg" alt="" /> WalletConnect
                         </h3>
                     </Col>
                 </Row>
