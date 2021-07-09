@@ -15,7 +15,7 @@ import { BigNumber } from 'bignumber.js'
 import HEX from './hex_contract'
 import { calcBigPayDaySlice, calcAdoptionBonus } from './util'
 import { CryptoVal, WhatIsThis, VoodooButton } from './Widgets' 
-import { ResponsiveContainer, Bar, BarChart, Label, Rectangle, ReferenceLine, Tooltip, XAxis, YAxis } from 'recharts'
+import { ResponsiveContainer, Bar, BarChart, Rectangle, ReferenceLine, Tooltip, XAxis, YAxis } from 'recharts'
 import imgGameLogo from './assets/game-logo.png'
 
 const axios = require('axios').create({
@@ -152,7 +152,7 @@ export class NewStakeForm extends React.Component {
         for (let d = graphStartDay; d <= graphEndDay; d++)
         collated[d - graphStartDay] = { endDay: d.toString(), stakedHex: 0 }  
 
-        const chunkSize = 1 // days
+        const chunkSize = 10 // days
         let chunkStart = graphStartDay
 
         while ((chunkStart + chunkSize) <= graphEndDay) {
@@ -533,27 +533,22 @@ export class NewStakeForm extends React.Component {
                         ) }
                     </Col>
 
-                { true && // this.state.data && false && 
+                { this.state.data &&
                     <Container className="py-3">
                         <h6 className="text-info">Future Market Supply<span className="text-muted small"> APPROX</span></h6>
-                        <p>
-                            <b>Sorry, this data is temporarily unavailable</b><br/>
+                        {/* <p>
+                            <b>Sorry, this data is temporarily unavailable</b>.<br/>
                             We're looking for a new data source -- or setting up our own.
                             <span className="text-info">&nbsp;#nohexspectations</span>
-                        </p>
-
-                        {/* <ResponsiveContainer width="90%" height={220}>    
+                        </p> */}
+                        <ResponsiveContainer width="90%" height={220}>    
                             <BarChart 
                                 className={ this.state.graphIconClass }
                                 margin={{ top: 16, right: 5, bottom: 16, left: 15 }}
                                 data={this.state.data}
                             >
-                                <XAxis dataKey="endDay">
-                                    <Label value="day" offset={-3} position="insideBottom" fill="#aaa" />
-                                </XAxis>
-                                <YAxis type="number"
-                                    label={{ value: "Million HEX", position: "insideLeft", angle: -90 }}
-                                />
+                                <XAxis dataKey="endDay" label={{ value: "day", offset: -3, position: "insideBottom", fill: "#aaa" }} />
+                                <YAxis type="number" label={{ value: "Million HEX", position: "insideLeft", angle: -90 }} />
                                 <ReferenceLine x={this.state.endDay} strokeDasharray="3 3" />
                                 <Bar dataKey="stakedHex" isAnimationActive={true} />
                                 <Tooltip 
@@ -567,7 +562,7 @@ export class NewStakeForm extends React.Component {
                                     cursor={<GraphCustomCursor/>}
                                 />
                             </BarChart>
-                        </ResponsiveContainer> */}
+                        </ResponsiveContainer>
                     </Container>
                 }
                 </Row>
