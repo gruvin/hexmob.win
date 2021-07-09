@@ -134,7 +134,7 @@ export class NewStakeForm extends React.Component {
         this.props.reloadStakes()
     }
 
-    updateBarGraph = () => {
+    updateBarGraph = async () => {
         const { startDay, endDay } = this.state
         if (isNaN(startDay + endDay)) return
         const numDataPoints = 31
@@ -148,39 +148,51 @@ export class NewStakeForm extends React.Component {
 
         // We are only allowed 1,000 result per shot but there can be more than 2,000
         // stakes ending over the period of interest
-        const query = `{
-            stakeStarts (
-                first: 1000
-                where: {
-                    endDay_gte:${graphStartDay},
-                    endDay_lte:${graphEndDay}
+        var collated = []
+        for (let d = graphStartDay; d <= graphEndDay; d++)
+        collated[d - graphStartDay] = { endDay: d.toString(), stakedHex: 0 }  
+
+        const chunkSize = 1 // days
+        let chunkStart = graphStartDay
+
+        while ((chunkStart + chunkSize) <= graphEndDay) {
+            debug(`graphStartDay: ${graphStartDay}, graphEndDay: ${graphEndDay}, chunkStart: ${chunkStart}`)
+            const query = `{
+                stakeStarts (
+                    first: 1000
+                    where: {
+                        endDay_gte:${chunkStart},
+                        endDay_lte:${Math.min(chunkStart + chunkSize, graphEndDay)}
+                    }
+                )
+                {
+                    stakedHearts
+                    endDay
                 }
-            )
-            {
-                stakedHearts
-                endDay
+            }`
+            let response
+            try {
+                response = await axios.post('https://api.thegraph.com/subgraphs/name/codeakk/hex', 
+                    JSON.stringify({ query })
+                )
+            } catch (e) {
+                if (e.message.search("timeout") > 0) continue
+                else throw new Error("WTF? "+e.message)
             }
-        }`
-        axios.post('https://api.thegraph.com/subgraphs/name/codeakk/hex', 
-            JSON.stringify({ query })
-        )
-        .then(response => {
             debug('response', response)
-            const { data: graphJSON } = response
-            var collated = []
-            for (let d = graphStartDay; d <= graphEndDay; d++)
-                collated[d - graphStartDay] = { endDay: d.toString(), stakedHex: 0 }  
-            graphJSON.data.stakeStarts.forEach(oRow => {
+            const { stakeStarts: graphJSON } = response.data.data
+            if (!graphJSON.length) break
+            
+            // eslint-disable-next-line
+            graphJSON.forEach(oRow => {
                 const stakedHex = new BigNumber(oRow.stakedHearts).div(1E14).toNumber()
                 let index = parseInt(oRow.endDay) - graphStartDay
                 collated[index].stakedHex += stakedHex
             })
-            this.setState({data: collated, graphIconClass: "" })
-        })
-        .catch(e => {
-            debug(`Graph API: ${e}`)
-            this.setState({ graphIconClass: "icon-error-bg" })
-        })
+
+            chunkStart += chunkSize
+        }
+        this.setState({data: collated, graphIconClass: "" })
     }
 
     render() {
@@ -521,10 +533,16 @@ export class NewStakeForm extends React.Component {
                         ) }
                     </Col>
 
-                { (this.state.data) && 
-                    <Container className="p-0 pl-2 pr-2">
-                        <h6 className="mt-3 ml-3 text-info">Future Market Supply<span className="text-muted small"> APPROX</span></h6>
-                        <ResponsiveContainer width="90%" height={220}>    
+                { true && // this.state.data && false && 
+                    <Container className="py-3">
+                        <h6 className="text-info">Future Market Supply<span className="text-muted small"> APPROX</span></h6>
+                        <p>
+                            <b>Sorry, this data is temporarily unavailable</b><br/>
+                            We're looking for a new data source -- or setting up our own.
+                            <span className="text-info">&nbsp;#nohexspectations</span>
+                        </p>
+
+                        {/* <ResponsiveContainer width="90%" height={220}>    
                             <BarChart 
                                 className={ this.state.graphIconClass }
                                 margin={{ top: 16, right: 5, bottom: 16, left: 15 }}
@@ -549,7 +567,7 @@ export class NewStakeForm extends React.Component {
                                     cursor={<GraphCustomCursor/>}
                                 />
                             </BarChart>
-                        </ResponsiveContainer>
+                        </ResponsiveContainer> */}
                     </Container>
                 }
                 </Row>
