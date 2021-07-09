@@ -77,7 +77,7 @@ class Stakes extends React.Component {
         const endDay = startDay + stakeData.stakedDays
         if (currentDay === startDay) return
 
-        const dailyData = await contract.methods.dailyDataRange(startDay, Math.min(currentDay, endDay)).call()
+        const dailyData = await contract.methods.dailyDataRange(startDay, Math.min(currentDay-1, endDay)).call()
 
         // iterate over daily payouts history
         let payout = new BigNumber(0)
@@ -302,7 +302,7 @@ class Stakes extends React.Component {
 
             const percentGain = stake.bigPayDay.plus(interest).div(stake.stakedHearts).times(100)
             const daysServed = Math.min(currentDay - stake.startDay, stake.stakedDays)
-            const percentAPY = new BigNumber(365).div(daysServed).times(percentGain)
+            const percentAPY = daysServed > 0 ? BigNumber(365).div(daysServed).times(percentGain) : BigNumber(0)
             percentGainTotal = percentGainTotal.plus(percentGain)
             percentAPYTotal = percentAPYTotal.plus(percentAPY)
 
