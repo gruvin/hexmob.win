@@ -77,7 +77,7 @@ class Stakes extends React.Component {
         const endDay = startDay + stakeData.stakedDays
         if (currentDay === startDay) return
 
-        const dailyData = await contract.methods.dailyDataRange(startDay, Math.min(currentDay-1, endDay)).call()
+        const dailyData = await contract.methods.dailyDataRange(startDay, Math.min(currentDay, endDay-1)).call()
 
         // iterate over daily payouts history
         let payout = new BigNumber(0)
