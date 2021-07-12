@@ -12,7 +12,7 @@ import {
 import './Stakes.scss'
 import { BigNumber } from 'bignumber.js'
 import HEX from './hex_contract'
-import { calcBigPayDaySlice, calcAdoptionBonus } from './util'
+import { calcBigPayDaySlice, calcAdoptionBonus, calcInterest, calcApy } from './util'
 import { NewStakeForm } from './NewStakeForm' 
 import { CryptoVal, BurgerHeading } from './Widgets' 
 import { StakeInfo } from './StakeInfo'
@@ -77,7 +77,7 @@ class Stakes extends React.Component {
         const endDay = startDay + stakeData.stakedDays
 
         if (startDay >= currentDay) return
-        const dailyData = await contract.methods.dailyDataRange(startDay, Math.min(currentDay-1, endDay)).call()
+        const dailyData = await contract.methods.dailyDataRange(startDay, Math.min(globals.dailyDataCount, endDay)).call()
 
         // iterate over daily payouts history
         let payout = new BigNumber(0)
@@ -238,7 +238,7 @@ class Stakes extends React.Component {
                         prevUnlocked:   Boolean(    data1.slice( 88,  95).toString(10))
                     }
                 })
-                debug('PAST_STAKES: %O', pastStakes)
+                //debug('PAST_STAKES: %O', pastStakes)
                 this.setState({ pastStakes })
             })
         })
@@ -309,10 +309,9 @@ class Stakes extends React.Component {
                 bigPayDay,
             }
 
-            const percentGain = stake.bigPayDay.plus(interest).div(stake.stakedHearts).times(100)
-            const daysServed = Math.min(currentDay - stake.startDay, stake.stakedDays)
-            const percentAPY = daysServed > 0 ? BigNumber(365).div(daysServed).times(percentGain) : BigNumber(0)
-            percentGainTotal = percentGainTotal.plus(percentGain)
+            const percentGain = calcInterest(stake) // 1 == 1%
+            const percentAPY = calcApy(currentDay, stake)
+                percentGainTotal = percentGainTotal.plus(percentGain)
             percentAPYTotal = percentAPYTotal.plus(percentAPY)
 
             return stake

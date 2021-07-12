@@ -20,6 +20,20 @@ const calcAdoptionBonus = (payout, _globals) => {
     return bonus
 }
 
+const calcInterest = (stakeData) => {
+    const { payout, bigPayDay, stakedHearts } = stakeData
+    return payout.plus(bigPayDay).times(100).div(stakedHearts) // 1 == 1%
+}
+
+const calcApy = (currentDay, stakeData) => {
+    const extraDay = 1 // last day has to roll over before hex:stakeEnd() can calculate all interest
+    const daysServed = extraDay + Math.min(currentDay - stakeData.startDay, stakeData.stakedDays)
+    const interest = calcInterest(stakeData)
+    return interest.times(365).div(daysServed > 1 ? daysServed : 1)
+    // below, based on go.hex.com, yields same result
+    // return daysServed > 0 ? interest.plus(bigPayDay).div(stake.stakedHearts).times(365).div(daysServed).times(100) : BigNumber(0)
+}
+
 const cryptoFormat = (v, currency) => {
     if (typeof currency === 'undefined') currency = 'HEX'
     if (typeof v === 'string' || typeof v === 'number') v = BigNumber(v)
@@ -129,6 +143,8 @@ const fetchWithTimeout  = (url, params, timeout) => {
 module.exports = {
     calcBigPayDaySlice,
     calcAdoptionBonus,
+    calcInterest,
+    calcApy,
     cryptoFormat,
     detectTrustWallet,
     fetchWithTimeout,
