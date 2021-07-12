@@ -76,12 +76,12 @@ class Stakes extends React.Component {
         const startDay = stakeData.lockedDay
         const endDay = startDay + stakeData.stakedDays
 
-        if (startDay >= currentDay) return
-        const dailyData = await contract.methods.dailyDataRange(startDay, Math.min(globals.dailyDataCount, endDay)).call()
-
-        // iterate over daily payouts history
         let payout = new BigNumber(0)
+        let bigPayDay = new BigNumber(0)
 
+        if (startDay >= currentDay) return { payout, bigPayDay }
+
+        const dailyData = await contract.methods.dailyDataRange(startDay, Math.min(globals.dailyDataCount, endDay)).call()
         dailyData.forEach((mapped_dailyData) => {
             const data = new BigNumber(mapped_dailyData).toString(16).padStart(64, '0')
             const day = { // extract dailyData struct from uint256 mapping
@@ -99,9 +99,8 @@ class Stakes extends React.Component {
         const interestShare = dailyInterestTotal.times(stakeData.stakeShares).idiv(globals.stakeSharesTotal)
         const interestBonus = (currentDay < HEX.CLAIM_PHASE_END_DAY) ? calcAdoptionBonus(interestShare, globals) : 0
 
-        const interest = payout.plus(interestShare).plus(interestBonus)
+        payout = payout.plus(interestShare).plus(interestBonus)
 
-        let bigPayDay = new BigNumber(0)
         if (startDay <= HEX.BIG_PAY_DAY && endDay > HEX.BIG_PAY_DAY) {
             const bpdStakeSharesTotal = (currentDay < 352) // day is zero based internally
                 ? globals.stakeSharesTotal // prior to BPD 
@@ -114,7 +113,7 @@ class Stakes extends React.Component {
             // TODO: penalties have to come off for late End Stake
         }
 
-        return { interest, bigPayDay }
+        return { payout, bigPayDay }
     }
 
     static async loadStakes(context) {
@@ -157,10 +156,7 @@ class Stakes extends React.Component {
                     if (currentDay >= stakeData.lockedDay + 1) { // no payouts when pending or until day 2 into term
                         try {
                             const payouts = await Stakes.getStakePayoutData(context, stakeData)
-                            if (payouts) { // just in case
-                                stakeData.payout = payouts.interest
-                                stakeData.bigPayDay = payouts.bigPayDay
-                            }
+                            stakeData = { ...stakeData, ...payouts }
                         } catch(e) {
                             debug(`WARNING: loadStakes() : getStakePayoutData(address, index) ${e.message}`)
                         }
