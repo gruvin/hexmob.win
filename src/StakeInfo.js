@@ -17,7 +17,8 @@ import './Stakes.scss'
 import HEX from './hex_contract'
 import { format } from 'd3-format'
 import { CryptoVal, VoodooButton } from './Widgets' 
-import { BigNumber } from 'bignumber.js'
+// import { BigNumber } from 'bignumber.js'
+import { calcInterest, calcApy } from './util'
 
 const debug = require('debug')('StakeInfo')
 debug('loading')
@@ -61,9 +62,8 @@ export class StakeInfo extends React.Component {
         const valueTotal = stake.stakedHearts.plus(interest).plus(stake.bigPayDay)
         const usdValueTotal = valueTotal.div(1e8).times(usdhex).toNumber()
 
-        const percentGain = bigPayDay.plus(interest).div(stake.stakedHearts).times(100)
-        const daysServed = Math.min(currentDay - stake.startDay, stake.stakedDays)
-        const percentAPY = new BigNumber(365).div(daysServed).times(percentGain)
+        const percentGain = calcInterest(stake) // 1 == 1%
+        const percentAPY = calcApy(currentDay, stake)
 
         const _startDate = new Date(HEX.START_DATE.getTime() + startDay * 24 * 3600 * 1000)
         const startDate = _startDate.toLocaleDateString()+' '+_startDate.toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})
