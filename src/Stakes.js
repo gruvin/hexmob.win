@@ -467,7 +467,10 @@ class Stakes extends React.Component {
             {!this.props.publicAddress && // NewStakeForm not shown for read only ?address=
                 <Card className="new-stake" text="light pt-0">
                     <Accordion.Toggle as={Card.Header} eventKey="new_stake">
-                        <BurgerHeading className="float-left">New Stake</BurgerHeading>
+                        <BurgerHeading className="float-left">
+                            Stake HEX
+                            <span className="d-none d-sm-inline"> to Mint Shares</span>
+                        </BurgerHeading>
                         <div className="float-right pr-1 text-success">
                              <span className="text-muted small">AVAILABLE </span>
                              <CryptoVal className="numeric font-weight-bold" value={this.props.wallet.balance} showUnit />
