@@ -50,7 +50,7 @@ class Stakes extends React.Component {
         if (e) { debug('ERR: events.StakeStart: ', e); return; }
             debug('events.StakeStart[e, r]: ', e, r)
             debug('CALLING loadAllStakes: this.props.wallet: %O', this.props.wallet)
-            this.loadAllStakes(this)
+            this.loadAllStakes()
         })
         .on('connected', id => debug('subbed: StakeStart:', id))
         .on('error', this.handleSubscriptionError)
@@ -59,7 +59,7 @@ class Stakes extends React.Component {
             if (e) { debug('ERR: events.StakeEnd:', e); return; }
             debug('events.StakeEnd[e, r]: ', e, r)
             debug('CALLING loadAllStakes: this.props.wallet: %O', this.props.wallet)
-            this.loadAllStakes(this)
+            this.loadAllStakes()
         })
         .on('connected', id => debug('subbed: StakeEnd:', id))
         .on('error', this.handleSubscriptionError)
@@ -74,22 +74,26 @@ class Stakes extends React.Component {
         } = contract.Data
 
         const startDay = stakeData.lockedDay
-        const endDay = startDay + stakeData.stakedDays
+        const stakedDays = stakeData.stakedDays
+        const endDay = startDay + stakedDays
 
-        if (startDay >= currentDay) return
+        let payout = BigNumber(0)
+        let bigPayDay = BigNumber(0)
+        let penalty = BigNumber(0)
+
+        if (startDay >= currentDay) return { payout, bigPayDay, penalty }
+
         const dailyData = await contract.methods.dailyDataRange(startDay, Math.min(globals.dailyDataCount, endDay)).call()
-
-        // iterate over daily payouts history
-        let payout = new BigNumber(0)
-
-        dailyData.forEach((mapped_dailyData) => {
+        dailyData.forEach((mapped_dailyData, dayIndex) => {
             const data = new BigNumber(mapped_dailyData).toString(16).padStart(64, '0')
             const day = { // extract dailyData struct from uint256 mapping
                 payoutTotal: new BigNumber(data.slice(46,64), 16),
                 stakeSharesTotal: new BigNumber(data.slice(28,46), 16),
                 unclaimedSatoshisTotal: new BigNumber(data.slice(12,28), 16)
             }
-            payout = payout.plus(day.payoutTotal.times(stakeData.stakeShares).idiv(day.stakeSharesTotal)) // .sol line: 1586
+            const payoutToday = day.payoutTotal.times(stakeData.stakeShares).idiv(day.stakeSharesTotal) // .sol line: 1586
+            payout = payout.plus(payoutToday)
+            if (dayIndex < 90 || dayIndex < Math.ceil(stakedDays / 2)) penalty = penalty.plus(payoutToday)
         })
 
         // Calculate our share of Daily Interest ___for the current (incomplete) day___
@@ -99,9 +103,8 @@ class Stakes extends React.Component {
         const interestShare = dailyInterestTotal.times(stakeData.stakeShares).idiv(globals.stakeSharesTotal)
         const interestBonus = (currentDay < HEX.CLAIM_PHASE_END_DAY) ? calcAdoptionBonus(interestShare, globals) : 0
 
-        const interest = payout.plus(interestShare).plus(interestBonus)
+        payout = payout.plus(interestShare).plus(interestBonus)
 
-        let bigPayDay = new BigNumber(0)
         if (startDay <= HEX.BIG_PAY_DAY && endDay > HEX.BIG_PAY_DAY) {
             const bpdStakeSharesTotal = (currentDay < 352) // day is zero based internally
                 ? globals.stakeSharesTotal // prior to BPD 
@@ -114,7 +117,7 @@ class Stakes extends React.Component {
             // TODO: penalties have to come off for late End Stake
         }
 
-        return { interest, bigPayDay }
+        return { payout, bigPayDay, penalty }
     }
 
     static async loadStakes(context) {
@@ -122,10 +125,18 @@ class Stakes extends React.Component {
         const { currentDay } = contract.Data
         debug('Loading stakes for address: ', address)
         if (!address) {
-            debug(`WARNING: loadStakes() : inva;id (null?) context.address`)
+            debug(`WARNING: loadStakes() : invalid (null?) context.address`)
             return null
         }
-        const stakeCount = await contract.methods.stakeCount(address).call()
+        let stakeCount
+        try {
+            stakeCount = await contract.methods.stakeCount(address).call()
+        } catch (e) {
+            // XXX: I have witnessed just once for reasons not yet deduced the 'address'
+            // argument being invalid and of type Object, instead of string.
+            debug("WARNING: loadStakes()::[hex]stakeCount [address = %o] - %s", address, e.message)
+            return // give up
+        }
 
         // use Promise.all to load stake data in parallel
         var promises = [ ]
@@ -157,10 +168,7 @@ class Stakes extends React.Component {
                     if (currentDay >= stakeData.lockedDay + 1) { // no payouts when pending or until day 2 into term
                         try {
                             const payouts = await Stakes.getStakePayoutData(context, stakeData)
-                            if (payouts) { // just in case
-                                stakeData.payout = payouts.interest
-                                stakeData.bigPayDay = payouts.bigPayDay
-                            }
+                            stakeData = { ...stakeData, ...payouts }
                         } catch(e) {
                             debug(`WARNING: loadStakes() : getStakePayoutData(address, index) ${e.message}`)
                         }
@@ -471,7 +479,10 @@ class Stakes extends React.Component {
             {!this.props.publicAddress && // NewStakeForm not shown for read only ?address=
                 <Card className="new-stake" text="light pt-0">
                     <Accordion.Toggle as={Card.Header} eventKey="new_stake">
-                        <BurgerHeading className="float-left">New Stake</BurgerHeading>
+                        <BurgerHeading className="float-left">
+                            Stake HEX
+                            <span className="d-none d-sm-inline"> to Mint Shares</span>
+                        </BurgerHeading>
                         <div className="float-right pr-1 text-success">
                              <span className="text-muted small">AVAILABLE </span>
                              <CryptoVal className="numeric font-weight-bold" value={this.props.wallet.balance} showUnit />

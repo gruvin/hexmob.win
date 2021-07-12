@@ -90,6 +90,7 @@ class App extends React.Component {
         }
 
         if (provider.isMetaMask) {
+            debug("PROVIDER IS METAMASK")
             const ethereum = window.ethereum
             if (ethereum.autoRefreshOnNetworkChange) 
                 ethereum.autoRefreshOnNetworkChange = false // will be default behavour in new MM api
@@ -109,7 +110,9 @@ class App extends React.Component {
                 }
             })
         } else { // WalletConnect (and others?) ...
+            debug("PROVIDER IS OTHER")
 
+            // 'close' is deprecated in favour of 'disconnect' in MetaMask but not some other wallets
             provider.on("close", () => {  
                 debug('provider::event:close')
             })
