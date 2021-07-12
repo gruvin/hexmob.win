@@ -50,7 +50,7 @@ class Stakes extends React.Component {
         if (e) { debug('ERR: events.StakeStart: ', e); return; }
             debug('events.StakeStart[e, r]: ', e, r)
             debug('CALLING loadAllStakes: this.props.wallet: %O', this.props.wallet)
-            this.loadAllStakes(this)
+            this.loadAllStakes()
         })
         .on('connected', id => debug('subbed: StakeStart:', id))
         .on('error', this.handleSubscriptionError)
@@ -59,7 +59,7 @@ class Stakes extends React.Component {
             if (e) { debug('ERR: events.StakeEnd:', e); return; }
             debug('events.StakeEnd[e, r]: ', e, r)
             debug('CALLING loadAllStakes: this.props.wallet: %O', this.props.wallet)
-            this.loadAllStakes(this)
+            this.loadAllStakes()
         })
         .on('connected', id => debug('subbed: StakeEnd:', id))
         .on('error', this.handleSubscriptionError)
@@ -74,22 +74,26 @@ class Stakes extends React.Component {
         } = contract.Data
 
         const startDay = stakeData.lockedDay
-        const endDay = startDay + stakeData.stakedDays
+        const stakedDays = stakeData.stakedDays
+        const endDay = startDay + stakedDays
 
-        let payout = new BigNumber(0)
-        let bigPayDay = new BigNumber(0)
+        let payout = BigNumber(0)
+        let bigPayDay = BigNumber(0)
+        let penalty = BigNumber(0)
 
-        if (startDay >= currentDay) return { payout, bigPayDay }
+        if (startDay >= currentDay) return { payout, bigPayDay, penalty }
 
         const dailyData = await contract.methods.dailyDataRange(startDay, Math.min(globals.dailyDataCount, endDay)).call()
-        dailyData.forEach((mapped_dailyData) => {
+        dailyData.forEach((mapped_dailyData, dayIndex) => {
             const data = new BigNumber(mapped_dailyData).toString(16).padStart(64, '0')
             const day = { // extract dailyData struct from uint256 mapping
                 payoutTotal: new BigNumber(data.slice(46,64), 16),
                 stakeSharesTotal: new BigNumber(data.slice(28,46), 16),
                 unclaimedSatoshisTotal: new BigNumber(data.slice(12,28), 16)
             }
-            payout = payout.plus(day.payoutTotal.times(stakeData.stakeShares).idiv(day.stakeSharesTotal)) // .sol line: 1586
+            const payoutToday = day.payoutTotal.times(stakeData.stakeShares).idiv(day.stakeSharesTotal) // .sol line: 1586
+            payout = payout.plus(payoutToday)
+            if (dayIndex < 90 || dayIndex < Math.ceil(stakedDays / 2)) penalty = penalty.plus(payoutToday)
         })
 
         // Calculate our share of Daily Interest ___for the current (incomplete) day___
@@ -113,7 +117,7 @@ class Stakes extends React.Component {
             // TODO: penalties have to come off for late End Stake
         }
 
-        return { payout, bigPayDay }
+        return { payout, bigPayDay, penalty }
     }
 
     static async loadStakes(context) {
@@ -121,10 +125,18 @@ class Stakes extends React.Component {
         const { currentDay } = contract.Data
         debug('Loading stakes for address: ', address)
         if (!address) {
-            debug(`WARNING: loadStakes() : inva;id (null?) context.address`)
+            debug(`WARNING: loadStakes() : invalid (null?) context.address`)
             return null
         }
-        const stakeCount = await contract.methods.stakeCount(address).call()
+        let stakeCount
+        try {
+            stakeCount = await contract.methods.stakeCount(address).call()
+        } catch (e) {
+            // XXX: I have witnessed just once for reasons not yet deduced the 'address'
+            // argument being invalid and of type Object, instead of string.
+            debug("WARNING: loadStakes()::[hex]stakeCount [address = %o] - %s", address, e.message)
+            return // give up
+        }
 
         // use Promise.all to load stake data in parallel
         var promises = [ ]
