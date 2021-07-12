@@ -75,9 +75,9 @@ class Stakes extends React.Component {
 
         const startDay = stakeData.lockedDay
         const endDay = startDay + stakeData.stakedDays
-        if (currentDay === startDay) return
 
-        const dailyData = await contract.methods.dailyDataRange(Math.min(currentDay-1, startDay), Math.min(currentDay-1, endDay)).call()
+        if (startDay >= currentDay) return
+        const dailyData = await contract.methods.dailyDataRange(startDay, Math.min(currentDay-1, endDay)).call()
 
         // iterate over daily payouts history
         let payout = new BigNumber(0)
@@ -91,7 +91,6 @@ class Stakes extends React.Component {
             }
             payout = payout.plus(day.payoutTotal.times(stakeData.stakeShares).idiv(day.stakeSharesTotal)) // .sol line: 1586
         })
-
 
         // Calculate our share of Daily Interest ___for the current (incomplete) day___
         // HEX mints 0.009955% daily interest (3.69%pa) and stakers get adoption bonuses from that, each day
@@ -123,7 +122,7 @@ class Stakes extends React.Component {
         const { currentDay } = contract.Data
         debug('Loading stakes for address: ', address)
         if (!address) {
-            debug('******* loadStakes[] called with invalid address ********')
+            debug(`WARNING: loadStakes() : inva;id (null?) context.address`)
             return null
         }
         const stakeCount = await contract.methods.stakeCount(address).call()
@@ -133,34 +132,44 @@ class Stakes extends React.Component {
         var stakeList = [ ]
         for (let index = 0; index < stakeCount; index++) {
             promises[index] = new Promise(async (resolve, reject) => { /* see ***, below */ // eslint-disable-line
-                const data = await contract.methods.stakeLists(address, index).call()
-
-                const progress = (currentDay < data.lockedDay) ? 0
+                // it can happen that stakeCount increases to a new pending stake but our data source
+                // hasn't seen it yet. Fail silently if we ask for an index that doesn't (yet) exist
+                try {
+                    const data = await contract.methods.stakeLists(address, index).call()
+                    
+                    const progress = (currentDay < data.lockedDay) ? 0
                     : Math.trunc(Math.min((currentDay - data.lockedDay) / data.stakedDays * 100000, 100000))
-
-                let stakeData = {
-                    stakeOwner: context.address,
-                    stakeIndex: index,
-                    stakeId: data.stakeId,
-                    lockedDay: Number(data.lockedDay),
-                    stakedDays: Number(data.stakedDays),
-                    stakedHearts: new BigNumber(data.stakedHearts),
-                    stakeShares: new BigNumber(data.stakeShares),
-                    unlockedDay: Number(data.unlockedDay),
-                    isAutoStake: Boolean(data.isAutoStakte),
-                    progress,
-                    bigPayDay: new BigNumber(0),
-                    payout: new BigNumber(0)
-                }
-                if (currentDay >= stakeData.lockedDay + 1) { // no payouts when pending or until day 2 into term
-                    const payouts = await Stakes.getStakePayoutData(context, stakeData)
-                    if (payouts) { // just in case
-                        stakeData.payout = payouts.interest
-                        stakeData.bigPayDay = payouts.bigPayDay
+                    
+                    let stakeData = {
+                        stakeOwner: context.address,
+                        stakeIndex: index,
+                        stakeId: data.stakeId,
+                        lockedDay: Number(data.lockedDay),
+                        stakedDays: Number(data.stakedDays),
+                        stakedHearts: new BigNumber(data.stakedHearts),
+                        stakeShares: new BigNumber(data.stakeShares),
+                        unlockedDay: Number(data.unlockedDay),
+                        isAutoStake: Boolean(data.isAutoStakte),
+                        progress,
+                        bigPayDay: new BigNumber(0),
+                        payout: new BigNumber(0)
                     }
-                }
+                    if (currentDay >= stakeData.lockedDay + 1) { // no payouts when pending or until day 2 into term
+                        try {
+                            const payouts = await Stakes.getStakePayoutData(context, stakeData)
+                            if (payouts) { // just in case
+                                stakeData.payout = payouts.interest
+                                stakeData.bigPayDay = payouts.bigPayDay
+                            }
+                        } catch(e) {
+                            debug(`WARNING: loadStakes() : getStakePayoutData(address, index) ${e.message}`)
+                        }
+                    }
+                    stakeList = stakeList.concat(stakeData) //*** ESLint complains but it's safe, because non-mutating concat()
 
-                stakeList = stakeList.concat(stakeData) //*** ESLint complains but it's safe, because non-mutating concat()
+                } catch(e) {
+                    debug(`WARNING: loadStakes() : stakeLists(address, index) ${e.message}`)
+                }
                 return resolve()
             })
         }
