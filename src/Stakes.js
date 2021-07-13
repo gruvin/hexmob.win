@@ -85,13 +85,23 @@ class Stakes extends React.Component {
         const dailyDataCount = globals.dailyDataCount.toNumber()
         const dailyData = await contract.methods.dailyDataRange(startDay, Math.min(dailyDataCount, endDay)).call()
 
-        function _calcPayoutRewards(startDay, endDay) {
+        function _calcPartDayBonuses()  {
+            // Calculate our share of Daily Interest ___for the current (incomplete) day___
+            // HEX mints 0.009955% daily interest (3.69%pa) and stakers get adoption bonuses from that, each day
+            // .sol:1245:  rs._payoutTotal = rs._allocSupplyCached * 10000 / 100448995
+            const dailyInterestTotal = allocatedSupply.times(10000).idiv(100448995)
+            const interestShare = dailyInterestTotal.times(stakeData.stakeShares).idiv(globals.stakeSharesTotal)
+            const interestBonus = (currentDay < HEX.CLAIM_PHASE_END_DAY) ? calcAdoptionBonus(interestShare, globals) : 0
+            return interestShare.plus(interestBonus)
+        }
+
+        function _calcPayoutRewards(dayStartIndex, dayEndIndex) {
 
             let payout = BigNumber(0)
             let bigPayDay = BigNumber(0)
 
-            dailyData.forEach((packedDailyData) => {                    
-                const data = new BigNumber(packedDailyData).toString(16).padStart(64, '0')
+            for (let index = dayStartIndex; index < dayEndIndex; index++) {
+                const data = new BigNumber(dailyData[index]).toString(16).padStart(64, '0')
                 const day = { // extract dailyData struct from uint256 mapping
                     payoutTotal: new BigNumber(data.slice(46,64), 16),
                     stakeSharesTotal: new BigNumber(data.slice(28,46), 16),
@@ -102,16 +112,9 @@ class Stakes extends React.Component {
                     .idiv(day.stakeSharesTotal) // .sol line: 1586
 
                 payout = payout.plus(dayPayout)
-            })
+            }
 
-            // Calculate our share of Daily Interest ___for the current (incomplete) day___
-            // HEX mints 0.009955% daily interest (3.69%pa) and stakers get adoption bonuses from that, each day
-            // .sol:1245:  rs._payoutTotal = rs._allocSupplyCached * 10000 / 100448995
-            const dailyInterestTotal = allocatedSupply.times(10000).idiv(100448995)
-            const interestShare = dailyInterestTotal.times(stakeData.stakeShares).idiv(globals.stakeSharesTotal)
-            const interestBonus = (currentDay < HEX.CLAIM_PHASE_END_DAY) ? calcAdoptionBonus(interestShare, globals) : 0
-
-            payout = payout.plus(interestShare).plus(interestBonus)
+            payout = payout.plus(_calcPartDayBonuses())
 
             if (startDay <= HEX.BIG_PAY_DAY && endDay > HEX.BIG_PAY_DAY) {
                 const bpdStakeSharesTotal = (currentDay < 352) // day is zero based internally
@@ -122,50 +125,73 @@ class Stakes extends React.Component {
                 const bonuses = calcAdoptionBonus(bigPaySlice, globals)
                 bigPayDay = bigPaySlice.plus(bonuses)
                 if ( currentDay >= HEX.BIG_PAY_DAY) stakeData.payout = stakeData.payout.plus(stakeData.bigPayDay)
-                // TODO: penalties have to come off for late End Stake
             }
             return { payout, bigPayDay }
         }
         
+        let payout = BigNumber(0)
+        let bigPayDay = BigNumber(0)
         let penalty = BigNumber(0)
-        let penaltyDelta = BigNumber(0)
 
         const daysServed = Math.min(currentDay - startDay, stakedDays)
-        const penaltyDays = Math.max(90, Math.ceil(stakedDays / 2))
         
-/* sol:
-        if (servedDays == 0) {
-            // Fill penalty days with the estimated average payout
-            uint256 expected = _estimatePayoutRewardsDay(g, stakeSharesParam, lockedDayParam);
-            penalty = expected * penaltyDays;
-            return (payout, penalty); // Actual payout was 0
+        if (daysServed < stakedDays) {
+
+            const penaltyDays = Math.max(90, Math.ceil(stakedDays / 2))
+
+            if (daysServed == 0) {
+
+                penalty = _calcPartDayBonuses().times(penaltyDays)
+
+            } else if (penaltyDays < daysServed) {
+
+                const _penalty = _calcPayoutRewards(0, penaltyDays)
+                const _penaltyDelta = _calcPayoutRewards(penaltyDays, dailyData.length-1)
+
+                payout = _penalty.payout.plus(_penaltyDelta.payout)
+                bigPayDay = _penalty.bigPayDay.plus(_penaltyDelta.bigPayDay)
+                penalty = _penalty.payout.plus(_penalty.bigPayDay)
+
+            } else {
+                // penaltyDays >= servedDays        
+                const _interest = _calcPayoutRewards(0, dailyData.length-1)
+
+                payout = _interest.payout
+                bigPayDay = _interest.bigPayDay
+                
+                const interest = payout.plus(bigPayDay)
+                if (penaltyDays === daysServed) {
+                    penalty = interest
+                } else {
+                    penalty = interest.times(penaltyDays).idiv(daysServed)
+                }
+                
+                const totalValue = stakeData.stakedHearts.plus(interest)
+                if (penalty.isGreaterThan(totalValue)) penalty = totalValue
+            }
+        } else { // daysServed >= stakedDays (late end stake)
+            const _interest = _calcPayoutRewards(0, dailyData.length-1)
+            payout = _interest.payout
+            bigPayDay = _interest.bigPayDay
+            const interest = payout.plus(bigPayDay)
+
+            const maxUnlockedDay = endDay + HEX.LATE_PENALTY_GRACE_DAYS;
+            if (currentDay > maxUnlockedDay) {
+                penalty = (stakeData.stakedHearts
+                    .plus(interest)
+                    .times(currentDay - maxUnlockedDay)
+                    .idiv(HEX.LATE_PENALTY_SCALE_DAYS)
+                )
+            }
         }
-*/
-        if (penaltyDays < daysServed) {
-            const penaltyEndDay = (penaltyDays < daysServed) ? penaltyDays : daysServed
-
-            let _result1 = _calcPayoutRewards(startDay, penaltyEndDay)
-            penalty = _result1.payout.plus(_result1.bigPayDay)
-
-            let _result2 = _calcPayoutRewards(penaltyEndDay, endDay)
-            penaltyDelta = _result2.payout.plus(_result2.bigPayDay)
-
-            const payout = _result1.payout.plus(_result2.payout)
-            const bigPayDay = _result1.bigPayDay.plus(_result2.bigPayDay)
-
-            return { payout, bigPayDay, penalty, penaltyDelta }
+        // debug("PENALTY: $", format(",.2f")(penalty.div(1E8).times(0.086).toFixed(0)))
+        return {
+            payout,
+            bigPayDay,
+            penalty,
         }
-
-        // penaltyDays >= servedDays        
-        const { payout, bigPayDay } = _calcPayoutRewards(startDay, endDay)
-        if (penaltyDays === daysServed) {
-            penalty = payout.plus(bigPayDay)
-        } else {
-            penalty = payout.plus(bigPayDay).times(penaltyDays).idiv(daysServed)
-        }
-        debug("PENALTY: $", penalty.div(1E8).times(0.086).toFixed(0))
-        debug("PENALTY Δ: $", penaltyDelta.div(1E8).times(0.086).toFixed(0))
-        return { payout, bigPayDay, penalty, penaltyDelta }
+        
+        // TODO: LATE END-STAKE PENALTY
 
     }
 

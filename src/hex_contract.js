@@ -22,6 +22,9 @@ const BPB_MAX_HEX = BigNumber(150).times(1e6)
 const BPB_MAX_HEARTS = BPB_MAX_HEX.times(HEARTS_PER_HEX)
 const BPB = BPB_MAX_HEARTS.times(100).idiv(BPB_BONUS_PERCENT)
 
+const LATE_PENALTY_GRACE_DAYS = 14
+const LATE_PENALTY_SCALE_DAYS = 700
+
 module.exports = {
     CHAINS: {
         0x0: { name: 'none',    address: "0x0000000000000000000000000000000000000000", rpcUrl: null },
@@ -58,7 +61,9 @@ module.exports = {
     BPB_MAX_HEX,
     BPB_MAX_HEARTS,
     BPB,
-            
+    LATE_PENALTY_GRACE_DAYS,
+    LATE_PENALTY_SCALE_DAYS,
+                
     lobbyIsActive: function() { 
         return Date.now() < START_DATE_POSIX + CLAIM_PHASE_END_DAY * 24 * 3600000
     },
