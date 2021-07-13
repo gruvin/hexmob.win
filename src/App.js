@@ -90,7 +90,6 @@ class App extends React.Component {
         }
 
         if (provider.isMetaMask) {
-            debug("PROVIDER IS METAMASK")
             const ethereum = window.ethereum
             if (ethereum.autoRefreshOnNetworkChange) 
                 ethereum.autoRefreshOnNetworkChange = false // will be default behavour in new MM api
@@ -110,7 +109,6 @@ class App extends React.Component {
                 }
             })
         } else { // WalletConnect (and others?) ...
-            debug("PROVIDER IS OTHER")
 
             // 'close' is deprecated in favour of 'disconnect' in MetaMask but not some other wallets
             provider.on("close", () => {  
@@ -211,7 +209,7 @@ class App extends React.Component {
     async selectWeb3ModalWallet() {
         debug('inside selectWeb3ModalWallet()')
         try {
-            return await this.web3modal.connect()
+            return await this.web3modal.connect() // note: web3modal subscribes to MetaMask deprecated 'close' event
         } catch(e) { // user closed dialog withot selection 
             return null
         }
@@ -252,7 +250,7 @@ class App extends React.Component {
         }
 
         // We set up TWO providers. One from the connected wallet to handle sending transactions
-        // and one for all other chain quuery operations (using Infura or the like)
+        // and one for all other chain quuery operations (Infura)
         // this.walletProvider stores the transaction provider
         // this.provider stores the query provider
         if (!this.walletProvider || !this.walletProvider.chainId) 

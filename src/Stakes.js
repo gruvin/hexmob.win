@@ -132,10 +132,8 @@ class Stakes extends React.Component {
         try {
             stakeCount = await contract.methods.stakeCount(address).call()
         } catch (e) {
-            // XXX: I have witnessed just once for reasons not yet deduced the 'address'
-            // argument being invalid and of type Object, instead of string.
             debug("WARNING: loadStakes()::[hex]stakeCount [address = %o] - %s", address, e.message)
-            return // give up
+            return
         }
 
         // use Promise.all to load stake data in parallel
