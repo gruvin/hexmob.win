@@ -83,7 +83,9 @@ class Stakes extends React.Component {
 
         if (startDay >= currentDay) return { payout, bigPayDay, penalty }
 
-        const dailyData = await contract.methods.dailyDataRange(startDay, Math.min(globals.dailyDataCount, endDay)).call()
+        const dailyDataCount = globals.dailyDataCount.toNumber()
+        const dailyData = await contract.methods.dailyDataRange(startDay, Math.min(dailyDataCount, endDay)).call()
+
         dailyData.forEach((mapped_dailyData, dayIndex) => {
             const data = new BigNumber(mapped_dailyData).toString(16).padStart(64, '0')
             const day = { // extract dailyData struct from uint256 mapping
