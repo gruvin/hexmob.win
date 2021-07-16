@@ -57,136 +57,86 @@ class TewkStakeList extends React.Component {
         parent.setState({ [this.props.contractObject.SYMBOL+'_totalUSD']: totalUSD })
     }
 
-    getTewkenaireStakes(contractObject) {
-        return new Promise(async (fullResolve, fullReject) => {
+    async getTewkenaireStakes(contractObject) {
+        const { chainId, wallet, currentDay } = this.props.parent.props.parent.state
+        const { web3 } = this.props.parent
+        const hexContract = await new web3.eth.Contract(HEX.ABI, HEX.CHAINS[chainId].address)
+        const tewkContract = await new web3.eth.Contract(contractObject.ABI, contractObject.CHAINS[chainId].address)
+        const tewkAddress = contractObject.CHAINS[chainId].address
 
-            const { chainId, wallet, currentDay } = this.props.parent.props.parent.state
-            const { web3 } = this.props.parent
-            const hexContract = await new web3.eth.Contract(HEX.ABI, HEX.CHAINS[chainId].address)
-            const tewkContract = await new web3.eth.Contract(contractObject.ABI, contractObject.CHAINS[chainId].address)
-            const tewkAddress = contractObject.CHAINS[chainId].address
-            debug(contractObject.SYMBOL+' address: ', tewkAddress)
+        debug(contractObject.SYMBOL+' address: ', tewkAddress)
 
-            let stakeCount = null
-            let playerStats = null
-            var activeStakes = null
-            await Promise.all([
-                hexContract.methods.stakeCount(tewkAddress).call(),
-                tewkContract.methods.playerStats(wallet.address).call()
-            ]).then(results => {
-                [ stakeCount, playerStats ] = results
-                activeStakes = Number(playerStats.activeStakes)
+        const [ stakeStartEvents, stakeEndEvents ] = await Promise.all([
+            tewkContract.getPastEvents('onStakeStart', { 
+                filter: { customerAddress: wallet.address },
+                fromBlock: 0, 
+                toBlock: 'latest'
+            }),
+            tewkContract.getPastEvents('onStakeEnd', {
+                filter: { customerAddress: wallet.address},
+                fromBlock: 0, 
+                toBlock: 'latest'
             })
+        ])
+        const startedStakes = stakeStartEvents.map(s => s.returnValues.uniqueID)
+        const endedStakes = stakeEndEvents.map(s => s.returnValues.uniqueID)
+        const activeStakeIds = startedStakes.filter(s => endedStakes.indexOf(s) < 0)
+        
+        const tewkStakes = await Promise.all(
+            activeStakeIds.map(uid => tewkContract.methods.stakeLists(wallet.address, uid).call())
+        )
+        debug(contractObject.SYMBOL+"'s tewk stakes: ", tewkStakes)
+        debug(contractObject.SYMBOL+"'s stakeIDs: ", tewkStakes.map(s => s.stakeID))
 
-            debug(contractObject.SYMBOL+' stakeCount: ', stakeCount)
-            debug(contractObject.SYMBOL+' activeStakes: ', activeStakes)
+        const hexStakes = await Promise.all(
+            tewkStakes
+                .map(s => s.stakeID)
+                .map(sid => hexContract.methods.stakeLists(wallet.address, sid).call())
+        )
+        debug(contractObject.SYMBOL+"'s HEX STAKES: ", hexStakes)
 
-            // Run through HEXMAX's HEX stakeList, searching for stakes that match our wallet.address 
-            // (see stakeID+stakeShares sha3 hash, below).
-            // Stop either at the end of the list (ouch!) or when we have found <activeStakes> no. of stakes.
-            // Time to brush up on loops of async functions and atomic array management in JS! :p
 
-            const tewkStakes = []
-            const batchSize = 100
-            let foundCount = 0
-            let fetchedCount = 0
-            const progrssChunkSize = 100 / activeStakes
-            for ( // retrieve HEX stakes in batches of up to <batchSize> ...
-                let batchStart = 0, batchEnd = batchSize-1; 
-                batchStart < stakeCount && batchEnd < stakeCount && foundCount < activeStakes; 
-                batchStart=batchEnd+1, batchEnd=Math.min(batchEnd+batchSize, stakeCount-1)
-            ) { // get one batch ...
-                debug(contractObject.SYMBOL+': ', batchStart, batchEnd)
-                
-                // eslint-disable-next-line
-                await new Promise((resolve, reject) => {
-                    for (let index = batchStart; index <= batchEnd; index++) {
-                        hexContract.methods.stakeLists(tewkAddress, index).call()
-                        // eslint-disable-next-line
-                        .then(async hexStake => {
+        const tewkStakeCount = await hexContract.methods.tewkStakeCount(tewkAddress).call()
+        for (let i = 0; i < tewkStakeCount; i++ )
+        return []
+        // const progrssChunkSize = 100 / activeStakes.length
+        // debug("HEX:ID: ", uniqueStakeId)
 
-                            // UPDATE PROGRESS BAR
-                            const now = Math.floor((foundCount * progrssChunkSize) + (fetchedCount / (stakeCount * activeStakes)) * 100)
-                            this.setState({ progressBar: Math.max(5, now) })
+        // const progress = (currentDay < hexStake.lockedDay) ? 0
+        // : Math.trunc(Math.min((currentDay - hexStake.lockedDay) / hexStake.stakedDays * 100000, 100000))
+        
+        // const stakeData = {
+        //     stakeOwner: tewkAddress,
+        //     stakeIndex: index,
+        //     stakeId: hexStake.stakeId,
+        //     lockedDay: Number(hexStake.lockedDay),
+        //     stakedDays: Number(hexStake.stakedDays),
+        //     stakedHearts: new BigNumber(hexStake.stakedHearts),
+        //     stakeShares: new BigNumber(hexStake.stakeShares),
+        //     unlockedDay: Number(hexStake.unlockedDay),
+        //     isAutoStake: Boolean(hexStake.isAutoStakte),
+        //     progress,
+        //     bigPayDay: new BigNumber(0),
+        //     payout: new BigNumber(0),
+        // }
+        // // get payout data
+        // const App = this.props.parent.props.parent
+        // const {
+        //     bigPayDay,
+        //     payout
+        // } = await Stakes.getStakePayoutData({ contract: App.contract }, stakeData) 
+        // stakeData.bigPayDay = bigPayDay
+        // stakeData.payout = payout
 
-                            fetchedCount++
-                            //debug("activeStakes: %d\tindex: %d\tfetchedCount:%d", activeStakes, index, fetchedCount)
-                            if (fetchedCount > batchEnd) return resolve()
-                            const { 
-                                stakeId,
-                                stakeShares,
-                            } = hexStake
-                            // 'index' available by closure
-                            const uniqueStakeId = web3.utils.hexToNumberString(web3.utils.soliditySha3(
-                                {
-                                    'type': "uint40",
-                                    'value': stakeId
-                                }, {
-                                    'type': "uint72",
-                                    'value': stakeShares
-                                })
-                            );
-                            // if (contractObject.SYMBOL === "HEX4") debug('uniqueStakeId: ', wallet.address, uniqueStakeId)
-                            // is this stake one of ours?
-                            tewkContract.methods.stakeLists(wallet.address, uniqueStakeId).call()
-                            .then(async tewkStake => {
-                                const { stakeID } = tewkStake
-                                if (stakeID !== "0") { // found one of ours                                
-                                    const progress = (currentDay < hexStake.lockedDay) ? 0
-                                    : Math.trunc(Math.min((currentDay - hexStake.lockedDay) / hexStake.stakedDays * 100000, 100000))
-                                    const stakeData = {
-                                        stakeOwner: tewkAddress,
-                                        stakeIndex: index,
-                                        stakeId: hexStake.stakeId,
-                                        lockedDay: Number(hexStake.lockedDay),
-                                        stakedDays: Number(hexStake.stakedDays),
-                                        stakedHearts: new BigNumber(hexStake.stakedHearts),
-                                        stakeShares: new BigNumber(hexStake.stakeShares),
-                                        unlockedDay: Number(hexStake.unlockedDay),
-                                        isAutoStake: Boolean(hexStake.isAutoStakte),
-                                        progress,
-                                        bigPayDay: new BigNumber(0),
-                                        payout: new BigNumber(0),
-                                    }
-                                    // get payout data
-                                    const App = this.props.parent.props.parent
-                                    const {
-                                        bigPayDay,
-                                        interest
-                                    } = await Stakes.getStakePayoutData({ contract: App.contract }, stakeData) 
-                                    stakeData.bigPayDay = bigPayDay
-                                    stakeData.payout = interest
-
-                                    const ourStake = {
-                                        hex: stakeData,
-                                        tewk: {
-                                            stakeOwner: wallet.address,
-                                            stakeIndex: index,
-                                            stakeIdParam: stakeID,
-                                            uniqueID: uniqueStakeId,
-                                        }
-                                    }
-                                    debug(contractObject.SYMBOL+' ourStake %d: %o', index, ourStake)
-                                    tewkStakes.push(ourStake)
-                                    foundCount++
-                                    debug(contractObject.SYMBOL+": found %d of %d", foundCount, activeStakes)
-                                    if (foundCount === activeStakes) return fullResolve(tewkStakes)
-                                }
-                            })
-                        })
-                        .catch(e => {
-                            debug("ERROR: getTewkStakes: ", e.message)
-                            this.setState({
-                                progressVariant: "danger",
-                                progressLabel: "please try again",
-                                pregressBar: 100
-                            })
-                            return fullReject(null) 
-                        })
-                    } // for (batch)
-                }) // await Promise
-            } // for (batches)
-        }) // outer most promise
+        // const ourStake = {
+        //     hex: stakeData,
+        //     tewk: {
+        //         stakeOwner: wallet.address,
+        //         stakeIndex: index,
+        //         stakeIdParam: stakeID,
+        //         uniqueID: uniqueStakeId,
+        //     }
+        // }
     }
 
     render() {

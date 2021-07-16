@@ -139,7 +139,7 @@ class Stakes extends React.Component {
 
             const penaltyDays = Math.max(90, Math.ceil(stakedDays / 2))
 
-            if (daysServed == 0) {
+            if (daysServed === 0) {
 
                 penalty = _calcPartDayBonuses().times(penaltyDays)
 
