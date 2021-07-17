@@ -2,17 +2,13 @@ import React from 'react'
 import { BigNumber } from 'bignumber.js'
 import {
     Accordion,
-  //  Container,
     Card,
     Row,
     Col,
-    Button,
-  //  Badge,
     ProgressBar
 } from 'react-bootstrap'
 import { BurgerHeading, CryptoVal } from './Widgets'
 import './Tewkenaire.scss'
-import HEX from './hex_contract'
 import HEX2 from './hex2_contract'
 import HEX4 from './hex4_contract'
 import HEX5 from './hex5_contract'
@@ -23,15 +19,16 @@ class TewkStakeList extends React.Component {
     constructor(props) {
         super(props)
         this.state = {
-            uiStakeList: [],
+            stakeList: [],
             progressVariant: "secondary",
             progressBar: 0,
-            progressLabel: ""
+            progressLabel: "",
+            totalValue: BigNumber(0)
         }
     }
 
     async componentDidMount() {
-        const { contractObject, usdhex } = this.props
+        const { contractObject } = this.props
 
         if (!contractObject) throw new Error('TewkStakeList: No contractObject provided')
         this.setState({
@@ -41,34 +38,16 @@ class TewkStakeList extends React.Component {
         })
         const tewkStakes = await this.getTewkenaireStakes(contractObject)
         // debug(contractObject.SYMBOL+"'s tewkStakes: ", tewkStakes)
-        const _uiStakeList = tewkStakes.map(stake => {
+        let totalValue = BigNumber(0)
+        const stakeList = tewkStakes.map(stake => {
             const { stakedHearts, payout, bigPayDay } = stake
             stake.interest = payout.plus(bigPayDay)
             stake.value = stakedHearts.plus(stake.interest)
+            totalValue = totalValue.plus(stake.value)
             return stake
         })
-        debug(this.props.contractObject.SYMBOL+" uiStakeList[]: ", _uiStakeList)
-
-        let totalUSD = 0
-        const uiStakeList = _uiStakeList.map((stake, index) => {
-            const { stakedHearts, stakeShares, bigPayDay, interest, value } = stake
-            const usd = stake.value.div(1e8).times(usdhex)
-            totalUSD += usd.toNumber()
-            return (
-                <Row key={index} className="text-right pr-3">
-                    <Col className="numeric d-none d-md-inline"><CryptoVal value={stakedHearts} currency="HEX" /></Col>
-                    <Col className="numeric"><CryptoVal value={stakeShares} currency="SHARES" /></Col>
-                    <Col className="numeric d-none d-md-inline"><CryptoVal value={bigPayDay} currency="HEX" /></Col>
-                    <Col className="numeric"><CryptoVal value={interest} currency="HEX" /></Col>
-                    <Col className="numeric"><CryptoVal value={value} currency="HEX" /></Col>
-                    <Col className="numeric text-success">$
-                        <CryptoVal className="d-none d-md-inline" value={usd} currency="USD" />
-                        <CryptoVal className="d-md-none d-inline" value={usd} wholeNumber currency="USD" />
-                    </Col>
-                </Row>
-            )
-        })
-        this.setState({ uiStakeList, totalUSD })
+        debug(this.props.contractObject.SYMBOL+" stakeList[]: ", stakeList)
+        this.setState({ stakeList, totalValue })       
     }
 
     async getTewkenaireStakes(contractObject) {
@@ -124,6 +103,24 @@ class TewkStakeList extends React.Component {
     }
 
     render() {
+        const totalUsd = this.state.totalValue.div(1e8).times(this.props.usdhex)
+        const uiStakeList = this.state.stakeList.map((stake, index) => {
+            const { stakedHearts, stakeShares, bigPayDay, interest, value } = stake
+            const usd = value.div(1E8).times(this.props.usdhex)
+            return (
+                <Row key={index} className="text-right pr-3">
+                    <Col className="numeric d-none d-md-inline"><CryptoVal value={stakedHearts} currency="HEX" /></Col>
+                    <Col className="numeric"><CryptoVal value={stakeShares} currency="SHARES" /></Col>
+                    <Col className="numeric d-none d-md-inline"><CryptoVal value={bigPayDay} currency="HEX" /></Col>
+                    <Col className="numeric"><CryptoVal value={interest} currency="HEX" /></Col>
+                    <Col className="numeric"><CryptoVal value={value} currency="HEX" /></Col>
+                    <Col className="numeric text-success">$
+                        <CryptoVal className="d-none d-md-inline" value={usd} currency="USD" />
+                        <CryptoVal className="d-md-none d-inline" value={usd} wholeNumber currency="USD" />
+                    </Col>
+                </Row>
+            )
+        })
 
         return (<>
         <Card className="bg-dark mt-3">
@@ -133,7 +130,7 @@ class TewkStakeList extends React.Component {
                     <Col className="text-right text-success">
                         <span className="text-muted small mr-1">USD</span>
                         <span className="numeric h2">
-                            $<strong><CryptoVal value={this.state.totalUSD} currency="USD" /></strong>
+                            $<strong><CryptoVal value={totalUsd} currency="USD" /></strong>
                         </span>
                     </Col>
                 </Row>
@@ -147,8 +144,8 @@ class TewkStakeList extends React.Component {
                     <Col>VALUE</Col>
                     <Col className="text-right">USD<span className="d-none d-md-inline"> VALUE</span></Col>
                 </Row>
-                {this.state.uiStakeList.length
-                    ? this.state.uiStakeList
+                {uiStakeList.length
+                    ? uiStakeList
                     : <ProgressBar
                     variant={this.state.progressVariant}
                     animated
@@ -177,8 +174,6 @@ class Tewkenaire extends React.Component {
     }
 
     render() {
-
-
         return (<>
             <Accordion 
                 id='tewk_accordion'
