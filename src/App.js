@@ -533,7 +533,7 @@ class App extends React.Component {
                             contract={this.contract} wallet={this.state.wallet} usdhex={this.state.USDHEX}
                         />
                     ))}
-                    { uriQuery.has('tewk') && <Tewkenaire parent={this} usdhex={this.state.USDHEX} />}
+                    { uriQuery.has('tewkens') && <Tewkenaire parent={this} usdhex={this.state.USDHEX} />}
                     <Stats parent={this} contract={this.contract} wallet={this.state.wallet} usdhex={this.state.USDHEX} />
                     <Lobby parent={this} contract={this.contract} wallet={this.state.wallet} />
                     <Container className="text-center">
