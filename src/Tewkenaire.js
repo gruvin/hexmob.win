@@ -13,6 +13,7 @@ import HEX2 from './hex2_contract'
 import HEX4 from './hex4_contract'
 import HEX5 from './hex5_contract'
 import Stakes from './Stakes' // for collecting payout data
+const { format } = require('d3-format')
 const debug = require('debug')('Tewk')
 
 class TewkStakeList extends React.Component {
@@ -28,7 +29,7 @@ class TewkStakeList extends React.Component {
     }
 
     async componentDidMount() {
-        const { contractObject } = this.props
+        const { contractObject, parent } = this.props
 
         if (!contractObject) throw new Error('TewkStakeList: No contractObject provided')
         this.setState({
@@ -47,7 +48,8 @@ class TewkStakeList extends React.Component {
             return stake
         })
         debug(this.props.contractObject.SYMBOL+" stakeList[]: ", stakeList)
-        this.setState({ stakeList, totalValue })       
+        this.setState({ stakeList, totalValue })
+        parent.setState({ totalValue: parent.state.totalValue.plus(totalValue) })
     }
 
     async getTewkenaireStakes(contractObject) {
@@ -114,7 +116,7 @@ class TewkStakeList extends React.Component {
                     <Col className="numeric d-none d-md-inline"><CryptoVal value={bigPayDay} currency="HEX" /></Col>
                     <Col className="numeric"><CryptoVal value={interest} currency="HEX" /></Col>
                     <Col className="numeric"><CryptoVal value={value} currency="HEX" /></Col>
-                    <Col className="numeric text-success">$
+                    <Col className="numeric text-success"><span className="small text-muted">$</span>
                         <CryptoVal className="d-none d-md-inline" value={usd} currency="USD" />
                         <CryptoVal className="d-md-none d-inline" value={usd} wholeNumber currency="USD" />
                     </Col>
@@ -127,14 +129,9 @@ class TewkStakeList extends React.Component {
             <Card.Header className="pl-1">
                 <Row>
                     <Col>{this.props.heading()}</Col>
-                    <Col className="text-right text-success">
-                        <span className="text-muted small mr-1">USD</span>
-                        <span className="numeric h2">
-                            $<strong><CryptoVal value={totalUsd} currency="USD" /></strong>
-                        </span>
-                    </Col>
+                    <Col> </Col>
                 </Row>
-            </Card.Header>    
+            </Card.Header>
             <Card.Body>
                 <Row className="text-right text-muted small pr-3">
                     <Col className="d-none d-md-inline">PRINCIPAL</Col>
@@ -153,6 +150,15 @@ class TewkStakeList extends React.Component {
                     label={this.state.progressLabel}
                 />
                 }
+                <Row className="text-right pr-3">
+                    <Col> </Col>
+                    <Col className="text-right text-success">
+                        <span className="text-muted small mr-1">TOTAL USD</span>
+                        <span className="numeric">
+                            <span className="small text-muted">$</span><strong><CryptoVal value={totalUsd} currency="USD" /></strong>
+                        </span>
+                    </Col>
+                </Row>
             </Card.Body>
         </Card>
     </>)
@@ -166,6 +172,7 @@ class Tewkenaire extends React.Component {
         this.web3 = props.parent.web3 
         this.hexContract = null
         this.state = {
+            totalValue: BigNumber(0)
         }
     }
 
@@ -174,15 +181,22 @@ class Tewkenaire extends React.Component {
     }
 
     render() {
+        const totalUsd = this.state.totalValue.div(1E8).times(this.props.usdhex).toNumber()
         return (<>
             <Accordion 
                 id='tewk_accordion'
                 className="text-left mt-3"
-                defaultActiveKey="tewkenaire"
+                // defaultActiveKey="tewkenaire"
             >
                 <Card bg="secondary" text="light" className="p-0">
                     <Accordion.Toggle as={Card.Header} eventKey="tewkenaire">
                         <BurgerHeading>Tewkenaire</BurgerHeading>
+                        <div className="float-right pr-1 text-success">
+                            <span className="text-muted small mr-1">USD</span>
+                            <span className="numeric h2 font-weight-bold">
+                                { "$"+format(",.2f")(totalUsd)}
+                            </span>
+                        </div>
                     </Accordion.Toggle>
                     <Accordion.Collapse eventKey="tewkenaire">
                         <>
