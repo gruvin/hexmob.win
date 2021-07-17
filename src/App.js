@@ -558,7 +558,7 @@ class App extends React.Component {
         if (headerLogo) headerLogo.style.backgroundImage = window.hostIsTSA
             ? "url('/tsa/android-icon-96x96.png')"
             : "url('/hexmob/android-icon-96x96.png')"
-
+        
         return (
             <>
                 <Container id="hexmob_header" fluid>
@@ -595,7 +595,7 @@ class App extends React.Component {
                         }
                         { !detectTrustWallet() && /* TrustWallet won't follow external links */
                         <>
-                            {document.location.hostname !== "go.tshare.app" && 
+                            {document.location.hostname.search(/tshare\.app/) < 0 && 
                                 <Container className="py-2 my-3">
                                 <Card.Body as={Button} variant="info" className="w-100 rounded text-light bg-info-faded border-0" 
                                     href="https://changelly.com/?ref_id=1b7z255j4rfbxsyd#buy" target="_blank" rel="noopener noreferrer"
