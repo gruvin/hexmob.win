@@ -23,7 +23,7 @@ class TewkStakeList extends React.Component {
     constructor(props) {
         super(props)
         this.state = {
-            uiStakeList: null,
+            uiStakeList: [],
             progressVariant: "secondary",
             progressBar: 0,
             progressLabel: ""
@@ -31,36 +31,50 @@ class TewkStakeList extends React.Component {
     }
 
     async componentDidMount() {
-        const { parent, contractObject, usdhex } = this.props
+        const { contractObject, usdhex } = this.props
+
         if (!contractObject) throw new Error('TewkStakeList: No contractObject provided')
         this.setState({
             progressVariant: "secondary",
             progressLabel: "fetching data",
             pregressBar: 1
         })
-        let totalUSD = 0.0
         const tewkStakes = await this.getTewkenaireStakes(contractObject)
-        debug(contractObject.SYMBOL+"'s tewkStakes: ", tewkStakes)
-        const uiStakeList = tewkStakes.map((stake, index) => {
+        // debug(contractObject.SYMBOL+"'s tewkStakes: ", tewkStakes)
+        const _uiStakeList = tewkStakes.map(stake => {
             const { stakedHearts, payout, bigPayDay } = stake
             stake.interest = payout.plus(bigPayDay)
             stake.value = stakedHearts.plus(stake.interest)
-            stake.usd = stake.value.div(1e8).times(usdhex)
-            totalUSD += stake.usd.toNumber()
             return stake
         })
-        debug(this.props.contractObject.SYMBOL+" uiStakeList[]: ", uiStakeList)
-        this.setState({ uiStakeList })
-        parent.setState({ [this.props.contractObject.SYMBOL+'_totalUSD']: totalUSD })
+        debug(this.props.contractObject.SYMBOL+" uiStakeList[]: ", _uiStakeList)
+
+        let totalUSD = 0
+        const uiStakeList = _uiStakeList.map((stake, index) => {
+            const { stakedHearts, stakeShares, bigPayDay, interest, value } = stake
+            const usd = stake.value.div(1e8).times(usdhex)
+            totalUSD += usd.toNumber()
+            return (
+                <Row key={index} className="text-right pr-3">
+                    <Col className="numeric d-none d-md-inline"><CryptoVal value={stakedHearts} currency="HEX" /></Col>
+                    <Col className="numeric"><CryptoVal value={stakeShares} currency="SHARES" /></Col>
+                    <Col className="numeric d-none d-md-inline"><CryptoVal value={bigPayDay} currency="HEX" /></Col>
+                    <Col className="numeric"><CryptoVal value={interest} currency="HEX" /></Col>
+                    <Col className="numeric"><CryptoVal value={value} currency="HEX" /></Col>
+                    <Col className="numeric text-success">$
+                        <CryptoVal className="d-none d-md-inline" value={usd} currency="USD" />
+                        <CryptoVal className="d-md-none d-inline" value={usd} wholeNumber currency="USD" />
+                    </Col>
+                </Row>
+            )
+        })
+        this.setState({ uiStakeList, totalUSD })
     }
 
     async getTewkenaireStakes(contractObject) {
         const { chainId, wallet } = this.props.parent.props.parent.state
         const { web3 } = this.props.parent
         const tewkContract = await new web3.eth.Contract(contractObject.ABI, contractObject.CHAINS[chainId].address)
-        const tewkAddress = contractObject.CHAINS[chainId].address
-
-        debug(contractObject.SYMBOL+' address: ', tewkAddress)
         const [ stakeStartEvents, stakeEndEvents ] = await Promise.all([
             tewkContract.getPastEvents('onStakeStart', { 
                 filter: { customerAddress: wallet.address },
@@ -73,6 +87,7 @@ class TewkStakeList extends React.Component {
                 toBlock: 'latest'
             })
         ])
+        this.setState({ progressBar: 30 })
         const startedStakes = stakeStartEvents.map(s => s.returnValues.uniqueID)
         const endedStakes = stakeEndEvents.map(s => s.returnValues.uniqueID)
         const activeUids = startedStakes.filter(s => endedStakes.indexOf(s) < 0)
@@ -83,7 +98,7 @@ class TewkStakeList extends React.Component {
         )
         debug(contractObject.SYMBOL+"'s ### _tewkStakes: ", _tewkStakes)
         const tewkStakes = await Promise.all(
-            _tewkStakes.map(async s => {
+            _tewkStakes.map(async (s, i) => {
                 let stakeData = {
                     stakeId: Number(s.stakeID),
                     lockedDay: Number(s.lockedDay),
@@ -100,7 +115,8 @@ class TewkStakeList extends React.Component {
                 const {
                     bigPayDay,
                     payout
-                } = await Stakes.getStakePayoutData({ contract: App.contract }, stakeData) 
+                } = await Stakes.getStakePayoutData({ contract: App.contract }, stakeData)
+                this.setState({ progressBar: 30 + 70 * i / _tewkStakes.length })
                 return { ...stakeData, payout, bigPayDay }
             })
         )
@@ -108,46 +124,41 @@ class TewkStakeList extends React.Component {
     }
 
     render() {
-        if (this.state.uiStakeList) return (<>
-            <Row className="text-right text-muted small pr-3">
-                <Col className="d-none d-md-inline">PRINCIPAL</Col>
-                <Col>SHARES</Col>
-                <Col className="d-none d-md-inline">BigPayDay</Col>
-                <Col>INTEREST</Col>
-                <Col>VALUE</Col>
-                <Col className="text-right">USD<span className="d-none d-md-inline"> VALUE</span></Col>
-            </Row>
-            {
-                this.state.uiStakeList && this.state.uiStakeList.map((stake, index) => {
-                    const { stakedHearts, stakeShares, bigPayDay, interest, value, usd } = stake
-                    return (
-                        <Row key={'hexmax_'+index} className="text-right pr-3">
-                            <Col className="numeric d-none d-md-inline"><CryptoVal value={stakedHearts} currency="HEX" /></Col>
-                            <Col className="numeric"><CryptoVal value={stakeShares} currency="SHARES" /></Col>
-                            <Col className="numeric d-none d-md-inline"><CryptoVal value={bigPayDay} currency="HEX" /></Col>
-                            <Col className="numeric"><CryptoVal value={interest} currency="HEX" /></Col>
-                            <Col className="numeric"><CryptoVal value={value} currency="HEX" /></Col>
-                            <Col className="numeric text-success">$
-                                <CryptoVal className="d-none d-md-inline" value={usd} currency="USD" />
-                                <CryptoVal className="d-md-none d-inline" value={usd} wholeNumber currency="USD" />
-                            </Col>
-                        </Row>
-                    )
-                })               
-            }
-        </>)
-        else return (<>
-            <ProgressBar variant={this.state.progressVariant} animated now={this.state.progressBar} label={this.state.progressLabel} />
-            {this.state.progressBar <= 100 && 
-                <Button 
-                    className="mt-3"
-                    variant="outline-info"
-                    size="sm" 
-                    block
-                    onClick={this.scanTewk}>{this.state.progressBar === 0 ? "Scan for Tewkenaire Stakes" : "Restart Tewkenaire Stakes Scan"}
-                </Button>
-            }
-        </>)
+
+        return (<>
+        <Card className="bg-dark mt-3">
+            <Card.Header className="pl-1">
+                <Row>
+                    <Col>{this.props.heading()}</Col>
+                    <Col className="text-right text-success">
+                        <span className="text-muted small mr-1">USD</span>
+                        <span className="numeric h2">
+                            $<strong><CryptoVal value={this.state.totalUSD} currency="USD" /></strong>
+                        </span>
+                    </Col>
+                </Row>
+            </Card.Header>    
+            <Card.Body>
+                <Row className="text-right text-muted small pr-3">
+                    <Col className="d-none d-md-inline">PRINCIPAL</Col>
+                    <Col>SHARES</Col>
+                    <Col className="d-none d-md-inline">BigPayDay</Col>
+                    <Col>INTEREST</Col>
+                    <Col>VALUE</Col>
+                    <Col className="text-right">USD<span className="d-none d-md-inline"> VALUE</span></Col>
+                </Row>
+                {this.state.uiStakeList.length
+                    ? this.state.uiStakeList
+                    : <ProgressBar
+                    variant={this.state.progressVariant}
+                    animated
+                    now={this.state.progressBar}
+                    label={this.state.progressLabel}
+                />
+                }
+            </Card.Body>
+        </Card>
+    </>)
     }
 }
 
@@ -158,84 +169,47 @@ class Tewkenaire extends React.Component {
         this.web3 = props.parent.web3 
         this.hexContract = null
         this.state = {
-            HEX2_totalUSD: 0.0,
-            HEX3_totalUSD: 0.0,
-            HEX4_totalUSD: 0.0,
-            HEX5_totalUSD: 0.0,
         }
     }
 
     async componentDidMount() {
         if (localStorage.getItem('debug')) window._TEWK = this
-        // const { chainId } = this.props.parent.state
-        // this.hexContract = await new this.web3.eth.Contract(HEX.ABI, HEX.CHAINS[chainId].address)
     }
 
     render() {
-        const handleAccordionSelect = (selectedCard) => {
-        }
+
 
         return (<>
             <Accordion 
                 id='tewk_accordion'
                 className="text-left mt-3"
-                onSelect={handleAccordionSelect}
+                defaultActiveKey="tewkenaire"
             >
                 <Card bg="secondary" text="light" className="p-0">
                     <Accordion.Toggle as={Card.Header} eventKey="tewkenaire">
                         <BurgerHeading>Tewkenaire</BurgerHeading>
                     </Accordion.Toggle>
                     <Accordion.Collapse eventKey="tewkenaire">
-                        <Card.Body className="tewkenaire-body">
-                            <Card className="bg-dark mt-3">
-                                <Card.Header className="pl-1">
-                                    <Row>
-                                        <Col><em><strong>HEX<span className="text-success">TEW</span></strong></em></Col>
-                                        <Col className="text-right text-success">
-                                            <span className="text-muted small mr-1">USD</span>
-                                            <span className="numeric h2">
-                                                $<strong><CryptoVal value={this.state.HEX2_totalUSD} currency="USD" /></strong>
-                                            </span>
-                                        </Col>
-                                    </Row>
-                                </Card.Header>    
-                                <Card.Body>
-                                    <TewkStakeList parent={this} contractObject={HEX2} usdhex={this.props.usdhex} />
-                                </Card.Body>
-                            </Card>
-                            <Card className="bg-dark mt-3">
-                                <Card.Header className="pl-1">
-                                    <Row>
-                                        <Col><em><strong>HEX<span className="text-success">MAX</span></strong></em></Col>
-                                        <Col className="text-right text-success">
-                                            <span className="text-muted small mr-1">USD</span>
-                                            <span className="numeric h2">
-                                                $<strong><CryptoVal value={this.state.HEX4_totalUSD} currency="USD" /></strong>
-                                            </span>
-                                        </Col>
-                                    </Row>
-                                </Card.Header>
-                                <Card.Body>
-                                    <TewkStakeList parent={this} contractObject={HEX4} usdhex={this.props.usdhex} />
-                                </Card.Body>
-                            </Card>
-                            <Card className="bg-dark mt-3">
-                                <Card.Header className="pl-1">
-                                <Row>
-                                        <Col><em><strong>INFINI<span className="text-success">HEX</span></strong></em></Col>
-                                        <Col className="text-right text-success">
-                                            <span className="text-muted small mr-1">USD</span>
-                                            <span className="numeric h2">
-                                                $<strong><CryptoVal value={this.state.HEX5_totalUSD} currency="USD" /></strong>
-                                            </span>
-                                        </Col>
-                                    </Row>
-                                </Card.Header>
-                                <Card.Body>
-                                    <TewkStakeList parent={this} contractObject={HEX5} usdhex={this.props.usdhex} />
-                                </Card.Body>
-                            </Card>
-                        </Card.Body>
+                        <>
+                            <TewkStakeList
+                                parent={this}
+                                heading={() => <em><strong>HEX<span className="text-success">TEW</span></strong></em>}
+                                contractObject={HEX2}
+                                usdhex={this.props.usdhex}
+                            />
+                            <TewkStakeList
+                                parent={this}
+                                heading={() => <em><strong>HEX<span className="text-success">MAX</span></strong></em>}
+                                contractObject={HEX4}
+                                usdhex={this.props.usdhex}
+                            />
+                            <TewkStakeList
+                                parent={this}
+                                heading={() => <em><strong>INFINI<span className="text-success">HEX</span></strong></em>}
+                                contractObject={HEX5}
+                                usdhex={this.props.usdhex}
+                            />
+                        </>
                    </Accordion.Collapse>
                 </Card>
             </Accordion>
