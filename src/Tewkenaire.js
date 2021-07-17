@@ -152,14 +152,13 @@ class TewkStakeList extends React.Component {
                 }
                 {uiStakeList.length > 1 &&
                 <Row className="text-right pr-3">
-                    <Col> </Col>
-                    <Col> </Col>
-                    <Col> </Col>
-                    <Col> </Col>
-                    <Col> </Col>
-                    <Col><span className="text-muted small mr-1">TOTAL $</span></Col>
-                    <Col className="text-right text-success nemeric" style={{ borderTop: "1px solid #99999980" }}>
-                        <CryptoVal value={totalUsd} currency="USD" />
+                    <Col>
+                        <span className="text-muted small mr-1">TOTAL $</span>
+                    </Col>
+                    <Col xs={3} sm={2} className="text-right text-success nemeric" 
+                        style={{ borderTop: "1px solid #99999980" }}>
+                        <CryptoVal className="d-none d-md-inline" value={totalUsd} currency="USD" />
+                        <CryptoVal className="d-md-none d-inline" value={totalUsd} wholeNumber currency="USD" />
                     </Col>
                 </Row>}
             </Card.Body>
