@@ -116,7 +116,7 @@ class TewkStakeList extends React.Component {
                     <Col className="numeric d-none d-md-inline"><CryptoVal value={bigPayDay} currency="HEX" /></Col>
                     <Col className="numeric"><CryptoVal value={interest} currency="HEX" /></Col>
                     <Col className="numeric"><CryptoVal value={value} currency="HEX" /></Col>
-                    <Col className="numeric text-success"><span className="small text-muted">$</span>
+                    <Col className="numeric text-success">
                         <CryptoVal className="d-none d-md-inline" value={usd} currency="USD" />
                         <CryptoVal className="d-md-none d-inline" value={usd} wholeNumber currency="USD" />
                     </Col>
@@ -150,15 +150,18 @@ class TewkStakeList extends React.Component {
                     label={this.state.progressLabel}
                 />
                 }
+                {uiStakeList.length > 1 &&
                 <Row className="text-right pr-3">
                     <Col> </Col>
-                    <Col className="text-right text-success">
-                        <span className="text-muted small mr-1">TOTAL USD</span>
-                        <span className="numeric">
-                            <span className="small text-muted">$</span><strong><CryptoVal value={totalUsd} currency="USD" /></strong>
-                        </span>
+                    <Col> </Col>
+                    <Col> </Col>
+                    <Col> </Col>
+                    <Col> </Col>
+                    <Col><span className="text-muted small mr-1">TOTAL $</span></Col>
+                    <Col className="text-right text-success nemeric" style={{ borderTop: "1px solid #99999980" }}>
+                        <CryptoVal value={totalUsd} currency="USD" />
                     </Col>
-                </Row>
+                </Row>}
             </Card.Body>
         </Card>
     </>)

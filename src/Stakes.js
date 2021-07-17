@@ -239,20 +239,20 @@ class Stakes extends React.Component {
                         payout: new BigNumber(0)
                     }
                     if (currentDay >= stakeData.lockedDay + 1) { // no payouts when pending or until day 2 into term
-                        // debug XXX
-                        const debugStake = {
-                            stakedHearts: BigNumber("269000").times(1E8),
-                            lockedDay: (588-99),
-                            startDay: (588-99),
-                            stakedDays: 5555,
-                            endDay: (588-99+5555),
-                            stakeShares: BigNumber(46.8).times(1E12),
-                            payout: BigNumber(2360).div(0.086).times(1E8),
-                            bigPayDay: BigNumber(0),
-                            penalty: BigNumber(0),
-                            unlockedDay: 0,
-                        }
-                        stakeData = { ...stakeData, ...debugStake }
+                        // // debug XXX
+                        // const debugStake = {
+                        //     stakedHearts: BigNumber("269000").times(1E8),
+                        //     lockedDay: (588-99),
+                        //     startDay: (588-99),
+                        //     stakedDays: 5555,
+                        //     endDay: (588-99+5555),
+                        //     stakeShares: BigNumber(46.8).times(1E12),
+                        //     payout: BigNumber(2360).div(0.086).times(1E8),
+                        //     bigPayDay: BigNumber(0),
+                        //     penalty: BigNumber(0),
+                        //     unlockedDay: 0,
+                        // }
+                        // stakeData = { ...stakeData, ...debugStake }
                         try {
                             const payouts = await Stakes.getStakePayoutData(context, stakeData)
                             stakeData = { ...stakeData, ...payouts }
