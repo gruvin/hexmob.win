@@ -90,7 +90,6 @@ class App extends React.Component {
         }
 
         if (provider.isMetaMask) {
-            debug("PROVIDER IS METAMASK")
             const ethereum = window.ethereum
             if (ethereum.autoRefreshOnNetworkChange) 
                 ethereum.autoRefreshOnNetworkChange = false // will be default behavour in new MM api
@@ -110,7 +109,6 @@ class App extends React.Component {
                 }
             })
         } else { // WalletConnect (and others?) ...
-            debug("PROVIDER IS OTHER")
 
             // 'close' is deprecated in favour of 'disconnect' in MetaMask but not some other wallets
             provider.on("close", () => {  
@@ -211,7 +209,7 @@ class App extends React.Component {
     async selectWeb3ModalWallet() {
         debug('inside selectWeb3ModalWallet()')
         try {
-            return await this.web3modal.connect()
+            return await this.web3modal.connect() // note: web3modal subscribes to MetaMask deprecated 'close' event
         } catch(e) { // user closed dialog withot selection 
             return null
         }
@@ -252,7 +250,7 @@ class App extends React.Component {
         }
 
         // We set up TWO providers. One from the connected wallet to handle sending transactions
-        // and one for all other chain quuery operations (using Infura or the like)
+        // and one for all other chain quuery operations (Infura)
         // this.walletProvider stores the transaction provider
         // this.provider stores the query provider
         if (!this.walletProvider || !this.walletProvider.chainId) 
@@ -535,7 +533,7 @@ class App extends React.Component {
                             contract={this.contract} wallet={this.state.wallet} usdhex={this.state.USDHEX}
                         />
                     ))}
-                    { uriQuery.has('tewk') && <Tewkenaire parent={this} usdhex={this.state.USDHEX} />}
+                    { uriQuery.has('tewkens') && <Tewkenaire parent={this} usdhex={this.state.USDHEX} />}
                     <Stats parent={this} contract={this.contract} wallet={this.state.wallet} usdhex={this.state.USDHEX} />
                     <Lobby parent={this} contract={this.contract} wallet={this.state.wallet} />
                     <Container className="text-center">
@@ -560,7 +558,7 @@ class App extends React.Component {
         if (headerLogo) headerLogo.style.backgroundImage = window.hostIsTSA
             ? "url('/tsa/android-icon-96x96.png')"
             : "url('/hexmob/android-icon-96x96.png')"
-
+        
         return (
             <>
                 <Container id="hexmob_header" fluid>
@@ -597,7 +595,8 @@ class App extends React.Component {
                         }
                         { !detectTrustWallet() && /* TrustWallet won't follow external links */
                         <>
-                            <Container className="py-2 my-3">
+                            {document.location.hostname.search(/tshare\.app/) < 0 && 
+                                <Container className="py-2 my-3">
                                 <Card.Body as={Button} variant="info" className="w-100 rounded text-light bg-info-faded border-0" 
                                     href="https://changelly.com/?ref_id=1b7z255j4rfbxsyd#buy" target="_blank" rel="noopener noreferrer"
                                 >
@@ -609,7 +608,7 @@ class App extends React.Component {
                                         </div>
                                     </div>
                                 </Card.Body>
-                            </Container>
+                            </Container>}
                             <Container className="py-3 my-3">
                                 <Card.Body as={Button} className="w-100 rounded text-light bg-dark border-0" 
                                     href="https://ethhex.com" target="_blank" rel="noopener noreferrer"

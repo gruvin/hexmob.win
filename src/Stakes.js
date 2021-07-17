@@ -77,49 +77,122 @@ class Stakes extends React.Component {
         const stakedDays = stakeData.stakedDays
         const endDay = startDay + stakedDays
 
-        let payout = BigNumber(0)
-        let bigPayDay = BigNumber(0)
-        let penalty = BigNumber(0)
-
-        if (startDay >= currentDay) return { payout, bigPayDay, penalty }
+        if (startDay > currentDay) {
+            const z = BigNumber(0)
+            return { payout: z, bigPayDay: z, penalty: z, penaltyDelta: z }
+        }
 
         const dailyDataCount = globals.dailyDataCount.toNumber()
         const dailyData = await contract.methods.dailyDataRange(startDay, Math.min(dailyDataCount, endDay)).call()
 
-        dailyData.forEach((mapped_dailyData, dayIndex) => {
-            const data = new BigNumber(mapped_dailyData).toString(16).padStart(64, '0')
-            const day = { // extract dailyData struct from uint256 mapping
-                payoutTotal: new BigNumber(data.slice(46,64), 16),
-                stakeSharesTotal: new BigNumber(data.slice(28,46), 16),
-                unclaimedSatoshisTotal: new BigNumber(data.slice(12,28), 16)
-            }
-            const payoutToday = day.payoutTotal.times(stakeData.stakeShares).idiv(day.stakeSharesTotal) // .sol line: 1586
-            payout = payout.plus(payoutToday)
-            if (dayIndex < 90 || dayIndex < Math.ceil(stakedDays / 2)) penalty = penalty.plus(payoutToday)
-        })
-
-        // Calculate our share of Daily Interest ___for the current (incomplete) day___
-        // HEX mints 0.009955% daily interest (3.69%pa) and stakers get adoption bonuses from that, each day
-        // .sol:1245:  rs._payoutTotal = rs._allocSupplyCached * 10000 / 100448995
-        const dailyInterestTotal = allocatedSupply.times(10000).idiv(100448995)
-        const interestShare = dailyInterestTotal.times(stakeData.stakeShares).idiv(globals.stakeSharesTotal)
-        const interestBonus = (currentDay < HEX.CLAIM_PHASE_END_DAY) ? calcAdoptionBonus(interestShare, globals) : 0
-
-        payout = payout.plus(interestShare).plus(interestBonus)
-
-        if (startDay <= HEX.BIG_PAY_DAY && endDay > HEX.BIG_PAY_DAY) {
-            const bpdStakeSharesTotal = (currentDay < 352) // day is zero based internally
-                ? globals.stakeSharesTotal // prior to BPD 
-                : new BigNumber("50499329839740027369", 10) // value on BPD (day 353). Never gonna change so don't waste bw looking it up
-
-            const bigPaySlice = calcBigPayDaySlice(stakeData.stakeShares, bpdStakeSharesTotal, globals)
-            const bonuses = calcAdoptionBonus(bigPaySlice, globals)
-            bigPayDay = bigPaySlice.plus(bonuses)
-            if ( currentDay >= HEX.BIG_PAY_DAY) stakeData.payout = stakeData.payout.plus(stakeData.bigPayDay)
-            // TODO: penalties have to come off for late End Stake
+        function _calcPartDayBonuses()  {
+            // Calculate our share of Daily Interest ___for the current (incomplete) day___
+            // HEX mints 0.009955% daily interest (3.69%pa) and stakers get adoption bonuses from that, each day
+            // .sol:1245:  rs._payoutTotal = rs._allocSupplyCached * 10000 / 100448995
+            const dailyInterestTotal = allocatedSupply.times(10000).idiv(100448995)
+            const interestShare = dailyInterestTotal.times(stakeData.stakeShares).idiv(globals.stakeSharesTotal)
+            const interestBonus = (currentDay < HEX.CLAIM_PHASE_END_DAY) ? calcAdoptionBonus(interestShare, globals) : 0
+            return interestShare.plus(interestBonus)
         }
 
-        return { payout, bigPayDay, penalty }
+        function _calcPayoutRewards(dayStartIndex, dayEndIndex) {
+
+            let payout = BigNumber(0)
+            let bigPayDay = BigNumber(0)
+
+            for (let index = dayStartIndex; index < dayEndIndex; index++) {
+                const data = new BigNumber(dailyData[index]).toString(16).padStart(64, '0')
+                const day = { // extract dailyData struct from uint256 mapping
+                    payoutTotal: new BigNumber(data.slice(46,64), 16),
+                    stakeSharesTotal: new BigNumber(data.slice(28,46), 16),
+                    unclaimedSatoshisTotal: new BigNumber(data.slice(12,28), 16)
+                }
+                const dayPayout = day.payoutTotal
+                    .times(stakeData.stakeShares)
+                    .idiv(day.stakeSharesTotal) // .sol line: 1586
+
+                payout = payout.plus(dayPayout)
+            }
+
+            payout = payout.plus(_calcPartDayBonuses())
+
+            if (startDay <= HEX.BIG_PAY_DAY && endDay > HEX.BIG_PAY_DAY) {
+                const bpdStakeSharesTotal = (currentDay < 352) // day is zero based internally
+                    ? globals.stakeSharesTotal // prior to BPD 
+                    : new BigNumber("50499329839740027369", 10) // value on BPD (day 353). Never gonna change so don't waste bw looking it up
+
+                const bigPaySlice = calcBigPayDaySlice(stakeData.stakeShares, bpdStakeSharesTotal, globals)
+                const bonuses = calcAdoptionBonus(bigPaySlice, globals)
+                bigPayDay = bigPaySlice.plus(bonuses)
+                if ( currentDay >= HEX.BIG_PAY_DAY) stakeData.payout = stakeData.payout.plus(stakeData.bigPayDay)
+            }
+            return { payout, bigPayDay }
+        }
+        
+        let payout = BigNumber(0)
+        let bigPayDay = BigNumber(0)
+        let penalty = BigNumber(0)
+
+        const daysServed = Math.min(currentDay - startDay, stakedDays)
+        
+        if (daysServed < stakedDays) {
+
+            const penaltyDays = Math.max(90, Math.ceil(stakedDays / 2))
+
+            if (daysServed === 0) {
+
+                penalty = _calcPartDayBonuses().times(penaltyDays)
+
+            } else if (penaltyDays < daysServed) {
+
+                const _penalty = _calcPayoutRewards(0, penaltyDays)
+                const _penaltyDelta = _calcPayoutRewards(penaltyDays, dailyData.length-1)
+
+                payout = _penalty.payout.plus(_penaltyDelta.payout)
+                bigPayDay = _penalty.bigPayDay.plus(_penaltyDelta.bigPayDay)
+                penalty = _penalty.payout.plus(_penalty.bigPayDay)
+
+            } else {
+                // penaltyDays >= servedDays        
+                const _interest = _calcPayoutRewards(0, dailyData.length-1)
+
+                payout = _interest.payout
+                bigPayDay = _interest.bigPayDay
+                
+                const interest = payout.plus(bigPayDay)
+                if (penaltyDays === daysServed) {
+                    penalty = interest
+                } else {
+                    penalty = interest.times(penaltyDays).idiv(daysServed)
+                }
+                
+                const totalValue = stakeData.stakedHearts.plus(interest)
+                if (penalty.isGreaterThan(totalValue)) penalty = totalValue
+            }
+        } else { // daysServed >= stakedDays (late end stake)
+            const _interest = _calcPayoutRewards(0, dailyData.length-1)
+            payout = _interest.payout
+            bigPayDay = _interest.bigPayDay
+            const interest = payout.plus(bigPayDay)
+
+            const maxUnlockedDay = endDay + HEX.LATE_PENALTY_GRACE_DAYS;
+            if (currentDay > maxUnlockedDay) {
+                penalty = (stakeData.stakedHearts
+                    .plus(interest)
+                    .times(currentDay - maxUnlockedDay)
+                    .idiv(HEX.LATE_PENALTY_SCALE_DAYS)
+                )
+            }
+        }
+        // debug("PENALTY: $", format(",.2f")(penalty.div(1E8).times(0.086).toFixed(0)))
+        return {
+            payout,
+            bigPayDay,
+            penalty,
+        }
+        
+        // TODO: LATE END-STAKE PENALTY
+
     }
 
     static async loadStakes(context) {
@@ -134,10 +207,8 @@ class Stakes extends React.Component {
         try {
             stakeCount = await contract.methods.stakeCount(address).call()
         } catch (e) {
-            // XXX: I have witnessed just once for reasons not yet deduced the 'address'
-            // argument being invalid and of type Object, instead of string.
             debug("WARNING: loadStakes()::[hex]stakeCount [address = %o] - %s", address, e.message)
-            return // give up
+            return
         }
 
         // use Promise.all to load stake data in parallel
@@ -168,6 +239,20 @@ class Stakes extends React.Component {
                         payout: new BigNumber(0)
                     }
                     if (currentDay >= stakeData.lockedDay + 1) { // no payouts when pending or until day 2 into term
+                        // // debug XXX
+                        // const debugStake = {
+                        //     stakedHearts: BigNumber("269000").times(1E8),
+                        //     lockedDay: (588-99),
+                        //     startDay: (588-99),
+                        //     stakedDays: 5555,
+                        //     endDay: (588-99+5555),
+                        //     stakeShares: BigNumber(46.8).times(1E12),
+                        //     payout: BigNumber(2360).div(0.086).times(1E8),
+                        //     bigPayDay: BigNumber(0),
+                        //     penalty: BigNumber(0),
+                        //     unlockedDay: 0,
+                        // }
+                        // stakeData = { ...stakeData, ...debugStake }
                         try {
                             const payouts = await Stakes.getStakePayoutData(context, stakeData)
                             stakeData = { ...stakeData, ...payouts }
@@ -175,6 +260,7 @@ class Stakes extends React.Component {
                             debug(`WARNING: loadStakes() : getStakePayoutData(address, index) ${e.message}`)
                         }
                     }
+
                     stakeList = stakeList.concat(stakeData) //*** ESLint complains but it's safe, because non-mutating concat()
 
                 } catch(e) {

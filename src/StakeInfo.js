@@ -59,6 +59,7 @@ export class StakeInfo extends React.Component {
         const shares = stake.stakeShares
         const interest = stake.payout
         const bigPayDay = stake.bigPayDay
+        const penalty = stake.penalty
         const valueTotal = stake.stakedHearts.plus(interest).plus(stake.bigPayDay)
         const usdValueTotal = valueTotal.div(1e8).times(usdhex).toNumber()
 
@@ -237,6 +238,9 @@ export class StakeInfo extends React.Component {
                                         onClick={(e) => { e.stopPropagation(); this.setState({ esShow: true })} }>
                                         EARLY END STAKE
                                     </Button>
+                                    {window.location.hostname === "localhost" && // TODO: remove this debug code
+                                        <p><b>PENALTY: </b><CryptoVal className="numeric" value={penalty} showUnit /></p>
+                                    }
                                     </>}
                                 </Col>
                             </Row>
