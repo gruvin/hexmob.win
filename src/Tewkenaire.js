@@ -31,41 +31,36 @@ class TewkStakeList extends React.Component {
     }
 
     async componentDidMount() {
-        if (!this.props.contractObject) return
-        this.scanTewk()
-    }
-
-    scanTewk = async () => {
-        if (!this.props.contractObject) return false
+        const { parent, contractObject, usdhex } = this.props
+        if (!contractObject) throw new Error('TewkStakeList: No contractObject provided')
         this.setState({
             progressVariant: "secondary",
             progressLabel: "fetching data",
             pregressBar: 1
         })
-        const { parent, contractObject, usdhex } = this.props
         let totalUSD = 0.0
         const tewkStakes = await this.getTewkenaireStakes(contractObject)
+        debug(contractObject.SYMBOL+"'s tewkStakes: ", tewkStakes)
         const uiStakeList = tewkStakes.map((stake, index) => {
-            const { stakedHearts, stakeShares, payout, bigPayDay } = stake.hex
-            const interest = payout.plus(bigPayDay)
-            const value = stakedHearts.plus(interest)
-            const usd = value.div(1e8).times(usdhex)
-            totalUSD += usd.toNumber()
-            return { stakedHearts, stakeShares, payout, bigPayDay, interest, value, usd }
+            const { stakedHearts, payout, bigPayDay } = stake
+            stake.interest = payout.plus(bigPayDay)
+            stake.value = stakedHearts.plus(stake.interest)
+            stake.usd = stake.value.div(1e8).times(usdhex)
+            totalUSD += stake.usd.toNumber()
+            return stake
         })
+        debug(this.props.contractObject.SYMBOL+" uiStakeList[]: ", uiStakeList)
         this.setState({ uiStakeList })
         parent.setState({ [this.props.contractObject.SYMBOL+'_totalUSD']: totalUSD })
     }
 
     async getTewkenaireStakes(contractObject) {
-        const { chainId, wallet, currentDay } = this.props.parent.props.parent.state
+        const { chainId, wallet } = this.props.parent.props.parent.state
         const { web3 } = this.props.parent
-        const hexContract = await new web3.eth.Contract(HEX.ABI, HEX.CHAINS[chainId].address)
         const tewkContract = await new web3.eth.Contract(contractObject.ABI, contractObject.CHAINS[chainId].address)
         const tewkAddress = contractObject.CHAINS[chainId].address
 
         debug(contractObject.SYMBOL+' address: ', tewkAddress)
-
         const [ stakeStartEvents, stakeEndEvents ] = await Promise.all([
             tewkContract.getPastEvents('onStakeStart', { 
                 filter: { customerAddress: wallet.address },
@@ -80,63 +75,36 @@ class TewkStakeList extends React.Component {
         ])
         const startedStakes = stakeStartEvents.map(s => s.returnValues.uniqueID)
         const endedStakes = stakeEndEvents.map(s => s.returnValues.uniqueID)
-        const activeStakeIds = startedStakes.filter(s => endedStakes.indexOf(s) < 0)
-        
+        const activeUids = startedStakes.filter(s => endedStakes.indexOf(s) < 0)
+        const _tewkStakes = await Promise.all(
+            Array.from({ length: activeUids.length }, 
+                (_, i) => tewkContract.methods.stakeLists(wallet.address, activeUids[i]).call()
+            )
+        )
+        debug(contractObject.SYMBOL+"'s ### _tewkStakes: ", _tewkStakes)
         const tewkStakes = await Promise.all(
-            activeStakeIds.map(uid => tewkContract.methods.stakeLists(wallet.address, uid).call())
+            _tewkStakes.map(async s => {
+                let stakeData = {
+                    stakeId: Number(s.stakeID),
+                    lockedDay: Number(s.lockedDay),
+                    stakedDays: Number(s.stakedDays),
+                    stakedHearts: BigNumber(s.hexAmount),
+                    stakeShares: BigNumber(s.stakeShares),
+                    unlockedDay: Number(s.unlockedDay),
+                    isAutoStake: false,
+                    bigPayDay: BigNumber(0),
+                    payout: BigNumber(0),
+                }
+                // get payout data
+                const App = this.props.parent.props.parent
+                const {
+                    bigPayDay,
+                    payout
+                } = await Stakes.getStakePayoutData({ contract: App.contract }, stakeData) 
+                return { ...stakeData, payout, bigPayDay }
+            })
         )
-        debug(contractObject.SYMBOL+"'s tewk stakes: ", tewkStakes)
-        debug(contractObject.SYMBOL+"'s stakeIDs: ", tewkStakes.map(s => s.stakeID))
-
-        const hexStakes = await Promise.all(
-            tewkStakes
-                .map(s => s.stakeID)
-                .map(sid => hexContract.methods.stakeLists(wallet.address, sid).call())
-        )
-        debug(contractObject.SYMBOL+"'s HEX STAKES: ", hexStakes)
-
-
-        const tewkStakeCount = await hexContract.methods.tewkStakeCount(tewkAddress).call()
-        for (let i = 0; i < tewkStakeCount; i++ )
-        return []
-        // const progrssChunkSize = 100 / activeStakes.length
-        // debug("HEX:ID: ", uniqueStakeId)
-
-        // const progress = (currentDay < hexStake.lockedDay) ? 0
-        // : Math.trunc(Math.min((currentDay - hexStake.lockedDay) / hexStake.stakedDays * 100000, 100000))
-        
-        // const stakeData = {
-        //     stakeOwner: tewkAddress,
-        //     stakeIndex: index,
-        //     stakeId: hexStake.stakeId,
-        //     lockedDay: Number(hexStake.lockedDay),
-        //     stakedDays: Number(hexStake.stakedDays),
-        //     stakedHearts: new BigNumber(hexStake.stakedHearts),
-        //     stakeShares: new BigNumber(hexStake.stakeShares),
-        //     unlockedDay: Number(hexStake.unlockedDay),
-        //     isAutoStake: Boolean(hexStake.isAutoStakte),
-        //     progress,
-        //     bigPayDay: new BigNumber(0),
-        //     payout: new BigNumber(0),
-        // }
-        // // get payout data
-        // const App = this.props.parent.props.parent
-        // const {
-        //     bigPayDay,
-        //     payout
-        // } = await Stakes.getStakePayoutData({ contract: App.contract }, stakeData) 
-        // stakeData.bigPayDay = bigPayDay
-        // stakeData.payout = payout
-
-        // const ourStake = {
-        //     hex: stakeData,
-        //     tewk: {
-        //         stakeOwner: wallet.address,
-        //         stakeIndex: index,
-        //         stakeIdParam: stakeID,
-        //         uniqueID: uniqueStakeId,
-        //     }
-        // }
+        return tewkStakes
     }
 
     render() {
@@ -199,8 +167,8 @@ class Tewkenaire extends React.Component {
 
     async componentDidMount() {
         if (localStorage.getItem('debug')) window._TEWK = this
-        const { chainId } = this.props.parent.state
-        this.hexContract = await new this.web3.eth.Contract(HEX.ABI, HEX.CHAINS[chainId].address)
+        // const { chainId } = this.props.parent.state
+        // this.hexContract = await new this.web3.eth.Contract(HEX.ABI, HEX.CHAINS[chainId].address)
     }
 
     render() {
@@ -232,7 +200,7 @@ class Tewkenaire extends React.Component {
                                     </Row>
                                 </Card.Header>    
                                 <Card.Body>
-                                    {this.hexContract && <TewkStakeList parent={this} contractObject={HEX2} usdhex={this.props.usdhex} />}
+                                    <TewkStakeList parent={this} contractObject={HEX2} usdhex={this.props.usdhex} />
                                 </Card.Body>
                             </Card>
                             <Card className="bg-dark mt-3">
@@ -248,7 +216,7 @@ class Tewkenaire extends React.Component {
                                     </Row>
                                 </Card.Header>
                                 <Card.Body>
-                                    {this.hexContract && <TewkStakeList parent={this} contractObject={HEX4} usdhex={this.props.usdhex} />}
+                                    <TewkStakeList parent={this} contractObject={HEX4} usdhex={this.props.usdhex} />
                                 </Card.Body>
                             </Card>
                             <Card className="bg-dark mt-3">
@@ -264,7 +232,7 @@ class Tewkenaire extends React.Component {
                                     </Row>
                                 </Card.Header>
                                 <Card.Body>
-                                    {this.hexContract && <TewkStakeList parent={this} contractObject={HEX5} usdhex={this.props.usdhex} />}
+                                    <TewkStakeList parent={this} contractObject={HEX5} usdhex={this.props.usdhex} />
                                 </Card.Body>
                             </Card>
                         </Card.Body>
