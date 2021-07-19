@@ -145,12 +145,12 @@ class Stakes extends React.Component {
 
             } else if (penaltyDays < daysServed) {
 
-                const _penalty = _calcPayoutRewards(0, penaltyDays)
-                const _penaltyDelta = _calcPayoutRewards(penaltyDays, dailyData.length-1)
+                const _interest = _calcPayoutRewards(0, penaltyDays)
+                const _interestDelta = _calcPayoutRewards(penaltyDays, dailyData.length-1)
 
-                payout = _penalty.payout.plus(_penaltyDelta.payout)
-                bigPayDay = _penalty.bigPayDay.plus(_penaltyDelta.bigPayDay)
-                penalty = _penalty.payout.plus(_penalty.bigPayDay)
+                payout = _interest.payout.plus(_interestDelta.payout)
+                bigPayDay = _interest.bigPayDay.plus(_interestDelta.bigPayDay)
+                penalty = _interest.payout.plus(_interest.bigPayDay)
 
             } else {
                 // penaltyDays >= servedDays        
