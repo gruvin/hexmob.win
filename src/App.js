@@ -524,12 +524,12 @@ class App extends React.Component {
                         usdhex={this.state.USDHEX}
                         openActive={!uriQuery.has('closed')}
                     />
-                    {this.state.accounts.length > 0 && this.state.accounts.map(account => (
+                    {this.state.accounts.length > 0 && this.state.accounts.map(acc => (
                         <Stakes
-                            key={`public:${account.address}`}
+                            key={`public:${acc.address}`}
                             className="mt-3"
-                            publicAddress={account.address} 
-                            publicName={account.name}
+                            publicAddress={acc.address} 
+                            publicName={acc.name}
                             contract={this.contract} wallet={this.state.wallet} usdhex={this.state.USDHEX}
                         />
                     ))}

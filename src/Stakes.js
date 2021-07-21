@@ -3,9 +3,6 @@ import {
     Container,
     Row, Col,
     Card,
-    Button,
-    Modal,
-    Alert,
     ProgressBar,
     Accordion,
 } from 'react-bootstrap'
@@ -363,7 +360,7 @@ class Stakes extends React.Component {
     StakesList = (params) => {
         const { currentDay } = this.props.contract.Data
         const stakeList = this.state.stakeList.slice() || null
-        stakeList && stakeList.sort((a, b) => (a.progress < b.progress ? (a.progress !== b.progress ? 1 : 0) : -1 ))
+        stakeList && stakeList.sort((a, b) => a.progress > b.progress ? -1 : 1)
 
         let stakedTotal = new BigNumber(0)
         let sharesTotal = new BigNumber(0)
@@ -548,17 +545,12 @@ class Stakes extends React.Component {
     }
 
     render() { // class Stakes
-        const { currentDay } = this.props.contract.Data
-        
-        const handleClose = () => this.setState({ showExitModal: false })
+        const a = this.props.publicAddress || ""
+        const publicAddress = <span className="numeric">{a.substr(0, 6)+"...."+a.substr(-4, 4)}</span>
 
-        const thisStake = this.state.stakeContext // if any
-        const IsEarlyExit = (thisStake.stakeId && currentDay < (thisStake.lockedDay + thisStake.stakedDays)) 
-
-        return (
-            !this.state.stakeList
-                ? <ProgressBar variant="secondary" animated now={90} label="loading contract data" className="mt-3" />
-                : <> 
+        return (!this.state.stakeList
+        ? <ProgressBar variant="secondary" animated now={90} label="loading contract data" className="mt-3" />
+        : <>
             <Accordion 
                 id='stakes_accordion'
                 className="text-left"
@@ -588,11 +580,11 @@ class Stakes extends React.Component {
                 </Card>
             }
                 <Card text="light" className={"active-stakes "+this.props.className}>
-                {this.props.publicAddress && 
-                    <div className="px-1 text-light text-center small">                        
-                        <span className="text-muted">{this.props.publicName || "address"} </span>{this.props.publicAddress}
-                    </div>
-                }
+                    {this.props.publicAddress &&
+                        <div className="px-1 text-light text-center small">                        
+                            <span className="text-muted">{this.props.publicName || "address"} </span>{publicAddress}
+                        </div>
+                    }
                     <Accordion.Toggle as={Card.Header} eventKey="current_stakes">
                         <BurgerHeading>Active Stakes</BurgerHeading>
                         <div className="float-right pr-1 text-success">
@@ -619,48 +611,6 @@ class Stakes extends React.Component {
                     </Accordion.Collapse>
                 </Card>
             </Accordion>
-
-            <Modal show={this.state.showExitModal} onHide={handleClose} animation={false} variant="primary">
-                <Modal.Header closeButton>
-                    <Modal.Title>End Stake</Modal.Title>
-                </Modal.Header>
-                <Modal.Body>
-                    { IsEarlyExit 
-                        ?  
-                            <Alert variant="danger">
-                                <Alert.Heading>LOSSES AHEAD</Alert.Heading>
-                                <p>
-                                    Exiting stakes early can lead to <em>significant</em> losses!
-                                </p>
-                                <hr />
-                                <p>
-                                    <Alert.Link href="#">Learn more</Alert.Link>
-                                </p>
-                            </Alert>
-                        :
-                            <Alert variant="success">
-                                <Alert.Heading>Term Complete</Alert.Heading>
-                                <p>
-                                    This stake has served its full term and is safe to exit.
-                                </p>
-                                <p> TODO: add stake stats / yield etc </p>
-                            </Alert>
-                    }
-                </Modal.Body>
-                <Modal.Footer>
-                    { IsEarlyExit 
-                        ? <div>
-                            <Button variant="secondary" onClick={handleClose}>
-                                Accept Penalty
-                            </Button>
-                            <Button variant="primary" className="ml-3" onClick={handleClose}>
-                                Get me outta here!
-                            </Button>
-                        </div>
-                        : <Button variant="primary" onClick={handleClose}>End Stake</Button>
-                    }
-                </Modal.Footer>
-            </Modal>
             </>
         )
     }
