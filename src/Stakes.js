@@ -129,20 +129,22 @@ class Stakes extends React.Component {
                         payout: new BigNumber(0)
                     }
                     if (currentDay >= stakeData.lockedDay + 1) { // no payouts when pending or until day 2 into term
-                        // // debug XXX
-                        // const debugStake = {
-                        //     stakedHearts: BigNumber("269000").times(1E8),
-                        //     lockedDay: (588-99),
-                        //     startDay: (588-99),
-                        //     stakedDays: 5555,
-                        //     endDay: (588-99+5555),
-                        //     stakeShares: BigNumber(46.8).times(1E12),
-                        //     payout: BigNumber(2360).div(0.086).times(1E8),
-                        //     bigPayDay: BigNumber(0),
-                        //     penalty: BigNumber(0),
-                        //     unlockedDay: 0,
+                        // if (document.location.hostname === "localhost") {
+                        //     // debug XXX
+                        //     const debugStake = {
+                        //         stakedHearts: BigNumber("25000").times(1E8),
+                        //         lockedDay: 203,
+                        //         startDay: 203,
+                        //         stakedDays: 420,
+                        //         endDay: 420+203,
+                        //         stakeShares: BigNumber("2.9517").times(1E12),
+                        //         payout: BigNumber(0),
+                        //         bigPayDay: BigNumber(0),
+                        //         penalty: BigNumber(0),
+                        //         unlockedDay: 0,
+                        //     }
+                        //     stakeData = { ...stakeData, ...debugStake }
                         // }
-                        // stakeData = { ...stakeData, ...debugStake }
                         try {
                             const payouts = await Stakes.getStakePayoutData(context, stakeData)
                             stakeData = { ...stakeData, ...payouts }
@@ -151,7 +153,7 @@ class Stakes extends React.Component {
                         }
                     }
 
-                    stakeList = stakeList.concat(stakeData) //*** ESLint complains but it's safe, because non-mutating concat()
+                    stakeList = stakeList.concat(stakeData)
 
                 } catch(e) {
                     debug(`WARNING: loadStakes() : stakeLists(address, index) ${e.message}`)

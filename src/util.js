@@ -1,7 +1,7 @@
 const HEX = require('./hex_contract')
 const { BigNumber } = require('bignumber.js')
 const { format } = require('d3-format')
-// const debug = require('debug')("utils")
+const debug = require('debug')("utils")
 /*
  * displays unitized .3 U formatted values (eg. 12.345 M) with 50% opacity for fractional part
  */
@@ -69,6 +69,7 @@ function calcPayoutRewards({ context, dailyData, stakeData, fromDay, toDay }) {
         const bonuses = calcAdoptionBonus(bigPaySlice, globals)
         bigPayDay = bigPaySlice.plus(bonuses)
     }
+    debug("payout, bigPayDay = ", payout.idiv(1e8).toString(10), bigPayDay.idiv(1e8).toString(10))
     return { payout, bigPayDay }
 }
 
@@ -94,7 +95,7 @@ function calcPayoutBpdPenalty(context, stakeData, dailyData) {
                 const _interest = calcPayoutRewards({ context, dailyData, stakeData, fromDay: 0, toDay: penaltyDays })
                 const _interestDelta = calcPayoutRewards({ context, dailyData, stakeData, fromDay: penaltyDays, toDay: dailyData.length })
                 payout = _interest.payout.plus(_interestDelta.payout)
-                bigPayDay = _interest.bigPayDay.plus(_interestDelta.bigPayDay)
+                bigPayDay = _interest.bigPayDay
                 penalty = _interest.payout.plus(_interest.bigPayDay)
 
             } else {
@@ -184,11 +185,11 @@ const cryptoFormat = (v, currency) => {
         case 'SHARES':
             unit = 'Shares'
             if (v.isZero())         s = '0.000'
-            else if (v.lt(1e03))    s = format(',.3f')(v.div(1e03).toFixed(3, 1))
-            else if (v.lt(1e06))    s = format(',.3f')(v.div(1e03).toFixed(3, 1))+'K'
-            else if (v.lt(1e09))    s = format(',.3f')(v.div(1e06).toFixed(3, 1))+'M'
-            else if (v.lt(1e12))    s = format(',.3f')(v.div(1e09).toFixed(3, 1))+'B'
-            else if (v.lt(1e15))    s = format(',.3f')(v.div(1e12).toFixed(3, 1))+'T'
+            else if (v.lt(1e03))    s = format(',.4f')(v.div(1e03).toFixed(4, 1))
+            else if (v.lt(1e06))    s = format(',.4f')(v.div(1e03).toFixed(4, 1))+'K'
+            else if (v.lt(1e09))    s = format(',.4f')(v.div(1e06).toFixed(4, 1))+'M'
+            else if (v.lt(1e12))    s = format(',.4f')(v.div(1e09).toFixed(4, 1))+'B'
+            else if (v.lt(1e15))    s = format(',.4f')(v.div(1e12).toFixed(4, 1))+'T'
             else                    s = format(',.0f')(v.div(1e12).toFixed(0))+'T'
             break
         case 'PERCENT': // where 1.0 = 1%
