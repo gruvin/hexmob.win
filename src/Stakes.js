@@ -9,7 +9,11 @@ import {
 import './Stakes.scss'
 import { BigNumber } from 'bignumber.js'
 import HEX from './hex_contract'
-import { calcBigPayDaySlice, calcAdoptionBonus, calcInterest, calcApy } from './util'
+import {
+    calcPayoutBpdPenalty,
+    calcInterest,
+    calcApy
+} from './util'
 import { NewStakeForm } from './NewStakeForm' 
 import { CryptoVal, BurgerHeading } from './Widgets' 
 import { StakeInfo } from './StakeInfo'
@@ -66,128 +70,19 @@ class Stakes extends React.Component {
         const { contract } = context 
         const {
             currentDay, 
-            allocatedSupply, 
-            globals 
+            globals
         } = contract.Data
 
         const startDay = stakeData.lockedDay
         const stakedDays = stakeData.stakedDays
         const endDay = startDay + stakedDays
 
-        if (startDay > currentDay) {
-            const z = BigNumber(0)
-            return { payout: z, bigPayDay: z, penalty: z, penaltyDelta: z }
-        }
-
+        // TODO: day min/max cache dailyData instead of retrieving overlapping data for each stake (probably)
         const dailyDataCount = globals.dailyDataCount.toNumber()
-        const dailyData = await contract.methods.dailyDataRange(startDay, Math.min(dailyDataCount, endDay)).call()
-
-        function _calcPartDayBonuses()  {
-            // Calculate our share of Daily Interest ___for the current (incomplete) day___
-            // HEX mints 0.009955% daily interest (3.69%pa) and stakers get adoption bonuses from that, each day
-            // .sol:1245:  rs._payoutTotal = rs._allocSupplyCached * 10000 / 100448995
-            const dailyInterestTotal = allocatedSupply.times(10000).idiv(100448995)
-            const interestShare = dailyInterestTotal.times(stakeData.stakeShares).idiv(globals.stakeSharesTotal)
-            const interestBonus = (currentDay < HEX.CLAIM_PHASE_END_DAY) ? calcAdoptionBonus(interestShare, globals) : 0
-            return interestShare.plus(interestBonus)
-        }
-
-        function _calcPayoutRewards(dayStartIndex, dayEndIndex) {
-
-            let payout = BigNumber(0)
-            let bigPayDay = BigNumber(0)
-
-            for (let index = dayStartIndex; index < dayEndIndex; index++) {
-                const binData = BigNumber(dailyData[index]).toString(2).padStart(72+72+56, "0")
-                const day = { // extract dailyData struct from uint256 mapping
-                  payoutTotal:             BigNumber(binData.substr(-72, 72), 2),
-                  stakeSharesTotal:        BigNumber(binData.substr(-72-72, 72), 2),
-                  unclaimedSatoshisTotal:  BigNumber(binData.substr(-72-72-56, 56), 2),
-                }
-          
-                const dayPayout = day.payoutTotal.times(stakeData.stakeShares)
-                                        .idiv(day.stakeSharesTotal) // .sol line: 1586
-
-                payout = payout.plus(dayPayout)
-            }
-
-            payout = payout.plus(_calcPartDayBonuses())
-
-            if (startDay <= HEX.BIG_PAY_DAY && endDay > HEX.BIG_PAY_DAY) {
-                const bpdStakeSharesTotal = (currentDay < 352) // day is zero based internally
-                    ? globals.stakeSharesTotal // prior to BPD 
-                    : new BigNumber("50499329839740027369", 10) // value on BPD day 352 (zero-based). Never gonna change so don't waste bw looking it up
-                const bigPaySlice = calcBigPayDaySlice(stakeData.stakeShares, bpdStakeSharesTotal, globals)
-                const bonuses = calcAdoptionBonus(bigPaySlice, globals)
-                bigPayDay = bigPaySlice.plus(bonuses)
-            }
-            return { payout, bigPayDay }
-        }
+        const dailyData = (startDay > currentDay) ? []
+            :  await contract.methods.dailyDataRange(startDay, Math.min(dailyDataCount, endDay)).call()
         
-        let payout = BigNumber(0)
-        let bigPayDay = BigNumber(0)
-        let penalty = BigNumber(0)
-
-        const daysServed = Math.min(currentDay - startDay, stakedDays)
-        
-        if (daysServed < stakedDays) {
-
-            const penaltyDays = Math.max(90, Math.ceil(stakedDays / 2))
-
-            if (daysServed === 0) {
-
-                penalty = _calcPartDayBonuses().times(penaltyDays)
-
-            } else if (penaltyDays < daysServed) {
-
-                const _interest = _calcPayoutRewards(0, penaltyDays)
-                const _interestDelta = _calcPayoutRewards(penaltyDays, dailyData.length)
-
-                payout = _interest.payout.plus(_interestDelta.payout)
-                bigPayDay = _interest.bigPayDay.plus(_interestDelta.bigPayDay)
-                penalty = _interest.payout.plus(_interest.bigPayDay)
-
-            } else {
-                // penaltyDays >= servedDays        
-                const _interest = _calcPayoutRewards(0, dailyData.length)
-
-                payout = _interest.payout
-                bigPayDay = _interest.bigPayDay
-                
-                const interest = payout.plus(bigPayDay)
-                if (penaltyDays === daysServed) {
-                    penalty = interest
-                } else {
-                    penalty = interest.times(penaltyDays).idiv(daysServed)
-                }
-                
-                const totalValue = stakeData.stakedHearts.plus(interest)
-                if (penalty.isGreaterThan(totalValue)) penalty = totalValue
-            }
-        } else { // daysServed >= stakedDays (late end stake)
-            const _interest = _calcPayoutRewards(0, dailyData.length)
-            payout = _interest.payout
-            bigPayDay = _interest.bigPayDay
-            const interest = payout.plus(bigPayDay)
-
-            const maxUnlockedDay = endDay + HEX.LATE_PENALTY_GRACE_DAYS;
-            if (currentDay > maxUnlockedDay) {
-                penalty = (stakeData.stakedHearts
-                    .plus(interest)
-                    .times(currentDay - maxUnlockedDay)
-                    .idiv(HEX.LATE_PENALTY_SCALE_DAYS)
-                )
-            }
-        }
-        // debug("PENALTY: $", format(",.2f")(penalty.div(1E8).times(0.086).toFixed(0)))
-        return {
-            payout,
-            bigPayDay,
-            penalty,
-        }
-        
-        // TODO: LATE END-STAKE PENALTY
-
+        return calcPayoutBpdPenalty(context, stakeData, dailyData)
     }
 
     static async loadStakes(context) {
@@ -234,29 +129,31 @@ class Stakes extends React.Component {
                         payout: new BigNumber(0)
                     }
                     if (currentDay >= stakeData.lockedDay + 1) { // no payouts when pending or until day 2 into term
-                        // // debug XXX
-                        // const debugStake = {
-                        //     stakedHearts: BigNumber("269000").times(1E8),
-                        //     lockedDay: (588-99),
-                        //     startDay: (588-99),
-                        //     stakedDays: 5555,
-                        //     endDay: (588-99+5555),
-                        //     stakeShares: BigNumber(46.8).times(1E12),
-                        //     payout: BigNumber(2360).div(0.086).times(1E8),
-                        //     bigPayDay: BigNumber(0),
-                        //     penalty: BigNumber(0),
-                        //     unlockedDay: 0,
+                        // if (document.location.hostname === "localhost") {
+                        //     // debug XXX
+                        //     const debugStake = {
+                        //         stakedHearts: BigNumber("25000").times(1E8),
+                        //         lockedDay: 203,
+                        //         startDay: 203,
+                        //         stakedDays: 420,
+                        //         endDay: 420+203,
+                        //         stakeShares: BigNumber("2.9517").times(1E12),
+                        //         payout: BigNumber(0),
+                        //         bigPayDay: BigNumber(0),
+                        //         penalty: BigNumber(0),
+                        //         unlockedDay: 0,
+                        //     }
+                        //     stakeData = { ...stakeData, ...debugStake }
                         // }
-                        // stakeData = { ...stakeData, ...debugStake }
                         try {
                             const payouts = await Stakes.getStakePayoutData(context, stakeData)
                             stakeData = { ...stakeData, ...payouts }
                         } catch(e) {
-                            debug(`WARNING: loadStakes() : getStakePayoutData(address, index) ${e.message}`)
+                            debug(`WARNING: loadStakes() : getStakePayoutData(address, index) ${e.message}`, e)
                         }
                     }
 
-                    stakeList = stakeList.concat(stakeData) //*** ESLint complains but it's safe, because non-mutating concat()
+                    stakeList = stakeList.concat(stakeData)
 
                 } catch(e) {
                     debug(`WARNING: loadStakes() : stakeLists(address, index) ${e.message}`)
@@ -464,8 +361,8 @@ class Stakes extends React.Component {
             </Card>
             <Card className="mt-2 text-light bg-success-darkened rounded">
                 <Card.Body>
-                    <h2 className="text-center">{numStakes || "No"} Active Stake{numStakes > 1 && <>s</>}</h2>
-                    <div className="text-center small">tap each stake for more detail</div>
+                    <h2 className="text-center mb-0">{numStakes ? <span className="numeric">{numStakes}</span> : "No"} Active Stake{numStakes > 1 && "s"}</h2>
+                    <div className="text-center text-info small">tap each for details</div>
                     {stakeListOutput.map((stakeData) => {
                         return (
                             <StakeInfo 

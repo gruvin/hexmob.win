@@ -132,16 +132,14 @@ export class StakeInfo extends React.Component {
                     <Accordion.Collapse eventKey={stake.stakeId}>
                         <Card.Body onClick={(e) => this.setState({ esShow: false})}>
                             <Row className="mt-2">
-                                <Col className="text-right"><strong>Start Day</strong></Col>
-                                <Col className="numeric">{stake.startDay+1}</Col>
-                            </Row>
-                            <Row>
-                                <Col className="text-right"><strong>Staked Days</strong></Col>
-                                <Col className="numeric">{stake.stakedDays}</Col>
-                            </Row>
-                            <Row>
-                                <Col className="text-right"><strong>End Day</strong></Col>
-                                <Col className="numeric">{stake.endDay+1}</Col>
+                                <Col className="text-right">
+                                    <span className="numeric">{stake.stakedDays}</span>&nbsp;
+                                    <strong>Days</strong>
+                                </Col>
+                                <Col><span className="numeric">{stake.startDay+1}</span>
+                                    <strong> to </strong>
+                                    {stake.endDay+1}
+                                </Col>
                             </Row>
                             <Row>
                                 <Col className="text-right"><strong>Start Date</strong></Col>
@@ -155,10 +153,10 @@ export class StakeInfo extends React.Component {
                                 <Col className="text-right"><strong>Principal</strong></Col>
                                 <Col><CryptoVal className="numeric" value={stake.stakedHearts} showUnit /></Col>
                             </Row>
-                            <Row>
+                            {/* <Row>
                                 <Col className="text-right"><strong>Shares</strong></Col>
                                 <Col><CryptoVal className="numeric" value={stake.stakeShares.times(1e8)} /></Col>
-                            </Row>
+                            </Row> */}
                         { bigPayDay.gt(0) &&
                             <Row>
                                 <Col className="text-right"><strong>
@@ -182,11 +180,11 @@ export class StakeInfo extends React.Component {
                                 <Col className="numeric text-success"><strong>{ "$"+format(",.2f")(valueTotal.div(1E8).times(usdhex).toNumber() )}</strong></Col>
                             </Row>
                             <Row>
-                                <Col className="text-right"><strong>% Gain</strong></Col>
+                                <Col className="text-right"><strong>Net Gain</strong></Col>
                                 <Col className="numeric">{format(',')(percentGain.toPrecision(5))}%</Col>
                             </Row>
                             <Row>
-                                <Col className="text-right"><strong>% APY</strong></Col>
+                                <Col className="text-right"><strong>APY</strong></Col>
                                 <Col className="numeric">{format(',')(percentAPY.toPrecision(5))}%</Col>
                             </Row>
                             <Row>
@@ -238,9 +236,10 @@ export class StakeInfo extends React.Component {
                                         onClick={(e) => { e.stopPropagation(); this.setState({ esShow: true })} }>
                                         EARLY END STAKE
                                     </Button>
-                                    {window.location.hostname === "localhost" && // TODO: remove this debug code
-                                        <p><b>PENALTY: </b><CryptoVal className="numeric" value={penalty} showUnit /></p>
-                                    }
+                                    {window.location.hostname === "localhost" && <>{/* TODO: remove this debug code */}
+                                        <div><b>PENALTY: </b><CryptoVal className="numeric" value={penalty} showUnit /></div>
+                                        <div className="float-right text-muted small numeric">{stake.stakeId}</div>
+                                    </>}
                                     </>}
                                 </Col>
                             </Row>

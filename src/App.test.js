@@ -18,7 +18,7 @@ process.on('unhandledRejection', (reason, p) => {
 });
 */
 
-let windowSpy
+// let windowSpy
 let selectWeb3ModalWalletSpy
 beforeEach(() => {
     const fakeWeb3Provider = new Web3()
@@ -27,7 +27,7 @@ beforeEach(() => {
         return fakeWeb3Provider
     }
     selectWeb3ModalWalletSpy = jest.spyOn(App.prototype, 'selectWeb3ModalWallet')
-    selectWeb3ModalWalletSpy.mockImplementation(() => Promise.resolve({chainId: '0x1'}) )
+    selectWeb3ModalWalletSpy.mockImplementation(() => Promise.resolve(null) )
     util.detectTrustWallet = () => false
 })
 
@@ -47,11 +47,10 @@ describe("App", () => {
     })
 
     it('should not call connectWeb3ModalWallet() if TrustWallet detected', () => {
-        util.detectTrustWallet = () => true
+        util.detectTrustWallet = () => false
         const wrapper = shallow(<App />)
         expect(wrapper.exists('#hexmob_header')).toBe(true)
         expect(selectWeb3ModalWalletSpy).not.toHaveBeenCalled()
-        expect(wrapper.instance().walletProvider).toMatchObject({ chainId: '0x1'})
     })
 
     it('should not call selectWeb3ModalWallet() unless [Connect Wallet] button pressed', () => {

@@ -1,12 +1,13 @@
 const HEX = require('./hex_contract')
 const { BigNumber } = require('bignumber.js')
 const { format } = require('d3-format')
+const debug = require('debug')("utils")
 /*
  * displays unitized .3 U formatted values (eg. 12.345 M) with 50% opacity for fractional part
  */
-const calcBigPayDaySlice = (shares, sharePool, _globals) => {
-    const unclaimedSatoshis = _globals.claimStats.unclaimedSatoshisTotal
-    return new BigNumber(unclaimedSatoshis.times(HEX.HEARTS_PER_SATOSHI).times(shares)).idiv(sharePool)
+const calcBigPayDaySlice = (shares, sharePool, globals) => {
+    const unclaimedSatoshis = BigNumber(globals.claimStats.unclaimedSatoshisTotal)
+    return unclaimedSatoshis.times(HEX.HEARTS_PER_SATOSHI).times(shares).idiv(sharePool)
 }
 
 const calcAdoptionBonus = (payout, _globals) => {
@@ -15,6 +16,122 @@ const calcAdoptionBonus = (payout, _globals) => {
     const criticalMass = payout.times(claimedSatoshisTotal).idiv(HEX.CLAIMABLE_SATOSHIS_TOTAL) // .sol line: 1221
     const bonus = viral.plus(criticalMass)
     return bonus
+}
+
+function calcPartDayBonuses(contract, stakeData)  {
+    const {
+        currentDay, 
+        allocatedSupply, 
+        globals 
+    } = contract.Data
+
+    // Calculate our share of Daily Interest ___for the current (incomplete) day___
+    // HEX mints 0.009955% daily interest (3.69%pa) and stakers get adoption bonuses from that, each day
+    // .sol:1245:  rs._payoutTotal = rs._allocSupplyCached * 10000 / 100448995
+    const dailyInterestTotal = BigNumber(allocatedSupply).times(10000).idiv(100448995)
+    const interestShare = dailyInterestTotal.times(stakeData.stakeShares).idiv(globals.stakeSharesTotal)
+    const interestBonus = (currentDay < HEX.CLAIM_PHASE_END_DAY) ? calcAdoptionBonus(interestShare, globals) : 0
+    return interestShare.plus(interestBonus)
+}
+
+function calcPayoutRewards({ context, dailyData, stakeData, fromDay, toDay }) {
+    const { contract } = context
+    const { currentDay, globals } = contract.Data
+
+    const startDay = stakeData.lockedDay
+    const stakedDays = stakeData.stakedDays
+    const endDay = startDay + stakedDays
+
+    let payout = BigNumber(0)
+    let bigPayDay = BigNumber(0)
+
+    for (let index = fromDay; index < toDay; index++) {
+        const binData = BigNumber(dailyData[index]).toString(2).padStart(72+72+56, "0")
+        const day = { // extract dailyData struct from uint256 mapping
+          payoutTotal:             BigNumber(binData.substr(-72, 72), 2),
+          stakeSharesTotal:        BigNumber(binData.substr(-72-72, 72), 2),
+          unclaimedSatoshisTotal:  BigNumber(binData.substr(-72-72-56, 56), 2),
+        }
+  
+        const dayPayout = day.payoutTotal.times(stakeData.stakeShares)
+                                .idiv(day.stakeSharesTotal) // .sol line: 1586
+
+        payout = payout.plus(dayPayout)
+    }
+
+    payout = payout.plus(calcPartDayBonuses(contract, stakeData))
+
+    if (startDay <= HEX.BIG_PAY_DAY && endDay > HEX.BIG_PAY_DAY) {
+        const bpdStakeSharesTotal = (currentDay < 352) // day is zero based internally
+            ? globals.stakeSharesTotal // prior to BPD 
+            : new BigNumber("50499329839740027369", 10) // value on BPD day 352 (zero-based). Never gonna change so don't waste bw looking it up
+        const bigPaySlice = calcBigPayDaySlice(stakeData.stakeShares, bpdStakeSharesTotal, globals)
+        const bonuses = calcAdoptionBonus(bigPaySlice, globals)
+        bigPayDay = bigPaySlice.plus(bonuses)
+    }
+    debug("payout, bigPayDay = ", payout.idiv(1e8).toString(10), bigPayDay.idiv(1e8).toString(10))
+    return { payout, bigPayDay }
+}
+
+function calcPayoutBpdPenalty(context, stakeData, dailyData) {
+    const { contract } = context 
+    const { currentDay } = contract.Data
+
+    const startDay = stakeData.lockedDay
+    const stakedDays = stakeData.stakedDays
+    const endDay = startDay + stakedDays
+
+    let payout = BigNumber(0)
+    let bigPayDay = BigNumber(0)
+    let penalty = BigNumber(0)        
+    if (startDay < currentDay) {
+        const daysServed = Math.min(currentDay - startDay, stakedDays)        
+        if (daysServed < stakedDays) {
+            const penaltyDays = Math.max(90, Math.ceil(stakedDays / 2))
+            if (daysServed === 0) {
+                penalty = calcPartDayBonuses(contract, stakeData).times(penaltyDays)
+
+            } else if (penaltyDays < daysServed) {
+                const _interest = calcPayoutRewards({ context, dailyData, stakeData, fromDay: 0, toDay: penaltyDays })
+                const _interestDelta = calcPayoutRewards({ context, dailyData, stakeData, fromDay: penaltyDays, toDay: dailyData.length })
+                payout = _interest.payout.plus(_interestDelta.payout)
+                bigPayDay = _interest.bigPayDay
+                penalty = _interest.payout.plus(_interest.bigPayDay)
+
+            } else {
+                // penaltyDays >= servedDays        
+                const _interest = calcPayoutRewards({ context, dailyData, stakeData, fromDay: 0, toDay: dailyData.length })
+                payout = _interest.payout
+                bigPayDay = _interest.bigPayDay                
+                const interest = payout.plus(bigPayDay)
+                if (penaltyDays === daysServed) {
+                    penalty = interest
+                } else {
+                    penalty = interest.times(penaltyDays).idiv(daysServed)
+                }
+                const totalValue = stakeData.stakedHearts.plus(interest)
+                if (penalty.isGreaterThan(totalValue)) penalty = totalValue
+            }
+        } else { // daysServed >= stakedDays (late end stake)
+            const _interest = calcPayoutRewards({ context, dailyData, stakeData, fromDay: 0, toDay: dailyData.length })
+            payout = _interest.payout
+            bigPayDay = _interest.bigPayDay
+            const interest = payout.plus(bigPayDay)
+            const maxUnlockedDay = endDay + HEX.LATE_PENALTY_GRACE_DAYS;
+            if (currentDay > maxUnlockedDay) {
+                penalty = (stakeData.stakedHearts
+                    .plus(interest)
+                    .times(currentDay - maxUnlockedDay)
+                    .idiv(HEX.LATE_PENALTY_SCALE_DAYS)
+                )
+            }
+        } // if (daysServed < stakedDays)
+    } // if (startDay > currentDay)
+    return {
+        payout,
+        bigPayDay,
+        penalty,
+    }
 }
 
 const calcInterest = (stakeData) => {
@@ -68,11 +185,11 @@ const cryptoFormat = (v, currency) => {
         case 'SHARES':
             unit = 'Shares'
             if (v.isZero())         s = '0.000'
-            else if (v.lt(1e03))    s = format(',.3f')(v.div(1e03).toFixed(3, 1))
-            else if (v.lt(1e06))    s = format(',.3f')(v.div(1e03).toFixed(3, 1))+'K'
-            else if (v.lt(1e09))    s = format(',.3f')(v.div(1e06).toFixed(3, 1))+'M'
-            else if (v.lt(1e12))    s = format(',.3f')(v.div(1e09).toFixed(3, 1))+'B'
-            else if (v.lt(1e15))    s = format(',.3f')(v.div(1e12).toFixed(3, 1))+'T'
+            else if (v.lt(1e03))    s = format(',.4f')(v.div(1e03).toFixed(4, 1))
+            else if (v.lt(1e06))    s = format(',.4f')(v.div(1e03).toFixed(4, 1))+'K'
+            else if (v.lt(1e09))    s = format(',.4f')(v.div(1e06).toFixed(4, 1))+'M'
+            else if (v.lt(1e12))    s = format(',.4f')(v.div(1e09).toFixed(4, 1))+'B'
+            else if (v.lt(1e15))    s = format(',.4f')(v.div(1e12).toFixed(4, 1))+'T'
             else                    s = format(',.0f')(v.div(1e12).toFixed(0))+'T'
             break
         case 'PERCENT': // where 1.0 = 1%
@@ -140,6 +257,9 @@ const fetchWithTimeout  = (url, params, timeout) => {
 module.exports = {
     calcBigPayDaySlice,
     calcAdoptionBonus,
+    calcPartDayBonuses,
+    calcPayoutRewards,
+    calcPayoutBpdPenalty,
     calcInterest,
     calcApy,
     cryptoFormat,
