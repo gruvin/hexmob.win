@@ -625,7 +625,7 @@ describe('Stake Interest / Peanalty Calcs', () => {
         expect(result.bigPayDay.toString(10)).toEqual("22303667141244")
     })
 
-    test('EARLY END STAKE: calcPayoutBpdPenalty produces correct results for { payout, bigPayDay, penaly }', () => {
+    test('EARLY BEFORE HALF TERM END STAKE: calcPayoutBpdPenalty produces correct results for { payout, bigPayDay, penaly }', () => {
         const result = calcPayoutBpdPenalty(TEST_CONTEXT, TEST_STAKE_DATA, TEST_DAILY_DATA)
         expect(result.payout.toString(10)).toEqual("13429102854384")
         expect(result.bigPayDay.toString(10)).toEqual("22303667141244")
@@ -641,6 +641,15 @@ describe('Stake Interest / Peanalty Calcs', () => {
         expect(result.payout.toString(10)).toEqual("13429102854384")
         expect(result.bigPayDay.toString(10)).toEqual("22303667141244")
         expect(result.penalty.toString(10)).toEqual("0")
+    })
+
+    test('EARLY AFTER HALF TERM END STAKE: calcPayoutBpdPenalty produces correct results for { payout, bigPayDay, penaly }', () => {
+        const _TEST_CONTEXT = { ...TEST_CONTEXT }
+        _TEST_CONTEXT.contract.Data.currentDay = TEST_STAKE_DATA.lockedDay + Math.ceil(TEST_STAKE_DATA.stakedDays / 2) + 5
+        const result = calcPayoutBpdPenalty(_TEST_CONTEXT, TEST_STAKE_DATA, TEST_DAILY_DATA)
+        expect(result.payout.toString(10)).toEqual("70662996164")
+        expect(result.bigPayDay.toString(10)).toEqual("22303667141244")
+        expect(result.penalty.toString(10)).toEqual("22338998639326")
     })
 
     test('WITHIN GRACE PERIOD END STAKE: calcPayoutBpdPenalty produces correct results for { payout, bigPayDay, penaly }', () => {

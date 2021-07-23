@@ -1,7 +1,7 @@
 const HEX = require('./hex_contract')
 const { BigNumber } = require('bignumber.js')
 const { format } = require('d3-format')
-const debug = require('debug')("utils")
+const debug = require('debug')("util")
 /*
  * displays unitized .3 U formatted values (eg. 12.345 M) with 50% opacity for fractional part
  */
@@ -57,6 +57,7 @@ function calcPayoutRewards({ context, dailyData, stakeData, fromDay, toDay }) {
                                 .idiv(day.stakeSharesTotal) // .sol line: 1586
 
         payout = payout.plus(dayPayout)
+        if (payout.isNaN()) payout = BigNumber(0) // unit test dailyData could be missing days
     }
 
     payout = payout.plus(calcPartDayBonuses(contract, stakeData))
@@ -69,7 +70,7 @@ function calcPayoutRewards({ context, dailyData, stakeData, fromDay, toDay }) {
         const bonuses = calcAdoptionBonus(bigPaySlice, globals)
         bigPayDay = bigPaySlice.plus(bonuses)
     }
-    debug("payout, bigPayDay = ", payout.idiv(1e8).toString(10), bigPayDay.idiv(1e8).toString(10))
+    // debug("payout, bigPayDay = ", payout.idiv(1e8).toString(10), bigPayDay.idiv(1e8).toString(10))
     return { payout, bigPayDay }
 }
 
