@@ -257,7 +257,6 @@ class App extends React.Component {
         if (!this.walletProvider || !this.walletProvider.chainId) 
             return debug('web3modal failed to resolve a wallet')
 
-        console.log("ASDFSDFS!!!?!?!")
         // we only get here if this.walletProvider has been established
 
         const chainId = Number(this.walletProvider.chainId)
