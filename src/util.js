@@ -5,11 +5,8 @@ const { format } = require('d3-format')
  * displays unitized .3 U formatted values (eg. 12.345 M) with 50% opacity for fractional part
  */
 const calcBigPayDaySlice = (shares, sharePool, _globals) => {
-    const unclaimedSatoshis = Object.entries(_globals).length 
-            ? _globals.claimStats.unclaimedSatoshisTotal
-            : new BigNumber('fae0c6a6400dadc0', 16) // total claimable Satoshis (pre BPD)
-    return new BigNumber(unclaimedSatoshis.times(HEX.HEARTS_PER_SATOSHI).times(shares))
-                                    .idiv(sharePool)
+    const unclaimedSatoshis = _globals.claimStats.unclaimedSatoshisTotal
+    return new BigNumber(unclaimedSatoshis.times(HEX.HEARTS_PER_SATOSHI).times(shares)).idiv(sharePool)
 }
 
 const calcAdoptionBonus = (payout, _globals) => {

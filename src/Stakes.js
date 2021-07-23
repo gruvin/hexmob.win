@@ -98,15 +98,15 @@ class Stakes extends React.Component {
             let bigPayDay = BigNumber(0)
 
             for (let index = dayStartIndex; index < dayEndIndex; index++) {
-                const data = new BigNumber(dailyData[index]).toString(16).padStart(64, '0')
+                const binData = BigNumber(dailyData[index]).toString(2).padStart(72+72+56, "0")
                 const day = { // extract dailyData struct from uint256 mapping
-                    payoutTotal: new BigNumber(data.slice(46,64), 16),
-                    stakeSharesTotal: new BigNumber(data.slice(28,46), 16),
-                    unclaimedSatoshisTotal: new BigNumber(data.slice(12,28), 16)
+                  payoutTotal:             BigNumber(binData.substr(-72, 72), 2),
+                  stakeSharesTotal:        BigNumber(binData.substr(-72-72, 72), 2),
+                  unclaimedSatoshisTotal:  BigNumber(binData.substr(-72-72-56, 56), 2),
                 }
-                const dayPayout = day.payoutTotal
-                    .times(stakeData.stakeShares)
-                    .idiv(day.stakeSharesTotal) // .sol line: 1586
+          
+                const dayPayout = day.payoutTotal.times(stakeData.stakeShares)
+                                        .idiv(day.stakeSharesTotal) // .sol line: 1586
 
                 payout = payout.plus(dayPayout)
             }
@@ -116,12 +116,10 @@ class Stakes extends React.Component {
             if (startDay <= HEX.BIG_PAY_DAY && endDay > HEX.BIG_PAY_DAY) {
                 const bpdStakeSharesTotal = (currentDay < 352) // day is zero based internally
                     ? globals.stakeSharesTotal // prior to BPD 
-                    : new BigNumber("50499329839740027369", 10) // value on BPD (day 353). Never gonna change so don't waste bw looking it up
-
+                    : new BigNumber("50499329839740027369", 10) // value on BPD day 352 (zero-based). Never gonna change so don't waste bw looking it up
                 const bigPaySlice = calcBigPayDaySlice(stakeData.stakeShares, bpdStakeSharesTotal, globals)
                 const bonuses = calcAdoptionBonus(bigPaySlice, globals)
                 bigPayDay = bigPaySlice.plus(bonuses)
-                if ( currentDay >= HEX.BIG_PAY_DAY) stakeData.payout = stakeData.payout.plus(stakeData.bigPayDay)
             }
             return { payout, bigPayDay }
         }
@@ -143,7 +141,7 @@ class Stakes extends React.Component {
             } else if (penaltyDays < daysServed) {
 
                 const _interest = _calcPayoutRewards(0, penaltyDays)
-                const _interestDelta = _calcPayoutRewards(penaltyDays, dailyData.length-1)
+                const _interestDelta = _calcPayoutRewards(penaltyDays, dailyData.length)
 
                 payout = _interest.payout.plus(_interestDelta.payout)
                 bigPayDay = _interest.bigPayDay.plus(_interestDelta.bigPayDay)
@@ -151,7 +149,7 @@ class Stakes extends React.Component {
 
             } else {
                 // penaltyDays >= servedDays        
-                const _interest = _calcPayoutRewards(0, dailyData.length-1)
+                const _interest = _calcPayoutRewards(0, dailyData.length)
 
                 payout = _interest.payout
                 bigPayDay = _interest.bigPayDay
@@ -167,7 +165,7 @@ class Stakes extends React.Component {
                 if (penalty.isGreaterThan(totalValue)) penalty = totalValue
             }
         } else { // daysServed >= stakedDays (late end stake)
-            const _interest = _calcPayoutRewards(0, dailyData.length-1)
+            const _interest = _calcPayoutRewards(0, dailyData.length)
             payout = _interest.payout
             bigPayDay = _interest.bigPayDay
             const interest = payout.plus(bigPayDay)
