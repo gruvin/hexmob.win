@@ -3,9 +3,6 @@ import {
     Container,
     Row, Col,
     Card,
-    Button,
-    Modal,
-    Alert,
     ProgressBar,
     Accordion,
 } from 'react-bootstrap'
@@ -101,15 +98,15 @@ class Stakes extends React.Component {
             let bigPayDay = BigNumber(0)
 
             for (let index = dayStartIndex; index < dayEndIndex; index++) {
-                const data = new BigNumber(dailyData[index]).toString(16).padStart(64, '0')
+                const binData = BigNumber(dailyData[index]).toString(2).padStart(72+72+56, "0")
                 const day = { // extract dailyData struct from uint256 mapping
-                    payoutTotal: new BigNumber(data.slice(46,64), 16),
-                    stakeSharesTotal: new BigNumber(data.slice(28,46), 16),
-                    unclaimedSatoshisTotal: new BigNumber(data.slice(12,28), 16)
+                  payoutTotal:             BigNumber(binData.substr(-72, 72), 2),
+                  stakeSharesTotal:        BigNumber(binData.substr(-72-72, 72), 2),
+                  unclaimedSatoshisTotal:  BigNumber(binData.substr(-72-72-56, 56), 2),
                 }
-                const dayPayout = day.payoutTotal
-                    .times(stakeData.stakeShares)
-                    .idiv(day.stakeSharesTotal) // .sol line: 1586
+          
+                const dayPayout = day.payoutTotal.times(stakeData.stakeShares)
+                                        .idiv(day.stakeSharesTotal) // .sol line: 1586
 
                 payout = payout.plus(dayPayout)
             }
@@ -119,12 +116,10 @@ class Stakes extends React.Component {
             if (startDay <= HEX.BIG_PAY_DAY && endDay > HEX.BIG_PAY_DAY) {
                 const bpdStakeSharesTotal = (currentDay < 352) // day is zero based internally
                     ? globals.stakeSharesTotal // prior to BPD 
-                    : new BigNumber("50499329839740027369", 10) // value on BPD (day 353). Never gonna change so don't waste bw looking it up
-
+                    : new BigNumber("50499329839740027369", 10) // value on BPD day 352 (zero-based). Never gonna change so don't waste bw looking it up
                 const bigPaySlice = calcBigPayDaySlice(stakeData.stakeShares, bpdStakeSharesTotal, globals)
                 const bonuses = calcAdoptionBonus(bigPaySlice, globals)
                 bigPayDay = bigPaySlice.plus(bonuses)
-                if ( currentDay >= HEX.BIG_PAY_DAY) stakeData.payout = stakeData.payout.plus(stakeData.bigPayDay)
             }
             return { payout, bigPayDay }
         }
@@ -145,16 +140,16 @@ class Stakes extends React.Component {
 
             } else if (penaltyDays < daysServed) {
 
-                const _penalty = _calcPayoutRewards(0, penaltyDays)
-                const _penaltyDelta = _calcPayoutRewards(penaltyDays, dailyData.length-1)
+                const _interest = _calcPayoutRewards(0, penaltyDays)
+                const _interestDelta = _calcPayoutRewards(penaltyDays, dailyData.length)
 
-                payout = _penalty.payout.plus(_penaltyDelta.payout)
-                bigPayDay = _penalty.bigPayDay.plus(_penaltyDelta.bigPayDay)
-                penalty = _penalty.payout.plus(_penalty.bigPayDay)
+                payout = _interest.payout.plus(_interestDelta.payout)
+                bigPayDay = _interest.bigPayDay.plus(_interestDelta.bigPayDay)
+                penalty = _interest.payout.plus(_interest.bigPayDay)
 
             } else {
                 // penaltyDays >= servedDays        
-                const _interest = _calcPayoutRewards(0, dailyData.length-1)
+                const _interest = _calcPayoutRewards(0, dailyData.length)
 
                 payout = _interest.payout
                 bigPayDay = _interest.bigPayDay
@@ -170,7 +165,7 @@ class Stakes extends React.Component {
                 if (penalty.isGreaterThan(totalValue)) penalty = totalValue
             }
         } else { // daysServed >= stakedDays (late end stake)
-            const _interest = _calcPayoutRewards(0, dailyData.length-1)
+            const _interest = _calcPayoutRewards(0, dailyData.length)
             payout = _interest.payout
             bigPayDay = _interest.bigPayDay
             const interest = payout.plus(bigPayDay)
@@ -363,7 +358,7 @@ class Stakes extends React.Component {
     StakesList = (params) => {
         const { currentDay } = this.props.contract.Data
         const stakeList = this.state.stakeList.slice() || null
-        stakeList && stakeList.sort((a, b) => (a.progress < b.progress ? (a.progress !== b.progress ? 1 : 0) : -1 ))
+        stakeList && stakeList.sort((a, b) => a.progress > b.progress ? -1 : 1)
 
         let stakedTotal = new BigNumber(0)
         let sharesTotal = new BigNumber(0)
@@ -548,17 +543,12 @@ class Stakes extends React.Component {
     }
 
     render() { // class Stakes
-        const { currentDay } = this.props.contract.Data
-        
-        const handleClose = () => this.setState({ showExitModal: false })
+        const a = this.props.publicAddress || ""
+        const publicAddress = <span className="numeric">{a.substr(0, 6)+"...."+a.substr(-4, 4)}</span>
 
-        const thisStake = this.state.stakeContext // if any
-        const IsEarlyExit = (thisStake.stakeId && currentDay < (thisStake.lockedDay + thisStake.stakedDays)) 
-
-        return (
-            !this.state.stakeList
-                ? <ProgressBar variant="secondary" animated now={90} label="loading contract data" className="mt-3" />
-                : <> 
+        return (!this.state.stakeList
+        ? <ProgressBar variant="secondary" animated now={90} label="loading contract data" className="mt-3" />
+        : <>
             <Accordion 
                 id='stakes_accordion'
                 className="text-left"
@@ -588,11 +578,11 @@ class Stakes extends React.Component {
                 </Card>
             }
                 <Card text="light" className={"active-stakes "+this.props.className}>
-                {this.props.publicAddress && 
-                    <div className="px-1 text-light text-center small">                        
-                        <span className="text-muted">{this.props.publicName || "address"} </span>{this.props.publicAddress}
-                    </div>
-                }
+                    {this.props.publicAddress &&
+                        <div className="px-1 text-light text-center small">                        
+                            <span className="text-muted">{this.props.publicName || "address"} </span>{publicAddress}
+                        </div>
+                    }
                     <Accordion.Toggle as={Card.Header} eventKey="current_stakes">
                         <BurgerHeading>Active Stakes</BurgerHeading>
                         <div className="float-right pr-1 text-success">
@@ -619,48 +609,6 @@ class Stakes extends React.Component {
                     </Accordion.Collapse>
                 </Card>
             </Accordion>
-
-            <Modal show={this.state.showExitModal} onHide={handleClose} animation={false} variant="primary">
-                <Modal.Header closeButton>
-                    <Modal.Title>End Stake</Modal.Title>
-                </Modal.Header>
-                <Modal.Body>
-                    { IsEarlyExit 
-                        ?  
-                            <Alert variant="danger">
-                                <Alert.Heading>LOSSES AHEAD</Alert.Heading>
-                                <p>
-                                    Exiting stakes early can lead to <em>significant</em> losses!
-                                </p>
-                                <hr />
-                                <p>
-                                    <Alert.Link href="#">Learn more</Alert.Link>
-                                </p>
-                            </Alert>
-                        :
-                            <Alert variant="success">
-                                <Alert.Heading>Term Complete</Alert.Heading>
-                                <p>
-                                    This stake has served its full term and is safe to exit.
-                                </p>
-                                <p> TODO: add stake stats / yield etc </p>
-                            </Alert>
-                    }
-                </Modal.Body>
-                <Modal.Footer>
-                    { IsEarlyExit 
-                        ? <div>
-                            <Button variant="secondary" onClick={handleClose}>
-                                Accept Penalty
-                            </Button>
-                            <Button variant="primary" className="ml-3" onClick={handleClose}>
-                                Get me outta here!
-                            </Button>
-                        </div>
-                        : <Button variant="primary" onClick={handleClose}>End Stake</Button>
-                    }
-                </Modal.Footer>
-            </Modal>
             </>
         )
     }
