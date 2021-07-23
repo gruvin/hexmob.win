@@ -464,8 +464,8 @@ class Stakes extends React.Component {
             </Card>
             <Card className="mt-2 text-light bg-success-darkened rounded">
                 <Card.Body>
-                    <h2 className="text-center">{numStakes || "No"} Active Stake{numStakes > 1 && <>s</>}</h2>
-                    <div className="text-center small">tap each stake for more detail</div>
+                    <h2 className="text-center mb-0">{numStakes ? <span className="numeric">{numStakes}</span> : "No"} Active Stake{numStakes > 1 && "s"}</h2>
+                    <div className="text-center text-info small">tap each for details</div>
                     {stakeListOutput.map((stakeData) => {
                         return (
                             <StakeInfo 

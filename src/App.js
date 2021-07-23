@@ -220,7 +220,7 @@ class App extends React.Component {
         if (window.ethereum && !window.ethereum.chainId) window.ethereum.chainId = '0x1'
 
         // Check for non-web3modal injected providers (mobile dApp browsers)
-        if (detectTrustWallet()) {                                                  // TrustWallet internal browser (now defunct)
+        if (detectTrustWallet()) {                                                  // TrustWallet internal browser (now defunct?)
             debug("Detected TrustWallet")
             const chainId = window.web3.currentProvider.chainId
             const mainnet = {
@@ -253,9 +253,11 @@ class App extends React.Component {
         // and one for all other chain quuery operations (Infura)
         // this.walletProvider stores the transaction provider
         // this.provider stores the query provider
+
         if (!this.walletProvider || !this.walletProvider.chainId) 
             return debug('web3modal failed to resolve a wallet')
-        
+
+        console.log("ASDFSDFS!!!?!?!")
         // we only get here if this.walletProvider has been established
 
         const chainId = Number(this.walletProvider.chainId)

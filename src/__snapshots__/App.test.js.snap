@@ -4,15 +4,15 @@ exports[`App initial state (constructor working) 1`] = `
 Object {
   "USD": 0,
   "USDHEX": 0,
+  "accounts": Array [],
   "chainId": 0,
   "contractGlobals": null,
   "contractReady": false,
   "currentDay": 0,
   "currentProvider": "web3modal",
   "donation": "",
-  "incomingReferrer": null,
   "network": "none",
-  "referrer": "0xd30542151ea34007c4c4ba9d653f4dc4707ad2d2",
+  "referrer": "",
   "totalHearts": "0",
   "wallet": Object {
     "address": "",
