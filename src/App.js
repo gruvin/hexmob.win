@@ -24,7 +24,8 @@ import WalletConnectProvider from '@walletconnect/web3-provider'
 //import Portis from "@portis/web3";
 import { detectTrustWallet } from './util'
 import './App.scss'
-//const BN = BigNumber
+import ReactGA from 'react-ga';
+
 const { format } = require('d3-format')
 const axios = require('axios').create({
     baseURL: '/',
@@ -367,6 +368,14 @@ class App extends React.Component {
             window._HEX = HEX
             window._UNIV2 = UNIV2
         }
+        if (window.location.hostname === "go.tshare.app") {
+            ReactGA.initialize('UA-203521048-1'); // usage
+        } else if (window.location.hostname === "hexmob.win") {
+            ReactGA.initialize('UA-203562559-1'); // usage
+        } else if (window.location.hostname === "dev.hexmob.win") {
+            ReactGA.initialize('UA-203524460-1'); // dev usage
+        }
+        ReactGA.pageview(window.location.pathname + window.location.search);            
 
         const address = await this.establishWeb3Provider() 
         if (!address) return debug('No wallet address supplied - STOP')
@@ -648,5 +657,5 @@ class App extends React.Component {
         )
     }
 }
-
+  
 export default App
