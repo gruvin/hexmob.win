@@ -107,9 +107,11 @@ dist
 # TernJS port file
 .tern-port
 
-# VIM
+# Editors
 *.swp
 *.swo
+.vscode
 
+# other
 LOAD_ENV
 release/
