@@ -6,6 +6,7 @@ import { BurgerHeading } from './Widgets'
 import './Stats.scss'
 import HEX from './hex_contract'
 import { ResponsiveContainer, Area, AreaChart, Line, LineChart, CartesianGrid, XAxis, YAxis } from 'recharts'
+import ReactGA from 'react-ga'
 const { format } = require('d3-format')
 const axios = require('axios').create({
     baseURL: '/',
@@ -148,7 +149,11 @@ class Stats extends React.Component {
         }
 
         return (
-            <Accordion id='stats_accordion' className="text-left mt-3">
+            <Accordion id='stats_accordion' className="text-left mt-3"
+                onSelect={eventKey => {
+                    if (eventKey) ReactGA.pageview("/"+eventKey)
+                }}   
+            >
                 <Card id="stats" text="light py-0">
                     <Accordion.Toggle as={Card.Header} eventKey="0">
                         <BurgerHeading className="float-left">Stats</BurgerHeading>

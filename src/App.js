@@ -24,7 +24,7 @@ import WalletConnectProvider from '@walletconnect/web3-provider'
 //import Portis from "@portis/web3";
 import { detectTrustWallet } from './util'
 import './App.scss'
-import ReactGA from 'react-ga';
+import ReactGA from 'react-ga'
 
 const { format } = require('d3-format')
 const axios = require('axios').create({
@@ -169,7 +169,7 @@ class App extends React.Component {
             .on('error', this.handleSubscriptionError)
 
         const univ2Event = this.univ2Contract.events
-        univ2Event.Swap( {fromBlock: "latest", toBlock: "latest" }, eventCallbackUNIV2)
+        univ2Event.Swap( {fromBlock: "latest" }, eventCallbackUNIV2)
             .on('connected', (id) => debug('subbed: UNIV2 to:', id))
             .on('error', this.handleSubscriptionError)
 
