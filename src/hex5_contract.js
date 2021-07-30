@@ -2,6 +2,7 @@
 
 module.exports = {
     SYMBOL: "HEX5",
+    GENESIS_BLOCK: 10122505,
     CHAINS: {
         0x0: { name: 'none', address: "0x0000000000000000000000000000000000000000", rpcUrl: null },
         0x1: {

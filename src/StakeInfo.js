@@ -17,8 +17,8 @@ import './Stakes.scss'
 import HEX from './hex_contract'
 import { format } from 'd3-format'
 import { CryptoVal, VoodooButton } from './Widgets' 
-// import { BigNumber } from 'bignumber.js'
 import { calcInterest, calcApy } from './util'
+import ReactGA from 'react-ga'
 
 const debug = require('debug')('StakeInfo')
 debug('loading')
@@ -93,7 +93,11 @@ export class StakeInfo extends React.Component {
         }
 
         return (
-            <Accordion xs={12} sm={6} defaultActiveKey="0" key={stake.stakeId} className="my-2">
+            <Accordion xs={12} sm={6} defaultActiveKey="0" key={stake.stakeId} className="my-2"
+                onSelect={eventKey => {
+                    if (eventKey) ReactGA.pageview("/current_stakes/"+eventKey)
+                }}   
+            >
                 <Card bg="dark">
                     <ContextAwareToggle eventKey={stake.stakeId}>
                         <Container>

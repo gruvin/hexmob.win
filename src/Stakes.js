@@ -18,6 +18,7 @@ import { NewStakeForm } from './NewStakeForm'
 import { CryptoVal, BurgerHeading } from './Widgets' 
 import { StakeInfo } from './StakeInfo'
 import BitSet from 'bitset'
+import ReactGA from 'react-ga'
 const { format } = require('d3-format')
 
 const debug = require('debug')('Stakes')
@@ -450,6 +451,9 @@ class Stakes extends React.Component {
                 id='stakes_accordion'
                 className="text-left"
                 defaultActiveKey={this.props.openActive ? this.state.selectedCard : ""}
+                onSelect={eventKey => {
+                    if (eventKey) ReactGA.pageview("/"+eventKey)
+                }}   
             >
             {!this.props.publicAddress && // NewStakeForm not shown for read only ?address=
                 <Card className="new-stake" text="light pt-0">
