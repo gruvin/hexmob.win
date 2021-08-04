@@ -43,7 +43,7 @@ export class NewStakeForm extends React.Component {
             percentGain: 0.0,
             percentAPY: 0.0,
             data: [],
-            graphIconClass: "" // App.scss:  .icon-wait-bg / .icon-error-bg
+            graphIconClass: "" // .icon-wait-bg || .icon-error-bg
         }
     }
 
@@ -137,7 +137,7 @@ export class NewStakeForm extends React.Component {
     updateBarGraph = async () => {
         const { startDay, endDay } = this.state
         if (isNaN(startDay + endDay)) return
-        const numDataPoints = 31
+        const numDataPoints = 121
         const graphStartDay = Math.max(startDay, endDay - Math.floor(numDataPoints / 2))
         const graphEndDay = graphStartDay + numDataPoints
         
@@ -146,53 +146,24 @@ export class NewStakeForm extends React.Component {
             graphIconClass: "icon-wait-bg"
         })
 
-        // We are only allowed 1,000 result per shot but there can be more than 2,000
-        // stakes ending over the period of interest
-        var collated = []
-        for (let d = graphStartDay; d <= graphEndDay; d++)
-        collated[d - graphStartDay] = { endDay: d.toString(), stakedHex: 0 }  
-
-        const chunkSize = 10 // days
-        let chunkStart = graphStartDay
-
-        while ((chunkStart + chunkSize) <= graphEndDay) {
-            debug(`graphStartDay: ${graphStartDay}, graphEndDay: ${graphEndDay}, chunkStart: ${chunkStart}`)
-            const query = `{
-                stakeStarts (
-                    first: 1000
-                    where: {
-                        endDay_gte:${chunkStart},
-                        endDay_lte:${Math.min(chunkStart + chunkSize, graphEndDay)}
-                    }
-                )
-                {
-                    stakedHearts
-                    endDay
-                }
-            }`
-            let response
-            try {
-                response = await axios.post('https://api.thegraph.com/subgraphs/name/codeakk/hex', 
-                    JSON.stringify({ query })
-                )
-            } catch (e) {
-                if (e.message.search("timeout") > 0) continue
-                else throw new Error("WTF? "+e.message)
-            }
-            debug('response', response)
-            const { stakeStarts: graphJSON } = response.data.data
-            if (!graphJSON.length) break
-            
-            // eslint-disable-next-line
-            graphJSON.forEach(oRow => {
-                const stakedHex = new BigNumber(oRow.stakedHearts).div(1E14).toNumber()
-                let index = parseInt(oRow.endDay) - graphStartDay
-                collated[index].stakedHex += stakedHex
-            })
-
-            chunkStart += chunkSize
+        let response
+        try {
+            response = await axios.get(`https://hexapy.com:5555/fs/${graphStartDay}/${numDataPoints}`, { timeout: 5000 })
+        } catch (e) {
+            debug("updateBarGraph: ", e.message)
+            this.setState({ graphIconClass: "icon-error-bg" })
+            return false
         }
-        this.setState({data: collated, graphIconClass: "" })
+        debug('fs response:', response)
+
+        const data = response.data.data.map(d => {
+            return({
+                endDay: d.endDay,
+                stakedHex: BigNumber(d.totalHearts).div(1E14).toNumber()
+            })
+        })
+        debug("graph data: ", data)
+        this.setState({data, graphIconClass: "" })
     }
 
     render() {
@@ -534,27 +505,20 @@ export class NewStakeForm extends React.Component {
                     </Col>
 
                 { this.state.data &&
-                    <Container className="py-3">
-                        <h6 className="text-info">Future Market Supply<span className="text-muted small"> APPROX</span></h6>
-                        {/* <p>
-                            <b>Sorry, this data is temporarily unavailable</b>.<br/>
-                            We're looking for a new data source -- or setting up our own.
-                            <span className="text-info">&nbsp;#nohexspectations</span>
-                        </p> */}
-                        <ResponsiveContainer width="90%" height={220}>    
+                    <Container className="p-3 pt-0">
+                        <ResponsiveContainer width="100%" height={160}>    
                             <BarChart 
                                 className={ this.state.graphIconClass }
-                                margin={{ top: 16, right: 5, bottom: 16, left: 15 }}
                                 data={this.state.data}
                             >
-                                <XAxis dataKey="endDay" label={{ value: "day", offset: -3, position: "insideBottom", fill: "#aaa" }} />
-                                <YAxis type="number" label={{ value: "Million HEX", position: "insideLeft", angle: -90 }} />
+                                <XAxis dataKey="endDay" label={{ value: "day", offset: -10, position: "insideLeft" }} />
+                                <YAxis type="number" width={40} label={{ value: "M HEX", position: "insideBottomLeft", offset: 5, angle: -90 }} />
                                 <ReferenceLine x={this.state.endDay} strokeDasharray="3 3" />
                                 <Bar dataKey="stakedHex" isAnimationActive={true} />
                                 <Tooltip 
                                     filterNull={true}
                                     labelFormatter={ (value, name, props) => ([ "day "+value ]) }
-                                    formatter={ (value, name, props) => ([ parseFloat(value).toFixed(3)+" Tsh" ]) }
+                                    formatter={ (value, name, props) => ([ parseFloat(value).toFixed(3)+" MHEX" ]) }
                                     wrapperStyle={{ padding: "0" }}
                                     contentStyle={{ padding: "3px", backgroundColor: "rgba(0,0,0,0.3)", border: "none", borderRadius: "3px" }}
                                     labelStyle={{ lineHeight: "1em", padding: "2px 5px", color: "#ffdd00", fontWeight: "bold" }}
@@ -563,6 +527,10 @@ export class NewStakeForm extends React.Component {
                                 />
                             </BarChart>
                         </ResponsiveContainer>
+                        <div className="text-center">
+                            <h6 className="text-info m-0">Future Market Supply by HEX Day</h6>
+                            <div className="text-muted small">assumes all stakes end on time</div>
+                        </div>
                     </Container>
                 }
                 </Row>

@@ -15,7 +15,21 @@
     }
 }
 
-.xAxis .recharts-label { fill: map-get(bs.$theme-colors, light); } 
-.yAxis .recharts-label { fill: map-get(bs.$theme-colors, success); } 
+.xAxis .recharts-label { font-size: 12px; fill: map-get(bs.$theme-colors, success); } 
+.yAxis .recharts-label { font-size: 12px; fill: map-get(bs.$theme-colors, success); } 
 .recharts-bar { fill: map-get(bs.$theme-colors, info )}
 .recharts-reference-line-line { stroke: map-get(bs.$theme-colors, warning )}
+
+.icon-wait-bg {
+    background: url('/hex_planet.gif') 130px 30px no-repeat
+}
+
+.icon-error-bg {
+    background: url('/question_bubble.png') 130px 30px no-repeat
+}
+.no-pointer-events { pointer-events: none; }
+*:not(input):not(textarea) {
+    user-select: none;
+    -webkit-user-select: none;
+    -webkit-touch-callout: none;
+  } 
