@@ -139,7 +139,6 @@ export class NewStakeForm extends React.Component {
         if (isNaN(startDay + endDay)) return
         const numDataPoints = 121
         const graphStartDay = Math.max(startDay, endDay - Math.floor(numDataPoints / 2))
-        const graphEndDay = graphStartDay + numDataPoints
         
         this.setState({ 
             data: [], 

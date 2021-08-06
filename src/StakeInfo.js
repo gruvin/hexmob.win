@@ -19,6 +19,7 @@ import { format } from 'd3-format'
 import { CryptoVal, VoodooButton } from './Widgets' 
 import { calcInterest, calcApy } from './util'
 import ReactGA from 'react-ga'
+import BigNumber from 'bignumber.js'
 
 const debug = require('debug')('StakeInfo')
 debug('loading')
@@ -56,12 +57,13 @@ export class StakeInfo extends React.Component {
             : exitClass === "termexit" ? "success"
             : "info" // latexit
 
-        const shares = stake.stakeShares
-        const interest = stake.payout
-        const bigPayDay = stake.bigPayDay
-        const penalty = stake.penalty
-        const valueTotal = stake.stakedHearts.plus(interest).plus(stake.bigPayDay)
-        const usdValueTotal = valueTotal.div(1e8).times(usdhex).toNumber()
+        const { stakedHearts, stakeShares, payout, bigPayDay, penalty } = stake
+        const valueTotal = stakedHearts.plus(payout).plus(stake.bigPayDay)
+        const usdStaked = stakedHearts.div(1e8).times(usdhex).toFixed(2)
+        const usdPayout = payout.div(1e8).times(usdhex).toFixed(2)
+        const usdPenalty = Number(penalty.div(1e8).times(usdhex).toFixed(2))
+        const usdValueTotal = Number(usdStaked) + Number(usdPayout)
+        const usdNetValue = usdValueTotal - Number(usdPenalty)
 
         const percentGain = calcInterest(stake) // 1 == 1%
         const percentAPY = calcApy(currentDay, stake)
@@ -103,7 +105,7 @@ export class StakeInfo extends React.Component {
                         <Container>
                             <Row>
                                 <Col xs={6} className="text-left pr-0">
-                                    <CryptoVal className="numeric font-weight-bold text-info h2" value={shares} currency="SHARES" />
+                                    <CryptoVal className="numeric font-weight-bold text-info h2" value={stakeShares} currency="SHARES" />
                                     <span className="text-muted small"> SHARES</span> 
                                 </Col>
                                 <Col xs={6} className="text-right pl-0">
@@ -173,7 +175,7 @@ export class StakeInfo extends React.Component {
                         }
                             <Row>
                                 <Col className="text-right"><strong>Interest</strong></Col>
-                                <Col><CryptoVal className="numeric" value={interest} showUnit /></Col>
+                                <Col><CryptoVal className="numeric" value={payout} showUnit /></Col>
                             </Row>
                             <Row>
                                 <Col className="text-right"><strong>Total Value</strong></Col>
@@ -241,7 +243,19 @@ export class StakeInfo extends React.Component {
                                         EARLY END STAKE
                                     </Button>
                                         {window.location.hostname === "localhost" && <>{/* TODO: remove this debug code */}
-                                            <div><b>PENALTY: </b><CryptoVal className="numeric" value={penalty} showUnit /></div>
+                                        <Row>
+                                            <Col>
+                                                <span>$<CryptoVal className="numeric" value={usdStaked} currency="USD" /></span> staked,
+                                                <span className="text-info"> plus $<CryptoVal className="numeric" value={usdPayout} currency="USD" />  interest</span>
+                                                {usdPenalty > 0 && <span classname="text-danger">
+                                                    ,<br/><span className="text-danger">minus $<CryptoVal className="numeric" value={usdPenalty} currency="USD" /> penalty </span>
+                                                </span>}
+                                                {usdPenalty === 0 && <br/>}=<span className="text-success"> $<b><CryptoVal 
+                                                    className="numeric text-success" value={usdNetValue} 
+                                                    currency="USD" /></b> net{usdPenalty === 0 && <> payout</>}.
+                                                </span>
+                                            </Col>
+                                        </Row>
                                         </>}
                                     </>}
                                     <div className="float-right text-muted small numeric">{stake.stakeId}</div>

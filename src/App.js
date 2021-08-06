@@ -212,6 +212,7 @@ class App extends React.Component {
         try {
             return await this.web3modal.connect() // note: web3modal subscribes to MetaMask deprecated 'close' event
         } catch(e) { // user closed dialog withot selection 
+            debug("WARN: selectWeb3ModalWallet(): ", e)
             return null
         }
     }
