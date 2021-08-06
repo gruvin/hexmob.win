@@ -38,7 +38,7 @@ describe('HEX math helpers', () => {
     })
 })
 
-describe('CryptoVal number formatter: Ether', () => {
+describe('CryptoVal number formatter: ', () => {
     const bnNaN = BigNumber("NaN")
     const bnInfinity = BigNumber(1).div(0)
 
@@ -74,7 +74,7 @@ describe('CryptoVal number formatter: Ether', () => {
     })
 })
 
-describe('CryptoVal number formatter: HEX', () => {
+describe('CryptoVal number formatter: ', () => {
     const bnNaN = BigNumber("NaN")
     const bnInfinity = BigNumber(1).div(0)
 
@@ -112,6 +112,40 @@ describe('CryptoVal number formatter: HEX', () => {
     HEX.forEach(t => {
        test(`Currency:HEX ${BigNumber(t.input).toFormat(4).padStart(54, ' ')} => ${t.expect.valueString.padStart(8, ' ')} ${t.expect.unit}`,
            () => { expect(cryptoFormat(t.input, 'HEX')).toEqual(t.expect) })
+    })
+})
+
+describe('CryptoVal number formatter: ', () => {
+    const bnNaN = BigNumber("NaN")
+    const bnInfinity = BigNumber(1).div(0)
+
+    const c = 'SHARES'
+    const SHARES = [
+        { input:                        123       , expect: { unit: "Shares", valueString:       "123",  valueWithUnit:      "123 Shares"} },
+        { input:                       "123"      , expect: { unit: "Shares", valueString:       "123",  valueWithUnit:      "123 Shares"} },
+        { input:                       1230       , expect: { unit: "Shares", valueString:     "1.230K",  valueWithUnit:    "1.230K Shares"} },
+        { input:                       1234       , expect: { unit: "Shares", valueString:     "1.234K",  valueWithUnit:    "1.234K Shares"} },
+        { input:                      12345       , expect: { unit: "Shares", valueString:    "12.345K",  valueWithUnit:   "12.345K Shares"} },
+        { input:                     123456       , expect: { unit: "Shares", valueString:   "123.456K",  valueWithUnit:  "123.456K Shares"} },
+        { input:                    1234567       , expect: { unit: "Shares", valueString:    "1.234M",  valueWithUnit:     "1.234M Shares"} },
+        { input:                   12345678       , expect: { unit: "Shares", valueString:   "12.345M",  valueWithUnit:    "12.345M Shares"} },
+        { input:                  123456789       , expect: { unit: "Shares", valueString:  "123.456M",  valueWithUnit:   "123.456M Shares"} },
+        { input:                 1234567890       , expect: { unit: "Shares", valueString:    "1.234B",  valueWithUnit:     "1.234B Shares"} },
+        { input:                12345678901       , expect: { unit: "Shares", valueString:   "12.345B",  valueWithUnit:    "12.345B Shares"} },
+        { input:               123456789012       , expect: { unit: "Shares", valueString:  "123.456B",  valueWithUnit:   "123.456B Shares"} },
+        { input:         "1234567890123.456"      , expect: { unit: "Shares", valueString:    "1.234T",  valueWithUnit:     "1.234T Shares"} },
+        { input:        "12345678901234.567"      , expect: { unit: "Shares", valueString:   "12.345T",  valueWithUnit:    "12.345T Shares"} },
+        { input:        "12345000000000"          , expect: { unit: "Shares", valueString:   "12.345T",  valueWithUnit:    "12.345T Shares"} },
+        { input:       "123456789012345.678"      , expect: { unit: "Shares", valueString:  "123.456T",  valueWithUnit:   "123.456T Shares"} },
+        { input:    BigNumber( "123.4567E12")     , expect: { unit: "Shares", valueString:  "123.456T",  valueWithUnit:   "123.456T Shares"} },
+        { input:    BigNumber("1234.567E12")      , expect: { unit: "Shares", valueString:    "1.234P",  valueWithUnit:     "1.234P Shares"} },
+        { input: BigNumber("NOT A NUMBER")        , expect: { unit:       "", valueString:       "NaN",  valueWithUnit:               "NaN"} },
+        { input: BigNumber(1).div(0)              , expect: { unit:       "", valueString:  "Infinity",  valueWithUnit:          "Infinity"} },
+    ]
+
+    SHARES.forEach(t => {
+       test(`Currency:SHARES ${BigNumber(t.input).toFormat(4).padStart(54, ' ')} => ${t.expect.valueString.padStart(8, ' ')} ${t.expect.unit}`,
+           () => { expect(cryptoFormat(t.input, 'SHARES')).toEqual(t.expect) })
     })
 })
 

@@ -304,7 +304,7 @@ export class NewStakeForm extends React.Component {
                 fill="rgba(255,255,0,0.8)" 
                 stroke="none" 
                 x={x} y={y} 
-                width={width} 
+                width={width}
                 height={height}
                 onClick={handleSelection}
                 onMouseUp={handleSelection}

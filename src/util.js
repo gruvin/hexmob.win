@@ -186,12 +186,12 @@ const cryptoFormat = (v, currency) => {
         case 'SHARES':
             unit = 'Shares'
             if (v.isZero())         s = '0.000'
-            else if (v.lt(1e03))    s = format(',.4f')(v.div(1e03).toFixed(4, 1))
-            else if (v.lt(1e06))    s = format(',.4f')(v.div(1e03).toFixed(4, 1))+'K'
-            else if (v.lt(1e09))    s = format(',.4f')(v.div(1e06).toFixed(4, 1))+'M'
-            else if (v.lt(1e12))    s = format(',.4f')(v.div(1e09).toFixed(4, 1))+'B'
-            else if (v.lt(1e15))    s = format(',.4f')(v.div(1e12).toFixed(4, 1))+'T'
-            else                    s = format(',.0f')(v.div(1e12).toFixed(0))+'T'
+            else if (v.lt(1e03))    s = format(',.0f')(v)
+            else if (v.lt(1e06))    s = format(',.3f')(v.div(1e03).toFixed(3, 1))+'K'
+            else if (v.lt(1e09))    s = format(',.3f')(v.div(1e06).toFixed(3, 1))+'M'
+            else if (v.lt(1e12))    s = format(',.3f')(v.div(1e09).toFixed(3, 1))+'B'
+            else if (v.lt(1e15))    s = format(',.3f')(v.div(1e12).toFixed(3, 1))+'T'
+            else                    s = format(',.3f')(v.div(1e15).toFixed(3, 1))+'P'
             break
         case 'PERCENT': // where 1.0 = 1%
             unit = '%'
