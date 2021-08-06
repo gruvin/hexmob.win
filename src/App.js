@@ -334,11 +334,18 @@ class App extends React.Component {
         return (address.toLowerCase().slice(0, 2) === '0x') ? address : null
     }
 
-    updateUsdHex() {
+    updateUsdHex = () => {
+        // look for last session cached value in localStorage first
+        let { USDHEX } = this.state
+        if (!USDHEX && (USDHEX = localStorage.getItem('usdhex_cache'))) this.setState({ USDHEX })
         // https://github.com/HexCommunity/HEX-APIs
         axios.get("https://uniswapdataapi.azurewebsites.net/api/hexPrice")
             .then(response => response.data)
-            .then(data => this.setState({ USDHEX: parseFloat(data.hexUsd) }))
+            .then(data => { 
+                const USDHEX = parseFloat(data.hexUsd) || Number(0.0)
+                localStorage.setItem('usdhex_cache', USDHEX)
+                this.setState({ USDHEX })
+            })
             .catch(e => console.log('updateUsdHex: ', e))
     }
 
@@ -376,7 +383,10 @@ class App extends React.Component {
         } else if (window.location.hostname === "dev.hexmob.win") {
             ReactGA.initialize('UA-203524460-1'); // dev usage
         }
-        ReactGA.pageview(window.location.pathname + window.location.search);            
+        ReactGA.pageview(window.location.pathname + window.location.search);
+
+        this.updateUsdHex()
+        this.usdHexInterval = setInterval(this.updateUsdHex.call(this), 10000)
 
         const address = await this.establishWeb3Provider() 
         if (!address) return debug('No wallet address supplied - STOP')
@@ -454,8 +464,6 @@ class App extends React.Component {
             }
         }, 1000);
 
-        this.updateUsdHex()
-        this.usdHexInterval = setInterval(this.updateUsdHex.call(this), 10000)
     }
 
     componentWillUnmount = () => {

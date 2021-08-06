@@ -242,6 +242,7 @@ export class StakeInfo extends React.Component {
                                         onClick={(e) => { e.stopPropagation(); this.setState({ esShow: true })} }>
                                         EARLY END STAKE
                                     </Button>
+                                        {window.location.hostname === "localhost" && <>{/* TODO: remove this debug code */}
                                         <Row>
                                             <Col>
                                                 <span>$<CryptoVal className="numeric" value={usdStaked} currency="USD" /></span> staked,
@@ -256,6 +257,7 @@ export class StakeInfo extends React.Component {
                                             </Col>
                                         </Row>
                                         </>}
+                                    </>}
                                     <div className="float-right text-muted small numeric">{stake.stakeId}</div>
                                 </Col>
                             </Row>
