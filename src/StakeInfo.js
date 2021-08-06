@@ -19,7 +19,7 @@ import { format } from 'd3-format'
 import { CryptoVal, VoodooButton } from './Widgets' 
 import { calcInterest, calcApy } from './util'
 import ReactGA from 'react-ga'
-import BigNumber from 'bignumber.js'
+// import BigNumber from 'bignumber.js'
 
 const debug = require('debug')('StakeInfo')
 debug('loading')
@@ -247,7 +247,7 @@ export class StakeInfo extends React.Component {
                                             <Col>
                                                 <span>$<CryptoVal className="numeric" value={usdStaked} currency="USD" /></span> staked,
                                                 <span className="text-info"> plus $<CryptoVal className="numeric" value={usdPayout} currency="USD" />  interest</span>
-                                                {usdPenalty > 0 && <span classname="text-danger">
+                                                {usdPenalty > 0 && <span>
                                                     ,<br/><span className="text-danger">minus $<CryptoVal className="numeric" value={usdPenalty} currency="USD" /> penalty </span>
                                                 </span>}
                                                 {usdPenalty === 0 && <br/>}=<span className="text-success"> $<b><CryptoVal 
