@@ -321,7 +321,7 @@ class Stakes extends React.Component {
                     </Row>
                     <Row>
                         <Col className="text-right font-weight-bold">Shares</Col>
-                        <Col><CryptoVal className="numeric" value={sharesTotal.times(1e8)} /></Col>
+                        <Col><CryptoVal className="numeric" value={sharesTotal} currency="SHARES" /></Col>
                     </Row>
                     { bigPayDayTotal.gt(0) &&
                     <Row>

@@ -282,12 +282,9 @@ export class NewStakeForm extends React.Component {
         try {
             endDay = props.payload[0].payload.endDay 
         } catch(err) {
-            debug("WARN: GraphCustomCursor: ", err)
-            return false
+            debug("WARN: GraphCustomCursor: no payload given")
+            return (<></>)
         }
-        if (this.daysControl) this.daysControl.value = (endDay - currentDay - 2).toString()
-        // TODO: make this work for end day and start/end dates (stateless interim UI updates to avoid update stack overflows)
-        
         const handleSelection = (e) => {
             e.preventDefault()
             this.setState({ 
@@ -298,17 +295,14 @@ export class NewStakeForm extends React.Component {
                 this.updateBarGraph()
             })            
         }
-
-        return ( 
+        return (
             <Rectangle 
-                fill="rgba(255,255,0,0.8)" 
+                fill="rgba(255,255,255,0.3)" 
                 stroke="none" 
-                x={x} y={y} 
+                x={x} y={y}
                 width={width}
                 height={height}
                 onClick={handleSelection}
-                onMouseUp={handleSelection}
-                onPointerUp={handleSelection}
             />
         )
     }
