@@ -165,147 +165,156 @@ export class NewStakeForm extends React.Component {
         this.setState({data, graphIconClass: "" })
     }
 
-    render() {
-        const { balance } = this.props.wallet
+    handleDaysChange = (e) => {
+        e.preventDefault()
+        clearTimeout(this.daysTimer)
+        const immediate = (e.target || false) && (e.target.immediate || false)
+        const stakeDays = parseInt(e.target.value) || 0
+
         const { currentDay } = this.props.contract.Data
-
-        const handleAmountChange = (e) => {
-            e.preventDefault()
-            this.setState({
-                stakeAmount: e.target.value
-            }, this.updateFigures)
-        }
-
-        const handleDaysBlur = (e) => {
-            const stakeDays = parseInt(e.target.value) || 0
-            if (!stakeDays) {
-                this.setState({
-                    data: [],
-                    graphIconClass: "icon-wait-bg"
-                })
-            } else if (this.lastStakeDays !== stakeDays) {
-                clearTimeout(this.daysTimer)
-                this.updateBarGraph()
-            }
-        }
-
-        const handleDaysChange = (e) => {
-            e.preventDefault()
-            clearTimeout(this.daysTimer)
-
-            const immediate = (e.target || false) && (e.target.immediate || false)
-
-            const stakeDays = parseInt(e.target.value) || 0
-
-            const { currentDay } = this.props.contract.Data
-            const endDay = currentDay + 2 + stakeDays
-
-            const _startDate = new Date(HEX.START_DATE.getTime() + (currentDay + 1) * 24 * 3600 * 1000)
-            const _endDate = new Date(HEX.START_DATE.getTime() + endDay * 24 * 3600 * 1000)
-            const startDate = _startDate.toLocaleDateString()
-            const startTime = _startDate.toLocaleTimeString()
-            const endDate = _endDate.toLocaleDateString()
-            const endTime = _endDate.toLocaleTimeString()
-
-            this.setState({
-                stakeDays: stakeDays > 5555 ? '5555' : stakeDays.toString(),
-                startDay: currentDay+2,
-                endDay: currentDay+2+stakeDays,
-                startDate, 
-                startTime,
-                endDate,
-                endTime
-            }, () => {
-                this.updateFigures()
-                if (!stakeDays) {
-                    this.setState({
-                        data: [],
-                        graphIconClass: ""
-                    })
-                } else if (stakeDays !== this.lastStakeDays) {
-                    // get new graph data only if >= 1.2 seconds since last stakeDays change (don't DDoS graph server between key presses)
-                    this.daysTimer = setTimeout(() => { 
-                        this.lastStakeDays = stakeDays
-                        this.updateBarGraph()
-                    }, immediate ? 0 : 1200)
-                }
-            })
-        }
+        const endDay = currentDay + 2 + stakeDays
         
-        const handleAmountSelector = (key, e) => {
-            e.preventDefault()
-            const v=e.target.dataset.portion
-            const portion = parseFloat(v) || 1.0
-            const amount = (v === 'max')
-                ? balance.div(1e8)
-                : balance.idiv(1e8).times(portion).toFixed(0, 1)
-            this.setState({ stakeAmount: amount.toString() }, this.updateFigures)
+        const _startDate = new Date(HEX.START_DATE.getTime() + (currentDay + 1) * 24 * 3600 * 1000)
+        const _endDate = new Date(HEX.START_DATE.getTime() + endDay * 24 * 3600 * 1000)
+        const startDate = _startDate.toLocaleDateString()
+        const startTime = _startDate.toLocaleTimeString()
+        const endDate = _endDate.toLocaleDateString()
+        const endTime = _endDate.toLocaleTimeString()
+        
+        this.setState({
+            stakeDays: stakeDays > 5555 ? '5555' : stakeDays.toString(),
+            startDay: currentDay+2,
+            endDay: currentDay+2+stakeDays,
+            startDate, 
+            startTime,
+            endDate,
+            endTime
+        })
+        this.updateFigures()
+
+        if (!stakeDays) {
+            this.setState({
+                data: [],
+                graphIconClass: ""
+            })
+        } else if (stakeDays !== this.lastStakeDays) {
+            // process only if >= 1.2 seconds since last stakeDays change
+            this.daysTimer = setTimeout(() => { 
+                this.lastStakeDays = stakeDays
+                this.updateBarGraph()
+            }, immediate ? 0 : 1200)
+        }
+    }
+
+    handleDaysBlur = (e) => {
+        const stakeDays = parseInt(e.target.value) || 0
+        if (!stakeDays) {
+            this.setState({
+                data: [],
+                graphIconClass: "icon-wait-bg"
+            })
+        } else if (this.lastStakeDays !== stakeDays) {
+            clearTimeout(this.daysTimer)
+            this.updateBarGraph()
+        }
+    }
+        
+    handleAmountChange = (e) => {
+        e.preventDefault()
+        this.setState({
+            stakeAmount: e.target.value
+        }, this.updateFigures)
+    }
+
+    handleAmountSelector = (key, e) => {
+        e.preventDefault()
+        const { balance } = this.props.wallet
+        const v=e.target.dataset.portion
+        const portion = parseFloat(v) || 1.0
+        const amount = (v === 'max')
+        ? balance.div(1e8)
+        : balance.idiv(1e8).times(portion).toFixed(0, 1)
+        this.setState({ stakeAmount: amount.toString() }, this.updateFigures)
+    }
+
+    handleDaysSelector = (key, e) => {
+        e.preventDefault()
+
+        function plusYears(years) {
+            const n = new Date(Date.now())
+            const d = new Date()
+            d.setYear(n.getFullYear() + years)
+            return Number((d.valueOf() - n.valueOf()) / 1000 / 3600 / 24).toFixed(0)
+        }
+        function plusMonths(months) {
+            const n = new Date(Date.now())
+            const d = new Date()
+            d.setMonth(n.getMonth() + months)
+            return Number((d.valueOf() - n.valueOf()) / 1000 / 3600 / 24).toFixed(0)
         }
 
-        const handleDaysSelector = (key, e) => {
-            e.preventDefault()
-
-            function plusYears(years) {
-                const n = new Date(Date.now())
-                const d = new Date()
-                d.setYear(n.getFullYear() + years)
-                return Number((d.valueOf() - n.valueOf()) / 1000 / 3600 / 24).toFixed(0)
-            }
-            function plusMonths(months) {
-                const n = new Date(Date.now())
-                const d = new Date()
-                d.setMonth(n.getMonth() + months)
-                return Number((d.valueOf() - n.valueOf()) / 1000 / 3600 / 24).toFixed(0)
-            }
-
-            let days
-            switch (e.target.dataset.days) {
-                case 'max': days = 5555; break;
-                case '10y': days = plusYears(10); break;
-                case '5y': days = plusYears(5); break;
-                case '3y': days = plusYears(3); break;
-                case '2y': days = plusYears(2); break;
-                case '1y': days = plusYears(1); break;
-                case '6m': days = plusMonths(6); break;
-                case '3m': days = plusMonths(3); break;
-                case '1m': days = plusMonths(1); break;
-                case '1w': days = 7; break;
-                default: days = 1;
-            }
-
-            e.target.value = days
-            e.target.immediate = true
-            this.setState({ 
-                stakeDays: days.toString(),
-            }, handleDaysChange(e))
+        let days
+        switch (e.target.dataset.days) {
+            case 'max': days = 5555; break;
+            case '10y': days = plusYears(10); break;
+            case '5y': days = plusYears(5); break;
+            case '3y': days = plusYears(3); break;
+            case '2y': days = plusYears(2); break;
+            case '1y': days = plusYears(1); break;
+            case '6m': days = plusMonths(6); break;
+            case '3m': days = plusMonths(3); break;
+            case '1m': days = plusMonths(1); break;
+            case '1w': days = 7; break;
+            default: days = 1;
         }
 
-        const handleCursorClick = (endDay, e) => {
+        e.target.value = days
+        e.target.immediate = true
+        this.setState({ 
+            stakeDays: days.toString(),
+        }, this.handleDaysChange(e))
+    }
+    
+    GraphCustomCursor = (props) => {
+        const { x, y, width, height } = props
+        const { currentDay } = this.props.contract.Data
+        let endDay
+        try {
+            endDay = props.payload[0].payload.endDay 
+        } catch(err) {
+            debug("WARN: GraphCustomCursor: ", err)
+            return false
+        }
+        if (this.daysControl) this.daysControl.value = (endDay - currentDay - 2).toString()
+        // TODO: make this work for end day and start/end dates (stateless interim UI updates to avoid update stack overflows)
+        
+        const handleSelection = (e) => {
             e.preventDefault()
-            const { currentDay } = this.props.contract.Data
-
             this.setState({ 
                 stakeDays: (endDay - currentDay - 2).toString(),
                 endDay
             }, () => {
                 this.updateFigures()
                 this.updateBarGraph()
-            })
+            })            
         }
 
-        const GraphCustomCursor = (props) => {
-            const { x, y, width, height } = props
-            return ( 
-                <Rectangle 
-                    fill="rgba(0,0,0,0.3)" 
-                    stroke="none" 
-                    x={x} y={y} 
-                    width={width} 
-                    height={height}
-                    onClick={(e) => handleCursorClick(props.payload[0].payload.endDay, e)}
-                />
-            )
-        }
+        return ( 
+            <Rectangle 
+                fill="rgba(255,255,0,0.8)" 
+                stroke="none" 
+                x={x} y={y} 
+                width={width} 
+                height={height}
+                onClick={handleSelection}
+                onMouseUp={handleSelection}
+                onPointerUp={handleSelection}
+            />
+        )
+    }
+
+    render() {
+        const { currentDay } = this.props.contract.Data
 
         return (
             <Form>
@@ -326,7 +335,7 @@ export class NewStakeForm extends React.Component {
                                                     placeholder="amount in HEX"
                                                     aria-label="amount to stake in HEX"
                                                     aria-describedby="basic-addon1"
-                                                    onChange={handleAmountChange}
+                                                    onChange={this.handleAmountChange}
                                                 />
                                                 <DropdownButton
                                                     as={InputGroup.Append}
@@ -334,7 +343,7 @@ export class NewStakeForm extends React.Component {
                                                     key="percent_balance_selector"
                                                     title="HEX"
                                                     className="numeric"
-                                                    onSelect={handleAmountSelector}
+                                                    onSelect={this.handleAmountSelector}
                                                 >
                                                     <Dropdown.Item as="button" eventKey="new_stake" data-portion="max">MAX</Dropdown.Item>
                                                     <Dropdown.Item as="button" eventKey="new_stake" data-portion={1.00}>100%</Dropdown.Item>
@@ -352,20 +361,21 @@ export class NewStakeForm extends React.Component {
                                         <Form.Label className="mb-0">Stake Length<span className="d-none d-sm-inline"> in Days</span></Form.Label>
                                         <InputGroup className="p-0">
                                                 <FormControl
+                                                    ref = {r => this.daysControl = r}
                                                     className="p-1"
                                                     type="number"
                                                     placeholder="min one day" 
                                                     value={this.state.stakeDays <= 0 ? '' : this.state.stakeDays}
                                                     aria-label="number of days to stake min one day"
-                                                    onChange={handleDaysChange} 
-                                                    onBlur={handleDaysBlur}
+                                                    onChange={this.handleDaysChange} 
+                                                    onBlur={this.handleDaysBlur}
                                                 />
                                                 <DropdownButton
                                                     as={InputGroup.Append}
                                                     variant="dark"
                                                     key="days_selector"
                                                     title="DAYS"
-                                                    onSelect={handleDaysSelector}
+                                                    onSelect={this.handleDaysSelector}
                                                     className="numeric"
                                                 >
                                                     <Dropdown.Item as="button" eventKey="new_stake" data-days="max">MAX (about 15yrs & 11wks)</Dropdown.Item>
@@ -522,7 +532,7 @@ export class NewStakeForm extends React.Component {
                                     contentStyle={{ padding: "3px", backgroundColor: "rgba(0,0,0,0.3)", border: "none", borderRadius: "3px" }}
                                     labelStyle={{ lineHeight: "1em", padding: "2px 5px", color: "#ffdd00", fontWeight: "bold" }}
                                     itemStyle={{ lineHeight: "1em", padding: "2px 5px", color: "#ddd", backgroundColor: "rgba(0,0,0,0.5)" }}
-                                    cursor={<GraphCustomCursor/>}
+                                    cursor={<this.GraphCustomCursor/>}
                                 />
                             </BarChart>
                         </ResponsiveContainer>
