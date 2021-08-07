@@ -77,9 +77,10 @@ class App extends React.Component {
         this.state = { ...INITIAL_STATE }
         this.dayInterval = null
         this.usdHexInterval = null
+        this.retryCounter = 2
 
         const { hostname } = window.location
-        window.hostIsHM = hostname === "hexmob.win" //|| hostname === "localhost" 
+        window.hostIsHM = hostname === "hexmob.win"
         window.hostIsTSA = hostname === "go.tshare.app" || hostname === "localhost" 
         window.metamaskOnline = () => this.state.walletConnected && window.ethereum && window.ethereum.isMetaMask
     }
@@ -339,30 +340,64 @@ class App extends React.Component {
         // look for last session cached value in localStorage first
         let { USDHEX } = this.state
         if (!USDHEX && (USDHEX = localStorage.getItem('usdhex_cache'))) this.setState({ USDHEX })
-        let tusdTimer
-        await new Promise((resolve, reject) => {
-            (function tryGetUsdHex() {
-                debug("USDHEX 'tick'")
-                tusdTimer = setTimeout(tryGetUsdHex, 3000) // re-try every 3 seconds if needed
-                // https://github.com/HexCommunity/HEX-APIs
-                axios.get("https://uniswapdataapi.azurewebsites.net/api/hexPrice", 
-                    { timeout: 2500 } // expect answer within 2.5 seconds
-                )
-                .then(response => response.data)
-                .then(data => { 
-                    const USDHEX = parseFloat(data.hexUsd) || Number(0.0)
-                    if (USDHEX) {
-                        clearTimeout(tusdTimer)
-                        localStorage.setItem('usdhex_cache', USDHEX)
-                        this.setState({ USDHEX })
-                        debug(`USDHEX = $${USDHEX}`)
-                        return resolve()
-                    }
-                })
-                .catch(e => console.log('updateUsdHex: ', e))
-            }).call(this)
+  
+        debug("USDHEX *tick*", this.state)
+        //tusdTimer = setTimeout(() => { return reject("timeout") }, 3000) // re-try every 3 seconds if needed
+        //debug("* 3 sec timer set *", process.env.REACT_APP_MORALIS_DEFAULT_API_KEY)
+
+        // Original/alternative https://github.com/HexCommunity/HEX-APIs
+        // axios.get("https://uniswapdataapi.azurewebsites.net/api/hexPrice", 
+        // .then(response => response.data)
+        // .then(data => { 
+        //     const USDHEX = parseFloat(data.hexUsd) || Number(0.0)
+        //     if (USDHEX) {
+        //         clearTimeout(tusdTimer)
+        //         localStorage.setItem('usdhex_cache', USDHEX)
+        //         this.setState({ USDHEX })
+        //         debug(`USDHEX = $${USDHEX}`)
+        //         return resolve()
+        //     }
+        // })
+        
+        // Moralis (requires API key. see .env file)
+        const chainId = 0x1 // for ETH HEX contract so we can see price without connecting wallet
+        const _HEX_ADDRESS = HEX.CHAINS[chainId].address
+
+        axios.get("https://deep-index.moralis.io/api/"
+            + "token/ERC20/"
+            + _HEX_ADDRESS
+            + "/price?chain=eth&chain_name=mainnet"
+            + "&exchange=uniswapv2",
+            { 
+                timeout: 2500,  // expect answer within 2.5 seconds
+                headers: {
+                    "accept": "application/json",
+                    "X-API-KEY": process.env.REACT_APP_MORALIS_DEFAULT_API_KEY
+                }
+            }
+        )
+        .then(response => response.data)
+        .then(data => { 
+            const USDHEX = parseFloat(data.usdPrice) || Number(0.0)
+            if (USDHEX) {
+                this.retryCounter = 2
+                localStorage.setItem('usdhex_cache', USDHEX)
+                this.setState({ USDHEX })
+                debug(`USDHEX = $${USDHEX}`)
+                setTimeout(this.subscribeUpdateUsdHex, 10000)
+            }
         })
-        tusdTimer = setTimeout(this.subscribeUpdateUsdHex, 10000)
+        .catch(e => {
+            if (e.message.slice(0,7) === "timeout") {
+                if (--this.retryCounter === 0) {
+                    this.retryCounter = 2
+                    debug("updateUsdHex: Too many timeouts. Invalidating cached USDHEX.")
+                    this.setState({ USDHEX: -1 })
+                }
+                debug("updateUsdHex: timeout. trying again in 3 seconds")
+                setTimeout(this.subscribeUpdateUsdHex, 3000) // back off 3 seconds
+            }
+        })
     }
 
     async componentDidMount() {
@@ -604,7 +639,7 @@ class App extends React.Component {
                     <h3>{process.env.REACT_APP_VERSION || 'v0.0.0A'}</h3>
                     <div id="usdhex" className="text-success">
                         <span className="text-muted small mr-1">USD</span>
-                        <span className="numeric">{ "$" + ( this.state.USDHEX ? format(",.4f")(this.state.USDHEX) : "-.--") }</span>
+                        <span className="numeric">{ "$" + ( this.state.USDHEX > 0 ? format(",.4f")(this.state.USDHEX) : "-.--") }</span>
                     </div>
                     <div className="day">
                         <span className="text-muted small mr-1">DAY</span>
