@@ -334,19 +334,35 @@ class App extends React.Component {
         return (address.toLowerCase().slice(0, 2) === '0x') ? address : null
     }
 
-    updateUsdHex = () => {
+    // this function will be called eery 10 seconds after the first invocation.
+    subscribeUpdateUsdHex = async () => {
         // look for last session cached value in localStorage first
         let { USDHEX } = this.state
         if (!USDHEX && (USDHEX = localStorage.getItem('usdhex_cache'))) this.setState({ USDHEX })
-        // https://github.com/HexCommunity/HEX-APIs
-        axios.get("https://uniswapdataapi.azurewebsites.net/api/hexPrice")
-            .then(response => response.data)
-            .then(data => { 
-                const USDHEX = parseFloat(data.hexUsd) || Number(0.0)
-                localStorage.setItem('usdhex_cache', USDHEX)
-                this.setState({ USDHEX })
-            })
-            .catch(e => console.log('updateUsdHex: ', e))
+        let tusdTimer
+        await new Promise((resolve, reject) => {
+            (function tryGetUsdHex() {
+                debug("USDHEX 'tick'")
+                tusdTimer = setTimeout(tryGetUsdHex, 3000) // re-try every 3 seconds if needed
+                // https://github.com/HexCommunity/HEX-APIs
+                axios.get("https://uniswapdataapi.azurewebsites.net/api/hexPrice", 
+                    { timeout: 2500 } // expect answer within 2.5 seconds
+                )
+                .then(response => response.data)
+                .then(data => { 
+                    const USDHEX = parseFloat(data.hexUsd) || Number(0.0)
+                    if (USDHEX) {
+                        clearTimeout(tusdTimer)
+                        localStorage.setItem('usdhex_cache', USDHEX)
+                        this.setState({ USDHEX })
+                        debug(`USDHEX = $${USDHEX}`)
+                        return resolve()
+                    }
+                })
+                .catch(e => console.log('updateUsdHex: ', e))
+            }).call(this)
+        })
+        tusdTimer = setTimeout(this.subscribeUpdateUsdHex, 10000)
     }
 
     async componentDidMount() {
@@ -385,8 +401,8 @@ class App extends React.Component {
         }
         ReactGA.pageview(window.location.pathname + window.location.search);
 
-        this.updateUsdHex()
-        this.usdHexInterval = setInterval(this.updateUsdHex.call(this), 10000)
+        this.subscribeUpdateUsdHex()
+        this.usdHexInterval = setInterval(this.updateUsdHex, 10000)
 
         const address = await this.establishWeb3Provider() 
         if (!address) return debug('No wallet address supplied - STOP')
