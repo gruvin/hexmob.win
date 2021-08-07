@@ -341,23 +341,20 @@ class App extends React.Component {
         let { USDHEX } = this.state
         if (!USDHEX && (USDHEX = localStorage.getItem('usdhex_cache'))) this.setState({ USDHEX })
   
-        debug("USDHEX *tick*", this.state)
-        //tusdTimer = setTimeout(() => { return reject("timeout") }, 3000) // re-try every 3 seconds if needed
-        //debug("* 3 sec timer set *", process.env.REACT_APP_MORALIS_DEFAULT_API_KEY)
-
         // Original/alternative https://github.com/HexCommunity/HEX-APIs
         // axios.get("https://uniswapdataapi.azurewebsites.net/api/hexPrice", 
         // .then(response => response.data)
         // .then(data => { 
         //     const USDHEX = parseFloat(data.hexUsd) || Number(0.0)
         //     if (USDHEX) {
-        //         clearTimeout(tusdTimer)
+        //         this.retryCounter = 2
         //         localStorage.setItem('usdhex_cache', USDHEX)
         //         this.setState({ USDHEX })
         //         debug(`USDHEX = $${USDHEX}`)
-        //         return resolve()
+        //         setTimeout(this.subscribeUpdateUsdHex, 10000)
         //     }
         // })
+        // .catch( ... )
         
         // Moralis (requires API key. see .env file)
         const chainId = 0x1 // for ETH HEX contract so we can see price without connecting wallet
@@ -383,7 +380,7 @@ class App extends React.Component {
                 this.retryCounter = 2
                 localStorage.setItem('usdhex_cache', USDHEX)
                 this.setState({ USDHEX })
-                debug(`USDHEX = $${USDHEX}`)
+                debug(`Uniswap V2:USDHEX = $${USDHEX}`)
                 setTimeout(this.subscribeUpdateUsdHex, 10000)
             }
         })
@@ -392,6 +389,7 @@ class App extends React.Component {
                 if (--this.retryCounter === 0) {
                     this.retryCounter = 2
                     debug("updateUsdHex: Too many timeouts. Invalidating cached USDHEX.")
+                    localStorage.clear('usdhex_cache')
                     this.setState({ USDHEX: -1 })
                 }
                 debug("updateUsdHex: timeout. trying again in 3 seconds")
