@@ -57,64 +57,70 @@ h6, .h6 { font-weight: bold }
     position: fixed;
     top: 0;
     height: 40px;
+    width: 100vw;
     background-color: black;
     padding: 0;
     margin: 0;
     color: white;
     font-family: 'Titillium Web', Arial, sans-serif;
-    
-    h1 {
-        display: inline-block;
-        position: relative;
-        font-size: 24px;
-        font-weight: bold;
-        margin: 0;
-        padding: 0 0 0 32px;
-        background: rgba(0, 0, 0, 0) url(/favicon-96x96.png) no-repeat top left;
-        background-size: auto 30px;
-
-        sup {
-            position: relative;
-            font-size: 14px;
-            top: -10px;
-            margin-left: 0.1em;
-            vertical-align: none;
-        }
-    }
-    h3 { /* version */
-        position: absolute;
-        overflow: hidden;
-        display: block;
-        top: 0px;
-        right: 3px;
-        font-size: .8em;
-        color:#ccc;
-        margin:0;
-        padding:0;
-    }
-
-    div > span:last-child {
-        font-size:120%;
-        font-weight: bold;
-    }
+    text-align: center;
 
     #usdhex {
-        position: absolute;
-        bottom: 0;
-        left: 0;
-        width: 100%;
-        display: inline-block;
+        width: fit-content;
+        margin: 0.8em auto 0 auto;
         text-align: center;
+        & .progress { 
+            width: 100%;
+            height: 0.1rem;
+            background-color: #00000000;
+            div { width: 0% !important; transition: none }
+            div.countdown { width: 100% !important; transition: width 10s linear !important; }
+        }
     }
+    
+    #branding {
+        float: left;
+        h1 {
+            display: inline-block;
+            position: relative;
+            font-size: 24px;
+            font-weight: bold;
+            margin: 0;
+            padding: 0 0 0 32px;
+            background: rgba(0, 0, 0, 0) url(/favicon-96x96.png) no-repeat top left;
+            background-size: auto 30px;
 
-    .day {
-        position: absolute;
-        bottom: 0;
-        right: 3px;
+            sup {
+                position: relative;
+                font-size: 14px;
+                top: -10px;
+                margin-left: 0.1em;
+                vertical-align: none;
+            }    
+        }    
+    }    
+
+    #version-day {
+        float: right;
         margin: 0;
-        padding: 0;
-        display: block;
-    }
+        padding: 0 3px 0 0;
+        text-align: right;
+
+        h3 { /* version */
+            overflow: hidden;
+            display: block;
+            font-size: .65em;
+            color:#ccc;
+            margin:0;
+            padding:0;
+        }    
+
+        span:last-child {
+            font-size:120%;
+            font-weight: bold;
+        }    
+    }    
+
 }
 
 #hexmob_body {

@@ -337,6 +337,8 @@ class App extends React.Component {
 
     // this function will be called eery 10 seconds after the first invocation.
     subscribeUpdateUsdHex = async () => {
+        this.usdProgress.childNodes[0].classList.remove("countdown")
+
         // look for last session cached value in localStorage first
         let { USDHEX } = this.state
         if (!USDHEX && (USDHEX = localStorage.getItem('usdhex_cache'))) this.setState({ USDHEX })
@@ -359,7 +361,6 @@ class App extends React.Component {
         // Moralis (requires API key. see .env file)
         const chainId = 0x1 // for ETH HEX contract so we can see price without connecting wallet
         const _HEX_ADDRESS = HEX.CHAINS[chainId].address
-
         axios.get("https://deep-index.moralis.io/api/"
             + "token/ERC20/"
             + _HEX_ADDRESS
@@ -379,9 +380,11 @@ class App extends React.Component {
             if (USDHEX) {
                 this.retryCounter = 2
                 localStorage.setItem('usdhex_cache', USDHEX)
-                this.setState({ USDHEX })
                 debug(`Uniswap V2:USDHEX = $${USDHEX}`)
-                setTimeout(this.subscribeUpdateUsdHex, 10000)
+                this.setState({ USDHEX }, () => {
+                    setTimeout(this.subscribeUpdateUsdHex, 10000)
+                    this.usdProgress.childNodes[0].classList.add("countdown")
+                })
             }
         })
         .catch(e => {
@@ -630,18 +633,21 @@ class App extends React.Component {
         return (
             <>
                 <Container id="hexmob_header" fluid>
-                { window.hostIsTSA
-                    ? <h1 id="header_logo">GO<sup className="text-muted small"> .tshare.app</sup></h1>
-                    : <h1 id="header_logo">HEX<sup className="text-muted">mob.win</sup></h1>
-                }
-                    <h3>{process.env.REACT_APP_VERSION || 'v0.0.0A'}</h3>
-                    <div id="usdhex" className="text-success">
-                        <span className="text-muted small mr-1">USD</span>
-                        <span className="numeric">{ "$" + ( this.state.USDHEX > 0 ? format(",.4f")(this.state.USDHEX) : "-.--") }</span>
+                    <div id="branding">
+                    { window.hostIsTSA
+                        ? <h1 id="header_logo">GO<sup className="text-muted small"> .tshare.app</sup></h1>
+                        : <h1 id="header_logo">HEX<sup className="text-muted">mob.win</sup></h1>
+                    }
                     </div>
-                    <div className="day">
+                    <div id="version-day">
+                        <h3>{process.env.REACT_APP_VERSION || 'v0.0.0A'}</h3>
                         <span className="text-muted small mr-1">DAY</span>
                         <span className="numeric text-info">{ this.state.currentDay ? this.state.currentDay : "---" }</span>
+                    </div>
+                    <div id="usdhex">
+                        <span className="text-muted small mr-1">USD</span>
+                        <span className="numeric text-success">{ "$" + ( this.state.USDHEX > 0 ? format(",.4f")(this.state.USDHEX) : "-.--") }</span>
+                        <ProgressBar variant="secondary" now={50} animated={false} ref={r => this.usdProgress = r }/>
                     </div>
                 </Container>
                 <Container id="hexmob_body" fluid className="p-1">

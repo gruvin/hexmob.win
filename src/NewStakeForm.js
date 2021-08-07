@@ -293,7 +293,7 @@ export class NewStakeForm extends React.Component {
             }, () => {
                 this.updateFigures()
                 this.updateBarGraph()
-            })            
+            })
         }
         return (
             <Rectangle 
