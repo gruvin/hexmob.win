@@ -127,7 +127,8 @@ class Stakes extends React.Component {
                         isAutoStake: Boolean(data.isAutoStakte),
                         progress,
                         bigPayDay: new BigNumber(0),
-                        payout: new BigNumber(0)
+                        payout: new BigNumber(0),
+                        penalty: BigNumber(0),
                     }
                     if (currentDay >= stakeData.lockedDay + 1) { // no payouts when pending or until day 2 into term
                         // if (document.location.hostname === "localhost") {
@@ -280,8 +281,7 @@ class Stakes extends React.Component {
             const startDate = _startDate.toLocaleDateString()
             const endDate = _endDate.toLocaleDateString()
 
-            const interest = stakeData.payout
-            const bigPayDay = stakeData.bigPayDay
+            const { payout: interest, bigPayDay, penalty } = stakeData
 
             stakedTotal = stakedTotal.plus(stakeData.stakedHearts)
             sharesTotal = sharesTotal.plus(stakeData.stakeShares)
@@ -296,6 +296,7 @@ class Stakes extends React.Component {
                 ...stakeData,
                 interest,
                 bigPayDay,
+                penalty
             }
 
             const percentGain = calcInterest(stake) // 1 == 1%
