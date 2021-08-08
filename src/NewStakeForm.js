@@ -444,7 +444,7 @@ export class NewStakeForm extends React.Component {
                                 <Col className="col-4 pl-2">
                                     <WhatIsThis showPill tooltip={
                                         <>
-                                            T-Shares
+                                            Shares
                                             <span className="text-success"> = </span><br/>
                                             Effective HEX
                                             <span className="text-success"> x </span>
