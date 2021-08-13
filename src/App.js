@@ -393,7 +393,7 @@ class App extends React.Component {
                     this.retryCounter = 2
                     debug("updateUsdHex: Too many timeouts. Invalidating cached USDHEX.")
                     localStorage.clear('usdhex_cache')
-                    this.setState({ USDHEX: -1 })
+                    this.setState({ USDHEX: 0 })
                 }
                 debug("updateUsdHex: timeout. trying again in 3 seconds")
                 setTimeout(this.subscribeUpdateUsdHex, 3000) // back off 3 seconds
