@@ -239,31 +239,29 @@ export class StakeInfo extends React.Component {
                                         onClick={(e) => { e.stopPropagation(); this.setState({ esShow: true })} }>
                                         EARLY END STAKE
                                     </Button>
-                                        {window.location.hostname === "localhost" && <>{/* TODO: remove this debug code */}
-                                            <table style={{ margin: "1em auto", width: "min-content", fontSize: "0.95em", lineHeight: "1em" }}>
-                                                <tr className="text-light">
-                                                    <td className="col-sm-2">principal</td>
-                                                    <td className="col-sm-2 pr-0 text-right">$<CryptoVal className="numeric" value={usdStaked} currency="USD" /></td>
-                                                </tr>
-                                                <tr className="text-info">
-                                                    <td className="col-sm-2">interest</td>
-                                                    <td className="col-sm-2 pr-0 text-right">+&nbsp;$<CryptoVal className="numeric" value={usdPayout} currency="USD" /> </td>
-                                                </tr>
-                                                <tr className="text-danger">
-                                                    <td className="col-sm-2">penalty</td>
-                                                    <td className="col-sm-2 pr-0 text-right">-&nbsp;$<CryptoVal className="numeric" value={usdPenalty} currency="USD" /></td>
-                                                </tr>
-                                                <tr className="text-success" style={{ fontWeight: "bold"}}>
-                                                    <td className="col-sm-2 text-uppercase">payout</td>
-                                                    <td className="col-sm-2 pr-0 text-right" style={{ borderTop: "double grey" }}>
-                                                        <span className="text-success">$<CryptoVal 
-                                                            className="numeric text-success" value={usdNetValue} 
-                                                            currency="USD" />
-                                                        </span>
-                                                    </td>
-                                                </tr>
-                                            </table>
-                                        </>}
+                                    <table style={{ margin: "1em auto", width: "min-content", fontSize: "0.95em", lineHeight: "1em" }}>
+                                        <tr className="text-light">
+                                            <td className="col-sm-2">principal</td>
+                                            <td className="col-sm-2 pr-0 text-right">$<CryptoVal className="numeric" value={usdStaked} currency="USD" /></td>
+                                        </tr>
+                                        <tr className="text-info">
+                                            <td className="col-sm-2">interest</td>
+                                            <td className="col-sm-2 pr-0 text-right">+&nbsp;$<CryptoVal className="numeric" value={usdPayout} currency="USD" /> </td>
+                                        </tr>
+                                        <tr className="text-danger">
+                                            <td className="col-sm-2">penalty</td>
+                                            <td className="col-sm-2 pr-0 text-right">-&nbsp;$<CryptoVal className="numeric" value={usdPenalty} currency="USD" /></td>
+                                        </tr>
+                                        <tr className="text-success" style={{ fontWeight: "bold"}}>
+                                            <td className="col-sm-2 text-uppercase">payout</td>
+                                            <td className="col-sm-2 pr-0 text-right" style={{ borderTop: "double grey" }}>
+                                                <span className="text-success">$<CryptoVal 
+                                                    className="numeric text-success" value={usdNetValue} 
+                                                    currency="USD" />
+                                                </span>
+                                            </td>
+                                        </tr>
+                                    </table>
                                     </>}
                                     <div className="float-right text-muted small numeric">{stake.stakeId}</div>
                                 </Col>
