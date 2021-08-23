@@ -40,15 +40,15 @@ export class StakeInfo extends React.Component {
     render() {
         const { contract, stake, usdhex} = this.props
         const { currentDay } = contract.Data
-        const { startDay, endDay } = stake
+        const { startDay, endDay, stakedDays } = stake
         
         const progress = parseFloat((stake.progress / 1000).toPrecision(3))
-        const stakeDay = stake.lockedDay + stake.stakedDays // no. days into active stake
+        const stakeDay = currentDay - startDay // day number into active stake
         const exitClass = 
                 currentDay < startDay ? "pendingexit"
-                : currentDay < stakeDay/2 ? "earlyexit"
-                : currentDay < stakeDay ? "midexit"
-                : currentDay < stakeDay+7 ? "termexit"
+                : stakeDay < stakedDays/2 ? "earlyexit"
+                : stakeDay < stakedDays ? "midexit"
+                : stakeDay < stakedDays+7 ? "termexit"
                 : "lateexit"
         const progressVariant = 
             exitClass === "pendingexit" ? "secondary"
@@ -63,7 +63,7 @@ export class StakeInfo extends React.Component {
         const usdPayout = payout.div(1e8).times(usdhex).toFixed(2)
         const usdPenalty = Number(penalty.div(1e8).times(usdhex).toFixed(2))
         const usdValueTotal = Number(usdStaked) + Number(usdPayout)
-        const usdNetValue = usdValueTotal - Number(usdPenalty)
+        const usdNetValue = Math.max(0, usdValueTotal - Number(usdPenalty))
 
         const percentGain = calcInterest(stake) // 1 == 1%
         const percentAPY = calcApy(currentDay, stake)
@@ -73,9 +73,6 @@ export class StakeInfo extends React.Component {
         
         const _endDate = new Date(HEX.START_DATE.getTime() + endDay * 24 * 3600 * 1000)
         const endDate = _endDate.toLocaleDateString()+' '+_endDate.toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})
-
-        const pending = (currentDay < stake.lockedDay)
-        const earlyExit = (currentDay < stakeDay)
 
         const ContextAwareToggle = ({ children, eventKey, callback }) => {
             const currentEventKey = useContext(AccordionContext);
@@ -119,7 +116,7 @@ export class StakeInfo extends React.Component {
                                     <span className="small">{endDate}</span>
                                 </Col>
                                 <Col xs={5} className="text-right pl-0">
-                                    { pending ? <Badge variant="primary">PENDING</Badge> 
+                                    { (exitClass === "pendingexit") ? <Badge variant="primary">PENDING</Badge> 
                                         : <>
                                             <span className="text-muted small">PROGRESS </span>
                                             <span className="numeric">{progress+"%"}</span>
@@ -128,7 +125,7 @@ export class StakeInfo extends React.Component {
                                 </Col>
                             </Row>
                             <div className="pb-1">
-                            { pending 
+                            { (exitClass === "pendingexit") 
                                 ? <ProgressBar variant={progressVariant} now={100} striped />
                                 : <ProgressBar variant={progressVariant} now={Math.ceil(progress)}  />
                             }
@@ -225,7 +222,7 @@ export class StakeInfo extends React.Component {
                                     </Overlay>
                                     {!this.props.readOnly && <>
                                     <VoodooButton
-                                        style={{ display: !earlyExit || this.state.esShow ? "inline-block" : "none" }}
+                                        style={{ display: (exitClass !== "earlyExit") || this.state.esShow ? "inline-block" : "none" }}
                                         contract={window.contract}
                                         method="stakeEnd" 
                                         params={[stake.stakeIndex, stake.stakeId]}
@@ -234,28 +231,38 @@ export class StakeInfo extends React.Component {
                                         confirmationCallback={() => this.props.reloadStakes()}
                                         rejectionCallback={() => this.setState({ esShow: false })} 
                                     >
-                                    { earlyExit && <>I UNDERSTAND — </>}END STAKE
+                                    { (exitClass === "earlyExit") && <>I UNDERSTAND — </>}END STAKE
                                     </VoodooButton>
                                     <Button 
                                         variant={'exitbtn '+exitClass}
-                                        style={{ display: earlyExit && !this.state.esShow ? "inline-block" : "none" }}
+                                        style={{ display: (exitClass === "earlyExit") && !this.state.esShow ? "inline-block" : "none" }}
                                         onClick={(e) => { e.stopPropagation(); this.setState({ esShow: true })} }>
                                         EARLY END STAKE
                                     </Button>
                                         {window.location.hostname === "localhost" && <>{/* TODO: remove this debug code */}
-                                        <Row>
-                                            <Col>
-                                                <span>$<CryptoVal className="numeric" value={usdStaked} currency="USD" /></span> staked,
-                                                <span className="text-info"> plus $<CryptoVal className="numeric" value={usdPayout} currency="USD" />  interest</span>
-                                                {usdPenalty > 0 && <span>
-                                                    ,<br/><span className="text-danger">minus $<CryptoVal className="numeric" value={usdPenalty} currency="USD" /> penalty </span>
-                                                </span>}
-                                                {usdPenalty === 0 && <br/>}=<span className="text-success"> $<b><CryptoVal 
-                                                    className="numeric text-success" value={usdNetValue} 
-                                                    currency="USD" /></b> net{usdPenalty === 0 && <> payout</>}.
-                                                </span>
-                                            </Col>
-                                        </Row>
+                                            <table style={{ margin: "1em auto", width: "min-content", fontSize: "0.95em", lineHeight: "1em" }}>
+                                                <tr className="text-light">
+                                                    <td className="col-sm-2">principal</td>
+                                                    <td className="col-sm-2 pr-0 text-right">$<CryptoVal className="numeric" value={usdStaked} currency="USD" /></td>
+                                                </tr>
+                                                <tr className="text-info">
+                                                    <td className="col-sm-2">interest</td>
+                                                    <td className="col-sm-2 pr-0 text-right">+&nbsp;$<CryptoVal className="numeric" value={usdPayout} currency="USD" /> </td>
+                                                </tr>
+                                                <tr className="text-danger">
+                                                    <td className="col-sm-2">penalty</td>
+                                                    <td className="col-sm-2 pr-0 text-right">-&nbsp;$<CryptoVal className="numeric" value={usdPenalty} currency="USD" /></td>
+                                                </tr>
+                                                <tr className="text-success" style={{ fontWeight: "bold"}}>
+                                                    <td className="col-sm-2 text-uppercase">payout</td>
+                                                    <td className="col-sm-2 pr-0 text-right" style={{ borderTop: "double grey" }}>
+                                                        <span className="text-success">$<CryptoVal 
+                                                            className="numeric text-success" value={usdNetValue} 
+                                                            currency="USD" />
+                                                        </span>
+                                                    </td>
+                                                </tr>
+                                            </table>
                                         </>}
                                     </>}
                                     <div className="float-right text-muted small numeric">{stake.stakeId}</div>
