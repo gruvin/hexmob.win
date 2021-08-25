@@ -79,7 +79,7 @@ export class StakeInfo extends React.Component {
             const decoratedOnClick = useAccordionToggle(
                 eventKey,
                 () => callback && callback(eventKey),
-            );
+            )
             const isCurrentEventKey = currentEventKey === eventKey;
             return (
                 <Card.Header
@@ -88,7 +88,7 @@ export class StakeInfo extends React.Component {
                 >
                 {children}
                 </Card.Header>
-            );
+            )
         }
 
         return (
@@ -222,7 +222,7 @@ export class StakeInfo extends React.Component {
                                     </Overlay>
                                     {!this.props.readOnly && <>
                                     <VoodooButton
-                                        style={{ display: (exitClass !== "earlyExit") || this.state.esShow ? "inline-block" : "none" }}
+                                        style={{ display: (exitClass === "termexit") || this.state.esShow ? "inline-block" : "none" }}
                                         contract={window.contract}
                                         method="stakeEnd" 
                                         params={[stake.stakeIndex, stake.stakeId]}
@@ -231,11 +231,11 @@ export class StakeInfo extends React.Component {
                                         confirmationCallback={() => this.props.reloadStakes()}
                                         rejectionCallback={() => this.setState({ esShow: false })} 
                                     >
-                                    { (exitClass === "earlyExit") && <>I UNDERSTAND — </>}END STAKE
+                                    { (exitClass !== "termexit") && <>I UNDERSTAND — </>}END STAKE
                                     </VoodooButton>
-                                    <Button 
+                                    <Button
                                         variant={'exitbtn '+exitClass}
-                                        style={{ display: (exitClass === "earlyExit") && !this.state.esShow ? "inline-block" : "none" }}
+                                        style={{ display: (exitClass !== "termexit") && !this.state.esShow ? "inline-block" : "none" }}
                                         onClick={(e) => { e.stopPropagation(); this.setState({ esShow: true })} }>
                                         EARLY END STAKE
                                     </Button>
