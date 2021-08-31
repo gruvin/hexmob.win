@@ -189,8 +189,7 @@ export class NewStakeForm extends React.Component {
             startTime,
             endDate,
             endTime
-        })
-        this.updateFigures()
+        }, this.updateFigures)
 
         if (!stakeDays) {
             this.setState({
