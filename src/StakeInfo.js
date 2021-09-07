@@ -240,6 +240,7 @@ export class StakeInfo extends React.Component {
                                         EARLY END STAKE
                                     </Button>
                                     <table style={{ margin: "1em auto", width: "min-content", fontSize: "0.95em", lineHeight: "1em" }}>
+                                        <tbody>
                                         <tr className="text-light">
                                             <td className="col-sm-2">principal</td>
                                             <td className="col-sm-2 pr-0 text-right">$<CryptoVal className="numeric" value={usdStaked} currency="USD" /></td>
@@ -261,6 +262,7 @@ export class StakeInfo extends React.Component {
                                                 </span>
                                             </td>
                                         </tr>
+                                        </tbody>
                                     </table>
                                     </>}
                                     <div className="float-right text-muted small numeric">{stake.stakeId}</div>

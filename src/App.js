@@ -334,70 +334,82 @@ class App extends React.Component {
             address = window.web3hexmob.eth.accounts[0]
         return (address.toLowerCase().slice(0, 2) === '0x') ? address : null
     }
-
+    
     // this function will be called eery 10 seconds after the first invocation.
     subscribeUpdateUsdHex = async () => {
         this.usdProgress.childNodes[0].classList.remove("countdown")
-
+        
         // look for last session cached value in localStorage first
         let { USDHEX } = this.state
         if (!USDHEX && (USDHEX = localStorage.getItem('usdhex_cache'))) this.setState({ USDHEX })
-  
-        // Original/alternative https://github.com/HexCommunity/HEX-APIs
-        // axios.get("https://uniswapdataapi.azurewebsites.net/api/hexPrice", 
-        // .then(response => response.data)
-        // .then(data => { 
-        //     const USDHEX = parseFloat(data.hexUsd) || Number(0.0)
-        //     if (USDHEX) {
-        //         this.retryCounter = 2
-        //         localStorage.setItem('usdhex_cache', USDHEX)
-        //         this.setState({ USDHEX })
-        //         debug(`USDHEX = $${USDHEX}`)
-        //         setTimeout(this.subscribeUpdateUsdHex, 10000)
-        //     }
-        // })
-        // .catch( ... )
         
-        // Moralis (requires API key. see .env file)
-        const chainId = 0x1 // for ETH HEX contract so we can see price without connecting wallet
-        const _HEX_ADDRESS = HEX.CHAINS[chainId].address
-        axios.get("https://deep-index.moralis.io/api/"
-            + "token/ERC20/"
-            + _HEX_ADDRESS
-            + "/price?chain=eth&chain_name=mainnet"
-            + "&exchange=uniswapv2",
-            { 
-                timeout: 2500,  // expect answer within 2.5 seconds
-                headers: {
-                    "accept": "application/json",
-                    "X-API-KEY": process.env.REACT_APP_MORALIS_DEFAULT_API_KEY
-                }
+        
+        debug("USDHEX: request")
+        // Original/alternative https://github.com/HexCommunity/HEX-APIs
+        axios.get("https://uniswapdataapi.azurewebsites.net/api/hexPrice", 
+        { 
+            timeout: 5000,  // expect answer within 2.5 seconds
+            headers: {
+                "accept": "application/json",
             }
+        }
         )
         .then(response => response.data)
         .then(data => { 
-            const USDHEX = parseFloat(data.usdPrice) || Number(0.0)
+            const USDHEX = parseFloat(data.hexUsd) || Number(0.0)
             if (USDHEX) {
                 this.retryCounter = 2
                 localStorage.setItem('usdhex_cache', USDHEX)
-                debug(`Uniswap V2:USDHEX = $${USDHEX}`)
+                this.setState({ USDHEX })
+                debug(`USDHEX = $${USDHEX}`)
                 this.setState({ USDHEX }, () => {
-                    setTimeout(this.subscribeUpdateUsdHex, 10000)
                     this.usdProgress.childNodes[0].classList.add("countdown")
+                    setTimeout(this.subscribeUpdateUsdHex, 9000)
                 })
             }
         })
+        // .catch( ... )
+        
+        // Moralis (requires API key. see .env file)
+        // const chainId = 0x1 // for ETH HEX contract so we can see price without connecting wallet
+        // const _HEX_ADDRESS = HEX.CHAINS[chainId].address
+        // axios.get("https://deep-index.moralis.io/api/"
+        //     + "token/ERC20/"
+        //     + _HEX_ADDRESS
+        //     + "/price?chain=eth&chain_name=mainnet"
+        //     + "&exchange=uniswapv2",
+        //     { 
+            //         timeout: 5000,  // expect answer within 2.5 seconds
+            //         headers: {
+                //             "accept": "application/json",
+                //             "X-API-KEY": process.env.REACT_APP_MORALIS_DEFAULT_API_KEY
+                //         }
+                //     }
+                // )
+                // .then(response => response.data)
+                // .then(data => { 
+                    //     debug("USDHEX response: ", data)
+                    //     if (!data.usdPrice) throw new Error(data.message)
+                    //     const USDHEX = parseFloat(data.usdPrice) || Number(0.0)
+        //     if (USDHEX) {
+        //         this.retryCounter = 2
+        //         localStorage.setItem('usdhex_cache', USDHEX)
+        //         debug(`USDHEX: = $${USDHEX}`)
+        //         this.setState({ USDHEX }, () => {
+        //             this.usdProgress.childNodes[0].classList.add("countdown")
+        //             setTimeout(this.subscribeUpdateUsdHex, 9000)
+        //         })
+        //     }
+        // })
         .catch(e => {
-            if (e.message.slice(0,7) === "timeout") {
-                if (--this.retryCounter === 0) {
-                    this.retryCounter = 2
-                    debug("updateUsdHex: Too many timeouts. Invalidating cached USDHEX.")
-                    localStorage.clear('usdhex_cache')
-                    this.setState({ USDHEX: 0 })
-                }
-                debug("updateUsdHex: timeout. trying again in 3 seconds")
-                setTimeout(this.subscribeUpdateUsdHex, 3000) // back off 3 seconds
+            if (--this.retryCounter === 0) {
+                this.retryCounter = 2
+                debug("updateUsdHex: Too many failures. Invalidating cached USDHEX.")
+                localStorage.clear('usdhex_cache')
+                this.setState({ USDHEX: 0 })
             }
+            debug(`updateUsdHex: ${e.message}. Backing off 30 seconds.`)
+                setTimeout(this.subscribeUpdateUsdHex, 30000) // back off 30 seconds
         })
     }
 
