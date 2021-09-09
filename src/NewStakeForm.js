@@ -429,11 +429,11 @@ export class NewStakeForm extends React.Component {
                                 <Col className="text-right text-success h3"><strong><CryptoVal value={this.state.effectiveHEX} /></strong> <span className="text-muted">HEX</span></Col>
                             </Row>
                             <Row className="my-2 text-danger justify-content-end">
-                                <Image 
+                                {window.hostIsTSA && <Image 
                                     src={imgGameLogo} title="play the game!" 
                                     style={{ position: "absolute", cursor: "pointer", width: "7rem", left: "0.4rem", paddingLeft: 0 }}
                                     onClick={() => window.location.href="https://tshare.app?step=1"}
-                                />
+                                />}
                                 <Col className="col-4 col-xs-4 col-sm-5 col-md-4">Share Rate</Col>
                                 <Col className="col-4 pl-2 text-right numeric">
                                     <strong><CryptoVal value={this.state.shareRate} currency="TSHARE_PRICE" /> <span className="text-muted">HEX</span></strong>
