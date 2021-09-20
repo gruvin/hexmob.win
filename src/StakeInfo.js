@@ -230,7 +230,7 @@ export class StakeInfo extends React.Component {
                                         variant={'exitbtn bg-danger'}
                                         confirmationCallback={() => this.props.reloadStakes()}
                                         rejectionCallback={() => this.setState({ esShow: false })} 
-                                    >
+                                        >
                                     { (exitClass !== "termexit") && <>I UNDERSTAND — </>}END STAKE
                                     </VoodooButton>
                                     <Button
@@ -239,6 +239,7 @@ export class StakeInfo extends React.Component {
                                         onClick={(e) => { e.stopPropagation(); this.setState({ esShow: true })} }>
                                         EARLY END STAKE
                                     </Button>
+                                    </>}
                                     <table style={{ margin: "1em auto", width: "min-content", fontSize: "0.95em", lineHeight: "1em" }}>
                                         <tbody>
                                         <tr className="text-light">
@@ -264,7 +265,6 @@ export class StakeInfo extends React.Component {
                                         </tr>
                                         </tbody>
                                     </table>
-                                    </>}
                                     <div className="float-right text-muted small numeric">{stake.stakeId}</div>
                                 </Col>
                             </Row>
