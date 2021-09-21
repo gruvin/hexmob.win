@@ -78,7 +78,7 @@ class Stakes extends React.Component {
         const stakedDays = stakeData.stakedDays
         const endDay = startDay + stakedDays
 
-        // TODO: day min/max cache dailyData instead of retrieving overlapping data for each stake (probably)
+        // TODO: day min/max cache dailyData instead of repeatedly retrieving overlapping data for each stake (probably)
         const dailyDataCount = globals.dailyDataCount.toNumber()
         const dailyData = (startDay > currentDay) ? []
             :  await contract.methods.dailyDataRange(startDay, Math.min(dailyDataCount, endDay)).call()
