@@ -59,11 +59,12 @@ export class StakeInfo extends React.Component {
 
         const { stakedHearts, stakeShares, payout, bigPayDay, penalty } = stake
         const valueTotal = stakedHearts.plus(payout).plus(stake.bigPayDay)
-        const usdStaked = stakedHearts.div(1e8).times(usdhex).toFixed(2)
-        const usdPayout = payout.div(1e8).times(usdhex).toFixed(2)
+        const usdStaked = Number(stakedHearts.div(1e8).times(usdhex).toFixed(2))
+        const usdPayout = Number(payout.div(1e8).times(usdhex).toFixed(2))
+        const usdBPD = Number(bigPayDay.div(1e8).times(usdhex).toFixed(2))
         const usdPenalty = Number(penalty.div(1e8).times(usdhex).toFixed(2))
-        const usdValueTotal = Number(usdStaked) + Number(usdPayout)
-        const usdNetValue = Math.max(0, usdValueTotal - Number(usdPenalty))
+        const usdValueTotal = usdStaked + usdPayout + usdBPD
+        const usdNetValue = Math.max(0, usdValueTotal - usdPenalty)
 
         const percentGain = calcInterest(stake) // 1 == 1%
         const percentAPY = calcApy(currentDay, stake)
@@ -180,7 +181,7 @@ export class StakeInfo extends React.Component {
                             </Row>
                             <Row>
                                 <Col className="text-success text-right"><strong>Total USD</strong></Col>
-                                <Col className="numeric text-success"><strong>{ "$"+format(",.2f")(valueTotal.div(1E8).times(usdhex).toNumber() )}</strong></Col>
+                                <Col className="numeric text-success"><strong>{ "$"+format(",.2f")(usdValueTotal)}</strong></Col>
                             </Row>
                             <Row>
                                 <Col className="text-right"><strong>Net Gain</strong></Col>
@@ -248,7 +249,7 @@ export class StakeInfo extends React.Component {
                                         </tr>
                                         <tr className="text-info">
                                             <td className="col-sm-2">interest</td>
-                                            <td className="col-sm-2 pr-0 text-right">+&nbsp;$<CryptoVal className="numeric" value={usdPayout} currency="USD" /> </td>
+                                            <td className="col-sm-2 pr-0 text-right">+&nbsp;$<CryptoVal className="numeric" value={usdPayout+usdBPD} currency="USD" /> </td>
                                         </tr>
                                         <tr className="text-danger">
                                             <td className="col-sm-2">penalty</td>
