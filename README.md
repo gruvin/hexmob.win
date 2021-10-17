@@ -1,87 +1,70 @@
-# HEX mob[ile]
-https://hexmob.win
+# Getting Started with Create React App
 
-## Reporting Issues
-Please use the [Issue Tracker](https://github.com/gruvin/hexmob.win/issues)
+This project was bootstrapped with [Create React App](https://github.com/facebook/create-react-app).
 
-## Requesting Features
-Please use the [Issue Tracker](https://github.com/gruvin/hexmob.win/issues)
+## Available Scripts
 
+In the project directory, you can run:
 
-## Dev Contact Details
+### `yarn start`
 
-### Secure Communication with the Dev (Bryan aka gruvin)
-Crypto is full of theives and trixters. I recommend sending me any queries via GPG signed and verified email. You can begin that process at my [FlowCrypt™ Encrypted Contact Page](https://flowcrypt.com/me/gruvin). 
+Runs the app in the development mode.\
+Open [http://localhost:3000](http://localhost:3000) to view it in the browser.
 
-At the very least, you'll be able to verify it was really me who replied, assuming you can use some kind of GPG enabled email client. I use the FlowCrypt™ exension for Gmail.
+The page will reload if you make edits.\
+You will also see any lint errors in the console.
 
-- Download my GPG Public Key *file* from my [FlowCrypt™ Encrypted Contact Page](https://flowcrypt.com/me/gruvin)
+### `yarn test`
 
-I use the same key to sign git tags (when I do) example: tag 0.2.0B (first open source release) is signed ...
+Launches the test runner in the interactive watch mode.\
+See the section about [running tests](https://facebook.github.io/create-react-app/docs/running-tests) for more information.
 
-- Import my public key into your GPG keyring ...
+### `yarn build`
 
-```
-% gpg --import 0x8F351354BCBE9993-gruvingmailcom-public-key.asc
-```
-- Now you can see if a git tag is signed by me ...
-```
-% git tag --verify v0.2.0B
-object a9662f470c35a28b1e3ca6301b08066ae82289ba
-type commit
-tag v0.2.0B
-tagger Bryan <gruvin@gmail.com> 1590729834 +1200
+Builds the app for production to the `build` folder.\
+It correctly bundles React in production mode and optimizes the build for the best performance.
 
-Going Open Source.
-gpg: Signature made Fri 29 May 17:23:54 2020 NZST
-gpg:                using RSA key 036E2526A4740940E1DF91955751D33B09A27356
-gpg: Good signature from "Bryan Rentoul <gruvin@gmail.com>" [ultimate]
-```
+The build is minified and the filenames include the hashes.\
+Your app is ready to be deployed!
 
-----
+See the section about [deployment](https://facebook.github.io/create-react-app/docs/deployment) for more information.
 
-## How Can I Trust this dApp Interface?
+### `yarn eject`
 
-I'm _so_ glad you asked! Hold on to your hat! Here we go ...
+**Note: this is a one-way operation. Once you `eject`, you can’t go back!**
 
-### Self Service Security Audit
-I'm just a lone guy, at the end of the Earth. I cannot hope to pay for any kind of proper code security audit. However, if you are so inclined, I have created a method for you to at least verify that what you get served over the web, matches what I have personally signed and published here on GitHub.
+If you aren’t satisfied with the build tool and configuration choices, you can `eject` at any time. This command will remove the single build dependency from your project.
 
-- You'll need GPG and to be competent at the command line.
-- Download my GPG Public Key *file* from my [FlowCrypt™ Encrypted Contact Page](https://flowcrypt.com/me/gruvin)
-- Import my public key into your GPG keyring ...
-```
-% gpg --import 0x8F351354BCBE9993-gruvingmailcom-public-key.asc
-```
-- Download the two `hexmob.win-*` files from the [latest release](https://github.com/gruvin/hexmob.win/releases/latest), which should be the current website version.
-- Use the `.sig` file to verify the code is as it was when signed by the author (Me)
-```
-% gpg --verify hexmob.win-0.2.12B-build.tgz.sig hexmob.win-0.2.12B-build.tgz
-gpg: Signature made Wed  9 Dec 14:10:31 2020 NZDT
-gpg:                using RSA key 036E2526A4740940E1DF91955751D33B09A27356
-gpg: Good signature from "Bryan Rentoul <gruvin@gmail.com>" [unknown]
-```
-- Now, you can use your browser's developer tools to check the code you are running matches the contents of the `.tgz` file.
+Instead, it will copy all the configuration files and the transitive dependencies (webpack, Babel, ESLint, etc) right into your project so you have full control over them. All of the commands except `eject` will still work, but they will point to the copied scripts so you can tweak them. At this point you’re on your own.
 
-## Self Service Code Audit
-So, the code your browser gets matches what I wrote and intended. Yay! \0/ But ... is what I wrote fair and true? Well, that's where we reach the end of the road, I'm afraid. You'll either have to beg or pay someone to audit the code for you --OR-- at least look through it yourself, trying to find any ETH addresses other than the legitimate HEX ERC20 contract. That should be enough to know the code won't be sending your HEX off to somewhere you didn't want.
+You don’t have to ever use `eject`. The curated feature set is suitable for small and middle deployments, and you shouldn’t feel obligated to use this feature. However we understand that this tool wouldn’t be useful if you couldn’t customize it when you are ready for it.
 
-Here is how you can clone the code to your own computer and verifiy that what you got was what I actually wrote ...
+## Learn More
 
-```
-% git clone https://github.com/gruvin/hexmob.win.git
-% cd hexmob.win
-% git checkout v0.2.12B    [or whatever the current version is]
-% git tag --verify 0.2.12B            [ ditto]
-object ab8d83bffd6774df5534e46523fa7310ac8772b0
-type commit
-tag 0.2.12B
-tagger Bryan Rentoul <gruvin@gmail.com> 1607498555 +1300
+You can learn more in the [Create React App documentation](https://facebook.github.io/create-react-app/docs/getting-started).
 
-0.12.B official release 2020-12-09 [<== this line might be anything]
-gpg: Signature made Wed  9 Dec 20:23:30 2020 NZDT
-gpg:                using RSA key 036E2526A4740940E1DF91955751D33B09A27356
-gpg: Good signature from "Bryan Rentoul <gruvin@gmail.com>" [unknown]
-```
+To learn React, check out the [React documentation](https://reactjs.org/).
 
-Those `[unknown]` tags mean that no one you already trust has vouched for my GPG key. Sheesh! Let's try to keep it real though huh? 'k? Tnx.
+### Code Splitting
+
+This section has moved here: [https://facebook.github.io/create-react-app/docs/code-splitting](https://facebook.github.io/create-react-app/docs/code-splitting)
+
+### Analyzing the Bundle Size
+
+This section has moved here: [https://facebook.github.io/create-react-app/docs/analyzing-the-bundle-size](https://facebook.github.io/create-react-app/docs/analyzing-the-bundle-size)
+
+### Making a Progressive Web App
+
+This section has moved here: [https://facebook.github.io/create-react-app/docs/making-a-progressive-web-app](https://facebook.github.io/create-react-app/docs/making-a-progressive-web-app)
+
+### Advanced Configuration
+
+This section has moved here: [https://facebook.github.io/create-react-app/docs/advanced-configuration](https://facebook.github.io/create-react-app/docs/advanced-configuration)
+
+### Deployment
+
+This section has moved here: [https://facebook.github.io/create-react-app/docs/deployment](https://facebook.github.io/create-react-app/docs/deployment)
+
+### `yarn build` fails to minify
+
+This section has moved here: [https://facebook.github.io/create-react-app/docs/troubleshooting#npm-run-build-fails-to-minify](https://facebook.github.io/create-react-app/docs/troubleshooting#npm-run-build-fails-to-minify)

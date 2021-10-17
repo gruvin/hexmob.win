@@ -41,6 +41,7 @@ case "$DEPLOY_TYPE" in
 
                 echo "Building go.TShare.app version ..."
                 cp public/index-tsa.html public/index.html
+                cp public/tsa/favicon-96x96.png src/assets/
                 cp src/theme-tsa.scss src/theme.scss
                 yarn build
                 if [ -d build-tsa ]; then rm -rf build-tsa; fi
@@ -50,6 +51,7 @@ case "$DEPLOY_TYPE" in
                 
                 echo "Building hexmob.win version"
                 cp public/index-hexmob.html public/index.html
+                cp public/hexmob/favicon-96x96.png src/assets/
                 cp src/theme-hexmob.scss src/theme.scss
                 yarn build
                 echo "Done."

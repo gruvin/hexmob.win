@@ -21,11 +21,11 @@
 .recharts-reference-line-line { stroke: map-get(bs.$theme-colors, warning )}
 
 .icon-wait-bg {
-    background: url('/hex_planet.gif') 130px 30px no-repeat
+    background: url('assets//hex_planet.gif') 130px 30px no-repeat
 }
 
 .icon-error-bg {
-    background: url('/question_bubble.png') 130px 30px no-repeat
+    background: url('assets/question_bubble.png') 130px 30px no-repeat
 }
 .no-pointer-events { pointer-events: none; }
 *:not(input):not(textarea) {
