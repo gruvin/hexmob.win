@@ -48,14 +48,15 @@ export class StakeInfo extends React.Component {
                 currentDay < startDay ? "pendingexit"
                 : stakeDay < stakedDays/2 ? "earlyexit"
                 : stakeDay < stakedDays ? "midexit"
-                : stakeDay < stakedDays+7 ? "termexit"
+                : stakeDay < stakedDays+14 ? "termexit"
                 : "lateexit"
         const progressVariant = 
             exitClass === "pendingexit" ? "secondary"
             : exitClass === "earlyexit" ? "danger"
             : exitClass === "midexit" ? "warning"
             : exitClass === "termexit" ? "success"
-            : "info" // latexit
+            : "info" // lateexit
+        const isEarly = stakeDay < stakedDays
 
         const { stakedHearts, stakeShares, payout, bigPayDay, penalty } = stake
         const valueTotal = stakedHearts.plus(payout).plus(stake.bigPayDay)
@@ -221,26 +222,27 @@ export class StakeInfo extends React.Component {
                                             </Popover.Content>
                                         </Popover>
                                     </Overlay>
-                                    {!this.props.readOnly && <>
+                                {!this.props.readOnly && <>
                                     <VoodooButton
-                                        style={{ display: (exitClass === "termexit") || this.state.esShow ? "inline-block" : "none" }}
+                                        style={{ display: (!isEarly) || this.state.esShow ? "inline-block" : "none" }}
                                         contract={window.contract}
                                         method="stakeEnd" 
                                         params={[stake.stakeIndex, stake.stakeId]}
                                         options={{ from: stake.stakeOwner }}
-                                        variant={'exitbtn bg-danger'}
+                                        variant={'exitbtn '+exitClass}
                                         confirmationCallback={() => this.props.reloadStakes()}
                                         rejectionCallback={() => this.setState({ esShow: false })} 
                                         >
-                                    { (exitClass !== "termexit") && <>I UNDERSTAND — </>}END STAKE
+                                    {isEarly && <>I UNDERSTAND — </>}END STAKE
                                     </VoodooButton>
                                     <Button
                                         variant={'exitbtn '+exitClass}
-                                        style={{ display: (exitClass !== "termexit") && !this.state.esShow ? "inline-block" : "none" }}
+                                        style={{ display: isEarly && !this.state.esShow ? "inline-block" : "none" }}
                                         onClick={(e) => { e.stopPropagation(); this.setState({ esShow: true })} }>
-                                        EARLY END STAKE
+                                        {isEarly && <>EARLY </>}END STAKE
                                     </Button>
-                                    </>}
+                                    </>
+                                }
                                     <table style={{ margin: "1em auto", width: "min-content", fontSize: "0.95em", lineHeight: "1em" }}>
                                         <tbody>
                                         <tr className="text-light">
