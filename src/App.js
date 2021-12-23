@@ -607,18 +607,26 @@ class App extends React.Component {
                         usdhex={this.state.USDHEX}
                         openActive={!uriQuery.has('closed')}
                     />
-                    {this.state.accounts.length > 0 && this.state.accounts.map(acc => (
-                        <Stakes
-                            key={`public:${acc.address}`}
-                            className="mt-3"
-                            publicAddress={acc.address} 
-                            publicName={acc.name}
-                            contract={this.contract} wallet={this.state.wallet} usdhex={this.state.USDHEX}
-                        />
-                    ))}
                     { uriQuery.has('tewkens') && <Tewkenaire parent={this} usdhex={this.state.USDHEX} />}
-                    <Stats parent={this} contract={this.contract} wallet={this.state.wallet} usdhex={this.state.USDHEX} />
                     <Lobby parent={this} contract={this.contract} wallet={this.state.wallet} />
+
+                    {this.state.accounts.length > 0 && this.state.accounts.map(acc => {
+                        const _wallet = {
+                            address: acc.address,
+                            balance: BigNumber(0),
+                            ETHbalance: BigNumber(0)
+                        }
+                        return (
+                            <Stakes
+                                key={`public:${acc.address}`}
+                                className="mt-3"
+                                publicAddress={acc.address} 
+                                publicName={acc.name}
+                                contract={this.contract} wallet={_wallet} usdhex={this.state.USDHEX}
+                            />
+                        )
+                    })}
+                    <Stats parent={this} contract={this.contract} wallet={this.state.wallet} usdhex={this.state.USDHEX} />
                     <Container className="text-center">
                         <Badge variant="dark"><span className="text-bold">CONTRACT ADDRESS </span>
                         <br className="d-md-none"/>
