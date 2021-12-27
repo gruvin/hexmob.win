@@ -265,7 +265,7 @@ const fetchWithTimeout  = (url, params, timeout) => {
 */
 const AppleNSSURLdailyDataRange = (contract, startDay, endDay) => {
     return new Promise((resolve, reject) => {
-        const chunkSize = 132 // Leaving some margin. Max size discovered experimentally was 152 chunks. 
+        const chunkSize = 128 // Leaving some margin. Max size discovered experimentally was 152 chunks. 
         let chunkStart = startDay
         let chunkEnd = Math.min(endDay, chunkStart + chunkSize)
         let callChunks = []
