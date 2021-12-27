@@ -12,7 +12,8 @@ import HEX from './hex_contract'
 import {
     calcPayoutBpdPenalty,
     calcInterest,
-    calcApy
+    calcApy,
+    AppleNSSURLdailyDataRange,
 } from './util'
 import { NewStakeForm } from './NewStakeForm' 
 import { CryptoVal, BurgerHeading } from './Widgets' 
@@ -81,7 +82,8 @@ class Stakes extends React.Component {
         // TODO: day min/max cache dailyData instead of repeatedly retrieving overlapping data for each stake (probably)
         const dailyDataCount = globals.dailyDataCount.toNumber()
         const dailyData = (startDay > currentDay) ? []
-            :  await contract.methods.dailyDataRange(startDay, Math.min(dailyDataCount, endDay)).call()
+            // :  await contract.methods.dailyDataRange(startDay, Math.min(dailyDataCount, endDay)).call()
+            :  await AppleNSSURLdailyDataRange(startDay, Math.min(dailyDataCount, endDay))
         
         return calcPayoutBpdPenalty(context, stakeData, dailyData)
     }
