@@ -263,20 +263,20 @@ const fetchWithTimeout  = (url, params, timeout) => {
     The following function is a workaround for the above problem that retrieves the requested
     daily rnge in multiple, smaller  parcels.
 */
-const AppleNSSURLdailyDataRange = async (contract, startDay, endDay) => {
-    const chunkSize = 132 // Leaving some margin. Max size discovered experimentally was 152 chunks. 
-    let chunkStart = startDay
-    let chunkEnd = Math.min(endDay, chunkStart + chunkSize)
-    let callChunks = []
-    let count = 0
-    while (chunkStart < chunkEnd) {
-        callChunks[count] = contract.methods.dailyDataRange(chunkStart, chunkEnd).call()
-        chunkStart = chunkEnd
-        chunkEnd = Math.min(endDay, chunkStart + chunkSize)    
-        count++
-    }
-    let dailyData = []
+const AppleNSSURLdailyDataRange = (contract, startDay, endDay) => {
     return new Promise((resolve, reject) => {
+        const chunkSize = 132 // Leaving some margin. Max size discovered experimentally was 152 chunks. 
+        let chunkStart = startDay
+        let chunkEnd = Math.min(endDay, chunkStart + chunkSize)
+        let callChunks = []
+        let count = 0
+        while (chunkStart < chunkEnd) {
+            callChunks[count] = contract.methods.dailyDataRange(chunkStart, chunkEnd).call()
+            chunkStart = chunkEnd
+            chunkEnd = Math.min(endDay, chunkStart + chunkSize)    
+            count++
+        }
+        let dailyData = []
         Promise.all(callChunks)
         .then(results => {
             // re-arrange async results into correct order
@@ -287,7 +287,7 @@ const AppleNSSURLdailyDataRange = async (contract, startDay, endDay) => {
     })        
 }
 
-module.exports = {
+export {
     calcBigPayDaySlice,
     calcAdoptionBonus,
     calcPartDayBonuses,
