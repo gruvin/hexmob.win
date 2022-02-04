@@ -223,7 +223,6 @@ class Lobby extends React.Component {
     getHistory = () => {
         const { contract, wallet } = this.props
         const dailyDataCount  = Math.min(HEX.CLAIM_PHASE_END_DAY, contract.Data.globals.dailyDataCount.toNumber())
-
         if (!wallet.address || wallet.address === '') return debug('Lobby::address invalid')
         Promise.all([
             contract.methods.dailyDataRange(0, dailyDataCount).call(),  // [0] for unclaimedSatoshisTotal from each day in range
@@ -231,7 +230,10 @@ class Lobby extends React.Component {
             this.getPastLobbyEntries(),                                 // [2] lobby entries history from XfLobbyEnter/Exit event log
             contract.methods.xfLobbyPendingDays(wallet.address).call(), // [3] bit vector of days; 1 == we have entires that day
         ]).then(results => {
+
             const lobbyDailyData        = results[0]
+
+            debug(`LOBBY DATA: count=${dailyDataCount} results.len=${results[0].length}`)
             const lobbyDailyETH         = results[1]
             const pastEntries           = results[2]
             const hasPendingEntryThisDay = new BitSet(

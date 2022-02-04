@@ -280,6 +280,9 @@ class App extends React.Component {
             .on('error', (e) => {
                 this.unsubscribeEvents()
                 this.web3.currentProvider.disconnect()
+                alert("Oops! Using iOS v15+? Please DISABLE Apple's buggy [NSURLSession Websocket] 'feature' found at ..."
+                +"\nSettings -> Safari -> Advanced -> Experimental Features -> NSURLSession Websocket"
+                +"\n\nDoing so will not adversely affect other browser experiences.")
                 this.resetApp() // TODO: try to gracefully reconnect etc
             })
 
@@ -337,6 +340,7 @@ class App extends React.Component {
     
     // this function will be called eery 10 seconds after the first invocation.
     subscribeUpdateUsdHex = async () => {
+        if (!this.usdProgress) return // can happen when auto-compile causes page reload during dev session
         this.usdProgress.childNodes[0].classList.remove("countdown")
         
         // look for last session cached value in localStorage first
@@ -607,18 +611,26 @@ class App extends React.Component {
                         usdhex={this.state.USDHEX}
                         openActive={!uriQuery.has('closed')}
                     />
-                    {this.state.accounts.length > 0 && this.state.accounts.map(acc => (
-                        <Stakes
-                            key={`public:${acc.address}`}
-                            className="mt-3"
-                            publicAddress={acc.address} 
-                            publicName={acc.name}
-                            contract={this.contract} wallet={this.state.wallet} usdhex={this.state.USDHEX}
-                        />
-                    ))}
                     { uriQuery.has('tewkens') && <Tewkenaire parent={this} usdhex={this.state.USDHEX} />}
-                    <Stats parent={this} contract={this.contract} wallet={this.state.wallet} usdhex={this.state.USDHEX} />
                     <Lobby parent={this} contract={this.contract} wallet={this.state.wallet} />
+
+                    {this.state.accounts.length > 0 && this.state.accounts.map(acc => {
+                        const _wallet = {
+                            address: acc.address,
+                            balance: BigNumber(0),
+                            ETHbalance: BigNumber(0)
+                        }
+                        return (
+                            <Stakes
+                                key={`public:${acc.address}`}
+                                className="mt-3"
+                                publicAddress={acc.address} 
+                                publicName={acc.name}
+                                contract={this.contract} wallet={_wallet} usdhex={this.state.USDHEX}
+                            />
+                        )
+                    })}
+                    <Stats parent={this} contract={this.contract} wallet={this.state.wallet} usdhex={this.state.USDHEX} />
                     <Container className="text-center">
                         <Badge variant="dark"><span className="text-bold">CONTRACT ADDRESS </span>
                         <br className="d-md-none"/>

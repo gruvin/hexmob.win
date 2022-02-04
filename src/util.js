@@ -1,7 +1,8 @@
 const HEX = require('./hex_contract')
 const { BigNumber } = require('bignumber.js')
 const { format } = require('d3-format')
-// const debug = require('debug')("util")
+// eslint-disable-next-line
+const debug = require('debug')("util")
 /*
  * displays unitized .3 U formatted values (eg. 12.345 M) with 50% opacity for fractional part
  */
@@ -255,7 +256,39 @@ const fetchWithTimeout  = (url, params, timeout) => {
     })
 }
 
-module.exports = {
+/* 
+    Apple's not so experimental, experimental feature "NSSURLSession Websocket" errors out
+    when receiving data over a certrain length. ("Protocol error".) This affects iOS and macOS users
+    who have longer stakes and anyone involved in the riginal Adoption Amplifier (AA).
+
+    The following function was an attempted workaround for the above problem that retrieves the requested
+    daily rnge in multiple, smaller parcels. It didn't work.
+*/
+// const AppleNSSURLdailyDataRange = (contract, startDay, endDay) => {
+//     return new Promise((resolve, reject) => {
+//         const chunkSize = 128
+//         let chunkStart = startDay
+//         let chunkEnd = Math.min(endDay, chunkStart + chunkSize)
+//         let callChunks = []
+//         let count = 0
+//         while (chunkStart < chunkEnd) {
+//             callChunks[count] = contract.methods.dailyDataRange(chunkStart, chunkEnd).call()
+//             chunkStart = chunkEnd
+//             chunkEnd = Math.min(endDay, chunkStart + chunkSize)    
+//             count++
+//         }
+//         let dailyData = []
+//         Promise.all(callChunks)
+//         .then(results => {
+//             // re-arrange async results into correct order
+//             for(let i = 0; i < results.length; i++) dailyData = [ ...dailyData, ...results[i] ]
+//             return resolve(dailyData)
+//         })
+//         .catch(e => reject(e))
+//     })        
+// }
+
+export {
     calcBigPayDaySlice,
     calcAdoptionBonus,
     calcPartDayBonuses,
@@ -266,4 +299,5 @@ module.exports = {
     cryptoFormat,
     detectTrustWallet,
     fetchWithTimeout,
+    // AppleNSSURLdailyDataRange,
 }

@@ -38,6 +38,7 @@ case "$DEPLOY_TYPE" in
                 # do dual branding stuff (two builds)
                 cp public/index.html public/index.html-orig
                 cp src/theme.scss src/theme.scss-orig
+                cp src/assets/favicon-96x96.png src/assets/favicon-96x96.png-orig
 
                 echo "Building go.TShare.app version ..."
                 cp public/index-tsa.html public/index.html
@@ -58,6 +59,7 @@ case "$DEPLOY_TYPE" in
 
                 mv public/index.html-orig public/index.html
                 mv src/theme.scss-orig src/theme.scss
+                mv src/assets/favicon-96x96.png-orig src/assets/favicon-96x96.png
                 echo "Dual build completed."
 
                 echo "RSYNC: sending build/* => ${DEST_HEXMOB}" 

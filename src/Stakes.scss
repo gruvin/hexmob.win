@@ -58,8 +58,8 @@
         }
 
         &.lateexit {
-            /* LATER THAN TERM PLUS ONE WEEK EXIT BUTTON */
-            color: map-get(bs.$theme-colors, success); 
+            /* LATER THAN TERM PLUS TWO WEEKS EXIT BUTTON */
+            color: map-get(bs.$theme-colors, info); 
             padding-left: 22px;
             border-color: map-get(bs.$theme-colors, secondary); 
             background-size: 10px 26px;
