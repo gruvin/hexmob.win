@@ -280,6 +280,9 @@ class App extends React.Component {
             .on('error', (e) => {
                 this.unsubscribeEvents()
                 this.web3.currentProvider.disconnect()
+                alert("Oops! Using iOS v15+? Please DISABLE Apple's buggy [NSURLSession Websocket] 'feature' found at ..."
+                +"\nSettings -> Safari -> Advanced -> Experimental Features -> NSURLSession Websocket"
+                +"\n\nDoing so will not adversely affect other browser experiences.")
                 this.resetApp() // TODO: try to gracefully reconnect etc
             })
 
@@ -337,6 +340,7 @@ class App extends React.Component {
     
     // this function will be called eery 10 seconds after the first invocation.
     subscribeUpdateUsdHex = async () => {
+        if (!this.usdProgress) return // can happen when auto-compile causes page reload during dev session
         this.usdProgress.childNodes[0].classList.remove("countdown")
         
         // look for last session cached value in localStorage first

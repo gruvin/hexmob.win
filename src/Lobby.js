@@ -14,7 +14,6 @@ import { CryptoVal, BurgerHeading, VoodooButton } from './Widgets'
 import BitSet from 'bitset'
 import Timer from 'react-compound-timer'
 import crypto from 'crypto'
-import { AppleNSSURLdailyDataRange } from './util'
 
 const debug = require('debug')('Lobby')
 
@@ -226,7 +225,7 @@ class Lobby extends React.Component {
         const dailyDataCount  = Math.min(HEX.CLAIM_PHASE_END_DAY, contract.Data.globals.dailyDataCount.toNumber())
         if (!wallet.address || wallet.address === '') return debug('Lobby::address invalid')
         Promise.all([
-            AppleNSSURLdailyDataRange(contract, 0, dailyDataCount),     // [0] for unclaimedSatoshisTotal from each day in range
+            contract.methods.dailyDataRange(0, dailyDataCount).call(),  // [0] for unclaimedSatoshisTotal from each day in range
             contract.methods.xfLobbyRange(0, dailyDataCount).call(),    // [1] total ETH from each day in range
             this.getPastLobbyEntries(),                                 // [2] lobby entries history from XfLobbyEnter/Exit event log
             contract.methods.xfLobbyPendingDays(wallet.address).call(), // [3] bit vector of days; 1 == we have entires that day
