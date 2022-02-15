@@ -267,12 +267,15 @@ class Stakes extends React.Component {
         let bigPayDayTotal = new BigNumber(0)
         let percentGainTotal = new BigNumber(0)
         let percentAPYTotal = new BigNumber(0)
+        let averagePercentGain = new BigNumber(0)
+        let averagePercentAPY = new BigNumber(0)
 
         if (this.state.loadingStakes)
             return ( <p>loading ...</p> )
         else if (!stakeList.length)
             return ( <p>no stake data found for this address</p> )
 
+       let activeCount = 0
         const stakeListOutput = stakeList.map((stakeData) => {
             // debug('stakeData: %o', stakeData)
             const startDay = Number(stakeData.lockedDay)
@@ -282,6 +285,7 @@ class Stakes extends React.Component {
             const _endDate = new Date(HEX.START_DATE.getTime() + endDay * 24 * 3600 * 1000)
             const startDate = _startDate.toLocaleDateString()
             const endDate = _endDate.toLocaleDateString()
+
 
             const { payout: interest, bigPayDay, penalty } = stakeData
 
@@ -303,14 +307,19 @@ class Stakes extends React.Component {
 
             const percentGain = calcInterest(stake) // 1 == 1%
             const percentAPY = calcApy(currentDay, stake)
-                percentGainTotal = percentGainTotal.plus(percentGain)
+            percentGainTotal = percentGainTotal.plus(percentGain)
             percentAPYTotal = percentAPYTotal.plus(percentAPY)
+
+            if (currentDay > stake.startDay) activeCount++
 
             return stake
         })
-        const averagePercentGain = percentGainTotal.div(stakeListOutput.length)
-        const averagePercentAPY = percentAPYTotal.div(stakeListOutput.length)
-
+        
+        if (activeCount) {
+            averagePercentGain = percentGainTotal.div(activeCount)
+            averagePercentAPY = percentAPYTotal.div(activeCount)
+        }
+        
         const numStakes = stakeList.length
 
         return (
