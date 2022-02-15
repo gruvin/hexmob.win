@@ -28,7 +28,8 @@ export class StakeInfo extends React.Component {
     constructor(props) {
         super(props)
         this.state = {
-            esShow: false
+            esShow: false,
+            eesStatsHEX: false
         }
         this.esRef = createRef()
     }
@@ -60,12 +61,20 @@ export class StakeInfo extends React.Component {
 
         const { stakedHearts, stakeShares, payout, bigPayDay, penalty } = stake
         const valueTotal = stakedHearts.plus(payout).plus(stake.bigPayDay)
-        const usdStaked = Number(stakedHearts.div(1e8).times(usdhex).toFixed(2))
-        const usdPayout = Number(payout.div(1e8).times(usdhex).toFixed(2))
-        const usdBPD = Number(bigPayDay.div(1e8).times(usdhex).toFixed(2))
-        const usdPenalty = Number(penalty.div(1e8).times(usdhex).toFixed(2))
-        const usdValueTotal = usdStaked + usdPayout + usdBPD
-        const usdNetValue = Math.max(0, usdValueTotal - usdPenalty)
+
+        const hexStaked     = Number(stakedHearts)
+        const hexPayout     = Number(payout)
+        const hexBPD        = Number(bigPayDay)
+        const hexPenalty    = Number(penalty)
+        const hexValueTotal = Number(hexStaked + hexPayout + hexBPD)
+        const hexNetValue   = Number(Math.max(0, hexValueTotal - hexPenalty))
+
+        const usdStaked     = Number((hexStaked / 1e8 * usdhex).toFixed(2))
+        const usdPayout     = Number((hexPayout / 1e8 * usdhex).toFixed(2))
+        const usdBPD        = Number((hexBPD / 1e8 * usdhex).toFixed(2))
+        const usdPenalty    = Number((hexPenalty / 1e8 * usdhex).toFixed(2))
+        const usdValueTotal = Number((usdStaked + usdPayout + usdBPD).toFixed(2))
+        const usdNetValue   = Number(Math.max(0, usdValueTotal - usdPenalty).toFixed(2))
 
         const percentGain = calcInterest(stake) // 1 == 1%
         const percentAPY = calcApy(currentDay, stake)
@@ -92,6 +101,9 @@ export class StakeInfo extends React.Component {
                 </Card.Header>
             )
         }
+
+        const eesDisplayHEX = this.state.eesStatsHEX ? "block" : "none"
+        const eesDisplayUSD = !this.state.eesStatsHEX ? "block" : "none"
 
         return (
             <Accordion xs={12} sm={6} defaultActiveKey="0" key={stake.stakeId} className="my-2"
@@ -222,36 +234,89 @@ export class StakeInfo extends React.Component {
                                             </Popover.Content>
                                         </Popover>
                                     </Overlay>
-                                {!this.props.readOnly && <>
-                                    <VoodooButton
-                                        style={{ display: (!isEarly) || this.state.esShow ? "inline-block" : "none" }}
-                                        contract={window.contract}
-                                        method="stakeEnd" 
-                                        params={[stake.stakeIndex, stake.stakeId]}
-                                        options={{ from: stake.stakeOwner }}
-                                        variant={'exitbtn '+exitClass}
-                                        confirmationCallback={() => this.props.reloadStakes()}
-                                        rejectionCallback={() => this.setState({ esShow: false })} 
-                                        >
-                                    {isEarly && <>I UNDERSTAND — </>}END STAKE
-                                    </VoodooButton>
-                                    <Button
-                                        variant={'exitbtn '+exitClass}
-                                        style={{ display: isEarly && !this.state.esShow ? "inline-block" : "none" }}
-                                        onClick={(e) => { e.stopPropagation(); this.setState({ esShow: true })} }>
-                                        {isEarly && <>EARLY </>}END STAKE
-                                    </Button>
-                                    </>
-                                }
-                                    <table style={{ margin: "1em auto", width: "min-content", fontSize: "0.95em", lineHeight: "1em" }}>
+                                    { !this.props.readOnly && <>
+                                        <VoodooButton
+                                            style={{ display: (!isEarly) || this.state.esShow ? "inline-block" : "none" }}
+                                            contract={window.contract}
+                                            method="stakeEnd" 
+                                            params={[stake.stakeIndex, stake.stakeId]}
+                                            options={{ from: stake.stakeOwner }}
+                                            variant={'exitbtn '+exitClass}
+                                            confirmationCallback={() => this.props.reloadStakes()}
+                                            rejectionCallback={() => this.setState({ esShow: false })} 
+                                            >
+                                        {isEarly && <>I UNDERSTAND — </>}END STAKE
+                                        </VoodooButton>
+                                        <Button
+                                            variant={'exitbtn '+exitClass}
+                                            style={{ display: isEarly && !this.state.esShow ? "inline-block" : "none" }}
+                                            onClick={(e) => { e.stopPropagation(); this.setState({ esShow: true })} }>
+                                            {isEarly && <>EARLY </>}END STAKE
+                                        </Button>
+                                        </>
+                                    }
+                                </Col>
+                            </Row>
+
+                            <Row onClick={() => this.setState({ eesStatsHEX: !this.state.eesStatsHEX }) }>
+                                <Col xs={12}>
+                                    {/* HEX values */}
+                                    <table style={{ display: eesDisplayHEX, margin: "1em auto", width: "min-content", fontSize: "0.95em", lineHeight: "1em" }}>
+                                        <tbody>
+                                        <tr className="text-light">
+                                            <td className="col-sm-2">principal</td>
+                                            <td className="col-sm-4 pr-0 text-right"><CryptoVal className="numeric" value={hexStaked} currency="HEX" />&nbsp;HEX</td>
+                                        </tr>
+                                        { hexBPD > 0 &&
+                                            <tr className="text-info">
+                                                <td className="col-sm-2">
+                                                    <span className="text-info">B</span>
+                                                    <span className="text-warning">P</span>
+                                                    <span className="text-danger">D</span>
+                                                </td>
+                                                <td className="col-sm-4 pr-0 text-right">+&nbsp;<CryptoVal className="numeric" value={hexBPD} currency="HEX" />&nbsp;HEX</td>
+                                            </tr>
+                                        }
+                                        <tr className="text-info">
+                                            <td className="col-sm-2">interest</td>
+                                            <td className="col-sm-4 pr-0 text-right">+&nbsp;<CryptoVal className="numeric" value={hexPayout} currency="HEX" />&nbsp;HEX</td>
+                                        </tr>
+                                        <tr className="text-danger">
+                                            <td className="col-sm-2">penalty</td>
+                                            <td className="col-sm-4 pr-0 text-right">-&nbsp;<CryptoVal className="numeric" value={hexPenalty} currency="HEX" />&nbsp;HEX</td>
+                                        </tr>
+                                        <tr className="text-success" style={{ fontWeight: "bold"}}>
+                                            <td className="col-sm-2 text-uppercase">payout</td>
+                                            <td className="col-sm-4 pr-0 text-right" style={{ borderTop: "double grey" }}>
+                                                <span className="text-success"><CryptoVal 
+                                                    className="numeric text-success" value={hexNetValue} 
+                                                    currency="HEX" />&nbsp;HEX
+                                                </span>
+                                            </td>
+                                        </tr>
+                                        </tbody>
+                                    </table>
+
+                                    {/* USD values */}
+                                    <table style={{ display: eesDisplayUSD, margin: "1em auto", width: "min-content", fontSize: "0.95em", lineHeight: "1em" }}>
                                         <tbody>
                                         <tr className="text-light">
                                             <td className="col-sm-2">principal</td>
                                             <td className="col-sm-2 pr-0 text-right">$<CryptoVal className="numeric" value={usdStaked} currency="USD" /></td>
                                         </tr>
+                                        { usdBPD > 0 &&
+                                            <tr className="text-info">
+                                                <td className="col-sm-2">
+                                                    <span className="text-info">B</span>
+                                                    <span className="text-warning">P</span>
+                                                    <span className="text-danger">D</span>
+                                                </td>
+                                                <td className="col-sm-2 pr-0 text-right">+&nbsp;$<CryptoVal className="numeric" value={usdBPD} currency="USD" /> </td>
+                                            </tr>
+                                        }
                                         <tr className="text-info">
                                             <td className="col-sm-2">interest</td>
-                                            <td className="col-sm-2 pr-0 text-right">+&nbsp;$<CryptoVal className="numeric" value={usdPayout+usdBPD} currency="USD" /> </td>
+                                            <td className="col-sm-2 pr-0 text-right">+&nbsp;$<CryptoVal className="numeric" value={usdPayout} currency="USD" /> </td>
                                         </tr>
                                         <tr className="text-danger">
                                             <td className="col-sm-2">penalty</td>
@@ -268,9 +333,10 @@ export class StakeInfo extends React.Component {
                                         </tr>
                                         </tbody>
                                     </table>
-                                    <div className="float-right text-muted small numeric">{stake.stakeId}</div>
+                                    <div className="text-center text-muted small">tap to toggle units</div>
                                 </Col>
                             </Row>
+                            <div className="float-right text-muted small numeric">{stake.stakeId}</div>
                         </Card.Body>
                     </Accordion.Collapse>
                 </Card>
