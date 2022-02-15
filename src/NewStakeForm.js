@@ -24,7 +24,9 @@ const axios = require('axios').create({
     headers: { "Content-Type": "application/json", "Accept": "applicaiton/json"},
 });
 
-const debug = require('debug')('NewStakeForm')
+const uriQuery = new URLSearchParams(window.location.search)
+
+const debug = require('debug')('NewStake')
 debug('loading')
 
 export class NewStakeForm extends React.Component {
@@ -135,6 +137,8 @@ export class NewStakeForm extends React.Component {
     }
 
     updateBarGraph = async () => {
+        if (!uriQuery.has('future')) return // dissabled due to data availability
+
         const { startDay, endDay } = this.state
         if (isNaN(startDay + endDay)) return
         const numDataPoints = 121
@@ -431,10 +435,10 @@ export class NewStakeForm extends React.Component {
                             <Row className="my-2 text-danger justify-content-end">
                                 {window.hostIsTSA && <Image 
                                     src={imgGameLogo} title="play the game!" 
-                                    style={{ position: "absolute", cursor: "pointer", width: "7rem", left: "0.4rem", paddingLeft: 0 }}
+                                    style={{ position: "absolute", cursor: "pointer", width: "6rem", left: "0.4rem", paddingLeft: 0 }}
                                     onClick={() => window.location.href="https://tshare.app?step=1"}
                                 />}
-                                <Col className="col-4 col-xs-4 col-sm-5 col-md-4">Share Rate</Col>
+                                <Col className="col-4 col-xs-4 col-sm-5 col-md-4 text-right">Share Rate</Col>
                                 <Col className="col-4 pl-2 text-right numeric">
                                     <strong><CryptoVal value={this.state.shareRate} currency="TSHARE_PRICE" /> <span className="text-muted">HEX</span></strong>
                                 </Col>
@@ -506,7 +510,7 @@ export class NewStakeForm extends React.Component {
                         ) }
                     </Col>
 
-                { this.state.data &&
+                { this.state.data && uriQuery.has("future") && // disabled due to data availability
                     <Container className="p-3 pt-0">
                         <ResponsiveContainer width="100%" height={160}>    
                             <BarChart 
