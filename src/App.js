@@ -735,7 +735,7 @@ class App extends React.Component {
 
                     </Container>
                     <GitHubInfo />
-                    { window.hostIsHM && <Donaticator walletConnected={this.state.walletConnected} fromAddress={this.state.wallet.address || null} />}
+                    {/* { window.hostIsHM && <Donaticator walletConnected={this.state.walletConnected} fromAddress={this.state.wallet.address || null} />} */}
                     { !window.hostIsTSA && window.metamaskOnline() && <MetamaskUtils /> }
                 </Container>
                 <Container id="hexmob_footer" fluid>
