@@ -271,7 +271,8 @@ class App extends React.Component {
             })
             .on('error', (e) => {
                 alert("UNEXPECTED DISCONNECTION\n\n"
-                +"If running on iOS v15+, please disable Apple's buggy [NSURLSession Websocket] 'feature' found at ..."
+                +"If running on iOS v15+, please use Safari and disable "
+                +"Apple's buggy [NSURLSession Websocket] 'feature' found at ..."
                 +"\nSettings -> Safari -> Advanced -> Experimental Features -> NSURLSession Websocket"
                 +"\n\nDoing so will not adversely affect other activities.")
                 this.resetApp() // TODO: try to gracefully reconnect etc
