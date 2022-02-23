@@ -134,45 +134,38 @@ class App extends React.Component {
         })
 
         try {
-            window.web3hexmob.currentProvider.publicConfigStore.on('update', this.updateETHBalance)
-        } catch(e) {
-        }
-    }
-
-    handleSubscriptionError = (e, r) => {
-        debug("subscription error: ", e)
+            window.web3hexmob.currentProvider.publicConfigStore
+            .on('update', this.updateETHBalance)
+        } catch(e) { }
     }
     
     subscribeEvents = () => {
-        const eventCallbackHEX = (error, result) => {
-            //debug('events.Transfer[error, result] => ', error, result.returnValues )
-            this.updateHEXBalance()
-        }
-        const eventCallbackUNIV2 = (error, result) => {
-            //debug('UNI: event.Swap[error, result] => ', error, result )
-            if (error) return
-            const { amount0In, amount1In, amount0Out, amount1Out } = result.returnValues
-            try {
-                const USDHEX = parseInt(amount1In) !== 0 
-                    ? Number(parseInt(amount1In) / parseInt(amount0Out) * 100)
-                    : Number(parseInt(amount1Out) / parseInt(amount0In) * 100)
-                this.setState({ USDHEX })
-            } catch(e) {
-                debug(`UNIV2:USDHEX Exception %o: amount1In:${amount1In} amount0Out: ${amount0Out}`, e)
-            }
-        }
+
         const hexEvent = this.contract.events
-        hexEvent.Transfer( {filter:{from:this.state.wallet.address}}, eventCallbackHEX)
-            .on('connected', (id) => debug('subbed: HEX from:', id))
-            .on('error', this.handleSubscriptionError)
-        hexEvent.Transfer( {filter:{to:this.state.wallet.address}}, eventCallbackHEX)
-            .on('connected', (id) => debug('subbed: HEX to:', id))
-            .on('error', this.handleSubscriptionError)
+        hexEvent.Transfer( {filter:{from:this.state.wallet.address}})
+            .on('connected', id => debug('subbed: HEX from:', id))
+            .on('data', this.updateHEXBalance)
+            .on('error', e => debug("hexEvent.Transfer [from]: ", e))
+        hexEvent.Transfer( {filter:{to:this.state.wallet.address}})
+            .on('connected', id => debug('subbed: HEX to:', id))
+            .on('data', this.updateHEXBalance)
+            .on('error', e => debug("hexEvent.Transfer [to]: ", e))
 
         const univ2Event = this.univ2Contract.events
-        univ2Event.Swap( {fromBlock: "latest" }, eventCallbackUNIV2)
-            .on('connected', (id) => debug('subbed: UNIV2 to:', id))
-            .on('error', this.handleSubscriptionError)
+        univ2Event.Swap( {fromBlock: "latest" })
+            .on('connected', id => debug('subbed: UNIV2 to:', id))
+            .on('data', result => {
+                const { amount0In, amount1In, amount0Out, amount1Out } = result.returnValues
+                try {
+                    const USDHEX = parseInt(amount1In) !== 0 
+                        ? Number(parseInt(amount1In) / parseInt(amount0Out) * 100)
+                        : Number(parseInt(amount1Out) / parseInt(amount0In) * 100)
+                    this.setState({ USDHEX })
+                } catch(e) {
+                    debug(`UNIV2:USDHEX Exception %o: amount1In:${amount1In} amount0Out: ${amount0Out}`, e)
+                }
+            })
+            .on('error', e => debug("univ2Event.Swap: ", e))
 
         const address = this.state.wallet.address
         this.web3.eth.subscribe('logs', {
@@ -186,9 +179,7 @@ class App extends React.Component {
         .on("changed", (log) => {
             debug('SS::changed: ', log);
         })
-        .on('error', this.handleSubscriptionError)
-
-        this.updateETHBalance()
+        .on('error', e => debug("eth.subscribe('logs'): ", e))
     }
 
     unsubscribeEvents = () => {
@@ -198,14 +189,16 @@ class App extends React.Component {
         } catch(e) {}
     }
     
-    updateETHBalance = async () => {
-        const balance = await this.web3.eth.getBalance(this.state.wallet.address)
-        this.setState({ wallet: { ...this.state.wallet, balanceETH: new BigNumber(balance) } })
+    updateETHBalance = () => {
+        this.web3.eth.getBalance(this.state.wallet.address)
+        .then(balance => this.setState({ wallet: { ...this.state.wallet, balanceETH: new BigNumber(balance) } }))
+        .catch(e => debug('updateETHBalance: '))
     }
-
-    updateHEXBalance = async () => {
-        const balance = await this.contract.methods.balanceOf(this.state.wallet.address).call()
-        this.setState({ wallet: { ...this.state.wallet, balance: new BigNumber(balance) } })
+    
+    updateHEXBalance = () => {
+        this.contract.methods.balanceOf(this.state.wallet.address).call()
+        .then(balance => this.setState({ wallet: { ...this.state.wallet, balance: new BigNumber(balance) } }))
+        .catch(e => debug('updateHEXBalance: '))
     }
 
     async selectWeb3ModalWallet() {
@@ -275,14 +268,12 @@ class App extends React.Component {
         this.wssProvider
             .on('close', (e) => {
                 debug("WSS CONNECTION DOWN")
-                this.unsubscribeEvents()
             })
             .on('error', (e) => {
-                this.unsubscribeEvents()
-                this.web3.currentProvider.disconnect()
-                alert("Oops! Using iOS v15+? Please DISABLE Apple's buggy [NSURLSession Websocket] 'feature' found at ..."
+                alert("UNEXPECTED DISCONNECTION\n\n"
+                +"If running on iOS v15+, please disable Apple's buggy [NSURLSession Websocket] 'feature' found at ..."
                 +"\nSettings -> Safari -> Advanced -> Experimental Features -> NSURLSession Websocket"
-                +"\n\nDoing so will not adversely affect other browser experiences.")
+                +"\n\nDoing so will not adversely affect other activities.")
                 this.resetApp() // TODO: try to gracefully reconnect etc
             })
 
@@ -475,7 +466,7 @@ class App extends React.Component {
             this.contract.methods.allocatedSupply().call().catch(e => debug('2:', e)),  // [1]
             this.contract.methods.currentDay().call().catch(e => debug('3:', e)),       // [2]
             this.contract.methods.globals().call().catch(e => debug('4:', e))           // [3]
-        ]).then((results) => {
+        ]).then(results => {
             const balance = new BigNumber(results[0])
             const allocatedSupply = new BigNumber(results[1])
             const currentDay = Number(results[2])
@@ -513,10 +504,9 @@ class App extends React.Component {
                 },
                 contractReady: true,
             })
-            this.subscribeEvents()
         })
         .catch(e => debug("App::componentDidMount:Promise.all(...): ", e))
-
+        
         // update UI and contract currentDay every hour
         var lastHour = -1;
         this.dayInterval = setInterval(async () => {
@@ -532,6 +522,8 @@ class App extends React.Component {
             }
         }, 1000);
 
+        this.subscribeEvents()
+        this.updateETHBalance()
     }
 
     componentWillUnmount = () => {
@@ -735,7 +727,7 @@ class App extends React.Component {
 
                     </Container>
                     <GitHubInfo />
-                    { window.hostIsHM && <Donaticator walletConnected={this.state.walletConnected} fromAddress={this.state.wallet.address || null} />}
+                    {/* { window.hostIsHM && <Donaticator walletConnected={this.state.walletConnected} fromAddress={this.state.wallet.address || null} />} */}
                     { !window.hostIsTSA && window.metamaskOnline() && <MetamaskUtils /> }
                 </Container>
                 <Container id="hexmob_footer" fluid>

@@ -44,28 +44,16 @@ class Stakes extends React.Component {
         try { this.props.contract.clearSubscriptions()} catch(e) { }
     }
 
-    handleSubscriptionError = (e, r) => {
-        debug("websock subscription error: ", e)
-    }
-
     subscribeEvents = () => {
-        this.props.contract.events.StakeStart( {filter:{stakerAddr:this.props.wallet.address}}, (e, r) => {
-        if (e) { debug('ERR: events.StakeStart: ', e); return; }
-            debug('events.StakeStart[e, r]: ', e, r)
-            debug('CALLING loadAllStakes: this.props.wallet: %O', this.props.wallet)
-            this.loadAllStakes()
-        })
+        this.props.contract.events.StakeStart({ filter: { stakerAddr: this.props.wallet.address }})
         .on('connected', id => debug('subbed: StakeStart:', id))
-        .on('error', this.handleSubscriptionError)
+        .on('data', this.loadAllStakes )
+        .on('error', e => debug('events.StakeStart: ', e))
 
-        this.props.contract.events.StakeEnd({ filter:{ stakerAddr: this.props.wallet.address } }, (e, r) => {
-            if (e) { debug('ERR: events.StakeEnd:', e); return; }
-            debug('events.StakeEnd[e, r]: ', e, r)
-            debug('CALLING loadAllStakes: this.props.wallet: %O', this.props.wallet)
-            this.loadAllStakes()
-        })
+        this.props.contract.events.StakeEnd({ filter: { stakerAddr: this.props.wallet.address }})
         .on('connected', id => debug('subbed: StakeEnd:', id))
-        .on('error', this.handleSubscriptionError)
+        .on('data', this.loadAllStakes )
+        .on('error', e => debug('events.StakeEnd: ', e))
     }
 
     static async getStakePayoutData(context, stakeData) {
