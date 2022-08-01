@@ -8,7 +8,13 @@ module.exports = {
             wssURL: `wss://mainnet.infura.io/ws/v3/${process.env.REACT_APP_INFURA_ID}` 
         },
         0x2: null,
-        0x3: null
+        0x3: null,
+        941: {
+            name: "pulse-testnet",
+            address: "0x2b591e99afe9f32eaa6214f7b7629768c40eeb39",
+            rpcURL: `https://rpc.v2b.testnet.pulsechain.com`,
+            wssURL: "",
+        },
     },
 
     ABI: [
