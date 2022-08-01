@@ -150,7 +150,7 @@ class TewkStakeList extends React.Component {
                     <Col className="d-none d-md-inline">PRINCIPAL</Col>
                     <Col>SHARES</Col>
                     <Col className="d-none d-md-inline">BigPayDay</Col>
-                    <Col>INTEREST</Col>
+                    <Col>YIELD</Col>
                     <Col>VALUE</Col>
                     <Col className="text-right">USD<span className="d-none d-md-inline"> VALUE</span></Col>
                 </Row>

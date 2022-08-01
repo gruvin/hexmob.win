@@ -334,7 +334,7 @@ class Stakes extends React.Component {
                     </Row>
                     }
                     <Row>
-                        <Col className="text-right font-weight-bold">Interest</Col>
+                        <Col className="text-right font-weight-bold">Yield</Col>
                         <Col><CryptoVal className="numeric" value={interestTotal} showUnit /></Col>
                     </Row>
                     <Row>

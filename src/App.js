@@ -15,7 +15,7 @@ import Stats from './Stats'
 import Lobby from './Lobby'
 import Blurb from './Blurb' 
 import Tewkenaire from './Tewkenaire'
-import { WhatIsThis, Donaticator, MetamaskUtils } from './Widgets'
+import { WhatIsThis, MetamaskUtils } from './Widgets'
 import HEX from './hex_contract'
 import UNIV2 from './univ2_contract' /* HEX/USDC pair */
 import Web3 from 'web3';
@@ -432,6 +432,7 @@ class App extends React.Component {
 
         if (localStorage.getItem('debug')) {
             window._APP = this
+            window._W3 = Web3
             window._w3M = this.web3modal
             window._HEX = HEX
             window._UNIV2 = UNIV2

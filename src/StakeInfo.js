@@ -185,7 +185,7 @@ export class StakeInfo extends React.Component {
                             </Row>
                         }
                             <Row>
-                                <Col className="text-right"><strong>Interest</strong></Col>
+                                <Col className="text-right"><strong>Yield</strong></Col>
                                 <Col><CryptoVal className="numeric" value={payout} showUnit /></Col>
                             </Row>
                             <Row>
@@ -278,7 +278,7 @@ export class StakeInfo extends React.Component {
                                             </tr>
                                         }
                                         <tr className="text-info">
-                                            <td className="col-sm-2">interest</td>
+                                            <td className="col-sm-2">yield</td>
                                             <td className="col-sm-4 pr-0 text-right">+&nbsp;<CryptoVal className="numeric" value={hexPayout} currency="HEX" />&nbsp;HEX</td>
                                         </tr>
                                         <tr className="text-danger">
@@ -315,7 +315,7 @@ export class StakeInfo extends React.Component {
                                             </tr>
                                         }
                                         <tr className="text-info">
-                                            <td className="col-sm-2">interest</td>
+                                            <td className="col-sm-2">yield</td>
                                             <td className="col-sm-2 pr-0 text-right">+&nbsp;$<CryptoVal className="numeric" value={usdPayout} currency="USD" /> </td>
                                         </tr>
                                         <tr className="text-danger">
