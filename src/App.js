@@ -263,9 +263,9 @@ class App extends React.Component {
         const wssURL = networkData.wssURL || null 
 
         this.setState({ chainId, network })
-
-        this.wssProvider = new Web3.providers.WebsocketProvider(wssURL)
-        this.wssProvider
+        if (networkData.wssURL !== "") {
+            this.wssProvider = new Web3.providers.WebsocketProvider(wssURL)
+            this.wssProvider
             .on('close', (e) => {
                 debug("WSS CONNECTION DOWN")
             })
@@ -277,6 +277,7 @@ class App extends React.Component {
                 +"\n\nDoing so will not adversely affect other activities.")
                 this.resetApp() // TODO: try to gracefully reconnect etc
             })
+        }
 
         window.web3hexmob = new Web3(this.walletProvider)   // window.web3hexmob used for sending/signing transactions
         this.web3 = new Web3(this.wssProvider)              // this.web3 used for everything else (Infura)
@@ -452,9 +453,17 @@ class App extends React.Component {
         const address = await this.establishWeb3Provider() 
         if (!address) return debug('No wallet address supplied - STOP')
 
-        window.contract = await new window.web3hexmob.eth.Contract(HEX.ABI, HEX.CHAINS[this.state.chainId].address)   // wallet provider
-        this.contract = await new this.web3.eth.Contract(HEX.ABI, HEX.CHAINS[this.state.chainId].address)             // INFURA
-        this.univ2Contract = await new this.web3.eth.Contract(UNIV2.ABI, UNIV2.CHAINS[this.state.chainId].address)    // INFURA
+        if (this.state.chainId !== 941) {
+            window.contract = await new window.web3hexmob.eth.Contract(HEX.ABI, HEX.CHAINS[this.state.chainId].address)   // wallet provider
+            this.contract = await new this.web3.eth.Contract(HEX.ABI, HEX.CHAINS[this.state.chainId].address)             // INFURA
+            this.univ2Contract = await new this.web3.eth.Contract(UNIV2.ABI, UNIV2.CHAINS[this.state.chainId].address)    // INFURA
+        } else {
+            // drop INFURA usage to allow Pulse Testnet chainID 941 (go through wallet provider if available)
+            window.contract = await new window.web3hexmob.eth.Contract(HEX.ABI, HEX.CHAINS[this.state.chainId].address)   // wallet provider
+            this.contract = window.contract;                                                                              // wallet provider  
+            this.univ2Contract = await new window.web3hexmob.eth.Contract(UNIV2.ABI, UNIV2.CHAINS[this.state.chainId].address) // wallet provider
+        }
+
         this.subscribeProvider(this.walletProvider)
 
         this.setState({ 
