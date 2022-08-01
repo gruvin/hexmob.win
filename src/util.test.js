@@ -646,7 +646,7 @@ const TEST_STAKE_DATA = {
     "payout": BigNumber(0)
 }
 
-describe('Stake Interest / Peanalty Calcs', () => {
+describe('Stake Interest (Yield) / Peanalty Calcs', () => {
     test('calcPayoutRewards produces correct results for { payout, bigPayDay }', () => {
         const result = calcPayoutRewards({ 
             context: TEST_CONTEXT,
