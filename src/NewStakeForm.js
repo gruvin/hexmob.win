@@ -151,7 +151,7 @@ export class NewStakeForm extends React.Component {
 
         let response
         try {
-            response = await axios.get(`https://hexapy.com:5555/fs/${graphStartDay}/${numDataPoints}`, { timeout: 5000 })
+            response = await axios.get(`https://futureus.win/hexmob/fs/${graphStartDay}/${numDataPoints}`, { timeout: 5000 })
         } catch (e) {
             debug("updateBarGraph: ", e.message)
             this.setState({ graphIconClass: "icon-error-bg" })
