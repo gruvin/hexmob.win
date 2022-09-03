@@ -43,25 +43,30 @@ class TewkStakeList extends React.Component<TewkT.ListProps, TewkT.ListState> {
         const { web3 } = this.props.parent.props.parent
         const { address: contractAddress } = contractObject.CHAINS[chainId]
         const tewkContract = new ethers.Contract(contractAddress, contractObject.ABI, web3)
+
         const [ stakeStartEvents, stakeEndEvents ] = await Promise.all([
-            tewkContract.queryFilter({ ...tewkContract.filters.onStakeStart(wallet.address)}, contractObject.GENESIS_BLOCK),
-            tewkContract.queryFilter({ ...tewkContract.filters.onStakeEnd(wallet.address)}, contractObject.GENESIS_BLOCK ),
+            tewkContract.queryFilter(tewkContract.filters.onStakeStart(wallet.address), contractObject.GENESIS_BLOCK),
+            tewkContract.queryFilter(tewkContract.filters.onStakeEnd(wallet.address), contractObject.GENESIS_BLOCK ),
         ])
+
         this.setState({ progressBar: 30 })
         // debug(contractObject.SYMBOL+" stakeStartEvents: ", stakeStartEvents)
         if (stakeStartEvents.length) {
+            
             const startedStakes = stakeStartEvents.map((e: ethers.Event) => e.args?.uniqueID.toString())
             const endedStakes = stakeEndEvents.map((e: ethers.Event) => e.args?.uniqueID.toString())
             const activeUids = startedStakes.filter(uid => endedStakes.indexOf(uid) < 0)
             const { length } = activeUids
+
             const _tewkStakes = await Promise.all(
                 Array.from({ length },
                     (_, i) => tewkContract.stakeLists(wallet.address, activeUids[i])
                 )
             )
+
             // debug(contractObject.SYMBOL+"'s _tewkStakes: ", _tewkStakes)
             const tewkStakes = await Promise.all(
-                _tewkStakes.map(async (data: any, stakeIndex) => {
+                _tewkStakes.map(async (data: any, stakeIndex): Promise<TewkT.StakeData> => {
                     const bnZero = ethers.constants.Zero
                     const _tewkStakeData = {
                         ...bnPrefixObject(data), // stakeID, bnHexAmount, bnStakeShares, lockedDay, stakedDays, unlockedDay, started, ended,
@@ -82,7 +87,7 @@ class TewkStakeList extends React.Component<TewkT.ListProps, TewkT.ListState> {
                         bnPenalty: bnZero,
                         isTewkStake: true,
                     } as StakesT.StakeData
-                    const payouts = (currentDay >= constructedHexStakeData.lockedDay + 1)
+                    const _payouts = (currentDay >= constructedHexStakeData.lockedDay + 1)
                         ? await Stakes.getStakePayoutData({ contract }, constructedHexStakeData)
                         : {
                             bnBigPayDay: bnZero,
@@ -93,7 +98,7 @@ class TewkStakeList extends React.Component<TewkT.ListProps, TewkT.ListState> {
                     // debug(contractObject.SYMBOL+" => stake["+stakeIndex+"] => payouts: %O", payouts)
                     const tewkStakeData = {
                         ..._tewkStakeData,
-                        ...payouts,
+                        ..._payouts,
                     }
                     this.setState({ progressBar: 30 + 70 * stakeIndex / (_tewkStakes.length || 1)})
                     return tewkStakeData
@@ -106,18 +111,15 @@ class TewkStakeList extends React.Component<TewkT.ListProps, TewkT.ListState> {
         }
     }
 
-    async componentDidMount() {
-        const { contractObject, parent } = this.props
+    async loadTewkStakes() {
+        const { contractObject } = this.props
 
         if (!contractObject) throw new Error('TewkStakeList: No contractObject provided')
-        this.setState({
-            progressLabel: "fetching data",
-            progressBar: 1
-        })
         const hexTewkStakes = await this.getTewkenaireStakes(contractObject)
+
         let bnTotalValue = ethers.constants.Zero
         if (hexTewkStakes) {
-            debug(contractObject.SYMBOL+"'s hexTewkStakes: ", hexTewkStakes)
+            // debug(contractObject.SYMBOL+"'s hexTewkStakes: ", hexTewkStakes)
             const stakeList = hexTewkStakes.map((tewkStake: TewkT.StakeData) => {
                 const { bnHexAmount, bnPayout, bnBigPayDay } = tewkStake
                 tewkStake.bnInterest = bnPayout.add(bnBigPayDay)
@@ -125,12 +127,27 @@ class TewkStakeList extends React.Component<TewkT.ListProps, TewkT.ListState> {
                 bnTotalValue = bnTotalValue.add(tewkStake.bnValue)
                 return tewkStake
             }) as TewkT.StakeData[]
-            debug(this.props.contractObject.SYMBOL+" stakeList[]: ", stakeList)
-            this.setState({ stakeList, bnTotalValue })
-            parent.setState({ bnTotalValue: parent.state.bnTotalValue.add(bnTotalValue) })
+            return { stakeList, bnTotalValue}
         } else {
-            this.setState({ stakeList: [], bnTotalValue })
+            return { stakeList: [], bnTotalValue }
         }
+    }
+
+    componentDidMount() {
+        this.setState({
+            progressLabel: "fetching data",
+            progressBar: 1
+        })
+
+        const { parent } = this.props
+        this.setState({ bnTotalValue: ethers.constants.Zero }, () => {
+            this.loadTewkStakes().then(results => {
+                const { stakeList, bnTotalValue } = results
+                debug(this.props.contractObject.SYMBOL+"'s stakeList[]: ", stakeList)
+                this.setState({ stakeList, bnTotalValue })
+                parent.setState({ bnTotalValue: parent.state.bnTotalValue.add(bnTotalValue) })
+            })
+        })
     }
 
     render() {
@@ -214,12 +231,15 @@ export default class Tewkenaire extends React.Component<TewkT.Props, TewkT.State
 
     async componentDidMount() {
         if (localStorage.getItem('debug')) window._TEWK = this
+        this.setState({ bnTotalValue: ethers.constants.Zero }) // dev mode double load issue
     }
 
     render() {
+
         const usdhex = Math.trunc((this.props.usdhex || 0.0000) * 10000) // limit dollar decimals to 0.0000 (4)
         const totalUsd = Number(ethers.utils.formatUnits(this.state.bnTotalValue.mul(usdhex), 12)) // 12 = 8 HEX decimals plus 4 dollar decimals
         const uriQuery = new URLSearchParams(window.location.search)
+
         return (<>
             <Accordion
                 id="tewk_accordion"
