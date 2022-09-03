@@ -54,7 +54,6 @@ class Stakes extends React.Component<StakesT.Props, StakesT.State> {
     static async getStakePayoutData(context: StakesT.Context, stakeData: StakesT.StakeData): Promise<CalcPayoutBpdPenalty> {
         const { contract } = context
         const { currentDay, globals } = contract.Data
-        if (stakeData.isTewkStake) debug("Tewk stakeData: %O", stakeData)
         const startDay = stakeData.lockedDay
         const stakedDays = stakeData.stakedDays
         const endDay = startDay + stakedDays

@@ -12,9 +12,14 @@ export interface Props {
     usdhex: number
 }
 
+export type TotalT = {
+    [index: string]: BigNumber
+    // SYMBOL: string
+    bnTotalValue: BigNumber
+}
 export interface State {
     contract: HEXContract
-    bnTotalValue: BigNumber
+    bnTotalValues: TotalT | {}
 }
 
 export interface ListProps {

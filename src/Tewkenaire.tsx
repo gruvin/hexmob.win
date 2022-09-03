@@ -127,7 +127,8 @@ class TewkStakeList extends React.Component<TewkT.ListProps, TewkT.ListState> {
                 bnTotalValue = bnTotalValue.add(tewkStake.bnValue)
                 return tewkStake
             }) as TewkT.StakeData[]
-            return { stakeList, bnTotalValue}
+            const { SYMBOL } = contractObject
+            return { SYMBOL, stakeList, bnTotalValue}
         } else {
             return { stakeList: [], bnTotalValue }
         }
@@ -142,17 +143,19 @@ class TewkStakeList extends React.Component<TewkT.ListProps, TewkT.ListState> {
         const { parent } = this.props
         this.setState({ bnTotalValue: ethers.constants.Zero }, () => {
             this.loadTewkStakes().then(results => {
-                const { stakeList, bnTotalValue } = results
-                debug(this.props.contractObject.SYMBOL+"'s stakeList[]: ", stakeList)
+                const { SYMBOL, stakeList, bnTotalValue } = results
+                debug(SYMBOL+"'s stakeList[]: ", stakeList, bnTotalValue.toString())
                 this.setState({ stakeList, bnTotalValue })
-                parent.setState({ bnTotalValue: parent.state.bnTotalValue.add(bnTotalValue) })
+                const bnTotalValues = { ...parent.state.bnTotalValues, [SYMBOL]: bnTotalValue }
+                parent.setState({ bnTotalValues })
             })
         })
     }
 
     render() {
         const totalUsd = Number(ethers.utils.formatUnits(this.state.bnTotalValue.mul(this.props.usdhex), 12))
-        const uiStakeList = this.state.stakeList.map((stake, index) => {
+        const { stakeList } = this.state
+        const uiStakeList = stakeList.map((stake, index) => {
             const { bnStakedHearts, bnStakeShares, bnBigPayDay, bnInterest, bnValue } = stake
             const usd = Number(ethers.utils.formatUnits(bnValue.mul(this.props.usdhex), 12))
             return (
@@ -225,20 +228,22 @@ export default class Tewkenaire extends React.Component<TewkT.Props, TewkT.State
         this.web3 = props.parent.web3
         this.state = {
             contract: this.props.parent.contract,
-            bnTotalValue: ethers.constants.Zero
+            bnTotalValues: []
         }
     }
 
     async componentDidMount() {
         if (localStorage.getItem('debug')) window._TEWK = this
-        this.setState({ bnTotalValue: ethers.constants.Zero }) // dev mode double load issue
     }
 
     render() {
 
         const usdhex = Math.trunc((this.props.usdhex || 0.0000) * 10000) // limit dollar decimals to 0.0000 (4)
-        const totalUsd = Number(ethers.utils.formatUnits(this.state.bnTotalValue.mul(usdhex), 12)) // 12 = 8 HEX decimals plus 4 dollar decimals
         const uriQuery = new URLSearchParams(window.location.search)
+        
+        let bnTotalValue = ethers.constants.Zero
+        Object.values(this.state.bnTotalValues).map((v: BigNumber) => bnTotalValue = bnTotalValue.add(v))
+        const totalUsd = Number(ethers.utils.formatUnits(bnTotalValue.mul(usdhex), 12)) // 12 = 8 HEX decimals plus 4 dollar decimals
 
         return (<>
             <Accordion
