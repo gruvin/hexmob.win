@@ -1,12 +1,10 @@
 @use "theme" as bs;
-@forward '~bootstrap/scss/bootstrap' with (
+@forward '../node_modules/bootstrap/scss/bootstrap' with (
     $theme-colors: bs.$theme-colors
 );
 
-body { 
-    position: relative;
-    overflow: hidden;
-    font-family: "Happy Monkey", sans-serif; 
+body {
+    font-family: "Happy Monkey", sans-serif;
     background: #0a090a;
     background-size: auto;
     font-size: 15px;
@@ -17,6 +15,8 @@ h2, .h2 { font-size: 1.30rem; }
 h3, .h3 { font-size: 1.15rem; }
 h4, .h4 { font-size: 1.0rem; }
 h6, .h6 { font-weight: bold }
+small, .small { font-size: 0.75rem; }
+.text-muted { font-weight: normal; }
 
 /* iPhone 11 1792x828px at 326ppi */
 @media only screen
@@ -31,19 +31,24 @@ h6, .h6 { font-weight: bold }
     and (-webkit-device-pixel-ratio: 3) { }
 
 /* iPhone 11 Pro max 2688x1242px at 458ppi */
-@media only screen 
-    and (device-width: 414px) 
-    and (device-height: 896px) 
+@media only screen
+    and (device-width: 414px)
+    and (device-height: 896px)
     and (-webkit-device-pixel-ratio: 3) { }
 
 @media (max-width: 414px){
     .xs-small { font-size: 0.90em }
 }
 @media (max-width: 400px){
+    h1, .h1 { font-size: 1.20rem }
+    h2, .h2 { font-size: 1.10rem; }
+    h3, .h3 { font-size: 1.0rem; }
+    h4, .h4 { font-size: 0.9rem; }
+    h6, .h6 { font-weight: bold }
     .xs-small { font-size: 0.80em }
 }
 @media (max-width: 320px){
-    .xs-small { font-size: 0.67em }
+    .xs-small { font-size: 0.70em }
 }
 @media (min-width: 576px)  { .container, .container-sm, .container-md, .container-lg { max-width: 576px; } }
 @media (min-width: 768px)  { .container, .container-sm, .container-md, .container-lg { max-width: 720px; } }
@@ -69,7 +74,7 @@ h6, .h6 { font-weight: bold }
         width: fit-content;
         margin: 0.8em auto 0 auto;
         text-align: center;
-        & .progress { 
+        & .progress {
             width: 100%;
             height: 0.1rem;
             background-color: #00000000;
@@ -77,7 +82,7 @@ h6, .h6 { font-weight: bold }
             div.countdown { width: 100% !important; transition: width 10s linear !important; }
         }
     }
-    
+
     #branding {
         float: left;
         h1 {
@@ -87,7 +92,7 @@ h6, .h6 { font-weight: bold }
             font-weight: bold;
             margin: 0;
             padding: 0 0 0 32px;
-            background: rgba(0, 0, 0, 0) url('/assets/favicon-96x96.png') no-repeat top left;
+            background: rgba(0, 0, 0, 0) url('/seo/favicon-96x96.png') no-repeat top left;
             background-size: auto 30px;
 
             sup {
@@ -96,12 +101,13 @@ h6, .h6 { font-weight: bold }
                 top: -10px;
                 margin-left: 0.1em;
                 vertical-align: none;
-            }    
-        }    
-    }    
+            }
+        }
+    }
 
     #version-day {
         float: right;
+        height: 40px;
         margin: 0;
         padding: 0 3px 0 0;
         text-align: right;
@@ -113,13 +119,8 @@ h6, .h6 { font-weight: bold }
             color:#ccc;
             margin:0;
             padding:0;
-        }    
-
-        span:last-child {
-            font-size:120%;
-            font-weight: bold;
-        }    
-    }    
+        }
+    }
 
 }
 
@@ -161,22 +162,31 @@ button#connect_wallet {
 
 .form-label { font-weight: bold; }
 .btn {
-    font-family: 'Titillium Web', Arial, sans-serif; 
-    &-sm { padding: 0.1rem .2rem; line-height: 1em; } 
+    font-family: 'Titillium Web', Arial, sans-serif;
+    &-sm { padding: 0.1rem .2rem; line-height: 1em; }
     &-info:hover { color: #fff; }
 }
 
 .numeric { font-family: 'Titillium Web', "Courier New", monospace; display: inline; }
 .unit { @extend .text-muted; }
 
-.accordion .accordion > .card {
-    border-width: 2px !important;
-    border-radius: 5px !important;
-}
-.card {
+.accordion {
     padding-bottom: 0.25em;
-    
-    &-header { 
+    color: map-get(bs.$theme-colors, primary);
+
+    &-item {
+        margin: 0.3rem 0 0.3rem 0;
+        border-width: 2px !important;
+        border-radius: 5px !important;
+        border-color:  rgba(20,20,20,1);
+        color: map-get(bs.$theme-colors, light);
+        background-color: rgba(30,30,30,1);
+    }
+    &-body, &-collapse {
+        padding: 0;
+    }
+
+    &-button { // inside <Accordion.Header/>
         cursor: pointer;
         background: map-get(bs.$theme-colors, secondary);
         color: #eee; font-weight: bold;
@@ -185,13 +195,13 @@ button#connect_wallet {
         background: linear-gradient(180deg, rgba(20,20,20,1) 0, rgba(0,0,0,1) 22px, rgba(50,50,50,1) 44px);
         border: 0;
         border-radius: 3px !important;
-        &-current { 
-            background: linear-gradient(135deg, map-get(bs.$theme-colors, info) 0, rgba(30,30,30,1) 18px);
-        }
+        box-shadow: none !important;
     }
-    &-body, & > .container {
-        padding: .25em;
+    &-button:not(.collapsed) {
+        color: #eee; font-weight: bold;
     }
+
+    &-button::after { content: none; }
 }
 
 .burger-heading {
@@ -207,7 +217,7 @@ button#connect_wallet {
         vertical-align: middle;
         margin: 0 6px 0 0
     }
-    
+
     > span:first-child {
         vertical-align: middle;
         font-size: 1.4em
@@ -226,9 +236,10 @@ button#connect_wallet {
     font-weight: bold;
     max-width: 365px;
     padding: 1em .5em;
+    border: 5px map-get(bs.$theme-colors, secondary) ridge;
     border-radius: 5px;
     color: map-get(bs.$theme-colors, info);
-    background-color: map-get(bs.$theme-colors, black);
+    background-color: map-get(bs.$theme-colors, info-darkened);
 }
 .tooltip.show {
     opacity: 0.95;

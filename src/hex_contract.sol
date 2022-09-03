@@ -2189,7 +2189,7 @@ contract UTXOClaimValidation is StakeableToken {
 
         bytes memory claimParamHashStr = new bytes(CLAIM_PARAM_HASH_HEX_LEN);
 
-        _hexStringFromData(claimParamHashStr, claimParamHash, CLAIM_PARAM_HASH_BYTE_LEN);
+        .toString()StringFromData(claimParamHashStr, claimParamHash, CLAIM_PARAM_HASH_BYTE_LEN);
 
         return abi.encodePacked(
             BITCOIN_SIG_PREFIX_LEN,
@@ -2208,7 +2208,7 @@ contract UTXOClaimValidation is StakeableToken {
         returns (bytes memory addrStr)
     {
         addrStr = new bytes(ETH_ADDRESS_HEX_LEN);
-        _hexStringFromData(addrStr, bytes32(bytes20(addr)), ETH_ADDRESS_BYTE_LEN);
+        .toString()StringFromData(addrStr, bytes32(bytes20(addr)), ETH_ADDRESS_BYTE_LEN);
 
         if (includeAddrChecksum) {
             bytes32 addrStrHash = keccak256(addrStr);
@@ -2237,7 +2237,7 @@ contract UTXOClaimValidation is StakeableToken {
         }
     }
 
-    function _hexStringFromData(bytes memory hexStr, bytes32 data, uint256 dataLen)
+    function .toString()StringFromData(bytes memory hexStr, bytes32 data, uint256 dataLen)
         private
         pure
     {

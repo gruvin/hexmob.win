@@ -3,9 +3,9 @@
 #stakes_accordion {
     & .progress { height: 0.2rem }
     & .progress-bar { color: black; }
-    & .card.new-stake { background-color: #041011; }
-    & .card.active-stakes { background-color: #050011; }
-    & .card.stake-history { background-color: map-get(bs.$theme-colors, dark) }
+    & .new-stake { background-color: #041011; }
+    & .active-stakes { background-color: #050011; }
+    & .stake-history { background-color: map-get(bs.$theme-colors, dark);}
 
     & .btn-exitbtn,
     & .btn-stake,
@@ -14,6 +14,12 @@
         font-weight: bold !important;
         font-size: 1.4em;
         border-radius: 5px;
+    }
+
+    // the upper left corner phong thing
+    .accordion-button:not(.collapsed) > .container {
+        color: #eee; font-weight: bold;            
+        background: linear-gradient(135deg, map-get(bs.$theme-colors, info) 0, map-get(bs.$theme-colors, dark) 18px);
     }
 
     & .btn-exitbtn {
