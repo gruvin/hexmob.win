@@ -90,9 +90,11 @@ autoload throw catch
         *) # dev.hexmob.win deploy by default
             echo -e "\nBuilding test production set for dev.hexmob.win\n"
             # do dual branding stuff (two builds)
-            for F in $FILES; do
-                $RSYNC -r --delete "$F" "./master.pub/$F-orig" || throw ''
-                $RSYNC -r --delete "./master.pub/$F.$TARGET" "$F" || throw ''
+            for FILE in $FILES; do
+                SLASH=""
+                [[ -d "$FILE" ]] && SLASH="/"
+                $RSYNC -r --delete "${FILE}${SLASH}" "./master.pub/${FILE}-orig" || throw ''
+                $RSYNC -r --delete "./master.pub/${FILE}.${TARGET}${SLASH}" "./${FILE}${SLASH}" || throw ''
             done
 
             yarn build || throw ''
@@ -118,7 +120,10 @@ autoload throw catch
     
     for FILE in $FILES; do
         F="./master.pub/$FILE-orig" 
-        [[ -f "$F" ]] && $RSYNC -r --delete "$F" "./$FILE" || throw ''
+        SLASH=""
+        [[ -d "$F" ]] && SLASH="/"
+        $RSYNC -r --delete "./${F}${SLASH}" "./${FILE}${SLASH}" || throw ''
+        [ -e "./${F}" ] && rm -rf "./${F}" || throw ''
     done
 
     [[ "$CAUGHT" == "" ]] && echo "DONE."
