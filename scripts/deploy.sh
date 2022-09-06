@@ -21,19 +21,16 @@ fi
 
 # @args: list of filenames eg $FILES
 _cleanup() {
-            [[ "$TARGET" == "tsa" ]] && ( /bin/cp public/seo/favicon.ico ~/Desktop/favicon_3.ico || throw HUH )
     for FILE in ${FILES}; do
         F="./master.pub/${FILE}-orig" 
         SLASH=""; [[ -d "${F}" ]] && SLASH="/"
-        [[ -e "./${F}${SLASH}" ]] && ( $RSYNC -r --delete "./${F}${SLASH}" "./${FILE}${SLASH}" || throw '' )
-        [[ -e "./${F}" ]] && ( rm -rf "./${F}" || throw '' )
+        [[ -e "./${F}${SLASH}" ]] && ( $RSYNC -r -I --delete "./${F}${SLASH}" "./${FILE}${SLASH}" || throw '' )
+        [[ -e "./${F}${SLASH}" ]] && ( rm -rf "./${F}${SLASH}" || throw '' )
     done
-            [[ "$TARGET" == "tsa" ]] && ( /bin/cp public/seo/favicon.ico ~/Desktop/favicon_4.ico || throw HUH )
-    unset TARGET
-    unset DEST
-    sleep 1
     ${GIT} checkout dev  > /dev/null 2>&1 
     ${GIT} stash pop  > /dev/null 2>&1 
+    unset TARGET
+    unset DEST
 }
 
 TRAPINT() {
@@ -50,15 +47,13 @@ _build() {
         [[ "$DEST" == "" ]] && throw 'DEST not set'
 
         print "\nBuilding production set for ${TARGET} ( => ${DEST})\n"
-        [[ "$TARGET" == "tsa" ]] && ( /bin/cp ./public/seo/favicon.ico ~/Desktop/favicon_1.ico || throw '' )
         # dual branding stuff
         for FILE in $FILES; do
             SLASH=""
             [[ -d "$FILE" ]] && SLASH="/"
-            ${RSYNC} -r --delete "${FILE}${SLASH}" "./master.pub/${FILE}-orig" || throw ''
-            ${RSYNC} -r --delete "./master.pub/${FILE}.${TARGET}${SLASH}" "./${FILE}${SLASH}" || throw ''
+            ${RSYNC} -r -I --delete "${FILE}${SLASH}" "./master.pub/${FILE}-orig" || throw ''
+            ${RSYNC} -r -I --delete "./master.pub/${FILE}.${TARGET}${SLASH}" "./${FILE}${SLASH}" || throw ''
         done
-        [[ "$TARGET" == "tsa" ]] && ( /bin/cp ./public/seo/favicon.ico ~/Desktop/favicon_2.ico || throw '' )
         
         # build
         yarn build || throw ''
@@ -125,7 +120,7 @@ case "$DEPLOY_TYPE" in
 
     (*)
         print "\nBuilding test production set for ${TARGET} ( => ${DEST_DEV})\n"
-        _build ${TARGET} ${DEST_DEV}
+        TARGET=hexmob DEST=${DEST_DEV} _build
         ;;
 esac
 
