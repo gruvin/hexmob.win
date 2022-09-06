@@ -21,23 +21,26 @@ fi
 
 # @args: list of filenames eg $FILES
 _cleanup() {
+            [[ "$TARGET" == "tsa" ]] && ( /bin/cp public/seo/favicon.ico ~/Desktop/favicon_3.ico || throw HUH )
     for FILE in ${FILES}; do
         F="./master.pub/${FILE}-orig" 
         SLASH=""; [[ -d "${F}" ]] && SLASH="/"
-        [[ -e "./${F}${SLASH}" ]] && $RSYNC -r --delete "./${F}${SLASH}" "./${FILE}${SLASH}" || throw ''
-        [[ -e "./${F}" ]] && rm -rf "./${F}" || throw ''
+        [[ -e "./${F}${SLASH}" ]] && ( $RSYNC -r --delete "./${F}${SLASH}" "./${FILE}${SLASH}" || throw '' )
+        [[ -e "./${F}" ]] && ( rm -rf "./${F}" || throw '' )
     done
+            [[ "$TARGET" == "tsa" ]] && ( /bin/cp public/seo/favicon.ico ~/Desktop/favicon_4.ico || throw HUH )
     unset TARGET
     unset DEST
+    sleep 1
     ${GIT} checkout dev  > /dev/null 2>&1 
     ${GIT} stash pop  > /dev/null 2>&1 
 }
 
 TRAPINT() {
-  setopt localoptions err_exit
-  print "\nCaught SIGINT. Run away and live to fight another day! :P"
-  _cleanup
-  exit 4
+    setopt localoptions err_exit
+    print "\nCaught SIGINT. Run away and live to fight another day! :P"
+    _cleanup
+    exit 4
 }
 
 # @args: TARGET DEST
@@ -68,7 +71,6 @@ _build() {
         if catch '*'; then
             print "D'oh! CAUGHT: [$CAUGHT]"
             _cleanup
-            [[ "$TARGET" == "tsa" ]] && ( /bin/cp public/seo/favicon.ico ~/Desktop/favicon_3.ico || throw HUH )
             throw ''
             exit 2
         fi
@@ -96,14 +98,19 @@ case "$DEPLOY_TYPE" in
                 if [[ $? -ne 0 ]]; then print "\nWell that went badly :/\n"; exit 3; fi
 
                 export VITE_VERSION="${TAG}"
+
                 print "Deploying version ${TAG} ..."
+
                 TARGET=tsa DEST=${DEST_TSA} _build
+                sleep 1
+
                 TARGET=hexmob DEST=${DEST_HEXMOB} _build
+                sleep 1
 
                 # Create release tarbal for gpg signing and upload to repo 'official release tag'
                 RELEASE_DIR="./release"
                 RELEASE_TGZ="${RELEASE_DIR}/hexmob.win-${TAG}-build.tgz"
-                print -n "Preparing HEXMOB release files at ${RELEASE_DIR} ... "
+                print -n "\nPreparing HEXMOB release files at ${RELEASE_DIR} ... "
                 [[ -d ${RELEASE_DIR} ]] && rm -f ${RELEASE_DIR}/*
                 [[ ! -d ${RELEASE_DIR} ]] && mkdir ${RELEASE_DIR}
                 eval ${TAR} czf "${RELEASE_TGZ}" ${BUILD_DIR}
