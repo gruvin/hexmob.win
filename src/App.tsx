@@ -8,6 +8,7 @@ import Badge from "react-bootstrap/Badge"
 import ProgressBar from "react-bootstrap/ProgressBar"
 import { GitHubInfo } from './Widgets'
 import * as AppT from  './lib/App'
+import BrandLogo from './BrandLogo'
 import { WhatIsThis, MetamaskUtils } from './Widgets'
 import HEX, { type HEXContract, type HEXGlobals } from './hex_contract'
 import UNIV2 from './univ2_contract' /* HEX/USDC pair */
@@ -80,20 +81,6 @@ class App extends React.Component<AppT.Props, AppT.State> {
 
     constructor(props: AppT.Props) {
         super(props)
-
-        const { hostname } = window.location
-        switch (hostname) {
-            case "go.tshare.app":
-            case "localhost":
-            case "127.0.0.1":
-                window.hostIsTSA = true;
-                window.hostIsHM && delete(window.hostIsHM)
-                break
-            default:
-                window.hostIsHM = true
-                window.hostIsTSA && delete(window.hostIsTSA)
-        }
-
         window.metamaskOnline = () => this.state.walletConnected && window.ethereum && window.ethereum.isMetaMask
     }
 
@@ -587,12 +574,7 @@ class App extends React.Component<AppT.Props, AppT.State> {
         return (
             <>
                 <Container id="hexmob_header" fluid>
-                    <div id="branding">
-                    { window.hostIsTSA
-                        ? <h1 id="header_logo">GO<sup className="text-muted small"> .tshare.app</sup></h1>
-                        : <h1 id="header_logo">HEX<sup className="text-muted">mob.win</sup></h1>
-                    }
-                    </div>
+                    <BrandLogo />
                     <div id="version-day">
                         <h3>{import.meta.env.VITE_VERSION || 'v0.0.0A'}</h3>
                         <div>
@@ -667,7 +649,7 @@ class App extends React.Component<AppT.Props, AppT.State> {
 
                     </Container>
                     <GitHubInfo className="py-3" />
-                    {/* { window.hostIsHM && <Donaticator walletConnected={this.state.walletConnected} fromAddress={this.state.wallet.address || null} />} */}
+                    {/* { window.hostname === "hexmob.win" && <Donaticator walletConnected={this.state.walletConnected} fromAddress={this.state.wallet.address || null} />} */}
                     { window.metamaskOnline() && <MetamaskUtils className="py-3" /> }
 
                     {this.contract &&

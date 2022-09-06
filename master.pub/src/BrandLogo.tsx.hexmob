@@ -1,0 +1,7 @@
+export default () => {
+    return (
+        <div id="branding">
+            <h1 id="header_logo">HEX<sup className="text-muted">mob.win</sup></h1>
+        </div>
+    )   
+}
