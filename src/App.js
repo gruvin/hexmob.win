@@ -453,7 +453,7 @@ class App extends React.Component {
         const address = await this.establishWeb3Provider() 
         if (!address) return debug('No wallet address supplied - STOP')
 
-        if (this.state.chainId !== 941) {
+        if (this.state.chainId !== 941 && this.state.chainId != 10001 ) {
             window.contract = await new window.web3hexmob.eth.Contract(HEX.ABI, HEX.CHAINS[this.state.chainId].address)   // wallet provider
             this.contract = await new this.web3.eth.Contract(HEX.ABI, HEX.CHAINS[this.state.chainId].address)             // INFURA
             this.univ2Contract = await new this.web3.eth.Contract(UNIV2.ABI, UNIV2.CHAINS[this.state.chainId].address)    // INFURA

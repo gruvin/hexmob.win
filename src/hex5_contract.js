@@ -13,6 +13,12 @@ module.exports = {
         },
         0x2: null,
         0x3: null,
+        10001: {
+          name: "ethw-mainnet",
+          address: "0x2b591e99afe9f32eaa6214f7b7629768c40eeb39",
+          rpcURL: `https://rpc.v2b.testnet.pulsechain.com`,
+          wssURL: "" 
+        },
     },
             
     ABI: [
