@@ -23,6 +23,12 @@ export default <UNIV2Contract> {
             rpcURL: `https://rpc.v2b.testnet.pulsechain.com`,
             wssURL: "",
         },
+        10001: {
+            name: "ethw-mainnet",
+            address: "0x2b591e99afe9f32eaa6214f7b7629768c40eeb39",
+            rpcURL: "https://mainnet.ethereumpow.org",
+            wssURL: "" 
+        },
     },
 
     ABI: [

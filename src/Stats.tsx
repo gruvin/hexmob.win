@@ -1,7 +1,7 @@
 import React from 'react'
-import {
-    Row, Col, Card, Accordion,
-} from 'react-bootstrap'
+import Row from 'react-bootstrap/Row'
+import Col from 'react-bootstrap/Col'
+import Accordion from 'react-bootstrap/Accordion'
 import { BurgerHeading } from './Widgets'
 import './Stats.scss'
 import HEX, { type HEXContract } from './hex_contract'
@@ -155,6 +155,7 @@ class Stats extends React.Component<StatsProps, StatsState> {
 
     componentDidMount() {
         if (localStorage.getItem('debug')) window._STATS = this
+        if (this.props.parent.state.chainId !== 1) return
         this.updateUsdTsrGraph()
         this.updateUNIv2Graph()
     }
@@ -190,6 +191,9 @@ class Stats extends React.Component<StatsProps, StatsState> {
                     </Accordion.Header>
                     <Accordion.Collapse eventKey="0">
                         <>
+                        {this.props.parent.state.chainId !== 1 
+                        ? <Col className="col-12 text-center">Sorry, data not available for this network.</Col>
+                        : <>
                             <h4 className="text-center mt-2">HEX/TShare Cost (last 365 days)</h4>
                             <ResponsiveContainer width="100%" height={200}>
                                 <AreaChart id="tsr-chart" width={730} height={250} data={TShareRates}
@@ -230,7 +234,7 @@ class Stats extends React.Component<StatsProps, StatsState> {
                                     <Line type="linear" dataKey="usd" strokeWidth={2} dot={false} stroke="#ee00aa" />
                                 </LineChart>
                             </ResponsiveContainer>
-                        </>
+                        </>}</>
                    </Accordion.Collapse>
                 </Accordion.Item>
             </Accordion>

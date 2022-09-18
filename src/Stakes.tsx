@@ -493,7 +493,11 @@ class Stakes extends React.Component<StakesT.Props, StakesT.State> {
                         <BurgerHeading>Stake History</BurgerHeading>
                     </Accordion.Header>
                     <Accordion.Collapse eventKey="stake_history">
-                        <this.StakesHistory />
+                        <>
+                        {this.props.parent.state.chainId !== 1 
+                            ? <Col className="col-12 text-center">Sorry, data not available for this network.</Col>
+                            : <this.StakesHistory />
+                        }</>
                     </Accordion.Collapse>
                 </Accordion.Item>
             </Accordion>

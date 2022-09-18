@@ -458,7 +458,7 @@ class Lobby extends React.Component<LobbyT.Props, LobbyT.State> {
                                 className="mb-1 mx-2"
                                 variant={currentDay > 263 ? "danger" : currentDay > 125 ? "warning" : currentDay > 88 ? "info" : "success"}
                             />
-                        { HEX.lobbyIsActive() && <>
+                        { HEX.lobbyIsActive() && this.props.parent.state.chainId === 1 && <>
                             <HeaderDetail />
                             <Form>
                                 <Row className="my-2">
@@ -531,7 +531,11 @@ class Lobby extends React.Component<LobbyT.Props, LobbyT.State> {
                         </Container>
                     </Accordion.Header>
                     <Accordion.Collapse className="bg-dark text-end" eventKey="0">
-                        <LobbyDays />
+                        <>
+                        {this.props.parent.state.chainId !== 1
+                            ? <Col className="col-12 text-center">Sorry, data not available for this network.</Col>
+                            : <LobbyDays />
+                        }</>
                     </Accordion.Collapse>
                 </Accordion.Item>
             </Accordion>

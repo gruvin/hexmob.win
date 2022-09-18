@@ -110,6 +110,12 @@ export default {
           rpcURL: "https://rpc.v2b.testnet.pulsechain.com",
           wssURL: "",
       },
+      10001: {
+        name: "ETH POW",
+        address: "0x2b591e99afe9f32eaa6214f7b7629768c40eeb39",
+        rpcURL: "https://mainnet.ethereumpow.org",
+        wssURL: ""
+      },
     },
     START_DATE,
     START_TIMESTAMP: START_DATE_POSIX / 1000,
