@@ -14,7 +14,7 @@ import HEX, { type HEXContract, type HEXGlobals } from './hex_contract'
 import UNIV2 from './univ2_contract' /* HEX/USDC pair */
 import { ethers, BigNumber } from 'ethers';
 import Web3Modal, { getProviderInfo } from 'web3modal';
-//import WalletConnectProvider from '@walletconnect/web3-provider'
+import WalletConnectProvider from '@walletconnect/web3-provider'
 //import Portis from "@portis/web3";
 import { decodeClaimStats, detectTrustWallet, bnPrefixObject } from './util'
 import './App.scss'
@@ -367,12 +367,12 @@ class App extends React.Component<AppT.Props, AppT.State> {
         this.web3modal = new Web3Modal({
             cacheProvider: true,                                    // optional
             providerOptions: {                                      // required
-            //    walletconnect: {
-            //        package: WalletConnectProvider,                  // required
-            //        options: {
-            //            infuraId: import.meta.env.VITE_INFURA_ID     // required
-            //        }
-            //    },
+               walletconnect: {
+                   package: WalletConnectProvider,                  // required
+                   options: {
+                       infuraId: import.meta.env.VITE_INFURA_ID     // required
+                   }
+               },
             }
         })
         const referrer = (uriQuery.get('r') || "").toLowerCase()

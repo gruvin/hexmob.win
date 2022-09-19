@@ -1,4 +1,4 @@
-import React, { ChangeEventHandler, EventHandler, FormEvent, FormEventHandler, MouseEventHandler } from 'react'
+import React, { ChangeEventHandler, MouseEventHandler, FormEvent } from 'react'
 import {
     Container,
     Row, Col,
@@ -11,13 +11,11 @@ import * as LobbyT from './lib/Lobby'
 import HEX, { HEXContract, XfLobbyEnter } from './hex_contract'
 import { ethers, BigNumber } from 'ethers'
 import BN from 'bn.js'
-import { bnE } from './util'
+import { bnE, bnPrefixObject } from './util'
 import { CryptoVal, BurgerHeading, VoodooButton } from './Widgets'
 import Timer from 'react-compound-timer'
 
 import _debug from 'debug'
-import { bnPrefixObject } from './util'
-import { BsPrefixRefForwardingComponent } from 'react-bootstrap/esm/helpers'
 const debug = _debug('Lobby')
 
 class Lobby extends React.Component<LobbyT.Props, LobbyT.State> {
@@ -48,7 +46,7 @@ class Lobby extends React.Component<LobbyT.Props, LobbyT.State> {
     unsubscribeEvents = () => {
         try {
             this.props.contract.removeAllListeners()
-        } catch {(e: Error) => {} }
+        } catch (e:any) {  }
     }
 
     subscribeEvents = () => {
@@ -60,27 +58,30 @@ class Lobby extends React.Component<LobbyT.Props, LobbyT.State> {
     getDayEntries = (day: number, address: string): Promise<LobbyT.Entry[]> => {
         const { contract } = this.props
         const { currentDay } = contract.Data
-        return new Promise((resolveEntries, reject) => {
-            contract.xfLobbyMembers(day, address).then((headIndex: number, tailIndex: number) => {
-                // let's NOT use Promise.all for parallel retrieval (Infura bw)
-                let dayEntries = [] as LobbyT.Entry[]
-                if (tailIndex === 0) resolveEntries(dayEntries)
+        return new Promise((resolveDayEntries, reject) => {
+            contract.xfLobbyMembers(day, address)
+            .then(async (headIndex: number, tailIndex: number) => {
+                if (tailIndex === 0) resolveDayEntries([] as LobbyT.Entry[])
+
+                let dayEntryPromises: Promise<LobbyT.Entry>[] = []
                 for (let entryIndex: number = 0; entryIndex < tailIndex; entryIndex++) {
                     const entryId = new BN(day).shln(40).or(new BN(entryIndex)).toString()
-                    contract.xfEntry(address, entryId).then((entry: LobbyT.Entry) => {
-                        dayEntries = dayEntries.concat(bnPrefixObject(entry))
-                        if (dayEntries.length === tailIndex) {
-                            if (day < currentDay) {
-                                if (headIndex <= entryIndex) {
-                                    this.setState({
-                                        unmintedEntries: { ...this.state.unmintedEntries, ...{ [day]: dayEntries} }
-                                    })
-                                }
-                            }
-                            resolveEntries(dayEntries)
-                        }
+                    dayEntryPromises[entryIndex] = contract.xfEntry(address, entryId).then((entry: LobbyT.Entry) => {
+                        return bnPrefixObject(entry) as LobbyT.Entry
                     }).catch((e: Error) => reject(e))
                 }
+                const dayEntries = await Promise.all(dayEntryPromises)
+                
+                const dayUnmintedEntries = dayEntries.filter((entry: LobbyT.Entry, entryIndex: number) => {
+                    return (entryIndex <= tailIndex) || (day >= currentDay) || (headIndex < entryIndex)
+                })
+                dayUnmintedEntries.length && this.setState({
+                    unmintedEntries: { 
+                        ...this.state.unmintedEntries,
+                        ...{ [day]: dayUnmintedEntries}
+                    }
+                })
+                return resolveDayEntries(dayEntries as LobbyT.Entry[])
             })
             .catch((e: Error) => debug('getDayEntries(): Promise<LobbyT.Entry[]>: ', e))
        })
@@ -137,11 +138,15 @@ class Lobby extends React.Component<LobbyT.Props, LobbyT.State> {
             const {
                 bnRawEntriesTotal: bnTodayYourEntriesRawTotal,
                 dayEntriesTotal: todayYourEntriesTotal,
-                bnPotentialHEXTotal,
-                bnMintedHEXTotal,
+                // bnPotentialHEXTotal,
+                // bnMintedHEXTotal,
             }: LobbyT.EntryTotals = this.calcEntryTotals(objTodayYourEntries)
-            const HEXperETH = bnE("1E10").mul(bnTodayAvailableHEX).div(bnTodayPendingETH).toString()
-            const bnTodayYourHEXPending = bnTodayAvailableHEX.mul(todayYourEntriesTotal).div(bnTodayPendingETH)
+            let HEXperETH = "0";
+            let bnTodayYourHEXPending = "0";
+            if (!bnTodayPendingETH.isZero()) {
+                HEXperETH = bnE("1E10").mul(bnTodayAvailableHEX).div(bnTodayPendingETH).toString()
+                bnTodayYourHEXPending = bnTodayAvailableHEX.mul(todayYourEntriesTotal).div(bnTodayPendingETH)
+            }
 
             this.setState({
                 todayPendingETH: bnTodayPendingETH.toString(),
@@ -150,14 +155,14 @@ class Lobby extends React.Component<LobbyT.Props, LobbyT.State> {
                 todayYourHEXPending: bnTodayYourHEXPending.toString(),
                 todayYourEntriesRawTotal: bnTodayYourEntriesRawTotal.toString(),
             })
-        } catch { (e: Error) => debug('getToday:: ERROR: ', e) }
+        } catch (e:any) { debug('getToday:: ERROR: ', e) }
     }
 
     getPastLobbyEntries = (): Promise<Array<LobbyT.Entry[]>> => {
         return new Promise((resolvePastEntries, reject) => {
             const { contract, wallet } = this.props
 
-            let entries = Array(Array()) as LobbyT.Entries
+            let entries = [[]] as LobbyT.Entries
             try {
                 const newEntry: LobbyT.Entry = {
                     bnRawAmount: ethers.constants.Zero,
@@ -194,7 +199,7 @@ class Lobby extends React.Component<LobbyT.Props, LobbyT.State> {
                         resolvePastEntries(entries)
                     })
                 })
-            } catch { (e: Error) => reject(e) }
+            } catch (e: any) { reject(e) }
         })
     }
 

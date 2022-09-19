@@ -1,7 +1,5 @@
 // tewkenaire.io HEXTEW
-'use strict'
-
-import { ethers, BigNumber } from 'ethers'
+import { ethers } from 'ethers'
 
 export interface HEX2T extends ethers.Contract {
   SYMBOL: string
@@ -9,7 +7,7 @@ export interface HEX2T extends ethers.Contract {
   ABI: ethers.ContractInterface
 }
 
-export default {
+const exports = {
   SYMBOL: "HEX2",
   GENESIS_BLOCK: 9314436,
   CHAINS: {
@@ -962,3 +960,4 @@ export default {
   ]
 }
 
+export default exports

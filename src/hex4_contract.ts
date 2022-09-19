@@ -1,7 +1,5 @@
 // tewkenaire.io HEXXMAX
-'use strict'
-
-import { ethers, BigNumber } from 'ethers'
+import { ethers } from 'ethers'
 
 export interface HEX4T extends ethers.Contract {
   SYMBOL: string
@@ -9,7 +7,7 @@ export interface HEX4T extends ethers.Contract {
   ABI: ethers.ContractInterface
 }
 
-export default {
+const exports = {
   SYMBOL: "HEX4",
   GENESIS_BLOCK: 9735900,
   CHAINS: {
@@ -1158,4 +1156,4 @@ export default {
     }
   ]
 }
-
+export default exports

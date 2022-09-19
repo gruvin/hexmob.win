@@ -1,4 +1,3 @@
-'use strict'
 import { ContractInterface } from 'ethers'
 
 interface UNIV2Contract {
@@ -6,7 +5,7 @@ interface UNIV2Contract {
     ABI: ContractInterface
 }
   
-export default <UNIV2Contract> {
+const exports: UNIV2Contract = {
     CHAINS: {
         0x0: { name: 'none',    address: "0x0000000000000000000000000000000000000000", rpcUrl: null },
         0x1: {
@@ -745,3 +744,4 @@ export default <UNIV2Contract> {
         }
     ],
 }
+export default exports

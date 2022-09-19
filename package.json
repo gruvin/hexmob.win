@@ -17,7 +17,6 @@
     "@types/debug": "^4.1.7",
     "@types/react-copy-to-clipboard": "^5.0.4",
     "@walletconnect/web3-provider": "^1.8.0",
-    "@web3modal/react": "^2.0.0-alpha.2",
     "axios": "^0.27.2",
     "bootstrap": "^5.2.0",
     "d3-format": "^3.1.0",
@@ -36,9 +35,12 @@
     "web3modal": "^1.9.9"
   },
   "devDependencies": {
+    "@esbuild-plugins/node-globals-polyfill": "^0.1.1",
+    "@esbuild-plugins/node-modules-polyfill": "^0.1.4",
     "@types/react": "^18.0.17",
     "@types/react-dom": "^18.0.6",
     "@vitejs/plugin-react": "^2.0.1",
+    "@walletconnect/types": "^1.8.0",
     "enzyme": "^3.11.0",
     "typescript": "^4.6.4",
     "vite": "^3.0.7",

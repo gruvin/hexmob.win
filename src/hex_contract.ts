@@ -1,6 +1,3 @@
-'use strict'
-
-import BN from 'bn.js'
 import { ethers, BigNumber } from 'ethers'
 
 const START_DATE_POSIX = 1575331200000  // some browsers cannot parse '2019-12-03 00:00:00[Z|GMT|UTC]' correctly (Safari)
