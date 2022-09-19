@@ -21,7 +21,7 @@ export default defineConfig({
   /// ref: https://stackoverflow.com/questions/69286329/polyfill-node-os-module-with-vite-rollup-js/70666018#70666018
   resolve: {
     alias: {
-        // This Rollup aliases are extracted from @esbuild-plugins/node-modules-polyfill, 
+        // This Rollup aliases are extracted from @esbuild-plugins/node-modules-polyfill,
         // see https://github.com/remorses/esbuild-plugins/blob/master/node-modules-polyfill/src/polyfills.ts
         // process and buffer are excluded because already managed
         // by node-globals-polyfill
@@ -75,8 +75,11 @@ export default defineConfig({
             // Enable rollup polyfills plugin
             // used during production bundling
             rollupNodePolyFill()
-        ]
-    }
+        ],
+      },
+      commonjsOptions: {
+        transformMixedEsModules: true,
+      },
   }
 })
 

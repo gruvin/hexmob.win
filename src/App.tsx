@@ -20,24 +20,23 @@ import { decodeClaimStats, detectTrustWallet, bnPrefixObject } from './util'
 import './App.scss'
 import ReactGA from 'react-ga'
 import { format } from 'd3-format'
+import _axios from 'axios'
 import _debug from 'debug'
 
-import _axios from 'axios'
 const axios = _axios.create({
     baseURL: '/',
     timeout: 3000,
     headers: { "Content-Type": "application/json", "Accept": "applicaiton/json"},
-});
+})
+
+const uriQuery = new URLSearchParams(window.location.search)
+const debug = _debug('App')
 
 const Stakes = React.lazy(() => import('./Stakes'));
 const Tewkenaire = React.lazy(() => import('./Tewkenaire'));
 const Lobby = React.lazy(() => import('./Lobby'));
 const Blurb = React.lazy(() => import('./Blurb'));
 const Stats = React.lazy(() => import('./Stats'));
-
-const uriQuery = new URLSearchParams(window.location.search)
-
-const debug = _debug('App')
 
 const INITIAL_STATE: AppT.State = {
     chainId: 0,
