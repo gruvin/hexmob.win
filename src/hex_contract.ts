@@ -1,6 +1,3 @@
-'use strict'
-
-import BN from 'bn.js'
 import { ethers, BigNumber } from 'ethers'
 
 const START_DATE_POSIX = 1575331200000  // some browsers cannot parse '2019-12-03 00:00:00[Z|GMT|UTC]' correctly (Safari)
@@ -90,26 +87,32 @@ export interface StakeEnd { bnData0: BigNumber; bnData1: BigNumber; stakerAddr:s
 
 export default {
     CHAINS: {
-        0x0: { name: 'none',  address: "0x0000000000000000000000000000000000000000", rpcUrl: null },
-        0x1: {
+        0: { name: 'not connected',  address: "0x0000000000000000000000000000000000000000", rpcUrl: null },
+        1: {
             name: "mainnet",
             address: "0x2b591e99afe9f32eaa6214f7b7629768c40eeb39",
             rpcURL: `https://mainnet.infura.io/v3/${import.meta.env.VITE_INFURA_ID}`,
             wssURL: `wss://mainnet.infura.io/ws/v3/${import.meta.env.VITE_INFURA_ID}`
         },
-        0x2: null,
-        0x3: {
+        2: null,
+        3: {
             name: "ropsten",
             address: "0xd86C94478F8634e1D845038B9490D93665469dA4",
             rpcURL: `https://ropsten.infura.io/v3/${import.meta.env.VITE_INFURA_ID}`,
             wssURL: `wss://ropsten.infura.io/ws/v3/${import.meta.env.VITE_INFURA_ID}`
         },
-        0x3ad: { // 941
+        941: { // 941
           name: "pulse-testnet",
           address: "0x2b591e99afe9f32eaa6214f7b7629768c40eeb39",
           rpcURL: "https://rpc.v2b.testnet.pulsechain.com",
           wssURL: "",
-      },
+        },
+        10001: {
+          name: "ETH POW",
+          address: "0x2b591e99afe9f32eaa6214f7b7629768c40eeb39",
+          rpcURL: "https://mainnet.ethereumpow.org",
+          wssURL: ""
+        },
     },
     START_DATE,
     START_TIMESTAMP: START_DATE_POSIX / 1000,

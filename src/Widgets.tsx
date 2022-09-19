@@ -105,20 +105,20 @@ export const BurgerHeading = (props: BurgerHeadingProps) => {
 
 // eslint-disable-next-line
 const sim = function(params: any[]) {
-    return {
-        send: function(options: any) {
-            var ee = new EventEmitter();
-            const delay = 1000
-            var count = 0
-            setTimeout(() => {
-                ee.emit('transactionHash', '0x5928acffbb00f86e055a3fb0ae85c87fefa86f0a72cdecca1fd6e4676460b206')
-                setInterval(() => (++ count < 4) && ee.emit('confirmation', count, '#simulated_recipt#'), delay*2)
-            }, delay)
-            setTimeout(() => ee.emit('receipt', '#simulated_receipt# !!!=> '+JSON.stringify({ params, options})), delay * 10 )
-            setTimeout(() => ee.emit('error', '#simulated_receipt#'), delay * 12.5)
-            return ee;
-        }
-    }
+    // return {
+    //     send: function(options: any) {
+    //         var ee = new EventEmitter();
+    //         const delay = 1000
+    //         var count = 0
+    //         setTimeout(() => {
+    //             ee.emit('transactionHash', '0x5928acffbb00f86e055a3fb0ae85c87fefa86f0a72cdecca1fd6e4676460b206')
+    //             setInterval(() => (++ count < 4) && ee.emit('confirmation', count, '#simulated_recipt#'), delay*2)
+    //         }, delay)
+    //         setTimeout(() => ee.emit('receipt', '#simulated_receipt# !!!=> '+JSON.stringify({ params, options})), delay * 10 )
+    //         setTimeout(() => ee.emit('error', '#simulated_receipt#'), delay * 12.5)
+    //         return ee;
+    //     }
+    // }
 }
 
 type VoodooProps = React.PropsWithChildren & {

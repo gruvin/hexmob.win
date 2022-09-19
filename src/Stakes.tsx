@@ -73,11 +73,9 @@ class Stakes extends React.Component<StakesT.Props, StakesT.State> {
         debug('Loading stakes for address: ', address)
         const stakeCount = await contract.functions.stakeCount(address)
 
-        // request all stake index data synchronously (Promise.all)
-        var promises = [ ]
-        var stakeList = Array() as StakesT.StakeData[]
+        let stakeList: Promise<StakesT.StakeData>[] = []
         for (let stakeIndex = 0; stakeIndex < stakeCount; stakeIndex++) {
-            promises[stakeIndex] = new Promise(async (resolve) => {
+            stakeList[stakeIndex] = new Promise(async (resolve) => {
                 try {
                     contract.stakeLists(address, stakeIndex).then(async (data: any) => {
                         const progress: number = (currentDay < data.lockedDay)
@@ -85,21 +83,20 @@ class Stakes extends React.Component<StakesT.Props, StakesT.State> {
                             : Math.trunc(Math.min((currentDay - data.lockedDay) / data.stakedDays * 100000, 100000))
                         // hex_contract.sol:825
                         // struct StakeStore {
-                        //     uint40 stakeId;
-                        //     uint72 stakedHearts;
-                        //     uint72 stakeShares;
-                        //     uint16 lockedDay;
-                        //     uint16 stakedDays;
-                        //     uint16 unlockedDay;
-                        //     bool isAutoStake;
-                        // }
+                            //     uint40 stakeId;
+                            //     uint72 stakedHearts;
+                            //     uint72 stakeShares;
+                            //     uint16 lockedDay;
+                            //     uint16 stakedDays;
+                            //     uint16 unlockedDay;
+                            //     bool isAutoStake;
+                            // }
                         const _stakeData: StakesT.StakeData = {
                             ...bnPrefixObject(data) as StakesT.StakeData,
                             stakeIndex,
                             progress
                         }
                         // debug(`stakeData [resolved]: %O`, _stakeData)
-
                         const _payouts = (currentDay >= _stakeData.lockedDay + 1) // no payouts when pending or until day 2 of term
                         ? await Stakes.getStakePayoutData(context, _stakeData)
                         : {
@@ -108,17 +105,12 @@ class Stakes extends React.Component<StakesT.Props, StakesT.State> {
                             bnPenalty: ethers.constants.Zero,
                         }
                         // debug(`stake payouts: %O`, _payouts)
-
                         const stakeData = {
                             ..._stakeData,
                             ..._payouts
                         }
-
-                        stakeList = [ ...stakeList, stakeData ]
-
-                        resolve(stakeData)
-
-                    }) as Promise<StakesT.StakeData>
+                        return resolve(stakeData)
+                    }) // as Promise<StakesT.StakeData>
                 } catch(e: any) {
                     // It can happen that stakeCount increments before the our data source actually has the new stake recorded.
                     // Fail silently, assuming what we asked simply "doesn't exist" yet
@@ -127,9 +119,7 @@ class Stakes extends React.Component<StakesT.Props, StakesT.State> {
                 }
             })
         }
-        await Promise.all(promises)
-
-        return stakeList
+        return await Promise.all(stakeList)
     }
 
     getStaticContext = (publicAddress?: string) => {
@@ -226,9 +216,9 @@ class Stakes extends React.Component<StakesT.Props, StakesT.State> {
         const { currentDay } = this.props.contract.Data
         const stakeList = this.state.stakeList.slice() || []
         stakeList && stakeList.sort((a: StakesT.StakeData, b: StakesT.StakeData) => {
-            return (a.progress && b.progress) && (
+            return (a.progress && b.progress && (
                 a.progress === b.progress ? 0 : b.progress > a.progress ? 1 : -1
-            ) || 0
+            )) || 0
         })
         const bnZero = ethers.constants.Zero
         let bnStakedTotal = bnZero
@@ -493,7 +483,11 @@ class Stakes extends React.Component<StakesT.Props, StakesT.State> {
                         <BurgerHeading>Stake History</BurgerHeading>
                     </Accordion.Header>
                     <Accordion.Collapse eventKey="stake_history">
-                        <this.StakesHistory />
+                        <>
+                        {this.props.parent.state.chainId !== 1 
+                            ? <Col className="col-12 text-center">Sorry, data not available for this network.</Col>
+                            : <this.StakesHistory />
+                        }</>
                     </Accordion.Collapse>
                 </Accordion.Item>
             </Accordion>

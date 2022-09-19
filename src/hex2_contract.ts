@@ -1,7 +1,5 @@
 // tewkenaire.io HEXTEW
-'use strict'
-
-import { ethers, BigNumber } from 'ethers'
+import { ethers } from 'ethers'
 
 export interface HEX2T extends ethers.Contract {
   SYMBOL: string
@@ -9,7 +7,7 @@ export interface HEX2T extends ethers.Contract {
   ABI: ethers.ContractInterface
 }
 
-export default {
+const exports = {
   SYMBOL: "HEX2",
   GENESIS_BLOCK: 9314436,
   CHAINS: {
@@ -28,6 +26,12 @@ export default {
       rpcURL: "https://rpc.v2b.testnet.pulsechain.com",
       wssURL: "",
     }
+  },
+  10001: {
+    name: "ethw-mainnet",
+    address: "0x2b591e99afe9f32eaa6214f7b7629768c40eeb39",
+    rpcURL: "https://mainnet.ethereumpow.org",
+    wssURL: "" 
   },
 
   ABI: [
@@ -956,3 +960,4 @@ export default {
   ]
 }
 
+export default exports

@@ -29,6 +29,7 @@ declare global {
     _HEX: any
     _UNIV2: any
     _TEWK: any
+    _P: any
   }
 }
 

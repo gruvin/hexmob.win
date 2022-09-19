@@ -1,4 +1,4 @@
-@use "theme" as bs;
+@use "./theme" as bs;
 @forward '../node_modules/bootstrap/scss/bootstrap' with (
     $theme-colors: bs.$theme-colors
 );

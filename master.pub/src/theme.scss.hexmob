@@ -12,6 +12,8 @@ $theme-colors: (
   "info": $hex-yellow,
   "warning": $hex-orange,
   "danger": $hex-crimson,
+  "light": $col-light,
+
 
   "primary-faded":  scale-color($hex-orange,  $lightness: -55%),
   "secondary-faded":scale-color(#333030,    $lightness: -55%),

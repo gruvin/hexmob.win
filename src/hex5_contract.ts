@@ -1,7 +1,5 @@
 // tewkenaire.io INFINIHEX
-'use strict'
-
-import { ethers, BigNumber } from 'ethers'
+import { ethers } from 'ethers'
 
 export interface HEX5T extends ethers.Contract {
   SYMBOL: string
@@ -9,7 +7,7 @@ export interface HEX5T extends ethers.Contract {
   ABI: ethers.ContractInterface
 }
 
-export default {
+const exports = {
   SYMBOL: "HEX5",
   GENESIS_BLOCK: 10122505,
   CHAINS: {
@@ -27,7 +25,13 @@ export default {
       address: "0x112536829069dDF8868De6F8283eA7C3cD3E6743",
       rpcURL: "https://rpc.v2b.testnet.pulsechain.com",
       wssURL: "",
-    }
+    },
+    10001: {
+      name: "ethw-mainnet",
+      address: "0x2b591e99afe9f32eaa6214f7b7629768c40eeb39",
+      rpcURL: "https://mainnet.ethereumpow.org",
+      wssURL: "" 
+    },
   },
 
   ABI: [
@@ -1328,4 +1332,4 @@ export default {
   ]
 
 }
-
+export default exports

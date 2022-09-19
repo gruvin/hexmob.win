@@ -264,7 +264,8 @@ export class NewStakeForm extends React.Component<NSFT.Props, NSFT.State> {
     handleAmountSelector = (eventKey: any, e: React.SyntheticEvent<unknown, Event>) => {
         if (!(e.target instanceof HTMLElement)) return
         e.preventDefault()
-        const { balance } = this.props.wallet
+        const balance = this.props.wallet.balance || BigNumber.from(0)
+        if (balance.isZero()) return
         const v = e.target.dataset.portion || ""
         const portion = parseFloat(v) || 1.0
         const amount = (v === 'max')

@@ -8,12 +8,13 @@ import Badge from "react-bootstrap/Badge"
 import ProgressBar from "react-bootstrap/ProgressBar"
 import { GitHubInfo } from './Widgets'
 import * as AppT from  './lib/App'
+import BrandLogo from './BrandLogo'
 import { WhatIsThis, MetamaskUtils } from './Widgets'
 import HEX, { type HEXContract, type HEXGlobals } from './hex_contract'
 import UNIV2 from './univ2_contract' /* HEX/USDC pair */
 import { ethers, BigNumber } from 'ethers';
 import Web3Modal, { getProviderInfo } from 'web3modal';
-//import WalletConnectProvider from '@walletconnect/web3-provider'
+import WalletConnectProvider from '@walletconnect/web3-provider'
 //import Portis from "@portis/web3";
 import { decodeClaimStats, detectTrustWallet, bnPrefixObject } from './util'
 import './App.scss'
@@ -37,7 +38,6 @@ const Stats = React.lazy(() => import('./Stats'));
 const uriQuery = new URLSearchParams(window.location.search)
 
 const debug = _debug('App')
-const debugx = _debug('AppXXX')
 
 const INITIAL_STATE: AppT.State = {
     chainId: 0,
@@ -80,20 +80,6 @@ class App extends React.Component<AppT.Props, AppT.State> {
 
     constructor(props: AppT.Props) {
         super(props)
-
-        const { hostname } = window.location
-        switch (hostname) {
-            case "go.tshare.app":
-            case "localhost":
-            case "127.0.0.1":
-                window.hostIsTSA = true;
-                window.hostIsHM && delete(window.hostIsHM)
-                break
-            default:
-                window.hostIsHM = true
-                window.hostIsTSA && delete(window.hostIsTSA)
-        }
-
         window.metamaskOnline = () => this.state.walletConnected && window.ethereum && window.ethereum.isMetaMask
     }
 
@@ -179,13 +165,16 @@ class App extends React.Component<AppT.Props, AppT.State> {
     }
 
     updateETHBalance = () => {
-        this.web3.getBalance(this.state.wallet.address)
-        .then((bnBalanceETH: BigNumber) => this.setState({ wallet: { ...this.state.wallet, bnBalanceETH } }))
+        const wallet = this.state.wallet
+        const { address } = wallet
+        if (address.slice(0, 2) !== "0x") return
+        window.web3signer.getBalance(address)
+        .then((bnBalanceETH: BigNumber) => this.setState({ wallet: { ...wallet, bnBalanceETH } }))
         .catch((e: Error) => debug('updateETHBalance(): ', e))
     }
 
     updateHEXBalance = () => {
-        this.contract?.functions.balanceOf(this.state.wallet.address)
+        this.contract?.balanceOf(this.state.wallet.address)
         .then((bnBalance: BigNumber) => this.setState({ wallet: { ...this.state.wallet, bnBalance } }))
         .catch((e: Error) => debug('updateHEXBalance(): ', e))
     }
@@ -248,22 +237,21 @@ class App extends React.Component<AppT.Props, AppT.State> {
 
         const network = networkData.name || 'error'
         const rpcURL = networkData.rpcURL || null
-        const wssURL = networkData.wssURL || null
 
         this.setState({ chainId, network })
 
-        if (chainId == 941)
-            this.web3provider = new ethers.providers.JsonRpcProvider(rpcURL, chainId)
+        if (chainId === 1)
+            this.web3provider = new ethers.providers.InfuraProvider(network, `${import.meta.env.VITE_INFURA_ID}`)
         else
-            this.web3provider = new ethers.providers.InfuraProvider(network,  `${import.meta.env.VITE_INFURA_ID}`)
+            this.web3provider = new ethers.providers.JsonRpcProvider(rpcURL, chainId) // should probably just use Metamask
 
         this.web3provider.on('error', (e: any) => {
+            console.log("UNEXPECTED DISCONNECTION: Error => ", e)
             alert("UNEXPECTED DISCONNECTION\n\n"
             +"If running on iOS v15+, please use Safari and disable "
             +"Apple's buggy [NSURLSession Websocket] 'feature' found at ..."
             +"\nSettings -> Safari -> Advanced -> Experimental Features -> NSURLSession Websocket"
             +"\n\nDoing so will not adversely affect other activities.")
-            console.log("UNEXPECTED DISCONNECTION: Error => ", e)
             this.resetApp() // TODO: try to gracefully reconnect etc
         })
 
@@ -374,16 +362,16 @@ class App extends React.Component<AppT.Props, AppT.State> {
                 break; // dev usage
             default: {}
         }
-        debug('process.env: ', import.meta.env)
+        //debug('ENV: ', import.meta.env)
         this.web3modal = new Web3Modal({
             cacheProvider: true,                                    // optional
             providerOptions: {                                      // required
-            //    walletconnect: {
-            //        package: WalletConnectProvider,                  // required
-            //        options: {
-            //            infuraId: import.meta.env.VITE_INFURA_ID     // required
-            //        }
-            //    },
+               walletconnect: {
+                   package: WalletConnectProvider,                  // required
+                   options: {
+                       infuraId: import.meta.env.VITE_INFURA_ID     // required
+                   }
+               },
             }
         })
         const referrer = (uriQuery.get('r') || "").toLowerCase()
@@ -403,17 +391,18 @@ class App extends React.Component<AppT.Props, AppT.State> {
             window.debug = debug
         }
 
-        this.subscribeUpdateUsdHex()
-
         const address = await this.establishWeb3Provider()
+        .catch(e => debug(e))
+
         if (!address || address == "") return debug('No wallet address supplied - STOP')
 
-        if (this.state.chainId !== 941) {
-            window.contract = new ethers.Contract(HEX.CHAINS[this.state.chainId].address, HEX.ABI, window.web3signer.getSigner())   // wallet provider
-            this.contract = new ethers.Contract(HEX.CHAINS[this.state.chainId].address, HEX.ABI, this.web3) as HEXContract          // INFURA
+        if (this.state.chainId === 1) {
+            this.subscribeUpdateUsdHex()
+            window.contract = new ethers.Contract(HEX.CHAINS[this.state.chainId].address, HEX.ABI, window.web3signer.getSigner()) // wallet provider
+            this.contract = new ethers.Contract(HEX.CHAINS[this.state.chainId].address, HEX.ABI, this.web3) as HEXContract        // INFURA
             this.univ2Contract = new ethers.Contract(UNIV2.CHAINS[this.state.chainId].address, UNIV2.ABI, this.web3)    // INFURA
         } else {
-            // drop INFURA usage to allow Pulse Testnet chainID 941 (go through wallet provider if available)
+            // drop INFURA for networks not supported
             window.contract = new ethers.Contract(HEX.CHAINS[this.state.chainId].address, HEX.ABI, window.web3signer)          // wallet provider
             this.contract = window.contract;                                                                            // wallet provider
             this.univ2Contract = new ethers.Contract(UNIV2.CHAINS[this.state.chainId].address, UNIV2.ABI, window.web3signer)   // wallet provider
@@ -515,7 +504,7 @@ class App extends React.Component<AppT.Props, AppT.State> {
                 <Col className="text-muted text-center small">{this.state.currentProvider}</Col>
                 <Col className="text-end">
                     <WhatIsThis tooltip={address}><>
-                        <Badge className="text-info">
+                        <Badge bg="secondary" className="text-info">
                           { addressFragment }
                         </Badge></>
                     </WhatIsThis>
@@ -587,12 +576,7 @@ class App extends React.Component<AppT.Props, AppT.State> {
         return (
             <>
                 <Container id="hexmob_header" fluid>
-                    <div id="branding">
-                    { window.hostIsTSA
-                        ? <h1 id="header_logo">GO<sup className="text-muted small"> .tshare.app</sup></h1>
-                        : <h1 id="header_logo">HEX<sup className="text-muted">mob.win</sup></h1>
-                    }
-                    </div>
+                    <BrandLogo />
                     <div id="version-day">
                         <h3>{import.meta.env.VITE_VERSION || 'v0.0.0A'}</h3>
                         <div>
@@ -602,11 +586,16 @@ class App extends React.Component<AppT.Props, AppT.State> {
                     </div>
                     <div id="usdhex">
                         <span className="text-muted small me-1">USD</span>
-                        <span className="numeric text-success h2">{ "$" + ( this.state.USDHEX > 0 ? format(",.4f")(this.state.USDHEX) : "-.--") }</span>
+                        <span className="numeric text-success h2">{ "$" + (isNaN(this.state.USDHEX) ? "-.--" : format(",.4f")(this.state.USDHEX))}</span>
                         <ProgressBar variant="secondary" now={50} animated={false} ref={r => this.usdProgress = r }/>
                     </div>
                 </Container>
                 <Container id="hexmob_body" fluid className="p-1">
+                {this.state.chainId > 1 &&
+                    <Container fluid className="bg-danger text-white text-center">
+                        <strong>{this.state.network.toUpperCase()}</strong>
+                    </Container>
+                }
                     <Container className="p-1">
                         <this.AppContent />
                         { HEX.lobbyIsActive() &&
@@ -623,7 +612,7 @@ class App extends React.Component<AppT.Props, AppT.State> {
                                 </Card.Body>
                             </Container>
                         }
-                        { !detectTrustWallet() && /* TrustWallet won't follow external links */
+                        { this.state.chainId === 1 && !detectTrustWallet() && /* TrustWallet won't follow external links */
                         <>
                             {document.location.hostname.search(/tshare\.app/) < 0 &&
                                 <Container className="py-2 my-3">
@@ -666,8 +655,9 @@ class App extends React.Component<AppT.Props, AppT.State> {
                         }
 
                     </Container>
+
                     <GitHubInfo className="py-3" />
-                    {/* { window.hostIsHM && <Donaticator walletConnected={this.state.walletConnected} fromAddress={this.state.wallet.address || null} />} */}
+
                     { window.metamaskOnline() && <MetamaskUtils className="py-3" /> }
 
                     {this.contract &&
