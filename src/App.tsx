@@ -38,7 +38,6 @@ const Stats = React.lazy(() => import('./Stats'));
 const uriQuery = new URLSearchParams(window.location.search)
 
 const debug = _debug('App')
-const debugx = _debug('AppXXX')
 
 const INITIAL_STATE: AppT.State = {
     chainId: 0,
@@ -240,7 +239,7 @@ class App extends React.Component<AppT.Props, AppT.State> {
         const rpcURL = networkData.rpcURL || null
 
         this.setState({ chainId, network })
-        
+
         if (chainId === 1)
             this.web3provider = new ethers.providers.InfuraProvider(network, `${import.meta.env.VITE_INFURA_ID}`)
         else
@@ -393,12 +392,14 @@ class App extends React.Component<AppT.Props, AppT.State> {
         }
 
         const address = await this.establishWeb3Provider()
+        .catch(e => debug(e))
+
         if (!address || address == "") return debug('No wallet address supplied - STOP')
 
         if (this.state.chainId === 1) {
             this.subscribeUpdateUsdHex()
-            window.contract = new ethers.Contract(HEX.CHAINS[this.state.chainId].address, HEX.ABI, window.web3signer.getSigner())   // wallet provider
-            this.contract = new ethers.Contract(HEX.CHAINS[this.state.chainId].address, HEX.ABI, this.web3) as HEXContract          // INFURA
+            window.contract = new ethers.Contract(HEX.CHAINS[this.state.chainId].address, HEX.ABI, window.web3signer.getSigner()) // wallet provider
+            this.contract = new ethers.Contract(HEX.CHAINS[this.state.chainId].address, HEX.ABI, this.web3) as HEXContract        // INFURA
             this.univ2Contract = new ethers.Contract(UNIV2.CHAINS[this.state.chainId].address, UNIV2.ABI, this.web3)    // INFURA
         } else {
             // drop INFURA for networks not supported
@@ -590,6 +591,11 @@ class App extends React.Component<AppT.Props, AppT.State> {
                     </div>
                 </Container>
                 <Container id="hexmob_body" fluid className="p-1">
+                {this.state.chainId > 1 &&
+                    <Container fluid className="bg-danger text-white text-center">
+                        <strong>{this.state.network.toUpperCase()}</strong>
+                    </Container>
+                }
                     <Container className="p-1">
                         <this.AppContent />
                         { HEX.lobbyIsActive() &&
