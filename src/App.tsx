@@ -558,10 +558,6 @@ class App extends React.Component<AppT.Props, AppT.State> {
     }
 
     render() {
-
-        const headerLogo = document.getElementById("header_logo")
-        if (headerLogo) headerLogo.style.backgroundImage = "url('/seo/android-icon-96x96.png')"
-
         return (
             <>
                 <Container id="hexmob_header" fluid>
