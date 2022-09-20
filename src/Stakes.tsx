@@ -47,8 +47,10 @@ class Stakes extends React.Component<StakesT.Props, StakesT.State> {
 
     subscribeEvents = () => {
         const { contract } = this.props
-        contract.on(contract.filters.StakeStart(null, this.props.wallet.address), () => this.loadAllStakes())
-        contract.on(contract.filters.StakeEnd(null, null, this.props.wallet.address), () => this.loadAllStakes())
+        try {
+            contract.on(contract.filters.StakeStart(null, this.props.wallet.address), () => this.loadAllStakes())
+            contract.on(contract.filters.StakeEnd(null, null, this.props.wallet.address), () => this.loadAllStakes())
+        } catch (e) { debug(e) }
     }
 
     static async getStakePayoutData(context: StakesT.Context, stakeData: StakesT.StakeData): Promise<CalcPayoutBpdPenalty> {
@@ -421,9 +423,8 @@ class Stakes extends React.Component<StakesT.Props, StakesT.State> {
         const usdValue = "$"+format(",.2f")(Number(
             ethers.utils.formatUnits(
                 this.state.bnTotalValue.mul(
-                    Math.trunc(this.props.usdhex * 100)
-                ),
-                HEX.DECIMALS + 2)
+                    Math.trunc(Number(this.props.usdhex) * 100)
+                ), HEX.DECIMALS + 2)
             )
         )
 
@@ -484,8 +485,8 @@ class Stakes extends React.Component<StakesT.Props, StakesT.State> {
                     </Accordion.Header>
                     <Accordion.Collapse eventKey="stake_history">
                         <>
-                        {this.props.parent.state.chainId !== 1 
-                            ? <Col className="col-12 text-center">Sorry, data not available for this network.</Col>
+                        {this.props.parent.state.chainId !== 1
+                            ? <Col className="col-12 text-center">chain event log data not currently available</Col>
                             : <this.StakesHistory />
                         }</>
                     </Accordion.Collapse>
