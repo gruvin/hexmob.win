@@ -11,27 +11,9 @@ const exports = {
   SYMBOL: "HEX5",
   GENESIS_BLOCK: 10122505,
   CHAINS: {
-    0x0: { name: 'none', address: "0x0000000000000000000000000000000000000000", rpcUrl: null },
-    0x1: {
-      name: "mainnet",
-      address: "0x112536829069dDF8868De6F8283eA7C3cD3E6743",
-      rpcURL: `https://mainnet.infura.io/v3/${import.meta.env.VITE_INFURA_ID}`,
-      wssURL: `wss://mainnet.infura.io/ws/v3/${import.meta.env.VITE_INFURA_ID}`
-    },
-    0x2: null,
-    0x3: null,
-    0x3ad: { // 941
-      name: "pulse-testnet",
-      address: "0x112536829069dDF8868De6F8283eA7C3cD3E6743",
-      rpcURL: "https://rpc.v2b.testnet.pulsechain.com",
-      wssURL: "",
-    },
-    10001: {
-      name: "ethw-mainnet",
-      address: "0x2b591e99afe9f32eaa6214f7b7629768c40eeb39",
-      rpcURL: "https://mainnet.ethereumpow.org",
-      wssURL: "" 
-    },
+        1: "0x112536829069dDF8868De6F8283eA7C3cD3E6743",
+      941: "0x112536829069dDF8868De6F8283eA7C3cD3E6743",
+    10001: "0x112536829069dDF8868De6F8283eA7C3cD3E6743",
   },
 
   ABI: [
