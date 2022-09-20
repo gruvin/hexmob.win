@@ -18,6 +18,7 @@ import { faCopy } from '@fortawesome/free-solid-svg-icons'
 import { CopyToClipboard } from 'react-copy-to-clipboard'
 import { OverlayProps } from '@restart/ui/Overlay';
 import { cryptoFormat } from './util.js'
+import CHAINS from "./chains"
 import HEX, { type HEXContract } from './hex_contract'
 import { TransactionReceipt, TransactionResponse } from '@ethersproject/abstract-provider'
 
@@ -105,20 +106,20 @@ export const BurgerHeading = (props: BurgerHeadingProps) => {
 
 // eslint-disable-next-line
 const sim = function(params: any[]) {
-    // return {
-    //     send: function(options: any) {
-    //         var ee = new EventEmitter();
-    //         const delay = 1000
-    //         var count = 0
-    //         setTimeout(() => {
-    //             ee.emit('transactionHash', '0x5928acffbb00f86e055a3fb0ae85c87fefa86f0a72cdecca1fd6e4676460b206')
-    //             setInterval(() => (++ count < 4) && ee.emit('confirmation', count, '#simulated_recipt#'), delay*2)
-    //         }, delay)
-    //         setTimeout(() => ee.emit('receipt', '#simulated_receipt# !!!=> '+JSON.stringify({ params, options})), delay * 10 )
-    //         setTimeout(() => ee.emit('error', '#simulated_receipt#'), delay * 12.5)
-    //         return ee;
-    //     }
-    // }
+    return {
+        send: function(options: any) {
+            var ee = new EventEmitter();
+            const delay = 1000
+            var count = 0
+            setTimeout(() => {
+                ee.emit('transactionHash', '0x5928acffbb00f86e055a3fb0ae85c87fefa86f0a72cdecca1fd6e4676460b206')
+                setInterval(() => (++ count < 4) && ee.emit('confirmation', count, '#simulated_recipt#'), delay*2)
+            }, delay)
+            setTimeout(() => ee.emit('receipt', '#simulated_receipt# !!!=> '+JSON.stringify({ params, options})), delay * 10 )
+            setTimeout(() => ee.emit('error', '#simulated_receipt#'), delay * 12.5)
+            return ee;
+        }
+    }
 }
 
 type VoodooProps = React.PropsWithChildren & {
@@ -181,6 +182,7 @@ export class VoodooButton extends React.Component<VoodooProps, VoodooState> {
 
         const dataValid = (typeof inputValid === 'undefined') ? true : inputValid
 
+        // const explorerkURL = .replace(/\/+$/, "")
         const handleClick = async (contract: HEXContract, method: string, params: any[], overrides: {}, e: React.MouseEvent<HTMLButtonElement> ) => {
             e.preventDefault()
             e.stopPropagation()
@@ -201,7 +203,7 @@ export class VoodooButton extends React.Component<VoodooProps, VoodooState> {
                 setTimeout(async ()=>{
                     this.setState({
                         data: "REQUESTED",
-                        hash: "see wallet's log"
+                        hash: "see wallet log"
                     })
                     setTimeout(async ()=>{
                         this.setState({ wait: false, data: false, hash: null})
@@ -278,6 +280,10 @@ export class VoodooButton extends React.Component<VoodooProps, VoodooState> {
             else
                 hashUI = hash.slice(0,6)+'....'+hash.slice(-6)
         }
+
+        const { explorerURL } = CHAINS[window.web3signer._network.chainId]
+        const txLinkUI = (typeof hash === 'object') ? "" : explorerURL.replace(RegExp("/+$"), `/${hash}`)
+
         return (
             <div style={{ display: "inline-block" }} onClick={(e) => e.stopPropagation()} >
                     <Button
@@ -298,9 +304,9 @@ export class VoodooButton extends React.Component<VoodooProps, VoodooState> {
                         <span className={_className}>{_RESPONSE}</span>
                     </Button>
                 { hash &&
-                    <div className="text-info small mt-2">TX Hash: <a href={'https://etherscan.io/tx/'+hash}
-                        target="_blank" rel="noopener noreferrer">{hashUI}</a>{' '}
-                        <CopyToClipboard text={hash}>
+                    <div className="text-info small mt-2">TX Hash:
+                        <a href={txLinkUI} target="_blank" rel="noopener noreferrer">{hashUI}</a>{' '}
+                        <CopyToClipboard text={txLinkUI}>
                             <FontAwesomeIcon icon={faCopy} />
                         </CopyToClipboard>
                     </div>

@@ -71,12 +71,12 @@ class Lobby extends React.Component<LobbyT.Props, LobbyT.State> {
                     }).catch((e: Error) => reject(e))
                 }
                 const dayEntries = await Promise.all(dayEntryPromises)
-                
+
                 const dayUnmintedEntries = dayEntries.filter((entry: LobbyT.Entry, entryIndex: number) => {
                     return (entryIndex <= tailIndex) || (day >= currentDay) || (headIndex < entryIndex)
                 })
                 dayUnmintedEntries.length && this.setState({
-                    unmintedEntries: { 
+                    unmintedEntries: {
                         ...this.state.unmintedEntries,
                         ...{ [day]: dayUnmintedEntries}
                     }
@@ -538,7 +538,7 @@ class Lobby extends React.Component<LobbyT.Props, LobbyT.State> {
                     <Accordion.Collapse className="bg-dark text-end" eventKey="0">
                         <>
                         {this.props.parent.state.chainId !== 1
-                            ? <Col className="col-12 text-center">Sorry, data not available for this network.</Col>
+                            ? <Col className="col-12 text-center">chain event log data not currently available</Col>
                             : <LobbyDays />
                         }</>
                     </Accordion.Collapse>

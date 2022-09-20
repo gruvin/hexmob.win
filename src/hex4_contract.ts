@@ -1,9 +1,10 @@
 // tewkenaire.io HEXXMAX
 import { ethers } from 'ethers'
+import { type ContractAddress } from "./lib/App"
 
 export interface HEX4T extends ethers.Contract {
   SYMBOL: string
-  CHAINS: { [key: number]: any }
+  CHAINS: { [key: number]:  ContractAddress }
   ABI: ethers.ContractInterface
 }
 
@@ -11,29 +12,10 @@ const exports = {
   SYMBOL: "HEX4",
   GENESIS_BLOCK: 9735900,
   CHAINS: {
-    0x0: { name: 'none', address: "0x0000000000000000000000000000000000000000", rpcUrl: null },
-    0x1: {
-      name: "mainnet",
-      address: "0xd52dca990CFC3760e0Cb0A60D96BE0da43fEbf19",
-      rpcURL: `https://mainnet.infura.io/v3/${import.meta.env.VITE_INFURA_ID}`,
-      wssURL: `wss://mainnet.infura.io/ws/v3/${import.meta.env.VITE_INFURA_ID}`
-    },
-    0x2: null,
-    0x3: null,
-    0x3ad: { // 941
-      name: "pulse-testnet",
-      address: "0xd52dca990CFC3760e0Cb0A60D96BE0da43fEbf19",
-      rpcURL: "https://rpc.v2b.testnet.pulsechain.com",
-      wssURL: "",
-    },
-    10001: {
-      name: "ethw-mainnet",
-      address: "0x2b591e99afe9f32eaa6214f7b7629768c40eeb39",
-      rpcURL: "https://mainnet.ethereumpow.org",
-      wssURL: "" 
-    },
+        1: "0xd52dca990CFC3760e0Cb0A60D96BE0da43fEbf19",
+      941: "0xd52dca990CFC3760e0Cb0A60D96BE0da43fEbf19",
+    10001: "0xd52dca990CFC3760e0Cb0A60D96BE0da43fEbf19",
   },
-
 
   ABI: [
     {

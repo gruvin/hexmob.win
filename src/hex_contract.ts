@@ -1,4 +1,5 @@
 import { ethers, BigNumber } from 'ethers'
+import { type ContractAddress } from "./lib/App"
 
 const START_DATE_POSIX = 1575331200000  // some browsers cannot parse '2019-12-03 00:00:00[Z|GMT|UTC]' correctly (Safari)
 const START_DATE = new Date(START_DATE_POSIX)
@@ -53,8 +54,9 @@ export interface DailyData {
 }
 
 export interface HEXContract extends ethers.Contract {
+  chainId: number,
   Data: ContractData
-  CHAINS: { [key: number]: any }
+  CHAINS: { [key: number]: ContractAddress }
   START_DATE: Date
   START_TIMESTAMP: number
   CLAIM_PHASE_START_DAY: number
@@ -87,32 +89,10 @@ export interface StakeEnd { bnData0: BigNumber; bnData1: BigNumber; stakerAddr:s
 
 export default {
     CHAINS: {
-        0: { name: 'not connected',  address: "0x0000000000000000000000000000000000000000", rpcUrl: null },
-        1: {
-            name: "mainnet",
-            address: "0x2b591e99afe9f32eaa6214f7b7629768c40eeb39",
-            rpcURL: `https://mainnet.infura.io/v3/${import.meta.env.VITE_INFURA_ID}`,
-            wssURL: `wss://mainnet.infura.io/ws/v3/${import.meta.env.VITE_INFURA_ID}`
-        },
-        2: null,
-        3: {
-            name: "ropsten",
-            address: "0xd86C94478F8634e1D845038B9490D93665469dA4",
-            rpcURL: `https://ropsten.infura.io/v3/${import.meta.env.VITE_INFURA_ID}`,
-            wssURL: `wss://ropsten.infura.io/ws/v3/${import.meta.env.VITE_INFURA_ID}`
-        },
-        941: { // 941
-          name: "pulse-testnet",
-          address: "0x2b591e99afe9f32eaa6214f7b7629768c40eeb39",
-          rpcURL: "https://rpc.v2b.testnet.pulsechain.com",
-          wssURL: "",
-        },
-        10001: {
-          name: "ETH POW",
-          address: "0x2b591e99afe9f32eaa6214f7b7629768c40eeb39",
-          rpcURL: "https://mainnet.ethereumpow.org",
-          wssURL: ""
-        },
+            1: "0x2b591e99afe9f32eaa6214f7b7629768c40eeb39",
+            3: "0xd86C94478F8634e1D845038B9490D93665469dA4",
+          941: "0x2b591e99afe9f32eaa6214f7b7629768c40eeb39",
+        10001: "0x2b591e99afe9f32eaa6214f7b7629768c40eeb39",
     },
     START_DATE,
     START_TIMESTAMP: START_DATE_POSIX / 1000,

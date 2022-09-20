@@ -1,33 +1,16 @@
 import { ContractInterface } from 'ethers'
+import { type ContractAddress } from "./lib/App"
 
 interface UNIV2Contract {
-    CHAINS: { [key: number]: any }
+    CHAINS: { [key: number]: ContractAddress }
     ABI: ContractInterface
 }
-  
+
 const exports: UNIV2Contract = {
     CHAINS: {
-        0x0: { name: 'none',    address: "0x0000000000000000000000000000000000000000", rpcUrl: null },
-        0x1: {
-            name: "mainnet",
-            address: "0xF6DCdce0ac3001B2f67F750bc64ea5beB37B5824",
-            rpcURL: `https://mainnet.infura.io/v3/${import.meta.env.VITE_INFURA_ID}`,
-            wssURL: `wss://mainnet.infura.io/ws/v3/${import.meta.env.VITE_INFURA_ID}` 
-        },
-        0x2: null,
-        0x3: null,
-        941: {
-            name: "pulse-testnet",
-            address: "0x2b591e99afe9f32eaa6214f7b7629768c40eeb39",
-            rpcURL: `https://rpc.v2b.testnet.pulsechain.com`,
-            wssURL: "",
-        },
-        10001: {
-            name: "ethw-mainnet",
-            address: "0x2b591e99afe9f32eaa6214f7b7629768c40eeb39",
-            rpcURL: "https://mainnet.ethereumpow.org",
-            wssURL: "" 
-        },
+            1: "0xF6DCdce0ac3001B2f67F750bc64ea5beB37B5824",
+          941: "0xF6DCdce0ac3001B2f67F750bc64ea5beB37B5824",
+        10001: "0xF6DCdce0ac3001B2f67F750bc64ea5beB37B5824",
     },
 
     ABI: [

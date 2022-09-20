@@ -1,4 +1,5 @@
 import { ethers, BigNumber } from "ethers"
+import { type TChain } from "./chains"
 
 // method ethers.BigNumber.toBN() exist but isn't typed in @ethersproject/lib/bignumber
 declare module 'ethers' {
@@ -16,7 +17,8 @@ declare global {
     hostIsHM?: boolean
     web3signer?: any
     Trust?: any
-    _w3?: any
+    _W3provider?: any
+    _W3signer?: any
     _APP: any
     _LOBBY: any
     _STAKES: any
@@ -43,18 +45,20 @@ export interface Props {
 }
 
 export interface State {
-  chainId: number,
-  network: string,
-  currentProvider: string,
-  walletConnected: boolean,
-  wallet: Wallet,
-  contractReady: boolean,
-  contractGlobals: object, // XXX
-  currentDay: number,
-  USDHEX: number,
-  donation: string,
-  bnTotalHearts: BigNumber,
-  USD: number,
-  referrer: string,
-  accounts: any[],
+  chainId: numbe
+  network: TChain | null
+  currentProvider: string
+  walletConnected: boolean
+  wallet: Wallet
+  contractReady: boolean
+  contractGlobals: object // TODO
+  currentDay: number
+  USDHEX: number
+  donation: string
+  bnTotalHearts: BigNumber
+  USD: number
+  referrer: string
+  accounts: any[]
 }
+
+type ContractAddress = string
