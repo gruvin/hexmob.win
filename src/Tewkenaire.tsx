@@ -40,9 +40,9 @@ class TewkStakeList extends React.Component<TewkT.ListProps, TewkT.ListState> {
         const currentDay = Number(contract?.Data?.currentDay)
 
         const { chainId, wallet } = this.props.parent.props.parent.state
-        const { web3 } = this.props.parent.props.parent
-        const { address: contractAddress } = contractObject.CHAINS[chainId]
-        const tewkContract = new ethers.Contract(contractAddress, contractObject.ABI, web3)
+        const { web3provider } = this.props.parent.props.parent
+        const contractAddress = contractObject.CHAINS[chainId]
+        const tewkContract = new ethers.Contract(contractAddress, contractObject.ABI, web3provider)
 
         const [ stakeStartEvents, stakeEndEvents ] = await Promise.all([
             tewkContract.queryFilter(tewkContract.filters.onStakeStart(wallet.address), contractObject.GENESIS_BLOCK),
@@ -52,7 +52,7 @@ class TewkStakeList extends React.Component<TewkT.ListProps, TewkT.ListState> {
         this.setState({ progressBar: 30 })
         // debug(contractObject.SYMBOL+" stakeStartEvents: ", stakeStartEvents)
         if (stakeStartEvents.length) {
-            
+
             const startedStakes = stakeStartEvents.map((e: ethers.Event) => e.args?.uniqueID.toString())
             const endedStakes = stakeEndEvents.map((e: ethers.Event) => e.args?.uniqueID.toString())
             const activeUids = startedStakes.filter(uid => endedStakes.indexOf(uid) < 0)
@@ -240,7 +240,7 @@ export default class Tewkenaire extends React.Component<TewkT.Props, TewkT.State
 
         const usdhex = Math.trunc((this.props.usdhex || 0.0000) * 10000) // limit dollar decimals to 0.0000 (4)
         const uriQuery = new URLSearchParams(window.location.search)
-        
+
         let bnTotalValue = ethers.constants.Zero
         Object.values(this.state.bnTotalValues).map((v: BigNumber) => bnTotalValue = bnTotalValue.add(v))
         const totalUsd = Number(ethers.utils.formatUnits(bnTotalValue.mul(usdhex), 12)) // 12 = 8 HEX decimals plus 4 dollar decimals
