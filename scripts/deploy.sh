@@ -6,9 +6,9 @@ RSYNC_ARGS=--exclude='.ht*' --exclude='.DS*' --exclude='.Trashes'
 SCP=/usr/bin/scp
 TAR=/usr/bin/tar
 BUILD_DIR="./dist/" # must include trailing / for rsync !
-DEST_DEV='hexmob:~/dev.hexmob.win' 
-DEST_HEXMOB='hexmob:~/public_html' 
-DEST_TSA='tsa:~/go.tshare.app' 
+DEST_DEV='hexmob:~/dev.hexmob.win'
+DEST_HEXMOB='hexmob:~/public_html'
+DEST_TSA='tsa:~/go.tshare.app'
 autoload throw catch
 
 # target unique files list ...
@@ -22,13 +22,13 @@ fi
 # @args: list of filenames eg $FILES
 _cleanup() {
     for FILE in ${FILES}; do
-        F="./master.pub/${FILE}-orig" 
+        F="./master.pub/${FILE}-orig"
         SLASH=""; [[ -d "${F}" ]] && SLASH="/"
         [[ -e "./${F}${SLASH}" ]] && ( $RSYNC -r -I --delete "./${F}${SLASH}" "./${FILE}${SLASH}" || throw '' )
         [[ -e "./${F}${SLASH}" ]] && ( rm -rf "./${F}${SLASH}" || throw '' )
     done
-    ${GIT} checkout dev  > /dev/null 2>&1 
-    ${GIT} stash pop  > /dev/null 2>&1 
+    ${GIT} checkout dev  > /dev/null 2>&1
+    ${GIT} stash pop  > /dev/null 2>&1
     unset TARGET
     unset DEST
 }
@@ -42,7 +42,7 @@ TRAPINT() {
 
 # @args: TARGET DEST
 _build() {
-    {        
+    {
         [[ "$TARGET" == "" ]] && throw 'TARGET not set'
         [[ "$DEST" == "" ]] && throw 'DEST not set'
 
@@ -54,13 +54,13 @@ _build() {
             ${RSYNC} -r -I --delete "${FILE}${SLASH}" "./master.pub/${FILE}-orig" || throw ''
             ${RSYNC} -r -I --delete "./master.pub/${FILE}.${TARGET}${SLASH}" "./${FILE}${SLASH}" || throw ''
         done
-        
+
         # build
         yarn build || throw ''
         print "BUILD DONE"
 
-        print "RSYNCing ${BUILD_DIR} => ${DEST}" 
-        ${RSYNC} ${RSYNC_APPLE_ARGS} -rn  --delete ${BUILD_DIR} ${DEST} || throw ''
+        print "RSYNCing ${BUILD_DIR} => ${DEST}"
+        ${RSYNC} ${RSYNC_APPLE_ARGS} -r  --delete ${BUILD_DIR} ${DEST} || throw ''
 
     } always {
         if catch '*'; then
@@ -88,7 +88,7 @@ case "$DEPLOY_TYPE" in
                 print "\nAborted"
                 exit 0
                 ;;
-            (*) 
+            (*)
                 eval ${CHECKOUT_CMD}
                 if [[ $? -ne 0 ]]; then print "\nWell that went badly :/\n"; exit 3; fi
 

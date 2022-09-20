@@ -20,24 +20,23 @@ import { decodeClaimStats, detectTrustWallet, bnPrefixObject } from './util'
 import './App.scss'
 import ReactGA from 'react-ga'
 import { format } from 'd3-format'
+import _axios from 'axios'
 import _debug from 'debug'
 
-import _axios from 'axios'
 const axios = _axios.create({
     baseURL: '/',
     timeout: 3000,
     headers: { "Content-Type": "application/json", "Accept": "applicaiton/json"},
-});
+})
+
+const uriQuery = new URLSearchParams(window.location.search)
+const debug = _debug('App')
 
 const Stakes = React.lazy(() => import('./Stakes'));
 const Tewkenaire = React.lazy(() => import('./Tewkenaire'));
 const Lobby = React.lazy(() => import('./Lobby'));
 const Blurb = React.lazy(() => import('./Blurb'));
 const Stats = React.lazy(() => import('./Stats'));
-
-const uriQuery = new URLSearchParams(window.location.search)
-
-const debug = _debug('App')
 
 const INITIAL_STATE: AppT.State = {
     chainId: 0,
@@ -243,7 +242,7 @@ class App extends React.Component<AppT.Props, AppT.State> {
         if (chainId === 1)
             this.web3provider = new ethers.providers.InfuraProvider(network, `${import.meta.env.VITE_INFURA_ID}`)
         else
-            this.web3provider = new ethers.providers.JsonRpcProvider(rpcURL, chainId) // should probably just use Metamask
+            this.web3provider = this.walletProvider // Infura not available for this network
 
         this.web3provider.on('error', (e: any) => {
             console.log("UNEXPECTED DISCONNECTION: Error => ", e)
@@ -255,7 +254,8 @@ class App extends React.Component<AppT.Props, AppT.State> {
             this.resetApp() // TODO: try to gracefully reconnect etc
         })
 
-        window.web3signer = new ethers.providers.Web3Provider(this.walletProvider)   // signer
+        window.web3signer = new ethers.providers.Web3Provider(this.walletProvider)  // signer (eg MetaMask from web3modal selection)
+        window.web3signer.getSigner()
         this.web3 = this.web3provider  // read-only provider (infura / etherscan etc)
         if (!window.web3signer || !this.web3) return Promise.reject('Unexpected error establishing web3 providers')
 
@@ -403,9 +403,9 @@ class App extends React.Component<AppT.Props, AppT.State> {
             this.univ2Contract = new ethers.Contract(UNIV2.CHAINS[this.state.chainId].address, UNIV2.ABI, this.web3)    // INFURA
         } else {
             // drop INFURA for networks not supported
-            window.contract = new ethers.Contract(HEX.CHAINS[this.state.chainId].address, HEX.ABI, window.web3signer)          // wallet provider
-            this.contract = window.contract;                                                                            // wallet provider
-            this.univ2Contract = new ethers.Contract(UNIV2.CHAINS[this.state.chainId].address, UNIV2.ABI, window.web3signer)   // wallet provider
+            window.contract = new ethers.Contract(HEX.CHAINS[this.state.chainId].address, HEX.ABI, window.web3signer.getSigner()) // wallet provider
+            this.contract = window.contract;                                                                                      // wallet provider
+            this.univ2Contract = new ethers.Contract(UNIV2.CHAINS[this.state.chainId].address, UNIV2.ABI, window.web3signer)      // wallet provider
         }
         if (!this.contract) return debug("ethers.Contract instantiation failed. Caanot continue.")
 
