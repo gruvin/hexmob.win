@@ -231,7 +231,7 @@ class App extends React.Component<AppT.Props, AppT.State> {
         this.setState({ chainId, network })
 
         this.web3provider = (chainId === 1)
-            ? new ethers.providers.InfuraProvider(network.wssURL, import.meta.env.VITE_INFURA_ID) // INFURA (read ony)
+            ? new ethers.providers.InfuraProvider(network.name, import.meta.env.VITE_INFURA_ID) // INFURA (read ony)
             : new ethers.providers.Web3Provider(this.walletProvider) // Infura not available. Use wallet provider
 
         this.web3provider.on("error", (e: any) => {
@@ -262,10 +262,6 @@ class App extends React.Component<AppT.Props, AppT.State> {
                 debug("accounts[] new method")
                 const response = await window.ethereum.request({method: "eth_accounts"})
                 accounts = response
-            } else { // legacy way
-                debug("accounts[] legacy method")
-                const response = await window.ethereum.send("eth_requestAccounts") // EIP1102(ish)
-                accounts = response.result
             }
             debug("accounts[]: ", accounts)
             address = accounts[0]
