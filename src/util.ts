@@ -18,26 +18,25 @@ const debug = _debug('util')
  * displays unitized .3 U formatted values (eg. 12.345 M) with 50% opacity for fractional part
 *  where v is a Number() or String() or BN() or ethers.BigNumber and MUST be whole number (int)
  */
-const cryptoFormat = (v: number | BN | BigNumber | string, currency: string) => {
+const cryptoFormat = (_v: number | BN | BigNumber | string, currency: string) => {
+    if (_v === "") return { valueString: "NaN", unit: "", valueWithUnit: "" }
+    if (typeof currency === 'undefined' || currency === "") currency = "HEX"
 
-    if(typeof v.toString === 'function') v = v.toString()
-    if (currency === "") currency = "HEX"
 
-    const { commify, formatUnits } = ethers.utils
-
-    const input = v.toString()
     let si = ""
     let out = ""
     let unit = ""
-    let len : number
 
-    // NOTE: v is assumed to be of type string
+    const input = _v.toString()
+    const len = input.length
+    const v = BigNumber.from(input.replace(RegExp("^([^.]+).*"), "$1")) // strip any decimals)
+
+    const { commify, formatUnits } = ethers.utils
+
     switch (currency) {
         case "ETH":
-            v = BigNumber.from(v)
-            len = input.length
             unit = "ETH"
-            if (v.isZero())              out = '0.000'
+            if (v.isZero())                          out = '0.000'
             if      (len <  7) { unit="wei"; si="";  out = commify(v.toString()); }
             else if (len < 13) { unit="wei"; si="G"; out = formatUnits(v,  9).slice(0, 7); }
             else if (len < 14) { unit="wei"; si="G"; out = commify(formatUnits(v,  9).slice(0, 6)); }
@@ -51,8 +50,6 @@ const cryptoFormat = (v: number | BN | BigNumber | string, currency: string) => 
 
         case "TSHARE_PRICE":
         case "SHARES":
-            v = BigNumber.from(v)
-            len = input.length
             unit = currency === "SHARES" ? "SHARES" : "HEX/TShare"
             if      (len <  7) { si="";  out = commify(v.toString()); }
             else if (len < 10) { si="M"; out = commify(formatUnits(v,  6).slice(0, len - 2)); }
@@ -65,7 +62,8 @@ const cryptoFormat = (v: number | BN | BigNumber | string, currency: string) => 
         case "%":
         case 'PERCENT':
             unit = "%"
-            const n = Number(v)
+            const n = Number(input)
+            if (isNaN(n)) { out = "-.--"; break; }
             if (n <= 1)          out = format(",.3f")(n)
             else if (n <= 100)   out = format(",.2f")(n)
             else                 out = format(",.0f")(n)
@@ -98,8 +96,6 @@ const cryptoFormat = (v: number | BN | BigNumber | string, currency: string) => 
         10.000[0]           0000 0000 0000    len = 16 => M HEX ( 10 B)
 */
         case 'HEX':
-            v = BigNumber.from(v)
-            len = input.length
             unit = "HEX"
             if (v.isZero())              out = '0'
             if      (len <  7) { unit="Hearts"; si="";  out = commify(v.toString()); }
@@ -112,9 +108,9 @@ const cryptoFormat = (v: number | BN | BigNumber | string, currency: string) => 
             break
 
         case "USD":
-            v = parseFloat(v as string)
+            const usd = parseFloat(input)
             unit = "USD"
-            out = format(",.2f")(v)
+            out = format(",.2f")(usd)
             break
 
         default: // NaN or Infinity etc

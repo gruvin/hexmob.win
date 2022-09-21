@@ -33,11 +33,12 @@ interface CryptoValProps {
     className?: string
 }
 export const CryptoVal = (props: CryptoValProps) => {
+
     const { value, currency, showUnit, wholeNumber } = props
     if (value === '---') return ( <>---</> )
-    if (isNaN(parseFloat(value as string))) return ( <>NaN</> )
+    if (isNaN(value as any)) return <>NaN</>
 
-    const { valueString:s, unit } = cryptoFormat(value, currency || "")
+    const { valueString: s, unit } = cryptoFormat(value, currency || "")
 
     // mute fractional part (including the period)
     const r = s.match(/^(.*)(\.\d+)(.*)$/)
@@ -238,7 +239,7 @@ export class VoodooButton extends React.Component<VoodooProps, VoodooState> {
                     })
                     .catch( async (err: any) => {
                         debug(`${method}.wait()::error: `, err.reason, err.receipt)
-                        this.setState({ data: 'rejected', wait: true })
+                        this.setState({ data: 'error/rejected', wait: true })
                         setTimeout(() => {
                             this.setState({ wait: false, data: false, hash: null })
                             typeof rejectionCallback === 'function' && rejectionCallback.apply(this)
@@ -247,7 +248,7 @@ export class VoodooButton extends React.Component<VoodooProps, VoodooState> {
                 })
                 .catch( async (err: any) => {
                     debug(`${method}::error: `, err.reason)
-                    this.setState({ data: 'rejected', wait: true })
+                    this.setState({ data: 'tx not signed', wait: true })
                     setTimeout(() => {
                         this.setState({ wait: false, data: false, hash: null })
                         typeof rejectionCallback === 'function' && rejectionCallback.apply(this)
