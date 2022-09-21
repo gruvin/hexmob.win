@@ -5,6 +5,9 @@ import Row from "react-bootstrap/Row"
 import Col from "react-bootstrap/Col"
 import Button from "react-bootstrap/Button"
 import Badge from "react-bootstrap/Badge"
+import CopyToClipboard from 'react-copy-to-clipboard'
+import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
+import { faCopy } from '@fortawesome/free-solid-svg-icons'
 import ProgressBar from "react-bootstrap/ProgressBar"
 import { GitHubInfo } from "./Widgets"
 import * as AppT from  "./lib/App"
@@ -490,7 +493,10 @@ class App extends React.Component<AppT.Props, AppT.State> {
                 <Col className="text-end">
                     <WhatIsThis tooltip={address}><>
                         <Badge bg="secondary" className="text-info">
-                          { addressFragment }
+                        <CopyToClipboard text={address}><>
+                            { addressFragment }
+                            <FontAwesomeIcon icon={faCopy} /></>
+                        </CopyToClipboard>
                         </Badge></>
                     </WhatIsThis>
                 </Col>
