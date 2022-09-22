@@ -330,7 +330,7 @@ class App extends React.Component<AppT.Props, AppT.State> {
             if (--this.retryCounter === 0) {
                 this.retryCounter = 2
                 debug("subscribeUpdateUsdHex: Too many failures. Invalidating cached USDHEX.")
-                localStorage.delete("usdhex_cache")
+                localStorage.removeItem("usdhex_cache")
                 this.setState({ USDHEX: 0 })
             }
             debug(`subscribeUpdateUsdHex: ${e.message}. Backing off 30 seconds.`)
