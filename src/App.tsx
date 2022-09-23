@@ -225,7 +225,7 @@ class App extends React.Component<AppT.Props, AppT.State> {
         }
 
         // @dev this.walletProvider is our transaction signing provider, such as MetaMask
-        if (!this.walletProvider || !this.walletProvider.chainId) return Promise.reject(new Error("web3modal no wallet chossen"))
+        if (!this.walletProvider || !this.walletProvider.chainId) return Promise.reject("web3modal: no wallet chossen")
 
         const chainId = Number(this.walletProvider.chainId)
         const network = CHAINS[chainId] || null
@@ -377,10 +377,9 @@ class App extends React.Component<AppT.Props, AppT.State> {
             window.debug = debug
         }
 
-        const address = await this.establishWeb3Provider()
-        .catch(e => debug(e))
-
-        if (!address || address == "") return debug("No wallet address supplied - STOP")
+        const address = (await this.establishWeb3Provider()
+        .catch(e => { debug(e) })) as (string | null)
+        if (!address) return
 
         if (this.state.chainId === 1) {
             this.subscribeUpdateUsdHex()

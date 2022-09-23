@@ -155,12 +155,13 @@ class TewkStakeList extends React.Component<TewkT.ListProps, TewkT.ListState> {
     render() {
         const totalUsd = Number(ethers.utils.formatUnits(this.state.bnTotalValue.mul(this.props.usdhex), 12))
         const { stakeList } = this.state
+
         const uiStakeList = stakeList.map((stake, index) => {
-            const { bnStakedHearts, bnStakeShares, bnBigPayDay, bnInterest, bnValue } = stake
+            const { bnHexAmount, bnStakeShares, bnBigPayDay, bnInterest, bnValue } = stake as TewkT.StakeData
             const usd = Number(ethers.utils.formatUnits(bnValue.mul(this.props.usdhex), 12))
             return (
                 <Row key={index} className="text-end">
-                    <Col className="numeric d-none d-md-inline"><CryptoVal value={bnStakedHearts} currency="HEX" /></Col>
+                    <Col className="numeric d-none d-md-inline"><CryptoVal value={bnHexAmount} currency="HEX" /></Col>
                     <Col className="numeric"><CryptoVal value={bnStakeShares} currency="SHARES" /></Col>
                     <Col className="numeric d-none d-md-inline"><CryptoVal value={bnBigPayDay} currency="HEX" /></Col>
                     <Col className="numeric"><CryptoVal value={bnInterest} currency="HEX" /></Col>
