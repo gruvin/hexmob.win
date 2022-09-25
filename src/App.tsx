@@ -457,17 +457,18 @@ class App extends React.Component<AppT.Props, AppT.State> {
         }
         await updateCurrentDay()
 
-        // update currentDay every hour (in some cleverish way)
-        const updateInterval = 10 // seconds
+        // update currentDay "once" only (3 attempts in short order) within the first
+        // 10 window beginning 00:00:00Z
+        const TIME_RESOLUTION = 10 // seconds
         this.dayInterval = setInterval(async () => {
             if (!this.state.contractReady || !this.contract) return
             const d = new Date(Date.now())
             const [ hour, min, secs ] = [ d.getUTCHours(), d.getUTCMinutes(), d.getUTCSeconds() ]
-            if (hour === 0 && min === 0 && secs >= 0 && secs < updateInterval) {
+            if (hour === 0 && min === 0 && secs >= 0 && secs < TIME_RESOLUTION) {
                 await updateCurrentDay()
                 debug(`${d.toUTCString()}: Updated currentDay from contract to ${currentDay}`)
             }
-        }, 1000 * updateInterval);
+        }, 1000 * TIME_RESOLUTION);
 
         this.subscribeEvents()
         this.updateETHBalance()
