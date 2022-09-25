@@ -78,12 +78,14 @@ class App extends React.Component<AppT.Props, AppT.State> {
     web3provider?: any
     usdProgress: Element | null = null
     USDHEX?: Element
+    _ONCE_: boolean
 
     state: AppT.State = { ...INITIAL_STATE }
 
     constructor(props: AppT.Props) {
         super(props)
         window.metamaskOnline = () => this.state.walletConnected && window.ethereum && window.ethereum.isMetaMask
+        this._ONCE_ = false
     }
 
     subscribeProvider = async (provider: any) => {
@@ -339,6 +341,9 @@ class App extends React.Component<AppT.Props, AppT.State> {
     }
 
     async componentDidMount() {
+        if (this._ONCE_ === true) return
+        this._ONCE_ = true;
+
         switch (window.location.hostname) {
             case "go.tshare.app": ReactGA.initialize("UA-203521048-1"); break; // usage
             case "hexmob.win": ReactGA.initialize("UA-203562559-1"); break// usage
@@ -437,14 +442,32 @@ class App extends React.Component<AppT.Props, AppT.State> {
         })
         ReactGA.pageview(window.location.pathname + window.location.search); // will trigger only once per page (re)load
 
-        // update UI and contract currentDay every 10 minutes
+        const updateCurrentDay = async (): Promise<number> => {
+            let currentDay = this.state.currentDay
+            for ( let attempt = 0; attempt < 3; attempt++) {
+                const _bnCurrentDay = await this.contract!.currentDay()
+                const currentDay = _bnCurrentDay.toNumber()
+                if (currentDay >= this.state.currentDay) {
+                    this.contract!.Data!.currentDay = currentDay
+                    this.setState({ currentDay })
+                    break
+                }
+            }
+            return currentDay
+        }
+        await updateCurrentDay()
+
+        // update currentDay every hour (in some cleverish way)
+        const updateInterval = 10 // seconds
         this.dayInterval = setInterval(async () => {
             if (!this.state.contractReady || !this.contract) return
-            const _bnCurrentDay = await this.contract.currentDay()
-            const currentDay = _bnCurrentDay.toNumber()
-            this.contract.Data!.currentDay = currentDay
-            this.setState({ currentDay })
-        }, 10 * 60 * 1000/*ms*/);
+            const d = new Date(Date.now())
+            const [ hour, min, secs ] = [ d.getUTCHours(), d.getUTCMinutes(), d.getUTCSeconds() ]
+            if (hour === 0 && min === 0 && secs >= 0 && secs < updateInterval) {
+                await updateCurrentDay()
+                debug(`${d.toUTCString()}: Updated currentDay from contract to ${currentDay}`)
+            }
+        }, 1000 * updateInterval);
 
         this.subscribeEvents()
         this.updateETHBalance()
