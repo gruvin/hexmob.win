@@ -266,11 +266,11 @@ const bnCalcPayoutBpdPenalty = (context: Context, stakeData: StakeData, rawDaily
     let bnBigPayDay = constants.Zero
     let bnPenalty = constants.Zero
     if (startDay < currentDay) {
-        const daysServed = Math.min(currentDay - startDay, stakedDays)
+        const daysServed = stakeData.stakeId === 603970 ? 90 : Math.min(currentDay - startDay, stakedDays)
         // debug(`daysServed: ${daysServed}`)
         if (daysServed < stakedDays) {
             const penaltyDays = Math.max(90, Math.ceil(stakedDays / 2))
-            // debug(`penaltyDays: ${penaltyDays}`)
+            // debug÷(`penaltyDays: ${penaltyDays}`)
             if (daysServed === 0) {
                 bnPenalty = bnCalcPartDayBonuses(contract, stakeData).mul(penaltyDays)
             } else if (penaltyDays < daysServed) {
@@ -279,6 +279,7 @@ const bnCalcPayoutBpdPenalty = (context: Context, stakeData: StakeData, rawDaily
                 bnPayout = _bnInterest.bnPayout.add(_bnInterestDelta.bnPayout)
                 bnBigPayDay = _bnInterest.bnBigPayDay
                 bnPenalty = _bnInterest.bnPayout.add(_bnInterest.bnBigPayDay)
+                // debug("PENALTY: penaltyDays < daysServed: ", bnPenalty.toString())
 
             } else {
                 // penaltyDays >= servedDaybnS
@@ -293,20 +294,19 @@ const bnCalcPayoutBpdPenalty = (context: Context, stakeData: StakeData, rawDaily
                 }
                 const bnTotalValue = stakeData.bnStakedHearts.add(bnInterest)
                 if (bnPenalty.gt(bnTotalValue)) bnPenalty = bnTotalValue
+                // debug("PENALTY: penaltyDays >= servedDays: ", bnPenalty.toString())
             }
-        } else { // daysServed >= stakedDays (late end stake)
+        } else { // daysServed >= stakedDays (potential late end stake)
             const _bnInterest = bnCalcPayoutRewards({ context, rawDailyData, stakeData, fromDay: 0, toDay: rawDailyData.length })
             bnPayout = _bnInterest.bnPayout
             bnBigPayDay = _bnInterest.bnBigPayDay
             const bnInterest = bnPayout.add(bnBigPayDay)
             const maxUnlockedDay = endDay + HEX.LATE_PENALTY_GRACE_DAYS;
-            if (currentDay > maxUnlockedDay) {
-                bnPenalty =
-                    stakeData.bnStakedHearts
-                    .add(bnInterest)
-                    .mul(currentDay).sub(maxUnlockedDay)
-                    .div(HEX.LATE_PENALTY_SCALE_DAYS)
+            if (currentDay > maxUnlockedDay) { // contract: 1781
+                const bnRawStakeReturn = stakeData.bnStakedHearts.add(bnInterest)
+                bnPenalty = bnRawStakeReturn.mul(currentDay - maxUnlockedDay).div(HEX.LATE_PENALTY_SCALE_DAYS)
             }
+            // debug("PENALTY: late end: ", bnPenalty.toString())
         } // if (daysServed < stakedDays)
     } // if (startDay > currentDay)
 
