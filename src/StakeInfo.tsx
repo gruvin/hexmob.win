@@ -259,8 +259,7 @@ export class StakeInfo extends React.Component<InfoT.Props, InfoT.State> {
                                 </Col>
                             </Row>
 
-
-                            {/* PREDICTED END STAKE PREDICTION */}
+                            {/* PREDICTED END STAKE FIGURES */}
                             <Container
                                 style={{ maxWidth: "fit-content" }}
                                 onClick={() => this.setState({ eesStatsHEX: !this.state.eesStatsHEX }) }

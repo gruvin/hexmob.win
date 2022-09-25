@@ -437,14 +437,14 @@ class App extends React.Component<AppT.Props, AppT.State> {
         })
         ReactGA.pageview(window.location.pathname + window.location.search); // will trigger only once per page (re)load
 
-        // update UI and contract currentDay every minute
+        // update UI and contract currentDay every 10 minutes
         this.dayInterval = setInterval(async () => {
             if (!this.state.contractReady || !this.contract) return
             const _bnCurrentDay = await this.contract.currentDay()
             const currentDay = _bnCurrentDay.toNumber()
             this.contract.Data!.currentDay = currentDay
             this.setState({ currentDay })
-        }, 10000);
+        }, 10 * 60 * 1000/*ms*/);
 
         this.subscribeEvents()
         this.updateETHBalance()
