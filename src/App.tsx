@@ -78,14 +78,12 @@ class App extends React.Component<AppT.Props, AppT.State> {
     web3provider?: any
     usdProgress: Element | null = null
     USDHEX?: Element
-    _ONCE_: boolean
 
     state: AppT.State = { ...INITIAL_STATE }
 
     constructor(props: AppT.Props) {
         super(props)
         window.metamaskOnline = () => this.state.walletConnected && window.ethereum && window.ethereum.isMetaMask
-        this._ONCE_ = false
     }
 
     subscribeProvider = async (provider: any) => {
@@ -217,8 +215,10 @@ class App extends React.Component<AppT.Props, AppT.State> {
             this.setState({ currentProvider: "CoinBase" })
         } else { // web3modal it is ...
             this.setState({ currentProvider: "web3modal" })
+            debug("this.triggerWeb3Modal: ", this.triggerWeb3Modal)
             debug("this.web3modal.cachedProvider: ", this.web3modal?.cachedProvider)
-            if (this.web3modal && this.web3modal.cachedProvider !== "" || this.triggerWeb3Modal) {
+            if ((this.web3modal && this.web3modal.cachedProvider !== "") || this.triggerWeb3Modal) {
+                debug("W T F ? !")
                 this.triggerWeb3Modal = false
                 this.walletProvider = await this.selectWeb3ModalWallet().catch(e => Error("selectWeb3ModalWallet() failed: ", e))
                 const currentProvider = this.walletProvider ? getProviderInfo(this.walletProvider).name : "---"
@@ -341,8 +341,6 @@ class App extends React.Component<AppT.Props, AppT.State> {
     }
 
     async componentDidMount() {
-        if (this._ONCE_ === true) return
-        this._ONCE_ = true;
 
         switch (window.location.hostname) {
             case "go.tshare.app": ReactGA.initialize("UA-203521048-1"); break; // usage
