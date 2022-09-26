@@ -31,4 +31,4 @@ gpg:                using RSA key 036E2526A4740940E1DF91955751D33B09A27356
 gpg: Good signature from "Bryan Rentoul <gruvin@gmail.com>" [ultimate]
 ```
 
-[docs test](https://gruvin.github.io/hexmob.win/docs/)
+[docs test](https://gruvin.github.io/hexmob.win/doc/)
