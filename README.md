@@ -9,7 +9,7 @@ at my FlowCryptâ„¢ **Encrypted Contact Page** (powered by GPG)
 
 GitHub release tags should be GPG signed by myself. You can verify the code is how it was when I signed thusly ...
 
-Retrieve my public key from from my [FlowCryptâ„¢ Encrypted Contact Page](https://flowcrypt.com/me/gruvin)
+Retrieve my public key from from my [FlowCrypt's Encrypted Contact Page](https://flowcrypt.com/me/gruvin)
 Public Fingerprint: 036E 2526 A474 0940 E1DF 9195 5751 D33B 09A2 7356
 
 I use the same key to sign git tags (when I do) example: tag 0.2.0B (first open source release) is signed ... 
