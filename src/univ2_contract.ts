@@ -11,6 +11,7 @@ const exports: UNIV2Contract = {
             1: "0xF6DCdce0ac3001B2f67F750bc64ea5beB37B5824",
           941: "0xF6DCdce0ac3001B2f67F750bc64ea5beB37B5824",
         10001: "0xF6DCdce0ac3001B2f67F750bc64ea5beB37B5824",
+       513100: "0xF6DCdce0ac3001B2f67F750bc64ea5beB37B5824",
     },
 
     ABI: [
