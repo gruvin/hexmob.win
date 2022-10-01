@@ -44,6 +44,13 @@ const chains: TChainArray = {
       wssURL: "",
       explorerURL: "https://www.oklink.com/en/ethw/tx/"
     },
-}
+    513100: {
+        description: "ETH FAIR",
+        name: "ETHf-mainnet",
+        rpcURL: "https://rpc.etherfair.org/",
+        wssURL: "",
+        explorerURL: "https://www.oklink.com/en/ethf/tx/"
+    },
+  }
 
 export default chains

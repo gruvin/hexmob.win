@@ -89,10 +89,11 @@ export interface StakeEnd { bnData0: BigNumber; bnData1: BigNumber; stakerAddr:s
 
 export default {
     CHAINS: {
-            1: "0x2b591e99afe9f32eaa6214f7b7629768c40eeb39",
-            3: "0xd86C94478F8634e1D845038B9490D93665469dA4",
-          941: "0x2b591e99afe9f32eaa6214f7b7629768c40eeb39",
-        10001: "0x2b591e99afe9f32eaa6214f7b7629768c40eeb39",
+            1: "0x2b591e99afe9f32eaa6214f7b7629768c40eeb39", // ETH mainnet
+            3: "0xd86C94478F8634e1D845038B9490D93665469dA4", // Ropsten
+          941: "0x2b591e99afe9f32eaa6214f7b7629768c40eeb39", // PLS testnet
+        10001: "0x2b591e99afe9f32eaa6214f7b7629768c40eeb39", // ETHw
+       513100: "0x2b591e99afe9f32eaa6214f7b7629768c40eeb39", // ETHf
     },
     START_DATE,
     START_TIMESTAMP: START_DATE_POSIX / 1000,
