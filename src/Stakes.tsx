@@ -282,8 +282,7 @@ class Stakes extends React.Component<StakesT.Props, StakesT.State> {
         }
 
         const numStakes = stakeList.length
-        const { usdhex } = this.props
-        const usdValue = "$"+format(",.2f")(Number(ethers.utils.formatUnits(this.state.bnTotalValue.mul(Math.trunc(usdhex * 10000)), 12))) // 12 = 8 HEX decimals plus 4 dollar decimals
+        const usdValue =  Number(ethers.utils.formatUnits(this.state.bnTotalValue, HEX.DECIMALS + 4)) * this.props.usdhex * 10000
 
         return (<>
             <Card className="mt-2 bg-info-darkened rounded">
@@ -322,7 +321,7 @@ class Stakes extends React.Component<StakesT.Props, StakesT.State> {
                     </Row>
                     <Row className="text-success">
                         <Col className="text-success text-end font-weight-bold">USD Value</Col>
-                        <Col className="text-success numeric font-weight-bold">{ usdValue }</Col>
+                        <Col className="text-success numeric font-weight-bold"><CryptoVal value={usdValue} currency="USD"/></Col>
                     </Row>
                     <Row className="mt-2">
                         <Col className="text-end font-weight-bold">Average Gain</Col>
@@ -420,13 +419,7 @@ class Stakes extends React.Component<StakesT.Props, StakesT.State> {
     render() { // class Stakes
         const a = this.props.publicAddress || ""
         const publicAddress = <span className="numeric">{a.slice(0, 6)+"...."+a.slice(-4)}</span>
-        const usdValue = "$"+format(",.2f")(Number(
-            ethers.utils.formatUnits(
-                this.state.bnTotalValue.mul(
-                    Math.trunc(Number(this.props.usdhex) * 100)
-                ), HEX.DECIMALS + 2)
-            )
-        )
+        const usdValue =  Number(ethers.utils.formatUnits(this.state.bnTotalValue, HEX.DECIMALS + 4)) * this.props.usdhex * 10000
 
         return (!this.state.stakeList
         ? <ProgressBar variant="secondary" animated now={90} label="loading contract data" className="mt-3" />
@@ -471,7 +464,7 @@ class Stakes extends React.Component<StakesT.Props, StakesT.State> {
                             <Col className="pe-0"><BurgerHeading>Active Stakes</BurgerHeading></Col>
                             <Col className="col-5 lh-lg px-0 text-end text-success">
                                 <small className="text-muted small align-baseline me-1">USD</small>
-                                <span className="numeric h2 fw-bold">{ usdValue }</span>
+                                <span className="numeric h2 fw-bold"><CryptoVal value={usdValue} currency="USD" /></span>
                             </Col>
                         </Row>
                     </Accordion.Header>
