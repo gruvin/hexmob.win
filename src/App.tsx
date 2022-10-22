@@ -15,7 +15,7 @@ import BrandLogo from "./BrandLogo"
 import { WhatIsThis, MetamaskUtils } from "./Widgets"
 import CHAINS, { type TChain } from "./chains"
 import HEX, { type HEXContract, type HEXGlobals } from "./hex_contract"
-import UNIV2 from "./univ2_contract" /* HEX/USDC pair */
+// import UNIV2 from "./univ2_contract" /* HEX/USDC pair */
 import { ethers, BigNumber } from "ethers";
 import Web3Modal, { getProviderInfo } from "web3modal";
 import WalletConnectProvider from "@walletconnect/web3-provider"
@@ -73,17 +73,19 @@ class App extends React.Component<AppT.Props, AppT.State> {
     usdHexInterval?: NodeJS.Timer
     retryCounter: number = 2
     web3modal: Web3Modal | null = null
-    univ2Contract?: any
+    // univ2contract?: any
     walletProvider?: any
     web3provider?: any
     usdProgress: Element | null = null
     USDHEX?: Element
+    currentUTCday: number = new Date().getUTCDay()
 
     state: AppT.State = { ...INITIAL_STATE }
 
     constructor(props: AppT.Props) {
         super(props)
         window.metamaskOnline = () => this.state.walletConnected && window.ethereum && window.ethereum.isMetaMask
+
     }
 
     subscribeProvider = async (provider: any) => {
@@ -142,27 +144,53 @@ class App extends React.Component<AppT.Props, AppT.State> {
         } catch(e) { }
     }
 
-    subscribeEvents = () => {
-        if (this.state.wallet.address === "") return
+    subscribeEvents = async () => {
+        if (this.state.wallet.address === "") {
+            setTimeout(this.subscribeEvents, 1000)
+            return
+        }
         this.contract?.on(this.contract.filters.Transfer(this.state.wallet.address), this.updateHEXBalance)
         this.contract?.on(this.contract.filters.Transfer(null, this.state.wallet.address), this.updateHEXBalance)
 
-        // use Uniswap v2 as USDHEX oracle
-        this.univ2Contract.on("Swap", (amount0In: string, amount1In: string, amount0Out: string, amount1Out: string) => {
-            try {
-                const USDHEX = parseInt(amount1In) !== 0
-                    ? Number(parseInt(amount1In) / parseInt(amount0Out) * 100)
-                    : Number(parseInt(amount1Out) / parseInt(amount0In) * 100)
-                this.setState({ USDHEX })
-            } catch(e) {
-                debug(`UNIV2:USDHEX Exception %o: amount1In:${amount1In} amount0Out: ${amount0Out}`, e)
+        // this.univ2contract.on("Swap", (amount0In: string, amount1In: string, amount0Out: string, amount1Out: string) => {
+        //     try {
+        //         const USDHEX = (parseInt(amount1In) !== 0)
+        //             ? Number(parseInt(amount1In) * 100 / parseInt(amount0Out))
+        //             : Number(parseInt(amount1Out) * 100 / parseInt(amount0In))
+        //         debug(`USDHEX(Swap) = $${USDHEX}`)
+        //         this.setState({ USDHEX })
+        //     } catch(e) { // should never happen
+        //         debug(`UNIV2[Swap]: Exception %o: amount1In:${amount1In} amount0Out: ${amount0Out}`, e)
+        //     }
+        // })
+
+        // check for new currentDay every second
+        // update UI immediately. confirm actual contract day 3 seconds later
+        this.dayInterval = setInterval(async () => {
+            const _currentUTCday = new Date().getUTCDay()
+            if (_currentUTCday != this.currentUTCday) {
+                this.currentUTCday = _currentUTCday
+                if (this.state.currentDay !== 0) this.setState({ currentDay: this.state.currentDay + 1 })
+                setTimeout(async () => {
+                    try {
+                        this.currentUTCday = _currentUTCday
+                        const currentDay = (await this.contract!.currentDay()).toNumber()
+                        this.contract!.Data!.currentDay = currentDay
+                        this.setState({ currentDay })
+                    } catch(e) {
+                        debug("contract.currentDay() failed :/")
+                    }
+                }, 5000)
             }
-        })
+        }, 1000);
+
+        debug("Event subscriptions complete")
+
     }
 
     unsubscribeEvents = () => {
         try {
-            this.univ2Contract?.removeAllListeners()
+            // this.univ2contract?.removeAllListeners()
             this.contract?.removeAllListeners()
         } catch(e) {}
     }
@@ -215,10 +243,8 @@ class App extends React.Component<AppT.Props, AppT.State> {
             this.setState({ currentProvider: "CoinBase" })
         } else { // web3modal it is ...
             this.setState({ currentProvider: "web3modal" })
-            debug("this.triggerWeb3Modal: ", this.triggerWeb3Modal)
             debug("this.web3modal.cachedProvider: ", this.web3modal?.cachedProvider)
-            if ((this.web3modal && this.web3modal.cachedProvider !== "") || this.triggerWeb3Modal) {
-                debug("W T F ? !")
+            if (this.web3modal && this.web3modal.cachedProvider !== "" || this.triggerWeb3Modal) {
                 this.triggerWeb3Modal = false
                 this.walletProvider = await this.selectWeb3ModalWallet().catch(e => Error("selectWeb3ModalWallet() failed: ", e))
                 const currentProvider = this.walletProvider ? getProviderInfo(this.walletProvider).name : "---"
@@ -227,7 +253,7 @@ class App extends React.Component<AppT.Props, AppT.State> {
         }
 
         // @dev this.walletProvider is our transaction signing provider, such as MetaMask
-        if (!this.walletProvider || !this.walletProvider.chainId) return Promise.reject("web3modal: no wallet chossen")
+        if (!this.walletProvider || !this.walletProvider.chainId) return Promise.reject(new Error("web3modal no wallet chossen"))
 
         const chainId = Number(this.walletProvider.chainId)
         const network = CHAINS[chainId] || null
@@ -299,6 +325,7 @@ class App extends React.Component<AppT.Props, AppT.State> {
 
     // this function will be called eery 10 seconds after the first invocation.
     subscribeUpdateUsdHex = async () => {
+
         if (!this.usdProgress || !this.usdProgress.firstElementChild) return // can happen when auto-compile causes page reload during dev session
 
         this.usdProgress.firstElementChild.classList.remove("countdown")
@@ -341,7 +368,6 @@ class App extends React.Component<AppT.Props, AppT.State> {
     }
 
     async componentDidMount() {
-
         switch (window.location.hostname) {
             case "go.tshare.app": ReactGA.initialize("UA-203521048-1"); break; // usage
             case "hexmob.win": ReactGA.initialize("UA-203562559-1"); break// usage
@@ -376,24 +402,24 @@ class App extends React.Component<AppT.Props, AppT.State> {
             window._E = ethers
             window._w3M = this.web3modal
             window._HEX = HEX
-            window._UNIV2 = UNIV2
+            // window._UNIV2 = UNIV2
             window.debug = debug
         }
 
-        const address = (await this.establishWeb3Provider()
-        .catch(e => { debug(e) })) as (string | null)
-        if (!address) return
+        const address = await this.establishWeb3Provider()
+        .catch(e => debug(e))
+
+        if (!address || address == "") return debug("No wallet address supplied - STOP")
 
         if (this.state.chainId === 1) {
-            this.subscribeUpdateUsdHex()
             window.contract = new ethers.Contract(HEX.CHAINS[this.state.chainId], HEX.ABI, window.web3signer.getSigner())   // wallet provider
             this.contract = new ethers.Contract(HEX.CHAINS[this.state.chainId], HEX.ABI, this.web3provider) as HEXContract  // INFURA
-            this.univ2Contract = new ethers.Contract(UNIV2.CHAINS[this.state.chainId], UNIV2.ABI, this.web3provider)        // INFURA
+            // this.univ2contract = new ethers.Contract(UNIV2.CHAINS[this.state.chainId], UNIV2.ABI, this.web3provider)        // INFURA
         } else {
             // drop INFURA for networks not supported
             window.contract = new ethers.Contract(HEX.CHAINS[this.state.chainId], HEX.ABI, this.web3provider.getSigner()) // wallet provider
             this.contract = window.contract;
-            this.univ2Contract = new ethers.Contract(UNIV2.CHAINS[this.state.chainId], UNIV2.ABI, window.web3signer)
+            // this.univ2contract = new ethers.Contract(UNIV2.CHAINS[this.state.chainId], UNIV2.ABI, window.web3signer)
         }
         if (!this.contract) return debug("ethers.Contract instantiation failed. Caanot continue.")
 
@@ -437,38 +463,12 @@ class App extends React.Component<AppT.Props, AppT.State> {
             },
             walletConnected: true,
             contractReady: true,
+            currentDay
         })
         ReactGA.pageview(window.location.pathname + window.location.search); // will trigger only once per page (re)load
 
-        const updateCurrentDay = async (): Promise<number> => {
-            let currentDay = this.state.currentDay
-            for ( let attempt = 0; attempt < 3; attempt++) {
-                const _bnCurrentDay = await this.contract!.currentDay()
-                const currentDay = _bnCurrentDay.toNumber()
-                if (currentDay >= this.state.currentDay) {
-                    this.contract!.Data!.currentDay = currentDay
-                    this.setState({ currentDay })
-                    break
-                }
-            }
-            return currentDay
-        }
-        await updateCurrentDay()
-
-        // update currentDay "once" only (3 attempts in short order) within the first
-        // 10 window beginning 00:00:00Z
-        const TIME_RESOLUTION = 10 // seconds
-        this.dayInterval = setInterval(async () => {
-            if (!this.state.contractReady || !this.contract) return
-            const d = new Date(Date.now())
-            const [ hour, min, secs ] = [ d.getUTCHours(), d.getUTCMinutes(), d.getUTCSeconds() ]
-            if (hour === 0 && min === 0 && secs >= 0 && secs < TIME_RESOLUTION) {
-                await updateCurrentDay()
-                debug(`${d.toUTCString()}: Updated currentDay from contract to ${currentDay}`)
-            }
-        }, 1000 * TIME_RESOLUTION);
-
         this.subscribeEvents()
+        this.state.chainId === 1 && this.subscribeUpdateUsdHex()
         this.updateETHBalance()
     }
 
