@@ -264,14 +264,19 @@ export class NewStakeForm extends React.Component<NSFT.Props, NSFT.State> {
     handleAmountSelector = (eventKey: any, e: React.SyntheticEvent<unknown, Event>) => {
         if (!(e.target instanceof HTMLElement)) return
         e.preventDefault()
-        const balance = this.props.wallet.balance || BigNumber.from(0)
-        if (balance.isZero()) return
+        const bnBalance = this.props.wallet.bnBalance || BigNumber.from(0)
+        if (bnBalance.isZero()) return
+        const balanceHEX = Number(ethers.utils.formatUnits(bnBalance, HEX.DECIMALS))
         const v = e.target.dataset.portion || ""
         const portion = parseFloat(v) || 1.0
-        const amount = (v === 'max')
-        ? balance.div(bnE("1E8"))
-        : balance.div(1e8).mul(portion).toFixed(0, 1)
-        this.setState({ stakeAmount: amount.toString() }, this.updateFigures)
+        const amountHEX : string = (
+            (v === 'max')
+            ? balanceHEX
+            : balanceHEX * portion
+        )
+        .toFixed(8)
+        .replace(/\.?0+$/,"")
+        this.setState({ stakeAmount: amountHEX }, this.updateFigures)
     }
 
     handleDaysSelector = (key: any, e: React.SyntheticEvent<unknown, Event>) => {
@@ -383,7 +388,6 @@ export class NewStakeForm extends React.Component<NSFT.Props, NSFT.State> {
                                                 className="numeric"
                                                 onSelect={this.handleAmountSelector}
                                             >
-                                                <Dropdown.Item as="button" eventKey="new_stake" data-portion="max">MAX</Dropdown.Item>
                                                 <Dropdown.Item as="button" eventKey="new_stake" data-portion={1.00}>100%</Dropdown.Item>
                                                 <Dropdown.Item as="button" eventKey="new_stake" data-portion={0.75}>75%</Dropdown.Item>
                                                 <Dropdown.Item as="button" eventKey="new_stake" data-portion={0.50}>50%</Dropdown.Item>
