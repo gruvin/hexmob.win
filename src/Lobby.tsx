@@ -168,7 +168,7 @@ class Lobby extends React.Component<LobbyT.Props, LobbyT.State> {
                     bnRawAmount: ethers.constants.Zero,
                     bnMintedHEX: ethers.constants.Zero,
                 }
-                contract.queryFilter(contract.filters.XfLobbyEnter(null, wallet.address), 'earliest')
+                contract.queryFilter(contract.filters.XfLobbyEnter(null, wallet.address), contract.GENESIS_BLOCK)
                 .then((results: ethers.Event[]) => {
                     results.forEach((event: ethers.Event) => {
                         const { entryId, referrerAddr, data0 }: LobbyT.Entry = event.args as unknown as XfLobbyEnter
@@ -180,7 +180,7 @@ class Lobby extends React.Component<LobbyT.Props, LobbyT.State> {
                         if (!entries[day]) entries[day] = []
                         entries[day][entryNum] = { ...newEntry, bnRawAmount, referrerAddr }
                     })
-                    contract.queryFilter(contract.filters.XfLobbyExit(null, wallet.address), 'earliest')
+                    contract.queryFilter(contract.filters.XfLobbyExit(null, wallet.address), contract.GENESIS_BLOCK)
                     .then((results: ethers.Event[]) => {
                         results.forEach(event => {
                             const { entryId, data0 }: LobbyT.Entry = event.args as unknown as XfLobbyEnter

@@ -3,7 +3,7 @@ import { type ContractAddress } from "./lib/App"
 
 const START_DATE_POSIX = 1575331200000  // some browsers cannot parse '2019-12-03 00:00:00[Z|GMT|UTC]' correctly (Safari)
 const START_DATE = new Date(START_DATE_POSIX)
-const GENESIS_BLOCK = '9041184'
+const GENESIS_BLOCK = 9041184
 const CLAIM_PHASE_START_DAY = 1
 const CLAIM_PHASE_DAYS = (7 * 50)
 const CLAIM_PHASE_END_DAY = CLAIM_PHASE_START_DAY + CLAIM_PHASE_DAYS
@@ -62,7 +62,7 @@ export interface HEXContract extends ethers.Contract {
   CLAIM_PHASE_START_DAY: number
   CLAIM_PHASE_DAYS: number
   CLAIM_PHASE_END_DAY: number
-  GENESIS_BLOCK: string
+  GENESIS_BLOCK: number
   BIG_PAY_DAY: number
   CLAIMABLE_BTC_ADDR_COUNT: string
   CLAIMABLE_SATOSHIS_TOTAL: string
