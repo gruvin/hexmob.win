@@ -9,7 +9,7 @@ import Row from "react-bootstrap/Row"
 import Col from "react-bootstrap/Col"
 import Image from "react-bootstrap/Image"
 import './NewStakeForm.scss'
-import { ethers, BigNumber } from 'ethers'
+import { ethers, BigNumber, FixedNumber } from 'ethers'
 import HEX, { type HEXContract } from './hex_contract'
 import * as NSFT from './lib/NewStakeForm'
 import { bnCalcBigPayDaySlice, bnCalcAdoptionBonus, bnE } from './util'
@@ -266,16 +266,13 @@ export class NewStakeForm extends React.Component<NSFT.Props, NSFT.State> {
         e.preventDefault()
         const bnBalance = this.props.wallet.bnBalance || BigNumber.from(0)
         if (bnBalance.isZero()) return
-        const balanceHEX = Number(ethers.utils.formatUnits(bnBalance, HEX.DECIMALS))
-        const v = e.target.dataset.portion || ""
-        const portion = parseFloat(v) || 1.0
-        const amountHEX : string = (
-            (v === 'max')
-            ? balanceHEX
-            : balanceHEX * portion
+        const balanceHEX: string = ethers.utils.formatUnits(bnBalance, HEX.DECIMALS)
+        const fnPortion = FixedNumber.from(
+            e.target.dataset.portion || "1.0",
+            "ufixed256x8"
         )
-        .toFixed(8)
-        .replace(/\.?0+$/,"")
+        const fnBalance = FixedNumber.from(balanceHEX, "ufixed256x8")
+        const amountHEX = fnBalance.mulUnsafe(fnPortion).toString()
         this.setState({ stakeAmount: amountHEX }, this.updateFigures)
     }
 
