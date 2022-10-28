@@ -6,12 +6,12 @@ import Row from 'react-bootstrap/Row';
 import Col from 'react-bootstrap/Col';
 import ProgressBar from 'react-bootstrap/ProgressBar';
 import HEX, { type StakeEnd } from './hex_contract'
-import { ethers, BigNumber } from 'ethers'
+import { ethers, BigNumber, FixedNumber } from 'ethers'
 import BN from 'bn.js' // fully fledged bn.js
 import {
     bnCalcPayoutBpdPenalty,
-    bnCalcInterest,
-    bnCalcApy,
+    fnCalcPercentGain,
+    fnCalcPercentAPY,
     bnPrefixObject,
     type CalcPayoutBpdPenalty,
 } from './util'
@@ -223,14 +223,15 @@ class Stakes extends React.Component<StakesT.Props, StakesT.State> {
             )) || 0
         })
         const bnZero = ethers.constants.Zero
+        const fnZero = FixedNumber.from(bnZero, "ufixed256x8")
         let bnStakedTotal = bnZero
         let bnSharesTotal = bnZero
         let bnInterestTotal = bnZero
         let bnBigPayDayTotal = bnZero
-        let bnPercentGainTotal = bnZero
-        let bnPercentAPYTotal = bnZero
-        let bnAveragePercentGain = bnZero
-        let bnAveragePercentAPY = bnZero
+        let fnPercentGainTotal = fnZero
+        let fnPercentAPYTotal = fnZero
+        let fnAveragePercentGain = fnZero
+        let fnAveragePercentAPY = fnZero
 
         if (this.state.loadingStakes)
             return ( <p>loading ...</p> )
@@ -266,10 +267,10 @@ class Stakes extends React.Component<StakesT.Props, StakesT.State> {
                 bnPenalty
             }
 
-            const bnPercentGain = bnCalcInterest(stake) // 1 == 1%
-            const bnPercentAPY = bnCalcApy(currentDay, stake)
-            bnPercentGainTotal = bnPercentGainTotal.add(bnPercentGain)
-            bnPercentAPYTotal = bnPercentAPYTotal.add(bnPercentAPY)
+            const fnPercentGain = fnCalcPercentGain(stake)
+            const fnPercentAPY = fnCalcPercentAPY(currentDay, stake)
+            fnPercentGainTotal = fnPercentGainTotal.addUnsafe(fnPercentGain)
+            fnPercentAPYTotal = fnPercentAPYTotal.addUnsafe(fnPercentAPY)
 
             if (currentDay > stake.startDay) activeCount++
 
@@ -277,8 +278,8 @@ class Stakes extends React.Component<StakesT.Props, StakesT.State> {
         })
 
         if (activeCount) {
-            bnAveragePercentGain = bnPercentGainTotal.div(activeCount)
-            bnAveragePercentAPY = bnPercentAPYTotal.div(activeCount)
+            fnAveragePercentGain = fnPercentGainTotal.divUnsafe(FixedNumber.from(activeCount, "ufixed256x8"))
+            fnAveragePercentAPY = fnPercentAPYTotal.divUnsafe(FixedNumber.from(activeCount, "ufixed256x8"))
         }
 
         const numStakes = stakeList.length
@@ -325,11 +326,11 @@ class Stakes extends React.Component<StakesT.Props, StakesT.State> {
                     </Row>
                     <Row className="mt-2">
                         <Col className="text-end font-weight-bold">Average Gain</Col>
-                        <Col className="numeric">{format(",.2f")(bnAveragePercentGain.toNumber())}%</Col>
+                        <Col className="numeric">{format(",.2f")(fnAveragePercentGain.toUnsafeFloat())}%</Col>
                     </Row>
                     <Row>
                         <Col className="text-end font-weight-bold">Average APY</Col>
-                        <Col>{format(",.2f")(bnAveragePercentAPY.toNumber())}%</Col>
+                        <Col>{format(",.2f")(fnAveragePercentAPY.toUnsafeFloat())}%</Col>
                     </Row>
                 </Card.Body>
             </Card>

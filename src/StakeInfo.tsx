@@ -14,8 +14,8 @@ import HEX from './hex_contract'
 import { format } from 'd3-format'
 import { CryptoVal, VoodooButton } from './Widgets'
 import {
-    bnCalcInterest,
-    bnCalcApy,
+    fnCalcPercentGain,
+    fnCalcPercentAPY,
     decodeDailyData,
     decodeClaimStats,
 } from './util'
@@ -42,8 +42,8 @@ export class StakeInfo extends React.Component<InfoT.Props, InfoT.State> {
     componentDidMount() {
         if (localStorage.getItem('debug')) {
             window._UTIL = {
-                bnCalcInterest,
-                bnCalcApy,
+                fnCalcPercentGain,
+                fnCalcPercentAPY,
                 decodeClaimStats,
                 decodeDailyData,
             }
@@ -92,8 +92,8 @@ export class StakeInfo extends React.Component<InfoT.Props, InfoT.State> {
         const bnValueTotal  = bnStakedHearts.add(bnPayout).add(bnBigPayDay)
 
         const usdValueTotal = format(",.2f")(Number(ethers.utils.formatUnits(bnValueTotal, HEX.DECIMALS)) * usdhex )
-        const percentGain   = format(".3f")(Number(formatUnits(bnCalcInterest(stake), 3))) // 100,000 = 100.000%
-        const percentAPY    = format(".3f")(Number(formatUnits(bnCalcApy(currentDay, stake), 3)))
+        const percentGain   = format(".3f")(fnCalcPercentGain(stake).toUnsafeFloat())
+        const percentAPY    = format(".3f")(fnCalcPercentAPY(currentDay, stake).toUnsafeFloat())
 
         //////////////////////////////////////////////////////////////
         /// Predicted End Stake Figures ...

@@ -2,11 +2,19 @@ import { describe, expect, test } from 'vitest'
 
 import HEX from '../hex_contract.js'
 import BN from 'bn.js'
-import { cryptoFormat, bnCalcPayoutRewards, bnCalcPayoutBpdPenalty, bnCalcBigPayDaySlice, bnCalcAdoptionBonus } from '../util.js'
-import { ethers, BigNumber } from 'ethers'
+import {
+    cryptoFormat,
+    bnCalcPayoutRewards,
+    bnCalcPayoutBpdPenalty,
+    bnCalcBigPayDaySlice,
+    bnCalcAdoptionBonus,
+    fnCalcPercentGain,
+    fnCalcPercentAPY,
+} from '../util.js'
+import { ethers, BigNumber, FixedNumber } from 'ethers'
 import { TEST_CONTEXT, TEST_STAKE_DATA, TEST_DAILY_DATA } from './util-data.js'
 
-describe('!SANITY!', () => {
+describe('Basic Sanity Checks', () => {
     test('HEX contract spec loaded'), () => {
         expect(typeof HEX).not.equal("undefined")
     }
@@ -183,6 +191,17 @@ describe('HEX Math Helpers', () => {
         expect(result.bnPayout.toString()).toEqual(   "853398190490")
         expect(result.bnBigPayDay.toString()).toEqual("459969766506") // pay - bpd = 393428423984
     })
+
+    test('fnCalcPercentGains => correct results', () => {
+        const fnPercentGain = fnCalcPercentGain(TEST_STAKE_DATA)
+        expect(fnPercentGain.toString()).to.equal(FixedNumber.from("95.75347402", "ufixed256x8").toString())
+    })
+
+    test('fnCalcPercentAPY => correct results', () => {
+        const fnPercentGain = fnCalcPercentAPY(TEST_CONTEXT.contract.Data.currentDay, TEST_STAKE_DATA)
+        expect(fnPercentGain.toString()).to.equal(FixedNumber.from("52.95457275", "ufixed256x8").toString())
+    })
+
 })
 
 describe('Stake Interest (Yield) / Peanalty Calcs', () => {

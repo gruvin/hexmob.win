@@ -9,7 +9,7 @@ import {
 import './Lobby.scss'
 import * as LobbyT from './lib/Lobby'
 import HEX, { HEXContract, XfLobbyEnter } from './hex_contract'
-import { ethers, BigNumber } from 'ethers'
+import { ethers, BigNumber, FixedNumber } from 'ethers'
 import BN from 'bn.js'
 import { bnE, bnPrefixObject } from './util'
 import { CryptoVal, BurgerHeading, VoodooButton } from './Widgets'
@@ -109,7 +109,12 @@ class Lobby extends React.Component<LobbyT.Props, LobbyT.State> {
                 if (bnMintedHEX && bnMintedHEX.gt(0)) bnMintedHEXTotal = bnMintedHEXTotal.add(bnMintedHEX)
             })
             if (bnAvailableHEX && bnTotalETH) {
-                bnPotentialHEXTotal = bnPotentialHEXTotal.add(bnRawEntriesTotal.mul(bnAvailableHEX).div(bnTotalETH))
+                bnPotentialHEXTotal = BigNumber.from(
+                    FixedNumber.from(bnPotentialHEXTotal, "ufixed256x0")
+                    .addUnsafe(FixedNumber.from(bnRawEntriesTotal, "ufixed256x0"))
+                    .mulUnsafe(FixedNumber.from(bnAvailableHEX, "ufixed256x0"))
+                    .divUnsafe(FixedNumber.from(bnTotalETH, "ufixed256x0"))
+                )
             }
         }
         return {
@@ -134,7 +139,11 @@ class Lobby extends React.Component<LobbyT.Props, LobbyT.State> {
             ])
 
             const { bnUnclaimedSatoshisTotal } = contract.Data.globals.claimStats
-            const bnTodayAvailableHEX = bnUnclaimedSatoshisTotal.mul(HEX.HEARTS_PER_SATOSHI).div(350)
+            const bnTodayAvailableHEX = BigNumber.from(
+                FixedNumber.from(bnUnclaimedSatoshisTotal, "ufixed256x0")
+                .mulUnsafe(FixedNumber.from(HEX.HEARTS_PER_SATOSHI, "ufixed256x0"))
+                .divUnsafe(FixedNumber.from(350, "ufixed256x0"))
+            )
             const {
                 bnRawEntriesTotal: bnTodayYourEntriesRawTotal,
                 dayEntriesTotal: todayYourEntriesTotal,
@@ -142,10 +151,18 @@ class Lobby extends React.Component<LobbyT.Props, LobbyT.State> {
                 // bnMintedHEXTotal,
             }: LobbyT.EntryTotals = this.calcEntryTotals(objTodayYourEntries)
             let HEXperETH = "0";
-            let bnTodayYourHEXPending = "0";
+            let bnTodayYourHEXPending = ethers.constants.Zero
             if (!bnTodayPendingETH.isZero()) {
-                HEXperETH = bnE("1E10").mul(bnTodayAvailableHEX).div(bnTodayPendingETH).toString()
-                bnTodayYourHEXPending = bnTodayAvailableHEX.mul(todayYourEntriesTotal).div(bnTodayPendingETH)
+                HEXperETH = BigNumber.from(
+                    FixedNumber.from(bnE("1E10"), "ufixed256x0")
+                    .mulUnsafe(FixedNumber.from(bnTodayAvailableHEX, "ufixed256x0"))
+                    .divUnsafe(FixedNumber.from(bnTodayPendingETH, "ufixed256x0"))
+                ).toString()
+                bnTodayYourHEXPending = BigNumber.from(
+                    FixedNumber.from(bnTodayAvailableHEX, "ufixed256x0")
+                    .mulUnsafe(FixedNumber.from(todayYourEntriesTotal, "ufixed256x0"))
+                    .divUnsafe(FixedNumber.from(bnTodayPendingETH, "ufixed256x0"))
+                )
             }
 
             this.setState({
@@ -232,9 +249,19 @@ class Lobby extends React.Component<LobbyT.Props, LobbyT.State> {
             return new Promise(async resolveDay => {
                 const hexa = dayData.toHexString().slice(2).padStart(64, '0') // XXX
                 const bnUnclaimedSatoshisTotal = BigNumber.from("0x"+hexa.slice(12,28))
-                const bnAvailableHEX = (day === 0) ? BigNumber.from(10).pow(13) : bnUnclaimedSatoshisTotal.mul(HEX.HEARTS_PER_SATOSHI).div(350)
+                const bnAvailableHEX = BigNumber.from(
+                    (day === 0)
+                    ? "10000000000000" // 10E13
+                    : FixedNumber.from(bnUnclaimedSatoshisTotal, "ufixed256x0")
+                    .mulUnsafe(FixedNumber.from(HEX.HEARTS_PER_SATOSHI, "ufixed256x0"))
+                    .divUnsafe(FixedNumber.from(350, "ufixed256x0"))
+                )
                 const bnTotalETH = lobbyDailyETH[day]
-                const HEXperETH = bnE("1E10").mul(bnAvailableHEX).div(bnTotalETH).toNumber()
+                const HEXperETH = BigNumber.from(
+                    FixedNumber.from(bnE("1E10"), "ufixed256x0")
+                    .mulUnsafe(FixedNumber.from(bnAvailableHEX, "ufixed256x0"))
+                    .divUnsafe(FixedNumber.from(bnTotalETH, "ufixed256x0"))
+                )
 
                 const dayEntries = (boolHasEntryDays[day])
                     ? await this.getDayEntries(day, wallet.address)

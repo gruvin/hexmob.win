@@ -7,7 +7,9 @@ import HEX, {
 import { type Context } from './lib/Stakes'
 import BN from 'bn.js'
 
-import { ethers, constants, BigNumber } from 'ethers'
+import { ethers, constants, BigNumber, FixedNumber } from 'ethers'
+const { commify, formatUnits } = ethers.utils
+
 import { format } from 'd3-format'
 
 import _debug from 'debug'
@@ -22,7 +24,6 @@ const cryptoFormat = (_v: number | BN | BigNumber | string, currency: string) =>
     if (_v === "") return { valueString: "NaN", unit: "", valueWithUnit: "" }
     if (typeof currency === 'undefined' || currency === "") currency = "HEX"
 
-
     let si = ""
     let out = ""
     let unit = ""
@@ -30,8 +31,6 @@ const cryptoFormat = (_v: number | BN | BigNumber | string, currency: string) =>
     const input = _v.toString()
     const len = input.length
     const v = BigNumber.from(input.replace(RegExp("^([^.]+).*"), "$1")) // strip any decimals)
-
-    const { commify, formatUnits } = ethers.utils
 
     switch (currency) {
         case "ETH":
@@ -127,15 +126,37 @@ const cryptoFormat = (_v: number | BN | BigNumber | string, currency: string) =>
 
 const bnCalcBigPayDaySlice = (_bnShares: BigNumber, _bnSharePool: BigNumber, globals: HEXGlobals) => {
     const { bnUnclaimedSatoshisTotal } = globals.claimStats as ClaimStats
-    return bnUnclaimedSatoshisTotal.mul(HEX.HEARTS_PER_SATOSHI).mul(_bnShares).div(_bnSharePool)
+    const fnUnclaimedSatoshisTotal = FixedNumber.from(bnUnclaimedSatoshisTotal, "ufixed256x0")
+    return BigNumber.from(
+        fnUnclaimedSatoshisTotal
+        .mulUnsafe(FixedNumber.from(HEX.HEARTS_PER_SATOSHI, "ufixed256x0"))
+        .mulUnsafe(FixedNumber.from(_bnShares, "ufixed256x0"))
+        .divUnsafe(FixedNumber.from(_bnSharePool, "ufixed256x0"))
+        .toString()
+    )
 }
 
 const bnCalcAdoptionBonus = (_bnPayout: BigNumber, _globals: HEXGlobals) => {
     const { bnClaimedSatoshisTotal, bnClaimedBtcAddrCount } = _globals.claimStats as ClaimStats
-    const bnViral = _bnPayout.mul(bnClaimedBtcAddrCount).div(HEX.CLAIMABLE_BTC_ADDR_COUNT.toString()) // .sol line: 1214
-    const bnCriticalMass = _bnPayout.mul(bnClaimedSatoshisTotal).div(HEX.CLAIMABLE_SATOSHIS_TOTAL.toString()) // .sol line: 1221
-    const bnBonus = bnViral.add(bnCriticalMass)
-    return bnBonus
+    const fnPayout = FixedNumber.from(_bnPayout, "ufixed256x0")
+    const fnClaimedSatoshisTotal = FixedNumber.from(bnClaimedSatoshisTotal, "ufixed256x0")
+    const fnClaimedBtcAddrCount = FixedNumber.from(bnClaimedBtcAddrCount, "ufixed256x0")
+
+    const fnViral = ( // .sol line: 1214
+        fnPayout
+        .mulUnsafe(fnClaimedBtcAddrCount)
+        .divUnsafe(FixedNumber.from(HEX.CLAIMABLE_BTC_ADDR_COUNT, "ufixed256x0"))
+    )
+    const fnCriticalMass = ( // .sol line: 1221
+        fnPayout
+        .mulUnsafe(fnClaimedSatoshisTotal)
+        .divUnsafe(FixedNumber.from(HEX.CLAIMABLE_SATOSHIS_TOTAL, "ufixed256x0"))
+    )
+    const fnBonus = (
+        fnViral
+        .addUnsafe(fnCriticalMass)
+    )
+    return BigNumber.from(fnBonus.toString())
 }
 
 const bnCalcPartDayBonuses = (_contract: HEXContract, _stakeData: StakeData) =>  {
@@ -149,11 +170,22 @@ const bnCalcPartDayBonuses = (_contract: HEXContract, _stakeData: StakeData) => 
     // Calculate our share of Daily Interest ___for the current (incomplete) day___
     // HEX mints 0.009955% daily interest (3.69%pa) and stakers get adoption bonuses from that, each day
     // .sol:1245:  rs._payoutTotal = rs._allocSupplyCached * 10000 / 100448995
-    const bnDailyInterestTotal = bnAllocatedSupply.mul(10000).div('100448995')
-    const bnInterestShare = bnDailyInterestTotal.mul(_stakeData.bnStakeShares).div(globals.bnStakeSharesTotal)
-    const bnInterestBonus = (currentDay < HEX.CLAIM_PHASE_END_DAY) ? bnCalcAdoptionBonus(bnInterestShare, globals) : constants.Zero
-
-    return bnInterestShare.add(bnInterestBonus)
+    const fnDailyInterestTotal = (
+        FixedNumber.from(bnAllocatedSupply, "ufixed256x0")
+        .mulUnsafe(FixedNumber.from(10000, "ufixed256x0"))
+        .divUnsafe(FixedNumber.from('100448995', "ufixed256x0"))
+    )
+    const fnInterestShare = (
+        fnDailyInterestTotal
+        .mulUnsafe(FixedNumber.from(_stakeData.bnStakeShares, "ufixed256x0"))
+        .divUnsafe(FixedNumber.from(globals.bnStakeSharesTotal, "ufixed256x0"))
+    )
+    const bnInterestBonus = (
+        (currentDay < HEX.CLAIM_PHASE_END_DAY)
+        ? bnCalcAdoptionBonus(BigNumber.from(fnInterestShare), globals)
+        : constants.Zero
+    )
+    return BigNumber.from(fnInterestShare).add(bnInterestBonus)
 }
 
 const decodeDailyData = (_data0: string): DailyData => {
@@ -224,7 +256,11 @@ const bnCalcPayoutRewards = ({ context, rawDailyData, stakeData, fromDay, toDay 
         // debug("DECODED CLAIMSTATS: %O", dayData)
         let bnDayPayout = constants.Zero
         try { // dayData data could be missing, incorrectly requested or simply invalid but don't die
-            bnDayPayout = dayData.bnPayoutTotal.mul(stakeData.bnStakeShares).div(dayData.bnStakeSharesTotal) // .sol line: 1586
+            bnDayPayout = BigNumber.from(  // .sol line: 1586
+                FixedNumber.from(dayData.bnPayoutTotal, "ufixed256x0")
+                .mulUnsafe(FixedNumber.from(stakeData.bnStakeShares, "ufixed256x0"))
+                .divUnsafe(FixedNumber.from(dayData.bnStakeSharesTotal, "ufixed256x0"))
+            )
         } catch(e) {
             // debug("DAY: ", Object.keys(dayData).map((k, i) => `${k}: bn(${dayData[k].toString()})` ))
         }
@@ -290,7 +326,11 @@ const bnCalcPayoutBpdPenalty = (context: Context, stakeData: StakeData, rawDaily
                 if (penaltyDays === daysServed) {
                     bnPenalty = bnInterest
                 } else {
-                    bnPenalty = bnInterest.mul(penaltyDays).div(daysServed)
+                    bnPenalty = BigNumber.from(
+                        FixedNumber.from(bnInterest, "ufixed256x0")
+                        .mulUnsafe(FixedNumber.from(penaltyDays, "ufixed256x0"))
+                        .divUnsafe(FixedNumber.from(daysServed, "ufixed256x0"))
+                    )
                 }
                 const bnTotalValue = stakeData.bnStakedHearts.add(bnInterest)
                 if (bnPenalty.gt(bnTotalValue)) bnPenalty = bnTotalValue
@@ -304,7 +344,11 @@ const bnCalcPayoutBpdPenalty = (context: Context, stakeData: StakeData, rawDaily
             const maxUnlockedDay = endDay + HEX.LATE_PENALTY_GRACE_DAYS;
             if (currentDay > maxUnlockedDay) { // contract: 1781
                 const bnRawStakeReturn = stakeData.bnStakedHearts.add(bnInterest)
-                bnPenalty = bnRawStakeReturn.mul(currentDay - maxUnlockedDay).div(HEX.LATE_PENALTY_SCALE_DAYS)
+                bnPenalty = BigNumber.from(
+                    FixedNumber.from(bnRawStakeReturn, "ufixed256x0")
+                    .mulUnsafe(FixedNumber.from(currentDay - maxUnlockedDay, "ufixed256x0"))
+                    .divUnsafe(FixedNumber.from(HEX.LATE_PENALTY_SCALE_DAYS, "ufixed256x0"))
+                )
             }
             // debug("PENALTY: late end: ", bnPenalty.toString())
         } // if (daysServed < stakedDays)
@@ -317,16 +361,47 @@ const bnCalcPayoutBpdPenalty = (context: Context, stakeData: StakeData, rawDaily
     }
 }
 
-const bnCalcInterest = (stakeData: StakeData) => {
-    const { bnPayout, bnBigPayDay, bnStakedHearts } = stakeData
-    return bnPayout.add(bnBigPayDay).mul(100000).div(bnStakedHearts) // 100,000 = 100.000%
+/**
+ * @notice Calculates total net interest percantage
+ * @param stakeData stake data object
+ * @returns ufixed256x8
+ */
+const fnCalcPercentGain = (stakeData: StakeData): FixedNumber => {
+    // catch divide-by-zero (shouldn't happen)
+    if (stakeData.bnStakedHearts.isZero()) return FixedNumber.from(0, "ufixed256x8")
+
+    const fnPayoutHEX       = FixedNumber.from(formatUnits(stakeData.bnPayout, 8), "ufixed256x8")
+    const fnBigPayDayHEX    = FixedNumber.from(formatUnits(stakeData.bnBigPayDay, 8), "ufixed256x8")
+    const fnStakedHEX       = FixedNumber.from(formatUnits(stakeData.bnStakedHearts, 8), "ufixed256x8")
+    const fnPercentGain = (
+        fnPayoutHEX
+        .addUnsafe(fnBigPayDayHEX)
+        .mulUnsafe(FixedNumber.from(100, "ufixed256x8"))
+        .divUnsafe(fnStakedHEX)
+    )
+    return fnPercentGain
 }
 
-const bnCalcApy = (currentDay: number, stakeData: StakeData) => {
+/**
+ * @notice Calculates APY percantage
+ * @param stakeData stake data object
+ * @returns ufixed256x8
+ */
+ const fnCalcPercentAPY = (currentDay: number, stakeData: StakeData): FixedNumber => {
     const extraDay = 1 // last day has to roll over before hex:stakeEnd() can calculate all interest
     const daysServed = extraDay + Math.min(currentDay - stakeData.lockedDay, stakeData.stakedDays)
-    const bnInterest = bnCalcInterest(stakeData)
-    return bnInterest.mul(365).div(daysServed > 1 ? daysServed : 1)
+    const fnInterest = fnCalcPercentGain(stakeData)
+    const fnDays = FixedNumber.from(
+        daysServed > 1
+        ? daysServed
+        : 1,
+        "ufixed256x8"
+    )
+    return (
+        fnInterest
+        .mulUnsafe(FixedNumber.from(365, "ufixed256x8"))
+        .divUnsafe(fnDays)
+    )
 }
 
 // bring back scientific notation ffs! :/
@@ -340,16 +415,6 @@ const detectTrustWallet = () => {
     return (window.web3 && window.web3.currentProvider && window.web3.currentProvider.isTrust)
 }
 
-// const fetchWithTimeout  = (url, params, timeout) => {
-//     return new Promise( (resolve, reject) => {
-//         // Set timeout timer
-//         const timer = setTimeout( () => reject(new Error('Request timed out') ), timeout);
-//         fetch( url, params ).then(
-//             response => resolve( response ),
-//             err => reject( err )
-//         ).finally( () => clearTimeout(timer) );
-//     })
-// }
 interface _indexableObj { [index: string | number]: any}
 const bnPrefixObject = (_obj: any) => {
     let obj = { } as _indexableObj
@@ -370,13 +435,12 @@ export {
     bnCalcPartDayBonuses,
     bnCalcPayoutRewards,
     bnCalcPayoutBpdPenalty,
-    bnCalcInterest,
-    bnCalcApy,
+    fnCalcPercentGain,
+    fnCalcPercentAPY,
     decodeDailyData,
     decodeClaimStats,
     cryptoFormat,
     detectTrustWallet,
-    // fetchWithTimeout,
     bnPrefixObject,
     bnE,
 }
