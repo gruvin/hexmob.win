@@ -115,16 +115,16 @@ export class NewStakeForm extends React.Component<NSFT.Props, NSFT.State> {
         const bnBonusTotal = bnLongerPaysBetter.add(bnBiggerPaysBetter)
         const bnEffectiveHEX = bnNewStakedHearts.add(bnBonusTotal)
 
-        debug("updateFigures(): ",
-            + `bnNewStakedHearts: ${bnNewStakedHearts.toString()}\n`
-            + `bnStakeDays: ${bnStakeDays.toString()}\n`
-            + `bnCappedExtraDays: ${bnCappedExtraDays.toString()}\n`
-            + `bnCappedStakedHearts: ${bnCappedStakedHearts.toString()}\n`
-            + `bnBiggerPaysBetter: ${bnBiggerPaysBetter.toString()}\n`
-            + `bnLongerPaysBetter: ${bnLongerPaysBetter.toString()}\n`
-            + `bnBonusTotal: ${bnBonusTotal.toString()}\n`
-            + `bnEffectiveHEX: ${bnEffectiveHEX.toString()}\n`
-        )
+        // debug("updateFigures(): ",
+        //     + `bnNewStakedHearts: ${bnNewStakedHearts.toString()}\n`
+        //     + `bnStakeDays: ${bnStakeDays.toString()}\n`
+        //     + `bnCappedExtraDays: ${bnCappedExtraDays.toString()}\n`
+        //     + `bnCappedStakedHearts: ${bnCappedStakedHearts.toString()}\n`
+        //     + `bnBiggerPaysBetter: ${bnBiggerPaysBetter.toString()}\n`
+        //     + `bnLongerPaysBetter: ${bnLongerPaysBetter.toString()}\n`
+        //     + `bnBonusTotal: ${bnBonusTotal.toString()}\n`
+        //     + `bnEffectiveHEX: ${bnEffectiveHEX.toString()}\n`
+        // )
 
         const bnShareRate = BigNumber.from(globals.shareRate).div(10) || BigNumber.from(10000)
         const bnStakeShares = bnEffectiveHEX.mul(10000).div(bnShareRate)
@@ -197,26 +197,23 @@ export class NewStakeForm extends React.Component<NSFT.Props, NSFT.State> {
         debug("graph data: ", data)
         this.setState({data, graphIconClass: "" })
     }
-
-    handleDaysChange = (e: React.ChangeEvent<HTMLInputElement> ) => {
-        e.preventDefault()
+    
+    _handleDaysChange = (el: HTMLInputElement ) => {
         clearTimeout(this.daysTimer)
-
-        const immediate = Boolean(e.target.dataset.immediate)
-        immediate && delete e.target.dataset.immediate
-
-        const stakeDays = parseInt(e.target.value) || 0
-
+        const immediate = Boolean(el.dataset.immediate)
+        immediate && delete el.dataset.immediate
+        
+        const stakeDays = parseInt(el.value) || 0
         const { currentDay } = this.props.contract.Data
         const endDay = currentDay + 2 + stakeDays
-
+        
         const _startDate = new Date(HEX.START_DATE.getTime() + (currentDay + 1) * 24 * 3600 * 1000)
         const _endDate = new Date(HEX.START_DATE.getTime() + endDay * 24 * 3600 * 1000)
         const startDate = _startDate.toLocaleDateString()
         const startTime = _startDate.toLocaleTimeString()
         const endDate = _endDate.toLocaleDateString()
         const endTime = _endDate.toLocaleTimeString()
-
+        
         this.setState({
             stakeDays: stakeDays > 5555 ? '5555' : stakeDays.toString(),
             startDay: currentDay+2,
@@ -226,7 +223,7 @@ export class NewStakeForm extends React.Component<NSFT.Props, NSFT.State> {
             endDate,
             endTime
         }, this.updateFigures)
-
+        
         if (!stakeDays) {
             this.setState({
                 data: [],
@@ -239,6 +236,11 @@ export class NewStakeForm extends React.Component<NSFT.Props, NSFT.State> {
                 this.updateBarGraph()
             }, immediate ? 0 : 1200)
         }
+    }
+    
+    handleDaysChange = (e: React.ChangeEvent<HTMLInputElement> ) => {
+        e.preventDefault()
+        this._handleDaysChange(e.target)
     }
 
     handleDaysBlur = (e: React.FocusEvent<HTMLInputElement>) => {
@@ -312,8 +314,7 @@ export class NewStakeForm extends React.Component<NSFT.Props, NSFT.State> {
         }, () => {
             if (!this.daysControl) return
             this.daysControl.value = days.toString()
-            this.daysControl.dataset.immediate = "true"
-            this.daysControl.dispatchEvent(new Event("change"))
+            this._handleDaysChange(this.daysControl)
         })
     }
 
@@ -400,7 +401,7 @@ export class NewStakeForm extends React.Component<NSFT.Props, NSFT.State> {
                                         <Form.Label className="mb-0">Stake Length<span className="d-none d-sm-inline"> in Days</span></Form.Label>
                                         <InputGroup className="p-0">
                                                 <FormControl
-                                                    ref = {(r: HTMLInputElement) => this.daysControl = r}
+                                                    ref = {(r: HTMLInputElement) => this.daysControl = r }
                                                     className="p-1"
                                                     type="number"
                                                     placeholder="5555"
@@ -417,7 +418,7 @@ export class NewStakeForm extends React.Component<NSFT.Props, NSFT.State> {
                                                     onSelect={this.handleDaysSelector}
                                                     className="numeric"
                                                 >
-                                                    <Dropdown.Item as="button" eventKey="new_stake" data-days="max">MAX (about 15yrs & 11wks)</Dropdown.Item>
+                                                    <Dropdown.Item as="button" eventKey="new_stake" data-days="max">5555 days (~15yrs, 11wks)</Dropdown.Item>
                                                     <Dropdown.Item as="button" eventKey="new_stake" data-days="10y">Ten Years</Dropdown.Item>
                                                     <Dropdown.Item as="button" eventKey="new_stake" data-days="5y">Five Years</Dropdown.Item>
                                                     <Dropdown.Item as="button" eventKey="new_stake" data-days="3y">Three Years</Dropdown.Item>
