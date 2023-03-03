@@ -184,7 +184,7 @@ class TewkStakeList extends React.Component<TewkT.ListProps, TewkT.ListState> {
             </Card.Header>
             <Card.Body className="py-1">
                 <Row className="text-end text-muted small" key='detail'>
-                    <Col className="d-none d-md-inline">PRINCIPAL</Col>
+                    <Col className="d-none d-md-inline">COST</Col>
                     <Col>SHARES</Col>
                     <Col className="d-none d-md-inline">BigPayDay</Col>
                     <Col>YIELD</Col>

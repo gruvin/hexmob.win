@@ -170,7 +170,7 @@ class Stakes extends React.Component<StakesT.Props, StakesT.State> {
             const pastStakes = results.map(r => {
                 const args = bnPrefixObject(r.args)
                 const { bnData0, bnData1, stakerAddr, stakeId } = args as StakeEnd
-                // debug("STAKE HISTORY ARGS: %o", { bnData0: bnData0.toString() , bnData1: bnData1.toString(), stakerAddr, stakeId })
+                // debug("Mining History ARGS: %o", { bnData0: bnData0.toString() , bnData1: bnData1.toString(), stakerAddr, stakeId })
                 const d0 = new BN(bnData0.toString())
                 const d1 = new BN(bnData1.toString())
                 const decoded = {
@@ -236,7 +236,7 @@ class Stakes extends React.Component<StakesT.Props, StakesT.State> {
         if (this.state.loadingStakes)
             return ( <p>loading ...</p> )
         else if (!stakeList.length)
-            return ( <p>no stake data found for this address</p> )
+            return ( <p>no mining data found for this address</p> )
 
         let activeCount = 0
         const stakeListOutput = stakeList.map((stakeData) => {
@@ -288,9 +288,9 @@ class Stakes extends React.Component<StakesT.Props, StakesT.State> {
         return (<>
             <Card className="mt-2 bg-info-darkened rounded">
                 <Card.Body className="p-1 rounded text-light">
-                    <h2 className="text-center">Stake Totals Summary</h2>
+                    <h2 className="text-center">Summary Overview</h2>
                     <Row>
-                        <Col className="text-end font-weight-bold">Staked</Col>
+                        <Col className="text-end font-weight-bold">Deployed Mining</Col>
                         <Col><CryptoVal className="numeric" value={bnStakedTotal} showUnit /></Col>
                     </Row>
                     <Row>
@@ -308,11 +308,11 @@ class Stakes extends React.Component<StakesT.Props, StakesT.State> {
                     </Row>
                     }
                     <Row>
-                        <Col className="text-end font-weight-bold">Yield</Col>
+                        <Col className="text-end font-weight-bold">Full Term Yield</Col>
                         <Col><CryptoVal className="numeric" value={bnInterestTotal} showUnit /></Col>
                     </Row>
                     <Row>
-                        <Col className="text-end font-weight-bold">Total Value</Col>
+                        <Col className="text-end font-weight-bold">Full Term Output</Col>
                         <Col>
                             <CryptoVal
                                 className="numeric font-weight-bold"
@@ -321,11 +321,11 @@ class Stakes extends React.Component<StakesT.Props, StakesT.State> {
                         </Col>
                     </Row>
                     <Row className="text-success">
-                        <Col className="text-success text-end font-weight-bold">USD Value</Col>
-                        <Col className="text-success numeric font-weight-bold"><CryptoVal value={usdValue} currency="USD"/></Col>
+                        <Col className="text-success text-end font-weight-bold">Full Term USD Value</Col>
+                        <Col className="text-success numeric font-weight-bold">$<CryptoVal value={usdValue} currency="USD"/></Col>
                     </Row>
                     <Row className="mt-2">
-                        <Col className="text-end font-weight-bold">Average Gain</Col>
+                        <Col className="text-end font-weight-bold">Mean Net Yield</Col>
                         <Col className="numeric">{format(",.2f")(fnAveragePercentGain.toUnsafeFloat())}%</Col>
                     </Row>
                     <Row>
@@ -336,7 +336,7 @@ class Stakes extends React.Component<StakesT.Props, StakesT.State> {
             </Card>
             <Card className="mt-2 text-light bg-success-darkened rounded">
                 <Card.Body className="px-2">
-                    <h2 className="text-center mb-0">{numStakes ? <span className="numeric">{numStakes}</span> : "No"} Active Stake{numStakes > 1 && "s"}</h2>
+                    <h2 className="text-center mb-0">{numStakes ? <span className="numeric">{numStakes}</span> : "No"} Active Miner{numStakes > 1 && "s"}</h2>
                     <div className="text-center text-info small">tap each for details</div>
                     {stakeListOutput.map((stakeData) => {
                         return (
@@ -390,12 +390,12 @@ class Stakes extends React.Component<StakesT.Props, StakesT.State> {
                 <Row key="history" className="p-0 my-2 mx-0 xs-small text-end font-weight-bold">
                     <Col xs={2} sm={2} className="p-0 text-center">
                         <a href="#sort_servedDays" onClick={handleSortSelection}>
-                            Days<span className="d-none d-md-inline"> Served</span>
+                            <span className="d-none d-md-inline">Mined </span>Days
                         </a>
                     </Col>
                     <Col xs={3} sm={3} className="p-0">
                         <a href="#sort_bnStakedHearts" onClick={handleSortSelection}>
-                            Stake<span className="d-none d-sm-inline">d Amount</span>
+                            Miner Cost
                         </a>
                     </Col>
                     <Col xs={3} sm={3} className="p-0"><a href="#sort_bnStakeShares" onClick={handleSortSelection}>Shares</a></Col>
@@ -437,10 +437,10 @@ class Stakes extends React.Component<StakesT.Props, StakesT.State> {
                 <Accordion.Item className="new-stake text-light" eventKey="new_stake">
                     <Accordion.Header>
                         <Row className="w-100">
-                        <Col className="pe-0"><BurgerHeading>Stake HEX<span className="d-none d-sm-inline"> to Mint Shares</span>
+                        <Col className="pe-0"><BurgerHeading>Deploy <span className="d-none d-sm-inline">HEX </span>Miner
                         </BurgerHeading></Col>
                         <Col className="col-5 lh-lg px-0 text-end text-success">
-                             <span className="text-muted small align-baseline me-1"><span className="d-none d-sm-inline">LIQUID </span>HEX</span>
+                             <span className="text-muted small align-baseline me-1"><span className="d-none d-sm-inline">Available </span>HEX</span>
                              <CryptoVal className="numeric h2" value={this.props.wallet.bnBalance} />
                         </Col>
                         </Row>
@@ -462,10 +462,10 @@ class Stakes extends React.Component<StakesT.Props, StakesT.State> {
                     }
                     <Accordion.Header className="w-100">
                         <Row className="w-100">
-                            <Col className="pe-0"><BurgerHeading>Active Stakes</BurgerHeading></Col>
+                            <Col className="pe-0"><BurgerHeading>Active Mining</BurgerHeading></Col>
                             <Col className="col-5 lh-lg px-0 text-end text-success">
                                 <small className="text-muted small align-baseline me-1">USD</small>
-                                <span className="numeric h2 fw-bold"><CryptoVal value={usdValue} currency="USD" /></span>
+                                <span className="numeric h2 fw-bold">$<CryptoVal value={usdValue} currency="USD" /></span>
                             </Col>
                         </Row>
                     </Accordion.Header>
@@ -475,12 +475,12 @@ class Stakes extends React.Component<StakesT.Props, StakesT.State> {
                 </Accordion.Item>
                 <Accordion.Item className="stake-history text-light pb-0" eventKey="stake_history">
                     <Accordion.Header>
-                        <BurgerHeading>Stake History</BurgerHeading>
+                        <BurgerHeading>Mining History</BurgerHeading>
                     </Accordion.Header>
                     <Accordion.Collapse eventKey="stake_history">
                         <>
                         {this.props.parent.state.chainId !== 1
-                            ? <Col className="col-12 text-center">chain event log data not currently available</Col>
+                            ? <Col className="col-12 text-center">chain event log data unavailable</Col>
                             : <this.StakesHistory />
                         }</>
                     </Accordion.Collapse>

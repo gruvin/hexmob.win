@@ -258,3 +258,14 @@ input.donate_addr {
 .popover{
     max-width: 310px; /* Max Width of the popover (depending on the container!) */
 }
+
+ul.no-bullets {
+    list-style-type: none;
+    padding: 0;
+    margin: 0;
+    line-height: 1.2em;
+    // font-size: 0.9em;
+}
+ul.no-bullets > li {
+    margin-top: 0.4em;
+}

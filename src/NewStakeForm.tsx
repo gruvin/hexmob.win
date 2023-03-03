@@ -197,23 +197,23 @@ export class NewStakeForm extends React.Component<NSFT.Props, NSFT.State> {
         debug("graph data: ", data)
         this.setState({data, graphIconClass: "" })
     }
-    
+
     _handleDaysChange = (el: HTMLInputElement ) => {
         clearTimeout(this.daysTimer)
         const immediate = Boolean(el.dataset.immediate)
         immediate && delete el.dataset.immediate
-        
+
         const stakeDays = parseInt(el.value) || 0
         const { currentDay } = this.props.contract.Data
         const endDay = currentDay + 2 + stakeDays
-        
+
         const _startDate = new Date(HEX.START_DATE.getTime() + (currentDay + 1) * 24 * 3600 * 1000)
         const _endDate = new Date(HEX.START_DATE.getTime() + endDay * 24 * 3600 * 1000)
         const startDate = _startDate.toLocaleDateString()
         const startTime = _startDate.toLocaleTimeString()
         const endDate = _endDate.toLocaleDateString()
         const endTime = _endDate.toLocaleTimeString()
-        
+
         this.setState({
             stakeDays: stakeDays > 5555 ? '5555' : stakeDays.toString(),
             startDay: currentDay+2,
@@ -223,7 +223,7 @@ export class NewStakeForm extends React.Component<NSFT.Props, NSFT.State> {
             endDate,
             endTime
         }, this.updateFigures)
-        
+
         if (!stakeDays) {
             this.setState({
                 data: [],
@@ -237,7 +237,7 @@ export class NewStakeForm extends React.Component<NSFT.Props, NSFT.State> {
             }, immediate ? 0 : 1200)
         }
     }
-    
+
     handleDaysChange = (e: React.ChangeEvent<HTMLInputElement> ) => {
         e.preventDefault()
         this._handleDaysChange(e.target)
@@ -366,7 +366,7 @@ export class NewStakeForm extends React.Component<NSFT.Props, NSFT.State> {
                                 <Col xs={6} sm={12} className="">
                                     <Form.Group controlId="stake_amount" className="">
                                         <Form.Label className="w-100 mb-0">
-                                            Stake Amount<span className="d-none d-sm-inline"> in HEX</span>
+                                            Mining Units<span className="d-none d-sm-inline"> in HEX</span>
                                         </Form.Label>
                                         <InputGroup className="p-0">
                                             <Form.Control
@@ -398,7 +398,7 @@ export class NewStakeForm extends React.Component<NSFT.Props, NSFT.State> {
                                 </Col>
                                 <Col xs={6} sm={12}className="">
                                     <Form.Group controlId="stake_days" className="">
-                                        <Form.Label className="mb-0">Stake Length<span className="d-none d-sm-inline"> in Days</span></Form.Label>
+                                        <Form.Label className="mb-0">Mining Term<span className="d-none d-sm-inline"> in Days</span></Form.Label>
                                         <InputGroup className="p-0">
                                                 <FormControl
                                                     ref = {(r: HTMLInputElement) => this.daysControl = r }
@@ -521,7 +521,7 @@ export class NewStakeForm extends React.Component<NSFT.Props, NSFT.State> {
                                 confirmationCallback={this.resetFormAndReloadStakes}
                                 className="stake btn-start"
                             >
-                                <strong>STAKE NOW</strong>
+                                <strong>DEPLOY MINER</strong>
                             </VoodooButton>
                             </Container>
                         </Container>

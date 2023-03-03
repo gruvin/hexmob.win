@@ -4,7 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
 
-    <title>HEXmob™ Stakes™</title>
+    <title>HEXmob™ Mining</title>
     <meta name="description" content="Alternative go.hex.com UI, designed for Mobile" />
 
     <link rel="apple-touch-icon" sizes="57x57" href="/seo/apple-icon-57x57.png" />
@@ -31,16 +31,16 @@
     <meta name="twitter:image:src" content="https://hexmob.win/seo/og-image-14.png" />
     <meta name="twitter:site" content="@hexmobwin" />
     <meta name="twitter:card" content="summary_large_image" />
-    <meta name="twitter:title" content="HEX Decentralized High Yield Crypto Asset UI" />
-    <meta name="twitter:description" content="Join the Staker Class™ — Sustainable Trustless Wealth for the Crypto Wise" />
+    <meta name="twitter:title" content="HEX Sustainable High Yield Crypto Mining" />
+    <meta name="twitter:description" content="Truly decentralized, high yield, self mined crypto asset — HEX.COM" />
 
     <meta property="og:image" content="https://hexmob.win/seo/og-image-14.png" />
     <meta property="og:site_name" content="HEXmob.win" />
     <meta property="og:type" content="object" />
-    <meta property="og:title" content="HEX Decentralized High Yield Crypto Asset UI" />
+    <meta property="og:title" content="HEX Sustainable High Yield Crypto Mining" />
     <meta property="og:url" content="https://hexmob.win" />
-    <meta property="og:description" content="UI for The only truly decentralized, high yield crypto asset — HEX.COM for details" />
-    
+    <meta property="og:description" content="Truly decentralized, high yield, self mined crypto asset — HEX.COM" />
+
     <meta name="theme-color" content="#aa66dd" />
   </head>
   <body>

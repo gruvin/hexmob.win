@@ -586,7 +586,7 @@ class App extends React.Component<AppT.Props, AppT.State> {
                 <Container id="hexmob_header" fluid>
                     <BrandLogo />
                     <div id="version-day">
-                        <h3>{import.meta.env.VITE_VERSION || "v0.0.0A"}</h3>
+                        <h3>{import.meta.env.VITE_VERSION || "v0.0.0A"} <strong className="text-warning">WORDING PROPOSAL</strong></h3>
                         <div>
                             <span className="text-muted small align-baseline me-1">DAY</span>
                             <span className="numeric text-info align-baseline fs-5 fw-bold">{ this.state.currentDay ? this.state.currentDay : "---" }</span>
