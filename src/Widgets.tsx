@@ -196,25 +196,6 @@ export class VoodooButton extends React.Component<VoodooProps, VoodooState> {
 
             const func = simulate ? sim : contract[method]
 
-            if (window.web3 && window.web3.currentProvider && window.web3.currentProvider.isTrust) {
-                debug('Sending via TrustWallet provider')
-                // TrustWallet [internal browser] returns immediately, with nothing and
-                // never again :/ (See XXX notes in App.js)
-                func(...params, {...overrides} )
-                setTimeout(async ()=>{
-                    this.setState({
-                        data: "REQUESTED",
-                        hash: "see wallet log"
-                    })
-                    setTimeout(async ()=>{
-                        this.setState({ wait: false, data: false, hash: null})
-                        confirmationCallback && confirmationCallback.apply(this)
-                        rejectionCallback && rejectionCallback.apply(this)
-                    }, 18008)
-                }, 2000)
-                return false // that's all folks
-            }
-
             debug("contract.%s(%o, {%o}", method, params, overrides)
 
             func(...params, {...overrides} )

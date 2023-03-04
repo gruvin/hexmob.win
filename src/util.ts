@@ -410,11 +410,6 @@ const bnE = (strSci: string): BigNumber => {
     return BigNumber.from(n).mul(10).pow(e)
 }
 
-const detectTrustWallet = () => {
-    if (window.ethereum && window.ethereum.isMetaMask) return false
-    return (window.web3 && window.web3.currentProvider && window.web3.currentProvider.isTrust)
-}
-
 interface _indexableObj { [index: string | number]: any}
 const bnPrefixObject = (_obj: any) => {
     let obj = { } as _indexableObj
@@ -440,7 +435,6 @@ export {
     decodeDailyData,
     decodeClaimStats,
     cryptoFormat,
-    detectTrustWallet,
     bnPrefixObject,
     bnE,
 }

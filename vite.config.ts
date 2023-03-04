@@ -5,6 +5,7 @@ import react from '@vitejs/plugin-react'
 import { NodeGlobalsPolyfillPlugin } from '@esbuild-plugins/node-globals-polyfill'
 import { NodeModulesPolyfillPlugin } from '@esbuild-plugins/node-modules-polyfill'
 import rollupNodePolyFill from 'rollup-plugin-node-polyfills'
+import topLevelAwait from "vite-plugin-top-level-await";
 
 console.log("require.resolve()?? %O", require)
 
@@ -74,7 +75,13 @@ export default defineConfig({
         plugins: [
             // Enable rollup polyfills plugin
             // used during production bundling
-            rollupNodePolyFill()
+            rollupNodePolyFill(),
+            topLevelAwait({ // @ref https://github.com/Menci/vite-plugin-top-level-await
+              // The export name of top-level await promise for each chunk module
+              promiseExportName: "__tla",
+              // The function to generate import names of top-level await promise in each chunk module
+              promiseImportName: i => `__tla_${i}`
+            })
         ],
       },
       commonjsOptions: {

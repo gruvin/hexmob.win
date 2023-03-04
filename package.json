@@ -18,6 +18,8 @@
     "@types/debug": "^4.1.7",
     "@types/react-copy-to-clipboard": "^5.0.4",
     "@walletconnect/web3-provider": "^1.8.0",
+    "@web3modal/ethereum": "^2.1.3",
+    "@web3modal/react": "^2.1.3",
     "axios": "^0.27.2",
     "bootstrap": "^5.2.0",
     "d3-format": "^3.1.0",
@@ -33,20 +35,22 @@
     "recharts": "^2.1.13",
     "rollup-plugin-polyfill-node": "^0.10.2",
     "sass": "^1.54.5",
-    "web3modal": "^1.9.9"
+    "wagmi": "^0.11.7"
   },
   "devDependencies": {
     "@esbuild-plugins/node-globals-polyfill": "^0.1.1",
     "@esbuild-plugins/node-modules-polyfill": "^0.1.4",
+    "@metamask/types": "^1.1.0",
     "@originjs/vite-plugin-commonjs": "^1.0.3",
     "@types/react": "^18.0.17",
     "@types/react-dom": "^18.0.6",
     "@vitejs/plugin-react": "^2.0.1",
     "@vitejs/plugin-react-refresh": "^1.3.6",
-    "@walletconnect/types": "^1.8.0",
+    "@walletconnect/types": "^2.4.7",
     "enzyme": "^3.11.0",
     "typescript": "^4.6.4",
     "vite": "^3.0.7",
+    "vite-plugin-top-level-await": "^1.3.0",
     "vitest": "^0.22.1"
   }
 }

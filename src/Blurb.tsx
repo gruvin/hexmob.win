@@ -1,5 +1,5 @@
 import React from 'react'
-import { 
+import {
     Container,
     Row,
     Col,
@@ -17,7 +17,7 @@ const Blurb = () => {
                             ? <h3 className="text-muted">go.TShare.app</h3>
                             : <h3 className="text-muted">HEX<sup>mob.win</sup></h3>
                         }
-                        <h3>“a mobile friendly HEX staking interface”</h3>
+                        <h1 className="text-uppercase">HEX mining interface</h1>
                         <p className="text-muted">independent community project</p>
                     </Col>
                 </Row>
