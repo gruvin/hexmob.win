@@ -6,12 +6,14 @@ import { NodeGlobalsPolyfillPlugin } from '@esbuild-plugins/node-globals-polyfil
 import { NodeModulesPolyfillPlugin } from '@esbuild-plugins/node-modules-polyfill'
 import rollupNodePolyFill from 'rollup-plugin-node-polyfills'
 import topLevelAwait from "vite-plugin-top-level-await";
+import basicSsl from '@vitejs/plugin-basic-ssl'
 
 console.log("require.resolve()?? %O", require)
 
 // https://vitejs.dev/config/
 export default defineConfig({
   plugins: [
+    basicSsl(),
     process.env.MODE !== 'production'
     ? react({
         jsxRuntime: 'classic',

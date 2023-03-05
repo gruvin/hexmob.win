@@ -263,7 +263,7 @@ export class VoodooButton extends React.Component<VoodooProps, VoodooState> {
                 hashUI = hash.slice(0,6)+'....'+hash.slice(-6)
         }
 
-        const { explorerURL } = CHAINS[window.web3signer._network.chainId]
+        const { explorerURL } = CHAINS[window.ethersSigner.provider._network.chainId]
         const txLinkUI = (typeof hash === 'object') ? "" : explorerURL.replace(RegExp("/+$"), `/${hash}`)
 
         return (

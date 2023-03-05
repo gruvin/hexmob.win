@@ -15,10 +15,12 @@ declare global {
     metamaskOnline: Function
     hostIsTSA?: boolean
     hostIsHM?: boolean
-    web3signer?: any
+    ethereum?: any
+    ethersSigner?: any
+    web3provider?: any
+    signClient?: any
     Trust?: any
     _W3provider?: any
-    _W3signer?: any
     _APP: any
     _LOBBY: any
     _STAKES: any

@@ -16,10 +16,11 @@ import { WhatIsThis, MetamaskUtils } from "./Widgets"
 import CHAINS, { type TChain } from "./chains"
 import HEX, { type HEXContract, type HEXGlobals } from "./hex_contract"
 // import UNIV2 from "./univ2_contract" /* HEX/USDC pair */
-import { ethers, BigNumber } from "ethers";
-
+import { ethers, BigNumber } from "ethers"
 import SignClient from "@walletconnect/sign-client"
 import { Web3Modal } from "@web3modal/standalone"
+// import { UniversalProvider } from "@walletconnect/universal-provider"
+import { EthereumProvider } from "@walletconnect/ethereum-provider"
 
 //import Portis from "@portis/web3";
 import { decodeClaimStats, bnPrefixObject } from "./util"
@@ -51,16 +52,6 @@ switch (window.location.hostname) {
         window.hostIsTSA = true
         window.hostIsHM = false
 }
-
-// @ref https://docs.walletconnect.com/2.0/web3modal/standalone/installation
-const web3Modal = new Web3Modal({
-    //
-    walletConnectVersion: 1, // or 2
-    projectId: import.meta.env.VITE_WALLET_CONNECT_ID,
-    standaloneChains: ["eip155:1"],
-    themeMode: "dark",
-});
-const signClient = await SignClient.init({ projectId: import.meta.env.VITE_WALLET_CONNECT_ID });
 
 const Stakes = React.lazy(() => import("./Stakes"));
 const Tewkenaire = React.lazy(() => import("./Tewkenaire"));
@@ -98,10 +89,9 @@ class App extends React.Component<AppT.Props, AppT.State> {
     dayInterval?: NodeJS.Timer
     usdHexInterval?: NodeJS.Timer
     retryCounter: number = 2
-    web3modal: Web3Modal | null = null
-    // univ2contract?: any
-    walletProvider?: any
-    web3provider?: any
+    web3signer?: any | null = null  // wallet signer provider (window.web3provider used for Infura et al)
+    univ2contract?: any = null      // used or not depending on USD proce collection method in use
+    walletProvider?: string = "---"
     usdProgress: Element | null = null
     USDHEX?: Element
     currentUTCday: number = new Date().getUTCDay()
@@ -132,7 +122,6 @@ class App extends React.Component<AppT.Props, AppT.State> {
             })
 
         } else { // WalletConnect (and others) ...
-
             // "close" is deprecated in favour of "disconnect" in MetaMask but not some other wallets
             provider.on("close", () => {
                 debug("provider::event:close")
@@ -143,10 +132,8 @@ class App extends React.Component<AppT.Props, AppT.State> {
             })
 
             provider.on("accountsChanged", async (accounts: string[]) => {
-                const newAddress: string = accounts[0]
-                debug("ADDRESS CHANGE: %s(old) => %s", this.state.wallet.address, newAddress)
-                this.setState({ wallet: { ...this.state.wallet, address: newAddress } })
-                this.updateHEXBalance()
+                debug("EVENT: accountsChanged %O", accounts)
+                this.resetApp()
             })
         }
 
@@ -156,10 +143,7 @@ class App extends React.Component<AppT.Props, AppT.State> {
 
         provider.on("network", (_?: any, oldNetwork?: string) => { if (oldNetwork) this.resetApp() });
 
-        try {
-            window.web3signer.currentProvider.publicConfigStore
-                .on("update", this.updateETHBalance)
-        } catch (e) { }
+        provider.on("update", this.updateETHBalance)
     }
 
     subscribeEvents = async () => {
@@ -208,8 +192,9 @@ class App extends React.Component<AppT.Props, AppT.State> {
 
     unsubscribeEvents = () => {
         try {
-            // this.univ2contract?.removeAllListeners()
-            this.contract?.removeAllListeners()
+            this.univ2contract && this.univ2contract.removeAllListeners()
+            this.contract && this.contract.removeAllListeners()
+            this.web3signer.removeAllListeners && this.web3signer.removeAllListeners()
         } catch (e) { }
     }
 
@@ -217,7 +202,7 @@ class App extends React.Component<AppT.Props, AppT.State> {
         const wallet = this.state.wallet
         const { address } = wallet
         if (address.slice(0, 2) !== "0x") return
-        window.web3signer.getBalance(address)
+        window.web3provider.getBalance(address)
             .then((bnBalanceETH: BigNumber) => this.setState({ wallet: { ...wallet, bnBalanceETH } }))
             .catch((e: Error) => debug("updateETHBalance(): ", e))
     }
@@ -226,115 +211,6 @@ class App extends React.Component<AppT.Props, AppT.State> {
         this.contract?.balanceOf(this.state.wallet.address)
             .then((bnBalance: BigNumber) => this.setState({ wallet: { ...this.state.wallet, bnBalance } }))
             .catch((e: Error) => debug("updateHEXBalance(): ", e))
-    }
-
-    /* returns address or null */
-    async establishWeb3Provider(): Promise<string | null> {
-
-        // Check for non-web3modal injected providers (mobile dApp browsers)
-        if (window.ethereum?.isMetaMask === true) {        // imToken
-            debug("Detected Metamask wallet")
-            this.walletProvider = window.ethereum
-            this.setState({ currentProvider: "Metamask" })
-        } else { // web3modal it is ...
-            this.setState({ currentProvider: "web3modal" })
-            if (this.triggerWeb3Modal) {
-                this.triggerWeb3Modal = false
-
-                try {
-                    if (signClient) {
-                        const { uri, approval } = await signClient.connect({
-                            requiredNamespaces: {
-                                eip155: {
-                                    methods: ["eth_sign"],
-                                    chains: ["eip155:1"],
-                                    events: ["accountsChanged"],
-                                },
-                            },
-                        });
-                        if (uri) {
-                            await web3Modal.openModal({ uri });
-                            await approval();
-                            web3Modal.closeModal();
-                            this.walletProvider = signClient
-                        }
-                    }
-                } catch (err) {
-                    console.error(err);
-                }
-
-                const currentProvider = this.walletProvider
-                    ? this.walletProvider.getProviderInfo(this.walletProvider).namespaces
-                    : "---"
-
-                this.setState({ currentProvider })
-            }
-        }
-
-        // @dev this.walletProvider is our transaction signing provider, such as MetaMask
-        if (!this.walletProvider || !this.walletProvider.chainId) return Promise.reject(new Error("web3modal no wallet chossen"))
-
-        const chainId = Number(this.walletProvider.chainId)
-        const network = CHAINS[chainId] || null
-        if (!network) return Promise.reject(`Unsupported Network (chainId: ${chainId})`)
-
-        this.setState({ chainId, network })
-
-        this.web3provider = (chainId === 1)
-            ? new ethers.providers.InfuraProvider(network.name, import.meta.env.VITE_INFURA_ID) // INFURA (read ony)
-            : new ethers.providers.Web3Provider(this.walletProvider) // Infura not available. Use wallet provider
-
-        this.web3provider.on("error", (e: any) => {
-            console.log("UNEXPECTED DISCONNECTION: Error => ", e)
-            alert("UNEXPECTED DISCONNECTION\n\n"
-                + "If running on iOS v15+, please use Safari and disable "
-                + "Apple's buggy [NSURLSession Websocket] 'feature' found at ..."
-                + "\nSettings -> Safari -> Advanced -> Experimental Features -> NSURLSession Websocket"
-                + "\n\nDoing so will not adversely affect other activities.")
-            this.resetApp() // TODO: try to gracefully reconnect etc
-        })
-
-        window.web3signer = new ethers.providers.Web3Provider(this.walletProvider)  // signer (eg MetaMask from web3modal selection)
-        if (!this.web3provider || !window.web3signer) return Promise.reject("Unexpected error establishing web3 providers")
-
-        debug("Web3 providers connected:\n\tthis.web3provider: %O\n\twindow.web3signer: %O", this.web3provider, window.web3signer)
-        if (import.meta.env.NODE_ENV === "development") {
-            window._W3provider = this.web3provider
-            window._W3signer = this.web3provider
-        }
-
-        // Different wallets have different methods of supplying the user"s active ETH address
-        let address = ""
-        if (this.walletProvider.isMetaMask) {               // MetaMask
-            debug("web3modal provider is MetaMask")
-            let accounts = null
-            if (this.walletProvider.request) { // new way
-                debug("accounts[] new method")
-                const response = await this.walletProvider.request({ method: "eth_accounts" })
-                accounts = response
-            }
-            debug("accounts[]: ", accounts)
-            address = accounts[0]
-        } else if (this.walletProvider.isCoinBase) {        // CoinBase
-            debug("Provider is Coinbase")
-            await this.walletProvider.enable()
-            const accounts = await this.walletProvider.eth.getAccounts()
-            address = accounts[0]
-        } else if (this.walletProvider.isWalletConnect) {    // Wallet Connect
-            debug("web3modal provider is WalletConnect (QR code)")
-            address = this.walletProvider.accounts[0]
-        } else if (window.web3signer.currentProvider.isPortis) {
-            await this.walletProvider.enable()
-            const accounts = await this.walletProvider.eth.getAccounts()
-            address = accounts[0]
-        } else if (window.web3signer.currentProvider.isImToken) { // imToken
-            debug("imToken Wallet detected")
-            const accounts = await window.web3signer.currentProvider.send("eth_requestAccounts") // EIP1102
-            address = accounts[0]
-        } else                                              // OTHERS (WalletConnect)
-            address = window.web3signer.eth.accounts[0]
-
-        return (address.toLowerCase().slice(0, 2) === "0x") ? address : null
     }
 
     // this function will be called eery 10 seconds after the first invocation.
@@ -379,58 +255,81 @@ class App extends React.Component<AppT.Props, AppT.State> {
                 debug(`subscribeUpdateUsdHex: ${e.message}. Backing off 30 seconds.`)
                 setTimeout(this.subscribeUpdateUsdHex, 30000) // back off 30 seconds
             })
+
+            debug("subscribeUpdateUsdHex(): OK")
     }
 
-    async componentDidMount() {
-        switch (window.location.hostname) {
-            case "go.tshare.app": ReactGA.initialize("UA-203521048-1"); break; // usage
-            case "hexmob.win": ReactGA.initialize("UA-203562559-1"); break// usage
-            case "127.0.0.1":
-            case "dev.hexmob.win":
-                ReactGA.initialize("UA-203524460-1");
-                break; // dev usage
-            default: { }
+    handleConnectWalletButton = async () => {
+        if (window.ethereum && window.ethereum.isMetaMask) {
+
+            debug("Detected Metamask wallet")
+            this.walletProvider = "MetaMask"
+            this.web3signer = window.ethereum
+            const ethersProvider = new ethers.providers.Web3Provider(this.web3signer, "any")
+            window.ethersSigner = ethersProvider.getSigner()
+
+        } else { // web3Modal it is ...
+
+            this.walletProvider = "WalletConnect"
+
+            debug("Initializing WalletConnect")
+
+            const chains = [
+                "eip155:1",
+            ]
+
+            this.web3signer = await EthereumProvider.init({
+                projectId: import.meta.env.VITE_WALLET_CONNECT_ID,
+                methods: [
+                    "eth_requestAccounts",
+                    "eth_signTransaction",
+                    "eth_sendTransaction",
+                    "personal_sign",
+                    "eth_sign",
+                    "eth_signTypedData",
+                ],
+                chains: [1],
+                events: [
+                    "chainChanged",
+                    "accountsChanged",
+                    "disconnect"
+                ],
+                // showQrModal: true,
+            })
+            await this.web3signer.connect({})
+            const ethersProvider = new ethers.providers.Web3Provider(this.web3signer, "any")
+            window.ethersSigner = ethersProvider.getSigner()
+
+            debug("PROVIDER ESTABLISHED: %s — %o", this.walletProvider, this.web3signer)
         }
 
-        //debug("ENV: ", import.meta.env)
+        const chainId = parseInt(this.web3signer.chainId)
+        const network = CHAINS[chainId]
 
-        const referrer = (uriQuery.get("r") || "").toLowerCase()
-        if (uriQuery.has("reset")) { return this.resetApp() }
-        if (uriQuery.has("account")) {
-            const uriAccounts = uriQuery.getAll("account")
-            const accounts = uriAccounts.map(account => { const s = account.split(":"); return { address: s[0], name: s[1] || "" } })
-            this.setState({ accounts })
-        }
+        // this also causes connection ("connects") to local metmask (if present)
+        const accounts = await this.web3signer.request({ method: "eth_requestAccounts" })
+        .catch((err: any) => debug(err.message + " — STOP"))
+        if (!accounts) return
 
-        if (localStorage.getItem("debug")) {
-            window._APP = this
-            window._E = ethers
-            window._w3M = this.web3modal
-            window._HEX = HEX
-            // window._UNIV2 = UNIV2
-            window.debug = debug
-        }
+        debug("ACCOUNTS: %O", accounts)
+        const address = accounts[0]
+        if (!address || address === "") return debug("handleConnectWalletButton:: NO ADDRESS — STOP")
 
-        const address = await this.establishWeb3Provider()
-        .catch(e => debug(e))
-
-
-        ////// STOP IF NO WALLET CONNECTION //////
-        if (!address || address == "") return debug("No wallet address supplied - STOP")
-
-        if (this.state.chainId === 1) {
-            window.contract = new ethers.Contract(HEX.CHAINS[this.state.chainId], HEX.ABI, window.web3signer.getSigner())   // wallet provider
-            this.contract = new ethers.Contract(HEX.CHAINS[this.state.chainId], HEX.ABI, this.web3provider) as HEXContract  // INFURA
-            // this.univ2contract = new ethers.Contract(UNIV2.CHAINS[this.state.chainId], UNIV2.ABI, this.web3provider)        // INFURA
+        if (chainId === 1) {
+            window.web3provider = new ethers.providers.InfuraProvider(
+                chainId,
+                import.meta.env.INFURA_API_KEY
+            )
+            window.contract = new ethers.Contract(HEX.CHAINS[chainId], HEX.ABI, window.ethersSigner) // wallet provider
+            this.contract = new ethers.Contract(HEX.CHAINS[chainId], HEX.ABI, window.web3provider) as HEXContract  // INFURA
+            // this.univ2contract = new ethers.Contract(UNIV2.CHAINS[chainId], UNIV2.ABI, window.web3provider)        // INFURA
         } else {
             // drop INFURA for networks not supported
-            window.contract = new ethers.Contract(HEX.CHAINS[this.state.chainId], HEX.ABI, this.web3provider.getSigner()) // wallet provider
+            window.contract = new ethers.Contract(HEX.CHAINS[chainId], HEX.ABI, window.ethersSigner) // wallet provider
             this.contract = window.contract;
-            // this.univ2contract = new ethers.Contract(UNIV2.CHAINS[this.state.chainId], UNIV2.ABI, window.web3signer)
+            // this.univ2contract = new ethers.Contract(UNIV2.CHAINS[chainId], UNIV2.ABI, window.web3provider)
         }
-        if (!this.contract) return debug("ethers.Contract instantiation failed. Caanot continue.")
-
-        this.subscribeProvider(this.walletProvider)
+        if (!this.contract) return debug("ethers.Contract(HEX) instantiation failed.")
 
         const [bnBalance, bnAllocatedSupply, bnCurrentDay, _globals] = await (
             Promise.all([
@@ -462,8 +361,16 @@ class App extends React.Component<AppT.Props, AppT.State> {
         }
         window.contract.Data = this.contract.Data
 
+        ReactGA.pageview(window.location.pathname + window.location.search); // will trigger only once per page (re)load
+
+        this.subscribeProvider(this.web3signer)
+        this.subscribeEvents()
+        if (chainId === 1) this.subscribeUpdateUsdHex()
+        this.updateETHBalance()
+
         this.setState({
-            referrer,
+            chainId,
+            network,
             wallet: {
                 address,
                 bnBalance
@@ -472,11 +379,44 @@ class App extends React.Component<AppT.Props, AppT.State> {
             contractReady: true,
             currentDay
         })
-        ReactGA.pageview(window.location.pathname + window.location.search); // will trigger only once per page (re)load
+    }
 
-        this.subscribeEvents()
-        this.state.chainId === 1 && this.subscribeUpdateUsdHex()
-        this.updateETHBalance()
+    async componentDidMount() {
+
+        switch (window.location.hostname) {
+            case "go.tshare.app":
+                ReactGA.initialize("UA-203521048-1")
+                break
+            case "hexmob.win":
+                ReactGA.initialize("UA-203562559-1")
+                break
+            case "127.0.0.1":
+            case "dev.hexmob.win":
+                ReactGA.initialize("UA-203524460-1")
+                break
+            default: { }
+        }
+
+        const referrer = (uriQuery.get("r") || "").toLowerCase()
+        if (uriQuery.has("reset")) { return this.resetApp() }
+        if (uriQuery.has("account")) {
+            const uriAccounts = uriQuery.getAll("account")
+            const accounts = uriAccounts.map(account => { const s = account.split(":"); return { address: s[0], name: s[1] || "" } })
+            this.setState({ accounts })
+        }
+
+        if (localStorage.getItem("debug")) {
+            window._APP = this
+            window._E = ethers
+            window._HEX = HEX
+            // window._UNIV2 = UNIV2
+            window.debug = debug
+        }
+
+        this.setState({ referrer })
+
+        if (window.ethereum && window.ethereum.isConnected) this.handleConnectWalletButton()
+
     }
 
     componentWillUnmount = () => {
@@ -491,20 +431,11 @@ class App extends React.Component<AppT.Props, AppT.State> {
         window.location.reload()
     }
 
-    handleConnectWalletButton = async () => {
-        this.triggerWeb3Modal = true // used to trigger modal pop-up in this.establishWeb3Provider()
-        this.componentDidMount()
-    }
-
     disconnectWallet = async () => {
-        const provider = this.walletProvider || null
-        try {
-            this.unsubscribeEvents()
-            if (provider.disconnect) await provider.disconnect()
-            else if (provider.close) await provider.close()
-        } catch {
-        }
-        this.resetApp()
+        // NOTE: Metamask no longer permits a dApp to request (dis)connections for security
+        // so we do not try either (for other wallets that may still allow it)
+        this.unsubscribeEvents()
+        this.resetApp() // Will auto-reconnect if metmask is not locked *sigh*
     }
 
     WalletStatus = () => {
@@ -536,8 +467,7 @@ class App extends React.Component<AppT.Props, AppT.State> {
             return (
                 <Container fluid className="text-center mb-3">
                     <Button id="connect_wallet" variant="info" onClick={this.handleConnectWalletButton} >
-                        <span className="d-none d-sm-inline">Click to Connect a Wallet</span>
-                        <span className="d-inline d-sm-none">CONNECT WALLET</span>
+                        CONNECT WALLET
                     </Button>
                     <Blurb />
                 </Container>

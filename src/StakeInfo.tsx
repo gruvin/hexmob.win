@@ -34,7 +34,7 @@ export class StakeInfo extends React.Component<InfoT.Props, InfoT.State> {
         super(props)
         this.state = {
             esShow: false,
-            eesStatsHEX: false
+            eesStatsHEX: (window.ethersSigner.provider._network.chainId !== 1)
         }
         this.esRef = createRef()
     }
@@ -207,12 +207,12 @@ export class StakeInfo extends React.Component<InfoT.Props, InfoT.State> {
                                             <Popover.Body className="p-0">
                                                 <div id="early-end-stake-alert">
                                                     <div className="bg-dark text-light p-3">
-                                                        <h2 className="text-danger text-uppercase text-center">Emergency End Stake</h2>
+                                                        <h2 className="text-danger text-uppercase text-center">FORFEIT MINER</h2>
                                                         <div>
-                                                            Remember that you contracted this miner with a commitment to run it to completion.
-                                                            This is an advanced feature. <strong><em>You should NOT proceed </em>
-                                                            unless you <u>understand</u> <em>exactly</em> what it
-                                                            will do</strong>. Early terminating a miner could potentially <br/>
+                                                            Remember that you committed to run this miner to full term!
+                                                            This is an advanced feature. <strong><em>You should NOT
+                                                            proceed </em> unless you <u>understand</u> <em>exactly</em>
+                                                            what it will do</strong>. Forfeiting a miner could potentially<br/>
                                                             <div className="text-light text-uppercase text-center bg-danger mt-2 px-2 py-1" >
                                                                 <strong>lose&nbsp;your&nbsp;entire&nbsp;investment!</strong>
                                                             </div>
@@ -229,19 +229,21 @@ export class StakeInfo extends React.Component<InfoT.Props, InfoT.State> {
                                             method="stakeEnd"
                                             params={[stake.stakeIndex, stake.stakeId]}
                                             className={'exitbtn '+exitClass}
-                                            confirmationCallback={() => { this.setState({ esShow: false }); this.props.reloadStakes && this.props.reloadStakes() }}
+                                            confirmationCallback={() => {
+                                                this.setState({ esShow: false })
+                                                this.props.reloadStakes && this.props.reloadStakes()
+                                            }}
                                             rejectionCallback={() => this.setState({ esShow: false })}
                                         >
-                                            {isEarly && <>I UNDERSTAND<br/></>}END STAKE
+                                            {isEarly && <>I UNDERSTAND<br/></>}
                                         </VoodooButton>
                                         <Button
                                             variant={'exitbtn '+exitClass}
                                             style={{ display: isEarly && !this.state.esShow ? "inline-block" : "none" }}
                                             onClick={(e) => { e.stopPropagation(); this.setState({esShow: isEarly }); }}
                                         >
-                                            {isEarly && <>EARLY TERMINATE </>}
-                                            {!isEarly && <>RETIRE </>}
-                                            MINER
+                                            {isEarly && <>FORFEIT MINER</>}
+                                            {!isEarly && <>PUBLISH HEX</>}
                                         </Button>
                                         </>
                                     }
