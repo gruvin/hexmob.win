@@ -40,7 +40,7 @@ class TewkStakeList extends React.Component<TewkT.ListProps, TewkT.ListState> {
         const currentDay = Number(contract?.Data?.currentDay)
 
         const { chainId, wallet } = this.props.parent.props.parent.state
-        const { web3provider } = this.props.parent.props.parent
+        const { web3provider } = window
         const contractAddress = contractObject.CHAINS[chainId]
         const tewkContract = new ethers.Contract(contractAddress, contractObject.ABI, web3provider)
 
