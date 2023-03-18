@@ -260,8 +260,11 @@ class App extends React.Component<AppT.Props, AppT.State> {
     }
 
     handleConnectWalletButton = async () => {
-        if (window.ethereum && window.ethereum.isMetaMask) {
-
+        if (
+            window.ethereum 
+            && window.ethereum.isMetaMask
+            && window.ethereum._state.isUnlocked
+        ) {
             debug("Detected Metamask wallet")
             this.walletProvider = "MetaMask"
             this.web3signer = window.ethereum
@@ -277,7 +280,6 @@ class App extends React.Component<AppT.Props, AppT.State> {
             const chains = [
                 "eip155:1",
             ]
-
             this.web3signer = await EthereumProvider.init({
                 projectId: import.meta.env.VITE_WALLET_CONNECT_ID,
                 methods: [
@@ -415,7 +417,7 @@ class App extends React.Component<AppT.Props, AppT.State> {
 
         this.setState({ referrer })
 
-        if (window.ethereum && window.ethereum.isConnected) this.handleConnectWalletButton()
+//        if (window.ethereum && window.ethereum.isConnected()) this.handleConnectWalletButton()
 
     }
 
