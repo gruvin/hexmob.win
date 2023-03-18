@@ -504,6 +504,11 @@ class App extends React.Component<AppT.Props, AppT.State> {
         if (!this.state.walletConnected) { // "connect wallet" button
             return (
                 <Container fluid className="text-center mb-3">
+                    { window.ethereum && window.ethereum.isMetaMask && !window.ethereum._state.isUnlocked &&
+                        <h3 className="text-danger">
+                        PLEASE UNLOCK METAMASK
+                        </h3>
+                    }
                     <Button id="connect_wallet" variant="info" onClick={this.handleConnectWalletButton} >
                         CONNECT WALLET
                     </Button>
