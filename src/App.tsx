@@ -260,62 +260,60 @@ class App extends React.Component<AppT.Props, AppT.State> {
     }
 
     handleConnectWalletButton = async () => {
-        if (
-            window.ethereum 
-            && window.ethereum.isMetaMask
-            && window.ethereum._state.isUnlocked
-        ) {
-            debug("Detected Metamask wallet")
-            this.walletProvider = "MetaMask"
-            this.web3signer = window.ethereum
-            const ethersProvider = new ethers.providers.Web3Provider(this.web3signer, "any")
-            window.ethersSigner = ethersProvider.getSigner()
+        
+        let accounts
 
-        } else { // web3Modal it is ...
-
+        // check for and prioritize an existing WalletConnect session
+        if (window.walletConnect && window.walletConnect.session) {
+            debug("Detected existing WalletConnect Session")
             this.walletProvider = "WalletConnect"
+            this.web3signer = window.walletConnect
+            accounts = await this.web3signer.request({ method: "eth_requestAccounts" })
 
-            debug("Initializing WalletConnect")
-
-            const chains = [
-                "eip155:1",
-            ]
-            this.web3signer = await EthereumProvider.init({
-                projectId: import.meta.env.VITE_WALLET_CONNECT_ID,
-                methods: [
-                    "eth_requestAccounts",
-                    "eth_signTransaction",
-                    "eth_sendTransaction",
-                    "personal_sign",
-                    "eth_sign",
-                    "eth_signTypedData",
-                ],
-                chains: [1],
-                events: [
-                    "chainChanged",
-                    "accountsChanged",
-                    "disconnect"
-                ],
-                // showQrModal: true,
+        } else if ( // Use injected ethereum only if it's already unlocked
+            window.ethereum
+            && window.ethereum.isMetaMask
+            && window.ethereum._state
+            && window.ethereum._state.isUnlocked // <== otherwise use WalletConnect, below
+        ) {
+            debug("Detected and using injected Metamask wallet")
+            accounts = await window.ethereum
+            .request({ method: 'eth_requestAccounts' })
+            .catch((error: any) => {
+                if (error.code === 4001) {
+                    debug('Please connect MetaMask')
+                } else if (error.code === -32002) {
+                    debug('Please unlock MetaMask')
+                } else {
+                    debug(error)
+                }
             })
+            if (accounts) {
+                this.walletProvider = "MetaMask"
+                this.web3signer = window.ethereum
+                const ethersProvider = new ethers.providers.Web3Provider(this.web3signer, "any")
+                window.ethersSigner = ethersProvider.getSigner()
+            }
+        } else { // web3Modal it is ...
+            this.walletProvider = "WalletConnect"
+            this.web3signer = window.walletConnect
             await this.web3signer.connect({})
-            const ethersProvider = new ethers.providers.Web3Provider(this.web3signer, "any")
-            window.ethersSigner = ethersProvider.getSigner()
-
-            debug("PROVIDER ESTABLISHED: %s — %o", this.walletProvider, this.web3signer)
+            accounts = await this.web3signer.request({ method: "eth_requestAccounts" })
         }
+
+        debug("ACCOUNTS: %O", accounts)
+        if (!accounts || (accounts && !accounts[0])) {
+            return debug("NOT CONNECTED (no wallet address) — STOP")
+        }
+
+        const ethersProvider = new ethers.providers.Web3Provider(this.web3signer, "any")
+        window.ethersSigner = ethersProvider.getSigner()
+
+        debug("PROVIDER ESTABLISHED: %s — %o", this.walletProvider, this.web3signer)
 
         const chainId = parseInt(this.web3signer.chainId)
         const network = CHAINS[chainId]
-
-        // this also causes connection ("connects") to local metmask (if present)
-        const accounts = await this.web3signer.request({ method: "eth_requestAccounts" })
-        .catch((err: any) => debug(err.message + " — STOP"))
-        if (!accounts) return
-
-        debug("ACCOUNTS: %O", accounts)
         const address = accounts[0]
-        if (!address || address === "") return debug("handleConnectWalletButton:: NO ADDRESS — STOP")
 
         if (chainId === 1) {
             window.web3provider = new ethers.providers.InfuraProvider(
@@ -415,9 +413,43 @@ class App extends React.Component<AppT.Props, AppT.State> {
             window.debug = debug
         }
 
+        debug("Initializing WalletConnect")
+        window.walletConnect = await EthereumProvider.init({
+            projectId: import.meta.env.VITE_WALLET_CONNECT_ID,
+            methods: [
+                "eth_requestAccounts",
+                "eth_signTransaction",
+                "eth_sendTransaction",
+                "personal_sign",
+                "eth_sign",
+                "eth_signTypedData",
+            ],
+            chains: [1],
+            events: [
+                "chainChanged",
+                "accountsChanged",
+                "disconnect"
+            ],
+            // showQrModal: true,
+        })
+        .catch(e => { // allow fail and continue silently
+            debug("Error initializing WalletConnect: ", e)
+        }) 
+
         this.setState({ referrer })
 
-//        if (window.ethereum && window.ethereum.isConnected()) this.handleConnectWalletButton()
+        // do not require pressing of connect wallet button if we're already estabished
+        if (
+            (
+                window.ethereum
+                && window.ethereum._state
+                && window.ethereum._state.accounts.length
+            )
+            || (
+                window.walletConnect
+                && window.walletConnect.session
+            )
+        ) this.handleConnectWalletButton()
 
     }
 
@@ -434,9 +466,13 @@ class App extends React.Component<AppT.Props, AppT.State> {
     }
 
     disconnectWallet = async () => {
-        // NOTE: Metamask no longer permits a dApp to request (dis)connections for security
-        // so we do not try either (for other wallets that may still allow it)
         this.unsubscribeEvents()
+        /** 
+         * NOTE: Metamask no longer permits a dApp to request (dis)connections 
+         * for security. WalletConnect still has a disconnect() function.
+         * We are currently agnostic and use the function if it's available.
+         */
+        if (this.web3signer.disconnect) await this.web3signer.disconnect();
         this.resetApp() // Will auto-reconnect if metmask is not locked *sigh*
     }
 

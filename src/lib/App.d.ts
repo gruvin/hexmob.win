@@ -16,6 +16,7 @@ declare global {
     hostIsTSA?: boolean
     hostIsHM?: boolean
     ethereum?: any
+    walletConnect?: any
     ethersSigner?: any
     web3provider?: any
     signClient?: any
