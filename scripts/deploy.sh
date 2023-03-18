@@ -46,7 +46,7 @@ _build() {
         [[ "$TARGET" == "" ]] && throw 'TARGET not set'
         [[ "$DEST" == "" ]] && throw 'DEST not set'
 
-        print "\nBuilding production set for ${TARGET} ( => ${DEST})\n"
+        print "\nBuild target is ${TARGET} ( => ${DEST})\n"
         # dual branding stuff
         for FILE in $FILES; do
             SLASH=""
@@ -119,7 +119,7 @@ case "$DEPLOY_TYPE" in
         ;;
 
     (*)
-        print "\nBuilding test production set for ${TARGET} ( => ${DEST_DEV})\n"
+        print "Deploying to dev target ..."
         TARGET=hexmob DEST=${DEST_DEV} _build
         ;;
 esac
