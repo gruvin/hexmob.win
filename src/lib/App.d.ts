@@ -1,4 +1,5 @@
 import { ethers, BigNumber } from "ethers"
+import { ReactNode } from "react";
 import { type TChain } from "./chains"
 
 // method ethers.BigNumber.toBN() exist but isn't typed in @ethersproject/lib/bignumber
@@ -35,6 +36,7 @@ declare global {
     _UNIV2: any
     _TEWK: any
     _P: any
+    trustwallet: any
   }
 }
 
@@ -62,6 +64,7 @@ export interface State {
   USD: number
   referrer: string
   accounts: any[]
+  unlockMessage: string | ReactNode
 }
 
 type ContractAddress = string

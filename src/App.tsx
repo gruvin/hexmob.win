@@ -15,10 +15,10 @@ import BrandLogo from "./BrandLogo"
 import { WhatIsThis, MetamaskUtils } from "./Widgets"
 import CHAINS, { type TChain } from "./chains"
 import HEX, { type HEXContract, type HEXGlobals } from "./hex_contract"
-// import UNIV2 from "./univ2_contract" /* HEX/USDC pair */
+// import UNIV2 from "./univ2_contract" /* used for HEX/USDC price */
 import { ethers, BigNumber } from "ethers"
-import SignClient from "@walletconnect/sign-client"
-import { Web3Modal } from "@web3modal/standalone"
+// import SignClient from "@walletconnect/sign-client"
+// import { Web3Modal } from "@web3modal/standalone"
 // import { UniversalProvider } from "@walletconnect/universal-provider"
 import { EthereumProvider } from "@walletconnect/ethereum-provider"
 
@@ -78,6 +78,7 @@ const INITIAL_STATE: AppT.State = {
     USD: Number(0.0),
     referrer: "",
     accounts: [],
+    unlockMessage: "",
 }
 
 class App extends React.Component<AppT.Props, AppT.State> {
@@ -89,9 +90,10 @@ class App extends React.Component<AppT.Props, AppT.State> {
     dayInterval?: NodeJS.Timer
     usdHexInterval?: NodeJS.Timer
     retryCounter: number = 2
+    injectedEthereum: any = undefined
     web3signer?: any | null = null  // wallet signer provider (window.web3provider used for Infura et al)
     univ2contract?: any = null      // used or not depending on USD proce collection method in use
-    walletProvider?: string = "---"
+    currentProvider?: string = "---"
     usdProgress: Element | null = null
     USDHEX?: Element
     currentUTCday: number = new Date().getUTCDay()
@@ -259,61 +261,107 @@ class App extends React.Component<AppT.Props, AppT.State> {
             debug("subscribeUpdateUsdHex(): OK")
     }
 
-    handleConnectWalletButton = async () => {
-        
-        let accounts
+    handleConnectWalletButton = async (ethereum: any) => {
+
+        /**
+         * NOTE: MetaMask (also Gnosis Safe on Mobile) have not upgraded to use WalletConnect v2, yet
+         * MetaMask has broken their stuff regards web3modal, somewhat, leaving us stuck
+         * between a rock and a hard place. Below is the temporary workaround that seem to work.
+         */
+
+        const walletConnectSessionExists =
+            typeof window !== "undefined"
+            && typeof window.walletConnect !== 'undefined'
+            && typeof window.walletConnect.session !== 'undefined'
+            && typeof window.walletConnect.session.topic === 'object'
+
+        let currentProvider = "---"
+        let chainId = 0
 
         // check for and prioritize an existing WalletConnect session
-        if (window.walletConnect && window.walletConnect.session) {
+        if (walletConnectSessionExists) {
             debug("Detected existing WalletConnect Session")
-            this.walletProvider = "WalletConnect"
+            currentProvider = "WalletConnect"
             this.web3signer = window.walletConnect
-            accounts = await this.web3signer.request({ method: "eth_requestAccounts" })
+            chainId = parseInt(this.web3signer.chainId)
 
-        } else if ( // Use injected ethereum only if it's already unlocked
-            window.ethereum
-            && window.ethereum.isMetaMask
-            && window.ethereum._state
-            && window.ethereum._state.isUnlocked // <== otherwise use WalletConnect, below
-        ) {
-            debug("Detected and using injected Metamask wallet")
-            accounts = await window.ethereum
-            .request({ method: 'eth_requestAccounts' })
-            .catch((error: any) => {
-                if (error.code === 4001) {
-                    debug('Please connect MetaMask')
-                } else if (error.code === -32002) {
-                    debug('Please unlock MetaMask')
-                } else {
-                    debug(error)
-                }
-            })
-            if (accounts) {
-                this.walletProvider = "MetaMask"
-                this.web3signer = window.ethereum
-                const ethersProvider = new ethers.providers.Web3Provider(this.web3signer, "any")
-                window.ethersSigner = ethersProvider.getSigner()
+        } else {
+            /**
+             * @dev If both MetaMask and TrustWallet broswer extensions are installed, then both
+             * ethereum.isMetaMask and ethereum.isTrust resolve to true. However, if TrustWallet's
+             * "Set As Default Wallet" setting is "on" then TrustWallet's .enable() etc have overriden MetaMask's.
+             * If TrustWallet's "Set As Default Wallet" setting is "off", then ethereum.isTrust etc are removed
+             * from window.ethereum and MetaMask's .enable() etc become the (only) active functions. Accordingly,
+             * we consider the presence of ethereum.isTrust to take priority over etherum.isMetaMask whether or
+             * not they are both present.
+             */
+
+            /**
+             * @dev In theory, there can be multiple registered providers. In practice as of 2023-03-22,
+             * neither MetaMaksk or TrustWallet actually instantiate an ethereum.providers object
+             * Please refer to https://eips.ethereum.org/EIPS/eip-1193 for additonal/difrerent "theory" ;-)
+             *
+             *    const injectedProviders: any = typeof ethereum.providers ?? null
+             *    const isTrustWalletPresent = injectedProviders && injectedProviders.find((e: any) => !!e.isTrust) ?? false
+             *    const isMetaMaskPresent = injectedProviders && injectedProviders.find((e: any) => !!e.isMetaMask) ?? false
+             */
+
+            /// @dev we try here to adhere to EIP-1193
+
+            // TrustWallet internal browser overrides MetaMask. See above.
+            if (
+                typeof ethereum === "object" && !!ethereum.isTrust
+                && typeof ethereum.address === 'string' // .address is only present if TrustWallet "Set As Deafault Wallet" setting is "on"
+            ) {
+                debug("Detected TrustWallet (injected)")
+                currentProvider = "TrustWallet"
+                this.web3signer = ethereum
+                chainId = parseInt(this.web3signer.eth_chainId())
+
+            } else if ( // MetaMask (desktop or app's internal browser)
+                typeof ethereum === "object" && !!window.ethereum.isMetaMask
+                && window.ethereum._state && !!window.ethereum._state.isUnlocked
+            ) {
+                debug("Detected Metamask (injected)")
+                currentProvider = "MetaMask"
+                this.web3signer = ethereum
+                chainId = parseInt(this.web3signer.chainId)
+
+            } else { // No existing WalletConnect session or any injected providers found, so use WalletConnect(web3modal)
+                debug("Using WalletConnect (No existing WalletConnect session or any injected providers were found.)")
+                currentProvider = "WalletConnect"
+                this.web3signer = window.walletConnect
+                chainId = parseInt(this.web3signer.chainId)
+                await this.web3signer.connect()
             }
-        } else { // web3Modal it is ...
-            this.walletProvider = "WalletConnect"
-            this.web3signer = window.walletConnect
-            await this.web3signer.connect({})
-            accounts = await this.web3signer.request({ method: "eth_requestAccounts" })
         }
 
+        const accounts = await this.web3signer
+        .request({ method: 'eth_requestAccounts' })
+        .catch((error: any) => {
+            if (error.code === 4001) {
+                debug('Please connect Browser Wallet')
+                this.setState({ unlockMessage: ethereum.isTrust ? "Please connect TrustWallet" : "Please connect MetaMask" })
+            } else if (error.code === -32002) {
+                debug('Please unlock Browser Wallet')
+                this.setState({ unlockMessage: "Please unlock Browser Wallet" })
+            } else {
+                debug(error)
+            }
+        })
         debug("ACCOUNTS: %O", accounts)
-        if (!accounts || (accounts && !accounts[0])) {
+
+        const network = CHAINS[chainId]
+        const address = accounts[0] ?? ""
+
+        if (address === "") {
             return debug("NOT CONNECTED (no wallet address) — STOP")
         }
 
         const ethersProvider = new ethers.providers.Web3Provider(this.web3signer, "any")
         window.ethersSigner = ethersProvider.getSigner()
 
-        debug("PROVIDER ESTABLISHED: %s — %o", this.walletProvider, this.web3signer)
-
-        const chainId = parseInt(this.web3signer.chainId)
-        const network = CHAINS[chainId]
-        const address = accounts[0]
+        debug("PROVIDER ESTABLISHED: %s — %o", this.currentProvider, this.web3signer)
 
         if (chainId === 1) {
             window.web3provider = new ethers.providers.InfuraProvider(
@@ -369,6 +417,7 @@ class App extends React.Component<AppT.Props, AppT.State> {
         this.updateETHBalance()
 
         this.setState({
+            currentProvider,
             chainId,
             network,
             wallet: {
@@ -434,22 +483,62 @@ class App extends React.Component<AppT.Props, AppT.State> {
         })
         .catch(e => { // allow fail and continue silently
             debug("Error initializing WalletConnect: ", e)
-        }) 
+        })
 
         this.setState({ referrer })
 
-        // do not require pressing of connect wallet button if we're already estabished
-        if (
-            (
-                window.ethereum
-                && window.ethereum._state
-                && window.ethereum._state.accounts.length
+        const ethereum = (
+            typeof window !== "undefined"
+            && typeof window.ethereum !== "undefined"
+        )
+        ? window.ethereum
+        : undefined // important! don't use null
+        this.injectedEthereum = ethereum
+
+        // These hacks are to determine if TrustWallet or MetaMask are present but locked
+        let unlockMessage = <></>
+        if (ethereum) {
+            if (!!ethereum.isTrust) {
+                unlockMessage = <>
+                    { !!ethereum.isMetaMask && <div className="text-danger">MetaMask detected but Trust Wallet is default</div>}
+                    <p className="text-info">
+                        Using Trust Wallet
+                    </p>
+                </>
+            } else if (!!ethereum.isMetaMask && ethereum._state) {
+
+                if (ethereum._state.isUnlocked) {
+                    unlockMessage =
+                    <div className="text-danger">
+                        Using Metamask
+                    </div>
+                 } else {
+                    unlockMessage = <>
+                        <div className="text-danger">
+                            <div>MetaMask detected but locked</div>
+                            { typeof window.trustwallet === 'object' && <div>Trust Wallet detected but not default wattet</div> }
+                        </div>
+                        <p className="text-info">Using Wallet Connect V2</p>
+                    </>
+                }
+            }
+
+        } else {
+            unlockMessage =
+            <p className="text-info">
+                Wallet Connect V2
+            </p>
+        }
+        this.setState({ unlockMessage })
+
+
+        if ( // anything is already connected
+            typeof window.ethereum === "object" && (
+                typeof ethereum._state !== 'undefined' && ethereum._state.accounts.length
+                || typeof ethereum.address === 'string' && ethereum.address !== ""
+                || typeof window.walletConnect !== 'undefined' && typeof window.walletConnect.session === 'object'
             )
-            || (
-                window.walletConnect
-                && window.walletConnect.session
-            )
-        ) this.handleConnectWalletButton()
+        ) this.handleConnectWalletButton(this.injectedEthereum)
 
     }
 
@@ -467,8 +556,8 @@ class App extends React.Component<AppT.Props, AppT.State> {
 
     disconnectWallet = async () => {
         this.unsubscribeEvents()
-        /** 
-         * NOTE: Metamask no longer permits a dApp to request (dis)connections 
+        /**
+         * NOTE: Metamask no longer permits a dApp to request (dis)connections
          * for security. WalletConnect still has a disconnect() function.
          * We are currently agnostic and use the function if it's available.
          */
@@ -504,12 +593,8 @@ class App extends React.Component<AppT.Props, AppT.State> {
         if (!this.state.walletConnected) { // "connect wallet" button
             return (
                 <Container fluid className="text-center mb-3">
-                    { window.ethereum && window.ethereum.isMetaMask && !window.ethereum._state.isUnlocked &&
-                        <h3 className="text-danger">
-                        PLEASE UNLOCK METAMASK
-                        </h3>
-                    }
-                    <Button id="connect_wallet" variant="info" onClick={this.handleConnectWalletButton} >
+                    <h3>{this.state.unlockMessage}</h3>
+                    <Button id="connect_wallet" variant="info" onClick={() => this.handleConnectWalletButton(this.injectedEthereum)} >
                         CONNECT WALLET
                     </Button>
                     <Blurb />
