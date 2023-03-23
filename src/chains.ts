@@ -30,12 +30,12 @@ const chains: TChainArray = {
         wssURL: "wss://ropsten.infura.io/ws/v3/",
         explorerURL: "https://etherscan.io/tx"
     },
-    941: {
-      description: "Pulse Testnet v2",
+    942: {
+      description: "Pulse Testnet V3",
       name: "pulse-testnet",
-      rpcURL: "https://rpc.v2b.testnet.pulsechain.com",
+      rpcURL: "https://rpc.v3.testnet.pulsechain.com",
       wssURL: "",
-      explorerURL: "https://scan.v2b.testnet.pulsechain.com/",
+      explorerURL: "https://scan.v3.testnet.pulsechain.com/",
     },
     10001: {
       description: "ETHW POW",
