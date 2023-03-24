@@ -129,8 +129,8 @@ export class StakeInfo extends React.Component<InfoT.Props, InfoT.State> {
 
         const Notes = () => {
             const costValue = !this.state.eesStatsHEX 
-                ? <span> ${usdStaked} worth of HEX </span>
-                : <span> <CryptoVal className="numeric" value={bnStakedHearts} currency="HEX" />&nbsp;HEX </span>
+                ? <span>$ {usdStaked} worth of HEX </span>
+                : <span><CryptoVal className="numeric" value={bnStakedHearts} currency="HEX" />&nbsp;HEX </span>
 
             const penaltyValue = this.state.eesStatsHEX 
                 ? <span><CryptoVal className="numeric" value={bnPenalty} currency="HEX" />&nbsp;HEX</span>
