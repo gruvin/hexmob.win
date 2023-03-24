@@ -127,9 +127,33 @@ export class StakeInfo extends React.Component<InfoT.Props, InfoT.State> {
         const usdNetValue    = format(",.2f")(Math.max(0, _usdStaked + _usdBPD + _usdPayout - _usdPenalty))
         //////////////////////////////////////////////////////////////
 
-        const eesDisplayHEX = !this.state.eesStatsHEX ? { display: "none" } : {}
-        const eesDisplayUSD = this.state.eesStatsHEX? { display: "none" } : {}
-        const eesDisplayPenalty = bnPenalty.lte(0) ? { display: "none" } : {}
+        const Notes = () => {
+            const costValue = !this.state.eesStatsHEX 
+                ? <span> ${usdStaked} worth of HEX </span>
+                : <span> <CryptoVal className="numeric" value={bnStakedHearts} currency="HEX" />&nbsp;HEX </span>
+
+            const penaltyValue = this.state.eesStatsHEX 
+                ? <span><CryptoVal className="numeric" value={bnPenalty} currency="HEX" />&nbsp;HEX</span>
+                : <span>${usdPenalty}</span>
+
+            return (
+                <ul className="no-bullets">
+                    <li>
+                        <span><strong>Net Residual</strong> = Miner Cost {costValue} was burned.) </span>
+                        { bnPenalty.gt(0)
+                            ? <span><span className="text-danger">minus {penaltyValue}</span> early termination penalties. </span>
+                            : <span>No early termination penalties apply. </span> 
+                        }
+                    </li>
+                    { !this.state.eesStatsHEX && <li>
+                        <span>Dollar values calculated from HEX at today's rates. </span>
+                    </li>}
+                    <li>
+                        <span>All figures are approximate and could change.</span>
+                    </li>
+                </ul>
+            )
+        }
 
         return (
             <Accordion className="my-2" defaultActiveKey="0"
@@ -258,15 +282,19 @@ export class StakeInfo extends React.Component<InfoT.Props, InfoT.State> {
                                 <Row className="text-light">
                                     <Col>Miner Cost</Col>
                                     <Col className="ms-3 pe-1 text-end text-danger numeric">
-                                        <span style={eesDisplayUSD}>-&nbsp;${usdStaked}</span>
-                                        <span style={eesDisplayHEX}>-&nbsp;<CryptoVal value={bnStakedHearts} currency="HEX" />&nbsp;HEX</span>
+                                        { this.state.eesStatsHEX
+                                            ? <span>-&nbsp;<CryptoVal value={bnStakedHearts} currency="HEX" />&nbsp;HEX</span>
+                                            : <span>-&nbsp;$&nbsp;{usdStaked}</span>
+                                        }
                                     </Col>
                                 </Row>
                                 <Row>
-                                    <Col>Mining Yield</Col>
+                                    <Col>Miner Yield</Col>
                                     <Col className="ms-3 pe-1 text-end numeric">
-                                        <span style={eesDisplayUSD}>+&nbsp;${usdPayout}</span>
-                                        <span style={eesDisplayHEX}>+&nbsp;<CryptoVal value={bnPayout} currency="HEX" />&nbsp;HEX</span>
+                                        { this.state.eesStatsHEX
+                                            ? <span>+&nbsp;<CryptoVal value={bnPayout} currency="HEX" />&nbsp;HEX</span>
+                                            : <span>+&nbsp;$&nbsp;{usdPayout}</span>
+                                        }
                                     </Col>
                                 </Row>
                                 { hexBPD > 0 &&
@@ -277,63 +305,45 @@ export class StakeInfo extends React.Component<InfoT.Props, InfoT.State> {
                                             <span className="text-danger">Day</span>
                                         </Col>
                                         <Col className="ms-3 pe-1 text-end numeric">
-                                            <span style={eesDisplayUSD}>+&nbsp;${usdBPD}</span>
-                                            <span style={eesDisplayHEX}>+&nbsp;<CryptoVal value={bnBigPayDay} currency="HEX" />&nbsp;HEX</span>
+                                            { this.state.eesStatsHEX
+                                                ? <span>+&nbsp;<CryptoVal value={bnBigPayDay} currency="HEX" />&nbsp;HEX</span>
+                                                : <span>+&nbsp;$&nbsp;{usdBPD}</span>
+                                            }
                                         </Col>
                                     </Row>
                                 }
                                 <Row>
                                     <Col>
-                                        Residual
-                                            <sup style={eesDisplayPenalty} className="text-danger text-uppercase">
-                                                &nbsp;PENALTIES
-                                            </sup>
+                                        Net&nbsp;Residual{ bnPenalty.gt(0) && <sup className="text-danger">&nbsp;***</sup> }
                                     </Col>
                                     <Col className="ms-3 pe-1 text-end numeric">
-                                        <span className="text-danger">
-                                            <span style={eesDisplayUSD}>${usdResidual}</span>
-                                            <span style={eesDisplayHEX}><CryptoVal value={bnResidual} currency="HEX" />&nbsp;HEX</span>
+                                        <span className={bnResidual.lte(0) ? "text-danger" : ""}>
+                                            { this.state.eesStatsHEX
+                                                ? <span><CryptoVal value={bnResidual} currency="HEX" />&nbsp;HEX</span>
+                                                : <span>$&nbsp;{usdResidual}</span>
+                                            }
                                         </span>
                                     </Col>
                                 </Row>
                                 <Row className="text-success">
                                     <Col className="text-uppercase" style={{ width: "7rem" }}>Net Return</Col>
                                     <Col className="ms-3 pe-1 text-end" style={{ borderTop: "double grey", width: "7rem" }}>
-                                        <span  style={eesDisplayUSD}>${usdNetValue}</span>
-                                        <span  style={eesDisplayHEX}><CryptoVal className="numeric" value={bnNetValue} currency="HEX" />&nbsp;HEX</span>
+                                        { this.state.eesStatsHEX
+                                            ? <span><CryptoVal className="numeric" value={bnNetValue} currency="HEX" />&nbsp;HEX</span>
+                                            : <span>$&nbsp;{usdNetValue}</span>
+                                        }
                                     </Col>
                                 </Row>
                                 <Row>
                                     <Col className="text-center text-muted small">
-                                        tap for&nbsp;
-                                        <span style={eesDisplayHEX}>dollar units</span>
-                                        <span style={eesDisplayUSD}>HEX units</span>
+                                        tap for { this.state.eesStatsHEX ? "HEX" : "dollar"} units
                                     </Col>
                                 </Row>
                             </Container>
                             <Container style={{ maxWidth: "fit-content"}}>
                                 <Row className="small">
                                     <Col>
-                                        <strong>NOTES</strong>
-                                        <ul className="no-bullets">
-                                            <li style={eesDisplayPenalty}>
-                                                Residual = Miner COST (<span>
-                                                    <span  style={eesDisplayUSD}>${usdStaked}</span>
-                                                    <span  style={eesDisplayHEX}><CryptoVal className="numeric" value={bnStakedHearts} currency="HEX" />&nbsp;HEX</span>
-                                                </span>) minus <span className="text-danger">
-                                                    <span  style={eesDisplayUSD}>${usdPenalty}</span>
-                                                    <span  style={eesDisplayHEX}><CryptoVal className="numeric" value={bnPenalty} currency="HEX" />&nbsp;HEX</span>
-                                                </span>
-                                                &nbsp;early termination PENALTY.
-                                            </li>
-                                            <li style={eesDisplayUSD}>
-                                                All dollar figures as of <em>today's</em> HEX market price.&nbsp;
-                                                (<span className="text-danger text-uppercase">NOT applicable for tax purposes!</span>)
-                                            </li>
-                                            <li>
-                                                All figures are ROUGH ESTIMATES ONLY as at time of display.
-                                            </li>
-                                        </ul>
+                                       <Notes/>
                                     </Col>
                                 </Row>
                             </Container>
