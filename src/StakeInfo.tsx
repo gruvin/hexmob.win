@@ -139,7 +139,7 @@ export class StakeInfo extends React.Component<InfoT.Props, InfoT.State> {
             return (
                 <ul className="no-bullets">
                     <li>
-                        <span><strong>Net Residual</strong> = Miner Cost {costValue} was burned.) </span>
+                        <span><strong>Net Residual</strong> = Miner Cost ({costValue} was burned.) </span>
                         { bnPenalty.gt(0)
                             ? <span><span className="text-danger">minus {penaltyValue}</span> early termination penalties. </span>
                             : <span>No early termination penalties apply. </span> 
