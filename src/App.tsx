@@ -103,7 +103,6 @@ class App extends React.Component<AppT.Props, AppT.State> {
     constructor(props: AppT.Props) {
         super(props)
         window.metamaskOnline = () => this.state.walletConnected && window.ethereum && window.ethereum.isMetaMask
-
     }
 
     subscribeProvider = async (provider: any) => {
@@ -327,6 +326,13 @@ class App extends React.Component<AppT.Props, AppT.State> {
                 this.web3signer = ethereum
                 chainId = parseInt(this.web3signer.chainId)
 
+            } else if ( // MetaMask (desktop or app's internal browser)
+                typeof ethereum === "object" && window.ethereum.isLedgerConnect
+            ) {
+                debug("Detected LedgerLive (injected)")
+                currentProvider = "LedgerConnect"
+                this.web3signer = ethereum
+                chainId = parseInt(this.web3signer.chainId)
             } else { // No existing WalletConnect session or any injected providers found, so use WalletConnect(web3modal)
                 debug("Using WalletConnect (No existing WalletConnect session or any injected providers were found.)")
                 currentProvider = "WalletConnect"
@@ -521,6 +527,11 @@ class App extends React.Component<AppT.Props, AppT.State> {
                         <p className="text-info">Using Wallet Connect V2</p>
                     </>
                 }
+            } else if (ethereum.isLedgerConnect) {
+                unlockMessage =
+                <div className="text-danger">
+                    Using LedgerConnect
+                </div>
             }
 
         } else {
