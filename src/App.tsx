@@ -167,19 +167,22 @@ class App extends React.Component<AppT.Props, AppT.State> {
         //     }
         // })
 
-        // check for new currentDay every second
-        // update UI immediately. confirm actual contract day 3 seconds later
+        // When local clock UTC day advances, update UI immediately (in 'red') then get
+        // actual contract currentDay every 5 seconds until it matches ('green')
         this.dayInterval = setInterval(async () => {
             const _currentUTCday = new Date().getUTCDay()
-            if (_currentUTCday != this.currentUTCday) {
+            if (_currentUTCday != this.currentUTCday) { // has day advanced?
                 this.currentUTCday = _currentUTCday
                 if (this.state.currentDay !== 0) this.setState({ currentDay: this.state.currentDay + 1 })
-                setTimeout(async () => {
+                const intervalTimer = setInterval(async () => {
                     try {
                         this.currentUTCday = _currentUTCday
                         const currentDay = (await this.contract!.currentDay()).toNumber()
-                        this.contract!.Data!.currentDay = currentDay
-                        this.setState({ currentDay })
+                        if (currentDay === this.state.currentDay) {
+                            clearInterval(intervalTimer)
+                            this.contract!.Data!.currentDay = currentDay
+                            this.setState({ currentDay })
+                        }
                     } catch (e) {
                         debug("contract.currentDay() failed :/")
                     }
@@ -663,7 +666,10 @@ class App extends React.Component<AppT.Props, AppT.State> {
                         <h3>{import.meta.env.VITE_VERSION || "v0.0.0A"} <strong className="text-warning">WP</strong></h3>
                         <div>
                             <span className="text-muted small align-baseline me-1">DAY</span>
-                            <span className="numeric text-info align-baseline fs-5 fw-bold">{this.state.currentDay ? this.state.currentDay : "---"}</span>
+                            <span className="numeric align-baseline fs-5 fw-bold"><span
+                                className={this.state.contractReady && this.contract!.Data!.currentDay === this.state.currentDay ? "text-info" : "text-warning"}
+                            >{this.state.currentDay ? this.state.currentDay : "---"}</span>
+                            </span>
                         </div>
                     </div>
                     <div id="usdhex">
