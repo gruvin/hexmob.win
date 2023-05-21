@@ -485,7 +485,7 @@ class App extends React.Component<AppT.Props, AppT.State> {
                 "accountsChanged",
                 "disconnect"
             ],
-            // showQrModal: true,
+            showQrModal: false,
         })
         .catch(e => { // allow fail and continue silently
             debug("Error initializing WalletConnect: ", e)
