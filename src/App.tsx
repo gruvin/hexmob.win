@@ -270,7 +270,7 @@ class App extends React.Component<AppT.Props, AppT.State> {
 
         // look for last session cached value in localStorage first
         let { USDHEX } = this.state
-        if (!USDHEX && (USDHEX = Number(localStorage.getItem("usdhex_cache")))) this.setState({ USDHEX })
+        if (!USDHEX && (USDHEX = Number(localStorage.getItem("daihex_cache")))) this.setState({ USDHEX })
 
         // debug("USDHEX: request")
         axios.post("https://graph.pulsechain.com/subgraphs/name/pulsechain/pulsex", {
