@@ -273,43 +273,36 @@ class App extends React.Component<AppT.Props, AppT.State> {
         if (!USDHEX && (USDHEX = Number(localStorage.getItem("usdhex_cache")))) this.setState({ USDHEX })
 
         // debug("USDHEX: request")
-        // Original/alternative https://github.com/HexCommunity/HEX-APIs
-        axios.post("https://graph.pulsechain.com/subgraphs/name/pulsechain/pulsex",
-            {
-                query: '{pair(id:"0x6f1747370b1cacb911ad6d4477b718633db328c8"){token1Price}}' // HEX-DAI, where token1Price => DAI per HEX
-            },
-            {
-                timeout: 5000,  // expect answer within 5 seconds
-                headers: { "accept": "application/json" }
+        axios.post("https://graph.pulsechain.com/subgraphs/name/pulsechain/pulsex", {
+            query: '{pair(id:"0x6f1747370b1cacb911ad6d4477b718633db328c8"){token1Price}}' // HEX-DAI, where token1Price => DAI per HEX
+         }).then(response => response.data.data)
+        .then(data => {
+            debug({data})
+            const USDHEX = parseFloat(data.pair.token1Price) || Number(0.0)
+            if (USDHEX) {
+                this.retryCounter = 2
+                localStorage.setItem("usdhex_cache", USDHEX.toString())
+                this.setState({ USDHEX })
+                debug(`USDHEX = $${USDHEX}`)
+                this.setState({ USDHEX }, () => {
+                    if (!this.usdProgress || !this.usdProgress.firstElementChild) return
+                    this.usdProgress.firstElementChild.classList.add("countdown")
+                    setTimeout(this.subscribeDAIHEX, 9000)
+                })
             }
-        )
-            .then(response => response.data)
-            .then(data => {
-                const USDHEX = parseFloat(data.pair.token1Price) || Number(0.0)
-                if (USDHEX) {
-                    this.retryCounter = 2
-                    localStorage.setItem("usdhex_cache", USDHEX.toString())
-                    this.setState({ USDHEX })
-                    debug(`USDHEX = $${USDHEX}`)
-                    this.setState({ USDHEX }, () => {
-                        if (!this.usdProgress || !this.usdProgress.firstElementChild) return
-                        this.usdProgress.firstElementChild.classList.add("countdown")
-                        setTimeout(this.subscribeDAIHEX, 9000)
-                    })
-                }
-            })
-            .catch(e => {
-                if (--this.retryCounter === 0) {
-                    this.retryCounter = 2
-                    debug("subscribeDAIHEX: Too many failures. Invalidating cached USDHEX.")
-                    localStorage.removeItem("usdhex_cache")
-                    this.setState({ USDHEX: 0 })
-                }
-                debug(`subscribeDAIHEX: ${e.message}. Backing off 30 seconds.`)
-                setTimeout(this.subscribeDAIHEX, 30000) // back off 30 seconds
-            })
+        })
+        .catch(e => {
+            if (--this.retryCounter === 0) {
+                this.retryCounter = 2
+                debug("subscribeDAIHEX: Too many failures. Invalidating cached USDHEX.")
+                localStorage.removeItem("usdhex_cache")
+                this.setState({ USDHEX: 0 })
+            }
+            debug(`subscribeDAIHEX: ${e.message}. Backing off 30 seconds.`)
+            setTimeout(this.subscribeDAIHEX, 30000) // back off 30 seconds
+        })
 
-            debug("subscribeDAIHEX(): OK")
+        debug("subscribeDAIHEX(): OK")
     }
 
     handleConnectWalletButton = async (ethereum: any) => {
