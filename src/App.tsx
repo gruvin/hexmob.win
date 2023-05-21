@@ -218,9 +218,9 @@ class App extends React.Component<AppT.Props, AppT.State> {
     }
 
     // this function will be called eery 10 seconds after the first invocation.
-    subscribeUpdateUsdHex = async () => {
+    subscribeUSDHEX = async () => {
 
-        if (!this.usdProgress || !this.usdProgress.firstElementChild) return // can happen when auto-compile causes page reload during dev session
+        if (!this.usdProgress || !this.usdProgress.firstElementChild) return // can happen in dev session when auto-compile causes page reload
 
         this.usdProgress.firstElementChild.classList.remove("countdown")
 
@@ -245,22 +245,71 @@ class App extends React.Component<AppT.Props, AppT.State> {
                     this.setState({ USDHEX }, () => {
                         if (!this.usdProgress || !this.usdProgress.firstElementChild) return
                         this.usdProgress.firstElementChild.classList.add("countdown")
-                        setTimeout(this.subscribeUpdateUsdHex, 9000)
+                        setTimeout(this.subscribeUSDHEX, 9000)
                     })
                 }
             })
             .catch(e => {
                 if (--this.retryCounter === 0) {
                     this.retryCounter = 2
-                    debug("subscribeUpdateUsdHex: Too many failures. Invalidating cached USDHEX.")
+                    debug("subscribeUSDHEX: Too many failures. Invalidating cached USDHEX.")
                     localStorage.removeItem("usdhex_cache")
                     this.setState({ USDHEX: 0 })
                 }
-                debug(`subscribeUpdateUsdHex: ${e.message}. Backing off 30 seconds.`)
-                setTimeout(this.subscribeUpdateUsdHex, 30000) // back off 30 seconds
+                debug(`subscribeUSDHEX: ${e.message}. Backing off 30 seconds.`)
+                setTimeout(this.subscribeUSDHEX, 30000) // back off 30 seconds
             })
 
-            debug("subscribeUpdateUsdHex(): OK")
+            debug("subscribeUSDHEX(): OK")
+    }
+    subscribeDAIHEX = async () => {
+
+        if (!this.usdProgress || !this.usdProgress.firstElementChild) return // can happen in dev session when auto-compile causes page reload
+
+        this.usdProgress.firstElementChild.classList.remove("countdown")
+
+        // look for last session cached value in localStorage first
+        let { USDHEX } = this.state
+        if (!USDHEX && (USDHEX = Number(localStorage.getItem("usdhex_cache")))) this.setState({ USDHEX })
+
+        // debug("USDHEX: request")
+        // Original/alternative https://github.com/HexCommunity/HEX-APIs
+        axios.post("https://graph.pulsechain.com/subgraphs/name/pulsechain/pulsex",
+            {
+                query: '{pair(id:"0x6f1747370b1cacb911ad6d4477b718633db328c8"){token1Price}}' // HEX-DAI, where token1Price => DAI per HEX
+            },
+            {
+                timeout: 5000,  // expect answer within 5 seconds
+                headers: { "accept": "application/json" }
+            }
+        )
+            .then(response => response.data)
+            .then(data => {
+                const USDHEX = parseFloat(data.pair.token1Price) || Number(0.0)
+                if (USDHEX) {
+                    this.retryCounter = 2
+                    localStorage.setItem("usdhex_cache", USDHEX.toString())
+                    this.setState({ USDHEX })
+                    debug(`USDHEX = $${USDHEX}`)
+                    this.setState({ USDHEX }, () => {
+                        if (!this.usdProgress || !this.usdProgress.firstElementChild) return
+                        this.usdProgress.firstElementChild.classList.add("countdown")
+                        setTimeout(this.subscribeDAIHEX, 9000)
+                    })
+                }
+            })
+            .catch(e => {
+                if (--this.retryCounter === 0) {
+                    this.retryCounter = 2
+                    debug("subscribeDAIHEX: Too many failures. Invalidating cached USDHEX.")
+                    localStorage.removeItem("usdhex_cache")
+                    this.setState({ USDHEX: 0 })
+                }
+                debug(`subscribeDAIHEX: ${e.message}. Backing off 30 seconds.`)
+                setTimeout(this.subscribeDAIHEX, 30000) // back off 30 seconds
+            })
+
+            debug("subscribeDAIHEX(): OK")
     }
 
     handleConnectWalletButton = async (ethereum: any) => {
@@ -422,7 +471,8 @@ class App extends React.Component<AppT.Props, AppT.State> {
 
         this.subscribeProvider(this.web3signer)
         this.subscribeEvents()
-        if (chainId === 1) this.subscribeUpdateUsdHex()
+        if (chainId === 1) this.subscribeUSDHEX()
+        else if (chainId === 369) this.subscribeDAIHEX()
         this.updateETHBalance()
 
         this.setState({
