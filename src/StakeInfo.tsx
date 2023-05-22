@@ -128,21 +128,21 @@ export class StakeInfo extends React.Component<InfoT.Props, InfoT.State> {
         //////////////////////////////////////////////////////////////
 
         const Notes = () => {
-            const costValue = !this.state.eesStatsHEX 
+            const costValue = !this.state.eesStatsHEX
                 ? <span>$ {usdStaked} worth of HEX </span>
                 : <span><CryptoVal className="numeric" value={bnStakedHearts} currency="HEX" />&nbsp;HEX </span>
 
-            const penaltyValue = this.state.eesStatsHEX 
+            const penaltyValue = this.state.eesStatsHEX
                 ? <span><CryptoVal className="numeric" value={bnPenalty} currency="HEX" />&nbsp;HEX</span>
                 : <span>${usdPenalty}</span>
 
             return (
-                <ul className="no-bullets">
+                <ul>
                     <li>
-                        <span><strong>Net Residual</strong> = Miner Cost ({costValue} was burned.) </span>
+                        <span><strong>Residual<sup className="text-danger">&nbsp;*</sup></strong> = Miner Cost ({costValue} was burned) </span>
                         { bnPenalty.gt(0)
                             ? <span><span className="text-danger">minus {penaltyValue}</span> early termination penalties. </span>
-                            : <span>No early termination penalties apply. </span> 
+                            : <span>No early termination penalties apply. </span>
                         }
                     </li>
                     { !this.state.eesStatsHEX && <li>
@@ -289,7 +289,7 @@ export class StakeInfo extends React.Component<InfoT.Props, InfoT.State> {
                                     </Col>
                                 </Row>
                                 <Row>
-                                    <Col>Miner Yield</Col>
+                                    <Col>Mined</Col>
                                     <Col className="ms-3 pe-1 text-end numeric">
                                         { this.state.eesStatsHEX
                                             ? <span>+&nbsp;<CryptoVal value={bnPayout} currency="HEX" />&nbsp;HEX</span>
@@ -314,7 +314,7 @@ export class StakeInfo extends React.Component<InfoT.Props, InfoT.State> {
                                 }
                                 <Row>
                                     <Col>
-                                        Net&nbsp;Residual{ bnPenalty.gt(0) && <sup className="text-danger">&nbsp;***</sup> }
+                                       Residual{ bnPenalty.gt(0) && <sup className="text-danger">&nbsp;*</sup> }
                                     </Col>
                                     <Col className="ms-3 pe-1 text-end numeric">
                                         <span className={bnResidual.lte(0) ? "text-danger" : ""}>
@@ -326,7 +326,7 @@ export class StakeInfo extends React.Component<InfoT.Props, InfoT.State> {
                                     </Col>
                                 </Row>
                                 <Row className="text-success">
-                                    <Col className="text-uppercase" style={{ width: "7rem" }}>Net Return</Col>
+                                    <Col className="text-uppercase" style={{ width: "7rem" }}>Net Value</Col>
                                     <Col className="ms-3 pe-1 text-end" style={{ borderTop: "double grey", width: "7rem" }}>
                                         { this.state.eesStatsHEX
                                             ? <span><CryptoVal className="numeric" value={bnNetValue} currency="HEX" />&nbsp;HEX</span>
