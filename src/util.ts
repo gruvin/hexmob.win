@@ -302,7 +302,7 @@ const bnCalcPayoutBpdPenalty = (context: Context, stakeData: StakeData, rawDaily
     let bnBigPayDay = constants.Zero
     let bnPenalty = constants.Zero
     if (startDay < currentDay) {
-        const daysServed = stakeData.stakeId === 603970 ? 90 : Math.min(currentDay - startDay, stakedDays)
+        const daysServed = Math.min(currentDay - startDay, stakedDays)
         // debug(`daysServed: ${daysServed}`)
         if (daysServed < stakedDays) {
             const penaltyDays = Math.max(90, Math.ceil(stakedDays / 2))
