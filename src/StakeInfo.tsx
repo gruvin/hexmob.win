@@ -246,7 +246,7 @@ export class StakeInfo extends React.Component<InfoT.Props, InfoT.State> {
                                             </Popover.Body>
                                         </Popover>
                                     </Overlay>
-                                    { !this.props.readOnly && <>
+                                    {!this.props.readOnly && <>
                                         <VoodooButton
                                             style={{ display: !isEarly || this.state.esShow ? "inline-block" : "none" }}
                                             contract={window.contract}
@@ -260,17 +260,17 @@ export class StakeInfo extends React.Component<InfoT.Props, InfoT.State> {
                                             rejectionCallback={() => this.setState({ esShow: false })}
                                         >
                                             {isEarly && <>I UNDERSTAND<br/></>}
-                                        </VoodooButton>
-                                        <Button
-                                            variant={'exitbtn '+exitClass}
-                                            style={{ display: isEarly && !this.state.esShow ? "inline-block" : "none" }}
-                                            onClick={(e) => { e.stopPropagation(); this.setState({esShow: isEarly }); }}
-                                        >
-                                            {isEarly && <>FORFEIT MINER</>}
                                             {!isEarly && <>PUBLISH HEX</>}
-                                        </Button>
-                                        </>
-                                    }
+                                        </VoodooButton>
+                                        {isEarly && !this.state.esShow &&
+                                            <Button
+                                                variant={'exitbtn '+exitClass}
+                                                onClick={(e) => { e.stopPropagation(); this.setState({esShow: isEarly }); }}
+                                            >
+                                                FORFEIT MINER
+                                            </Button>
+                                        }
+                                    </>}
                                 </Col>
                             </Row>
 
