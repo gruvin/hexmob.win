@@ -167,19 +167,22 @@ class App extends React.Component<AppT.Props, AppT.State> {
         //     }
         // })
 
-        // check for new currentDay every second
-        // update UI immediately. confirm actual contract day 3 seconds later
+        // When local clock UTC day advances, update UI immediately (in 'red') then get
+        // actual contract currentDay every 5 seconds until it matches ('green')
         this.dayInterval = setInterval(async () => {
             const _currentUTCday = new Date().getUTCDay()
-            if (_currentUTCday != this.currentUTCday) {
+            if (_currentUTCday != this.currentUTCday) { // has day advanced?
                 this.currentUTCday = _currentUTCday
                 if (this.state.currentDay !== 0) this.setState({ currentDay: this.state.currentDay + 1 })
-                setTimeout(async () => {
+                const intervalTimer = setInterval(async () => {
                     try {
                         this.currentUTCday = _currentUTCday
                         const currentDay = (await this.contract!.currentDay()).toNumber()
-                        this.contract!.Data!.currentDay = currentDay
-                        this.setState({ currentDay })
+                        if (currentDay === this.state.currentDay) {
+                            clearInterval(intervalTimer)
+                            this.contract!.Data!.currentDay = currentDay
+                            this.setState({ currentDay })
+                        }
                     } catch (e) {
                         debug("contract.currentDay() failed :/")
                     }
@@ -215,9 +218,9 @@ class App extends React.Component<AppT.Props, AppT.State> {
     }
 
     // this function will be called eery 10 seconds after the first invocation.
-    subscribeUpdateUsdHex = async () => {
+    subscribeUSDHEX = async () => {
 
-        if (!this.usdProgress || !this.usdProgress.firstElementChild) return // can happen when auto-compile causes page reload during dev session
+        if (!this.usdProgress || !this.usdProgress.firstElementChild) return // can happen in dev session when auto-compile causes page reload
 
         this.usdProgress.firstElementChild.classList.remove("countdown")
 
@@ -242,22 +245,64 @@ class App extends React.Component<AppT.Props, AppT.State> {
                     this.setState({ USDHEX }, () => {
                         if (!this.usdProgress || !this.usdProgress.firstElementChild) return
                         this.usdProgress.firstElementChild.classList.add("countdown")
-                        setTimeout(this.subscribeUpdateUsdHex, 9000)
+                        setTimeout(this.subscribeUSDHEX, 9000)
                     })
                 }
             })
             .catch(e => {
                 if (--this.retryCounter === 0) {
                     this.retryCounter = 2
-                    debug("subscribeUpdateUsdHex: Too many failures. Invalidating cached USDHEX.")
+                    debug("subscribeUSDHEX: Too many failures. Invalidating cached USDHEX.")
                     localStorage.removeItem("usdhex_cache")
                     this.setState({ USDHEX: 0 })
                 }
-                debug(`subscribeUpdateUsdHex: ${e.message}. Backing off 30 seconds.`)
-                setTimeout(this.subscribeUpdateUsdHex, 30000) // back off 30 seconds
+                debug(`subscribeUSDHEX: ${e.message}. Backing off 30 seconds.`)
+                setTimeout(this.subscribeUSDHEX, 30000) // back off 30 seconds
             })
 
-            debug("subscribeUpdateUsdHex(): OK")
+            debug("subscribeUSDHEX(): OK")
+    }
+    subscribeDAIHEX = async () => {
+
+        if (!this.usdProgress || !this.usdProgress.firstElementChild) return // can happen in dev session when auto-compile causes page reload
+
+        this.usdProgress.firstElementChild.classList.remove("countdown")
+
+        // look for last session cached value in localStorage first
+        let { USDHEX } = this.state
+        if (!USDHEX && (USDHEX = Number(localStorage.getItem("daihex_cache")))) this.setState({ USDHEX })
+
+        // debug("USDHEX: request")
+        axios.post("https://graph.pulsechain.com/subgraphs/name/pulsechain/pulsex", {
+            query: '{pair(id:"0x6f1747370b1cacb911ad6d4477b718633db328c8"){token1Price}}' // HEX-DAI, where token1Price => DAI per HEX
+         }).then(response => response.data.data)
+        .then(data => {
+            debug({data})
+            const USDHEX = parseFloat(data.pair.token1Price) || Number(0.0)
+            if (USDHEX) {
+                this.retryCounter = 2
+                localStorage.setItem("usdhex_cache", USDHEX.toString())
+                this.setState({ USDHEX })
+                debug(`USDHEX = $${USDHEX}`)
+                this.setState({ USDHEX }, () => {
+                    if (!this.usdProgress || !this.usdProgress.firstElementChild) return
+                    this.usdProgress.firstElementChild.classList.add("countdown")
+                    setTimeout(this.subscribeDAIHEX, 9000)
+                })
+            }
+        })
+        .catch(e => {
+            if (--this.retryCounter === 0) {
+                this.retryCounter = 2
+                debug("subscribeDAIHEX: Too many failures. Invalidating cached USDHEX.")
+                localStorage.removeItem("usdhex_cache")
+                this.setState({ USDHEX: 0 })
+            }
+            debug(`subscribeDAIHEX: ${e.message}. Backing off 30 seconds.`)
+            setTimeout(this.subscribeDAIHEX, 30000) // back off 30 seconds
+        })
+
+        debug("subscribeDAIHEX(): OK")
     }
 
     handleConnectWalletButton = async (ethereum: any) => {
@@ -419,7 +464,8 @@ class App extends React.Component<AppT.Props, AppT.State> {
 
         this.subscribeProvider(this.web3signer)
         this.subscribeEvents()
-        if (chainId === 1) this.subscribeUpdateUsdHex()
+        if (chainId === 1) this.subscribeUSDHEX()
+        else if (chainId === 369) this.subscribeDAIHEX()
         this.updateETHBalance()
 
         this.setState({
@@ -663,7 +709,10 @@ class App extends React.Component<AppT.Props, AppT.State> {
                         <h3>{import.meta.env.VITE_VERSION || "v0.0.0A"} <strong className="text-warning">WP</strong></h3>
                         <div>
                             <span className="text-muted small align-baseline me-1">DAY</span>
-                            <span className="numeric text-info align-baseline fs-5 fw-bold">{this.state.currentDay ? this.state.currentDay : "---"}</span>
+                            <span className="numeric align-baseline fs-5 fw-bold"><span
+                                className={this.state.contractReady && this.contract!.Data!.currentDay === this.state.currentDay ? "text-info" : "text-warning"}
+                            >{this.state.currentDay ? this.state.currentDay : "---"}</span>
+                            </span>
                         </div>
                     </div>
                     <div id="usdhex">

@@ -288,18 +288,22 @@ class Stakes extends React.Component<StakesT.Props, StakesT.State> {
         return (<>
             <Card className="mt-2 bg-info-darkened rounded">
                 <Card.Body className="p-1 rounded text-light">
-                    <h2 className="text-center">Summary Overview</h2>
+                    <h2 className="text-center text-bold">Summary To Date</h2>
                     <Row>
-                        <Col className="text-end font-weight-bold">Deployed Mining</Col>
-                        <Col><CryptoVal className="numeric" value={bnStakedTotal} showUnit /></Col>
+                        <Col className="text-end text-bold">Deployed Mining</Col>
+                        <Col><CryptoVal className="numeric" value={bnStakedTotal} showUnit /><span className="text-muted small"> BURNED</span></Col>
                     </Row>
                     <Row>
-                        <Col className="text-end font-weight-bold">Shares</Col>
+                        <Col className="text-end">Shares</Col>
                         <Col><CryptoVal className="numeric" value={bnSharesTotal} currency="SHARES" /></Col>
+                    </Row>
+                    <Row>
+                        <Col className="text-end text-bold">Yield</Col>
+                        <Col><CryptoVal className="numeric" value={bnInterestTotal} showUnit /></Col>
                     </Row>
                     { bnBigPayDayTotal.gt(0) &&
                     <Row>
-                        <Col className="text-end font-weight-bold">
+                        <Col className="text-end text-bold">
                             <span className="text-info">Big</span>
                             <span className="text-warning">Pay</span>
                             <span className="text-danger">Day</span>
@@ -308,28 +312,24 @@ class Stakes extends React.Component<StakesT.Props, StakesT.State> {
                     </Row>
                     }
                     <Row>
-                        <Col className="text-end font-weight-bold">Full Term Yield</Col>
-                        <Col><CryptoVal className="numeric" value={bnInterestTotal} showUnit /></Col>
-                    </Row>
-                    <Row>
-                        <Col className="text-end font-weight-bold">Full Term Output</Col>
+                        <Col className="text-end text-bold">Total Value</Col>
                         <Col>
                             <CryptoVal
-                                className="numeric font-weight-bold"
+                                className="numeric text-bold"
                                 value={bnStakedTotal.add(bnBigPayDayTotal).add(bnInterestTotal)} showUnit
                             />
                         </Col>
                     </Row>
                     <Row className="text-success">
-                        <Col className="text-success text-end font-weight-bold">Full Term USD Value</Col>
-                        <Col className="text-success numeric font-weight-bold">$<CryptoVal value={usdValue} currency="USD"/></Col>
+                        <Col className="text-success text-end text-bold">USD Value</Col>
+                        <Col className="text-success numeric text-bold">$<CryptoVal value={usdValue} currency="USD"/></Col>
                     </Row>
                     <Row className="mt-2">
-                        <Col className="text-end font-weight-bold">Mean Net Yield</Col>
+                        <Col className="text-end text-bold">Mean Net Yield</Col>
                         <Col className="numeric">{format(",.2f")(fnAveragePercentGain.toUnsafeFloat())}%</Col>
                     </Row>
                     <Row>
-                        <Col className="text-end font-weight-bold">Average APY</Col>
+                        <Col className="text-end text-bold">Average APY</Col>
                         <Col>{format(",.2f")(fnAveragePercentAPY.toUnsafeFloat())}%</Col>
                     </Row>
                 </Card.Body>
@@ -387,7 +387,7 @@ class Stakes extends React.Component<StakesT.Props, StakesT.State> {
         }
         return (
             <Container className="p-0 row-highlight-even">
-                <Row key="history" className="p-0 my-2 mx-0 xs-small text-end font-weight-bold">
+                <Row key="history" className="p-0 my-2 mx-0 xs-small text-end text-bold">
                     <Col xs={2} sm={2} className="p-0 text-center">
                         <a href="#sort_servedDays" onClick={handleSortSelection}>
                             <span className="d-none d-md-inline">Mined </span>Days
