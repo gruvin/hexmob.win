@@ -452,7 +452,7 @@ export const WalletUtils = (props: React.PropsWithChildren<ContainerProps>): Rea
                     <Button onClick={addHEXtoken}>Add HEX Token</Button>
                 </Col>
                 <Col className="text-start">
-                    <Button onClick={addPulseChain}>Add Pulse Testnet</Button>
+                    <Button onClick={addPulseChain}>Add Pulsechain</Button>
                 </Col>
             </Row>
         </Container>
