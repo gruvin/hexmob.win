@@ -37,9 +37,9 @@ export const CryptoVal = (props: CryptoValProps) => {
     if (value === '---') return (<>---</>)
     if (isNaN(Number(value))) return <>NaN</>
 
-    let { valueString: s, unit } = cryptoFormat(value, currency || "")
-    const sign = s.replace(/([−-]?)(.*)/, "$1")
-    s = s.replace(/[−-]?(.*)/, "$1")
+    const { valueString: _s, unit } = cryptoFormat(value, currency || "")
+    const sign = _s.replace(/([−-]?)(.*)/, "$1")
+    const s = _s.replace(/[−-]?(.*)/, "$1")
 
     // mute fractional part (including the period)
     const r = s.match(/^(.*)(\.\d+)(.*)$/)

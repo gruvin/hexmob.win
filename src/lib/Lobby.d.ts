@@ -1,17 +1,10 @@
 import { Wallet } from "./lib/App"
-import { ReactComponentElement } from "react"
-import { BigNumber } from "ethers"
-import { XfLobbyEnter } from "./hex_contract"
-import { types } from "sass"
-
-
 export interface Props {
     appRoot: TApp
     contract?: HEXContract
     wallet: Wallet
 
 }
-
 export interface State {
     historyDataReady: boolean
     error: string

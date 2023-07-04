@@ -190,9 +190,9 @@ function App() {
       { ...hexContract, functionName: 'globals', },
     ],
     onError: (e) => debug("MULTICALL ERROR: This error seems to only occur on PulseChain Testnet v4", e),
-    onSettled: data => {
+    onSuccess: data => {
       // debug("HexData: %O", data)
-      const _globals = data?.[5].result || [ 0n, 0n, 0, 0n, 0, 0n, 0, 0n]
+      const _globals = data?.[5].result as readonly [bigint, bigint, number, bigint, number, bigint, number, bigint]
       const _stats = _globals[7] || 0n
       const hexData = {
         chainId,

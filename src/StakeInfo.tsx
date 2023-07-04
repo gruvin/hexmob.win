@@ -106,7 +106,7 @@ export const StakeInfo = (props: {
     const Notes = () => {
         const costValue = eesStatsHEX
             ? <span className="text-danger numeric"><CryptoVal className="numeric" value={stakedHearts} currency="HEX" showUnit /></span>
-            : <span>(<span className="text-danger numeric">${usdStaked}</span> worth of HEX at today's price)</span>
+            : <span>(<span className="text-danger numeric">${usdStaked}</span> worth of HEX at today&rsquo;s price)</span>
 
         const penaltyValue = eesStatsHEX
             ? <span><CryptoVal className="numeric" value={penalty} currency="HEX" showUnit /></span>

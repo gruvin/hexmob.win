@@ -11,7 +11,8 @@ import { CryptoVal } from './Widgets'
 import { getAbiItem } from 'viem'
 import { UriAccount } from './lib/App'
 import _debug from 'debug'
-// const debug = _debug("StakeHistory")
+const debug = _debug("StakeHistory")
+debug("loaded")
 
 const StakesHistory = (props: { account?: UriAccount }) => {
     const hexData = useContext(HexContext)

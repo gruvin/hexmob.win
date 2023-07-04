@@ -1,7 +1,3 @@
-import { ethers, bigint } from "ethers"
-import { ReactComponentElement, ReactNode } from "react";
-import { type TChain } from "./chains"
-
 declare global {
   interface Window {
     debug: () => void
