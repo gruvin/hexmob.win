@@ -155,9 +155,9 @@ function App() {
   }, [address])
 
   useQuery(
-    ['UsdHex'],
+    [networkName, 'DaiHex'],
     getPulseXDaiHex, {
-      enabled: networkName == "Pulsechain" || networkName == "Pulsechain V4",
+      enabled: chainId === 369,
       refetchInterval: 10000,
       retry: 5,
       retryDelay: 5000,
@@ -166,9 +166,9 @@ function App() {
   )
 
   useQuery(
-    ['UsdHex'],
+    [networkName, 'UsdHex'],
     getMainnetUsdHex, {
-      enabled: networkName == "Ethereum",
+      enabled: chainId == 1,
       refetchInterval: 10000,
       retry: 5,
       retryDelay: 5000,

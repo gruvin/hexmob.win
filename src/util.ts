@@ -12,6 +12,7 @@ debug("loaded")
 
 export const getMainnetUsdHex = async () => {
     const response = await axios.get("https://uniswapdataapi.azurewebsites.net/api/hexPrice")
+    debug("HEX-USD: ", response.data?.hexUsd)
     return parseFloat(response.data?.hexUsd || "0.0")
 }
 
@@ -19,6 +20,7 @@ export const getPulseXDaiHex = async () => {
     const response = await axios.post("https://graph.pulsechain.com/subgraphs/name/pulsechain/pulsex", {
         query: '{pair(id:"0x6f1747370b1cacb911ad6d4477b718633db328c8"){token1Price}}' // HEX-DAI, where token1Price => DAI per HEX
     })
+    debug("HEX-DAI: ", response.data.data.pair.token1Price)
     return parseFloat(response.data.data.pair?.token1Price || "0.0")
 }
 
@@ -193,7 +195,6 @@ export const estimatePayoutRewardsDay = (hexData: HexData, stakeShares: bigint, 
         const bigPaySlice = globals.claimStats.unclaimedSatoshisTotal * HEX.HEARTS_PER_SATOSHI * stakeShares / globals.stakeSharesTotal
         payout += bigPaySlice + calcAdoptionBonus(payout, globals)
     }
-    debug("PART DAY PAYOUT: ", payout)
     return payout
 }
 
