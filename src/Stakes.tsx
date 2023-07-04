@@ -333,7 +333,7 @@ const Stakes = (props: {
                 <Accordion.Item className={"text-light " + (props.className || "")} eventKey="current_stakes">
                     {props.account &&
                         <div className="bg-secondary px-1 text-light text-center small">
-                            <span className="text-muted small align-baseline me-2">{accountName}</span>
+                            <span className="text-info small align-baseline me-2">{accountName}</span>
                             {walletAddress}
                         </div>
                     }
