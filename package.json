@@ -1,0 +1,50 @@
+{
+  "name": "x",
+  "private": true,
+  "version": "0.0.0",
+  "type": "module",
+  "scripts": {
+    "dev": "vite",
+    "build": "tsc && vite build",
+    "lint": "eslint src --ext ts,tsx --report-unused-disable-directives --max-warnings 0",
+    "preview": "vite preview",
+    "deploy": "./scripts/deploy.sh"
+  },
+  "dependencies": {
+    "@fortawesome/fontawesome-svg-core": "^6.4.0",
+    "@fortawesome/free-solid-svg-icons": "^6.4.0",
+    "@fortawesome/react-fontawesome": "^0.2.0",
+    "@web3modal/ethereum": "^2.4.7",
+    "@web3modal/react": "^2.4.7",
+    "axios": "^1.4.0",
+    "bootstrap": "^5.3.0",
+    "d3-format": "^3.1.0",
+    "debug": "^4.3.4",
+    "ethers": "5",
+    "react": "^18.2.0",
+    "react-bootstrap": "^2.8.0",
+    "react-copy-to-clipboard": "^5.1.0",
+    "react-dom": "^18.2.0",
+    "react-ga": "^3.3.1",
+    "recharts": "^2.7.2",
+    "sass": "^1.63.6",
+    "viem": "^1.1.4",
+    "wagmi": "^1.2.1"
+  },
+  "devDependencies": {
+    "@types/bootstrap": "^5.2.6",
+    "@types/d3-format": "^3.0.1",
+    "@types/react": "^18.0.37",
+    "@types/react-copy-to-clipboard": "^5.0.4",
+    "@types/react-dom": "^18.0.11",
+    "@types/recharts": "^1.8.24",
+    "@typescript-eslint/eslint-plugin": "^5.59.0",
+    "@typescript-eslint/parser": "^5.59.0",
+    "@vitejs/plugin-react-swc": "^3.0.0",
+    "eslint": "^8.38.0",
+    "eslint-plugin-react-hooks": "^4.6.0",
+    "eslint-plugin-react-refresh": "^0.3.4",
+    "typescript": "^5.0.2",
+    "vite": "^4.3.9"
+  }
+}

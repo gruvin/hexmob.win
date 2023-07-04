@@ -1,0 +1,23 @@
+#tewk_accordion {
+    max-width: 720px;
+    margin: auto;
+
+    & .accordion-header {
+        border-bottom-left-radius: 0;
+        border-top-right-radius: 0;
+
+        & .accordion-button {
+            border-radius: 0 !important;
+        }
+    }
+    & .card {
+        color: white;
+        border-radius: 0 !important;
+        border: none !important;
+        margin: 0 !important;
+    }
+    & .card-header {
+        font-family: "Arial", sans-serif;
+        border: none;
+    }
+}

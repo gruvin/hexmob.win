@@ -120,7 +120,7 @@ case "$DEPLOY_TYPE" in
 
     (*)
         print "Deploying to dev target ..."
-        TARGET=hexmob DEST=${DEST_DEV} _build
+        TARGET=tsa DEST=${DEST_DEV} _build
         ;;
 esac
 
