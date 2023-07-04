@@ -428,7 +428,7 @@ export const WalletUtils = (props: React.PropsWithChildren<ContainerProps>): Rea
                     decimals: 18
                 },
                 rpcUrls: ["https://rpc.pulsechain.com/"],
-                blockExplorerUrls: ["https://scan.pulsechain.com/"],
+                blockExplorerUrls: ["https://otter.pulsechain.com/"],
                 iconUrls: [] // ignored
             }]
         })
