@@ -395,11 +395,11 @@ export const WalletUtils = (props: React.PropsWithChildren<ContainerProps>): Rea
         const tokenAddress = "0x2b591e99afe9f32eaa6214f7b7629768c40eeb39"
         const tokenSymbol = "HEX"
         const tokenDecimals = 8
-        const tokenImage = "https://ethhex.com/static/media/hex-icon.92333d74.png"
+        const tokenImage = "https://hex.com/downloads/logo/HEXagon.png"
 
         try {
             // wasAdded is a boolean. Like any RPC method, an error may be thrown.
-            const wasAdded = await window.ethereum?.request({
+            await window.ethereum?.request({
                 method: "wallet_watchAsset",
                 params: {
                     type: "ERC20", // Initially only supports ERC20, but eventually more!
@@ -411,14 +411,8 @@ export const WalletUtils = (props: React.PropsWithChildren<ContainerProps>): Rea
                     },
                 },
             })
-
-            if (wasAdded) {
-                console.log("Thanks for your interest!")
-            } else {
-                console.log("Your loss!")
-            }
         } catch (error) {
-            console.log(error)
+            debug(error)
         }
     }
 
@@ -427,7 +421,7 @@ export const WalletUtils = (props: React.PropsWithChildren<ContainerProps>): Rea
             method: "wallet_addEthereumChain",
             params: [{
                 chainId: "0x"+Number(369).toString(16),
-                chainName: "Pulsechain Network",
+                chainName: "Pulsechain",
                 nativeCurrency: {
                     name: "Pulse",
                     symbol: "PLS",
