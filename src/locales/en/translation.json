@@ -1,7 +1,8 @@
 {
-    "Create New Stake": "Create New Stake",
     "Active Stakes": "Active Stakes",
-    "Stake History": "Stake History",
+    "Available": "Available",
+    "hdgNewStake": "New <1>HEX</1> Stake",
     "EARLY END STAKE": "EARLY END STAKE",
-    "END STAKE": "END STAKE"
+    "END STAKE": "END STAKE",
+    "Stake History": "Stake History"
 }

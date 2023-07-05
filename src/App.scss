@@ -110,6 +110,14 @@ small, .small { font-size: 0.75rem; }
         }
     }
 
+    #language-select {
+        display: inline-flex;
+        width: -moz-fit-content;
+        width: fit-content;
+        margin: auto;
+        float: right;
+    }
+    
     #version-day {
         float: right;
         height: 40px;

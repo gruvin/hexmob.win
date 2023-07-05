@@ -1,7 +1,8 @@
 {
-    "New Stake": "New HEX Miner",
     "Active Stakes": "Active Mining",
-    "Stake History": "Mining History",
+    "Available": "Available",
     "EARLY END STAKE": "FORFEIT MINER",
-    "END STAKE": "END MINING"
+    "END STAKE": "END MINING",
+    "hdgNewStake": "Deploy <1>HEX</1> Miner",
+    "Stake History": "Mining History"
 }

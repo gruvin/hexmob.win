@@ -1,5 +1,5 @@
 import { lazy, Suspense, useContext, useState } from 'react'
-import { useTranslation } from "react-i18next"
+import { Trans, useTranslation } from "react-i18next"
 import HEX, { DailyData } from './hex_contract'
 import { useNetwork, useContractRead, useContractReads } from 'wagmi'
 import { formatUnits, Address } from 'viem'
@@ -20,7 +20,7 @@ const StakeHistory = lazy(() => import('./StakeHistory'));
 import ReactGA from 'react-ga'
 
 import './Stakes.scss'
-import { findEarliestDay, calcStakeEnd, estimatePayoutRewardsDay, calcPercentGain, calcPercentAPY } from './util'
+import { findEarliestDay, calcStakeEnd, calcPercentGain, calcPercentAPY } from './util'
 
 import { UriAccount } from './lib/App'
 import { StakeData, StakeList } from './lib/Stakes'
@@ -318,10 +318,12 @@ const Stakes = (props: {
                             <Row className="w-100">
                                 <Col className="pe-0">
                                     <BurgerHeading>
-                                        {t("New Stake")}
+                                    <Trans i18nKey='hdgNewStake' >
+                                        New <span className="d-none d-sm-inline">HEX</span> Stake
+                                    </Trans>
                                     </BurgerHeading></Col>
                                 <Col className="col-5 lh-lg px-0 text-end text-success">
-                                    <span className="text-muted small align-baseline me-1"><span className="d-none d-sm-inline">Available </span>HEX</span>
+                                    <span className="text-muted small align-baseline me-1"><span className="d-none d-sm-inline">{t("Available")} </span>HEX</span>
                                     <CryptoVal className="fw-bold" value={hexBalance} />
                                 </Col>
                             </Row>
