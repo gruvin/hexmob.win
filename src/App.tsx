@@ -32,6 +32,7 @@ import Row from 'react-bootstrap/Row'
 import Col from 'react-bootstrap/Col'
 import Button from 'react-bootstrap/Button'
 import Badge from 'react-bootstrap/Badge'
+import Form from 'react-bootstrap/Form';
 
 import './App.scss'
 import { format } from 'd3-format'
@@ -56,8 +57,23 @@ switch (window.location.hostname) {
 const Header = (props: { usdhex: number }) => {
   const hexData = useContext(HexContext)
   const currentDay = hexData?.currentDay || 0n
+  
+  const { i18n } = useTranslation()
+  const handleLanguageChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
+    const languageValue = e.target.value
+    i18n.changeLanguage(languageValue)
+  }
+
   return (<>
     <BrandLogo />
+    {uriQuery.has("wording") && 
+      <Form id="language-select">
+        <Form.Select onChange={handleLanguageChange}>
+          <option value="en_WP">Free Speech</option>
+          <option value="en">Original</option>
+        </Form.Select>
+      </Form>
+    }
     <div id="version-day">
       <h3>{import.meta.env.VITE_VERSION || "v0.0.0A"} <strong className="text-warning">WP</strong></h3>
       <div>
@@ -68,7 +84,8 @@ const Header = (props: { usdhex: number }) => {
     <div id="usdhex">
       <span className="text-muted small me-1">USD</span>
       <span className="numeric text-success h2">{"$" + (isNaN(props.usdhex) ? "-.--" : format(",.4f")(props.usdhex))}</span>
-        {/* <ProgressBar variant="secondary" now={50} animated={false} ref={r => this.usdProgress = r} /> */}
+      {/* <ProgressBar variant="secondary" now={50} animated={false} ref={r => this.usdProgress = r} /> */}
+
     </div>
   </>)
 }
@@ -93,7 +110,6 @@ const Body = (props: { accounts: UriAccount[], usdhex: number }) => {
 }
 
 const Footer = () => {
-  const { t, i18n } = useTranslation()
   const hexData = useContext(HexContext)
   const { chain } = useNetwork()
   const chainId = chain?.id || 0n
@@ -104,22 +120,10 @@ const Footer = () => {
     ? address.slice(0, 6) + "..." + address.slice(-4)
     : "unknown"
 
-  const handleLanguageChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
-    const languageValue = e.target.value
-    i18n.changeLanguage(languageValue)
-  }
-
   return (
     <Container id="wallet_status" fluid>
       <Row>
         <Col><Badge bg={chainId !== 1 ? "danger" : "success"} className="small">{networkName}</Badge></Col>
-        <Col>
-          <select className="custom-select" style={{width: 200}} onChange={handleLanguageChange}>
-            <option value="en_WP">Free Speech</option>
-            <option value="en">Original</option>
-          </select>
-        </Col>
-        <Col>{t('Active Stakes')}</Col>
         <Col className="text-end">
           <WhatIsThis tooltip={address}><>
             <Badge bg="secondary" className="text-info">
