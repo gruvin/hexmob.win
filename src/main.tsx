@@ -8,6 +8,7 @@ import { infuraProvider } from 'wagmi/providers/infura'
 import { Web3Modal } from '@web3modal/react'
 import App from './App.tsx'
 import './App.scss'
+import "./i18n"
 
 const chains = [mainnet, goerli, pulsechain, pulsechainV4]
 
@@ -25,7 +26,7 @@ const { publicClient } = configureChains(
     //     return null
     //   }
     // }),
-    
+
     // it seems to matter that w3wmprovider comes FIRST
     w3mProvider({ projectId }),
     infuraProvider({ apiKey: import.meta.env.VITE_INFURA_ID }),

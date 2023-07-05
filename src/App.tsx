@@ -1,4 +1,5 @@
 import { useState, useEffect, useContext } from 'react'
+import { useTranslation } from "react-i18next"
 import { Web3Button } from '@web3modal/react'
 import {
   useNetwork,
@@ -92,6 +93,7 @@ const Body = (props: { accounts: UriAccount[], usdhex: number }) => {
 }
 
 const Footer = () => {
+  const { t, i18n } = useTranslation()
   const hexData = useContext(HexContext)
   const { chain } = useNetwork()
   const chainId = chain?.id || 0n
@@ -101,10 +103,24 @@ const Footer = () => {
   const addressFragment = address
     ? address.slice(0, 6) + "..." + address.slice(-4)
     : "unknown"
+
+  const handleLanguageChange = (e) => {
+    const languageValue = e.target.value
+    debug("C L: ", languageValue)
+    i18n.changeLanguage(languageValue)
+  }
+
   return (
     <Container id="wallet_status" fluid>
       <Row>
         <Col><Badge bg={chainId !== 1 ? "danger" : "success"} className="small">{networkName}</Badge></Col>
+        <Col>
+          <select className="custom-select" style={{width: 200}} onChange={handleLanguageChange}>
+            <option value="en_WP">Free Speech</option>
+            <option value="en">Original</option>
+          </select>
+        </Col>
+        <Col>{t('activeStakes')}</Col>
         <Col className="text-end">
           <WhatIsThis tooltip={address}><>
             <Badge bg="secondary" className="text-info">
