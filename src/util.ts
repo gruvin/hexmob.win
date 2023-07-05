@@ -359,6 +359,14 @@ export const calcStakeEnd = (
         stakeReturn = stake.stakedHearts
     }
 
+    // This never happens for a real stakeEnd because there can be no part day after end. 
+    // However, go.hex.com includes current partial day for in-progress stakes.
+    if (currentDay <= stake.lockedDay + stake.stakedDays) {
+        const partDayPayout = estimatePayoutRewardsDay(hexData, stake.stakeShares, currentDay)
+        payout += partDayPayout
+        stakeReturn += partDayPayout 
+    }
+
     return { stakeReturn, payout, bigPayDay, penalty, cappedPenalty }
 }
 

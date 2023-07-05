@@ -288,7 +288,6 @@ const Stakes = (props: {
                     return {
                         ...oldStakeData,
                         ...newStakeData,
-                        payout: newStakeData.payout + estimatePayoutRewardsDay(hexData, oldStakeData.stakeShares, currentDay)
                     }
                 })
                 setStakeList(newStakeData)
