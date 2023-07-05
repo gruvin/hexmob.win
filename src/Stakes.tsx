@@ -319,7 +319,7 @@ const Stakes = (props: {
                             <Row className="w-100">
                                 <Col className="pe-0">
                                     <BurgerHeading>
-                                        Deploy <span className="d-none d-sm-inline">HEX </span>Miner
+                                        {t("New Stake")}
                                     </BurgerHeading></Col>
                                 <Col className="col-5 lh-lg px-0 text-end text-success">
                                     <span className="text-muted small align-baseline me-1"><span className="d-none d-sm-inline">Available </span>HEX</span>
@@ -341,7 +341,7 @@ const Stakes = (props: {
                     }
                     <Accordion.Header className="w-100">
                         <Row className="w-100">
-                            <Col className="pe-0"><BurgerHeading>{t("hdgActiveStakes")}</BurgerHeading></Col>
+                            <Col className="pe-0"><BurgerHeading>{t("Active Stakes")}</BurgerHeading></Col>
                             <Col className="col-5 lh-lg px-0 text-end text-success">
                                 <small className="text-muted small align-baseline me-1">USD</small>
                                 <CryptoVal
@@ -360,7 +360,7 @@ const Stakes = (props: {
                 </Accordion.Item>
                 <Accordion.Item className="stake-history text-light pb-0" eventKey="stake_history">
                     <Accordion.Header>
-                        <BurgerHeading>{t("hdgStakeHistory")}</BurgerHeading>
+                        <BurgerHeading>{t("Stake History")}</BurgerHeading>
                     </Accordion.Header>
                     <Accordion.Collapse eventKey="stake_history">
                         <Suspense fallback={<>loading</>}>

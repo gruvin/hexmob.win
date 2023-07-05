@@ -1,7 +1,7 @@
 {
-    "hdgCreateNewStake": "Create New Stake",
-    "hdgActiveStakes": "Active Mining",
-    "hdgStakeHistory": "Mining History",
-    "btnEarlyEndStake": "FORFEIT MINER",
-    "btnEndStake": "END MINING"
+    "New Stake": "New HEX Miner",
+    "Active Stakes": "Active Mining",
+    "Stake History": "Mining History",
+    "EARLY END STAKE": "FORFEIT MINER",
+    "END STAKE": "END MINING"
 }

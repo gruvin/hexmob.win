@@ -1,7 +1,7 @@
 {
-    "hdgCreateNewStake": "Create New Stake",
-    "hdgActiveStakes": "Active Stakes",
-    "hdgStakeHistory": "Stake History",
-    "btnEarlyEndStake": "END STAKE",
-    "btnEndStake": "END STAKE"
+    "Create New Stake": "Create New Stake",
+    "Active Stakes": "Active Stakes",
+    "Stake History": "Stake History",
+    "EARLY END STAKE": "EARLY END STAKE",
+    "END STAKE": "END STAKE"
 }

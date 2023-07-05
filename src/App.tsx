@@ -120,7 +120,7 @@ const Footer = () => {
             <option value="en">Original</option>
           </select>
         </Col>
-        <Col>{t('activeStakes')}</Col>
+        <Col>{t('Active Stakes')}</Col>
         <Col className="text-end">
           <WhatIsThis tooltip={address}><>
             <Badge bg="secondary" className="text-info">
