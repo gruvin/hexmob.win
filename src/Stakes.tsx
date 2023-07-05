@@ -173,7 +173,7 @@ const Stakes = (props: {
     openActive?: boolean,
     account?: UriAccount,
 }) => {
-    const { t, i18n } = useTranslation()
+    const { t } = useTranslation()
     const hexData = useContext(HexContext)
     if (!hexData) return <>internal error</>
 

@@ -1,4 +1,4 @@
-import { useState, useEffect, useContext } from 'react'
+import React, { useState, useEffect, useContext } from 'react'
 import { useTranslation } from "react-i18next"
 import { Web3Button } from '@web3modal/react'
 import {
@@ -104,9 +104,8 @@ const Footer = () => {
     ? address.slice(0, 6) + "..." + address.slice(-4)
     : "unknown"
 
-  const handleLanguageChange = (e) => {
+  const handleLanguageChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
     const languageValue = e.target.value
-    debug("C L: ", languageValue)
     i18n.changeLanguage(languageValue)
   }
 
