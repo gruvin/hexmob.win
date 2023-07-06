@@ -8,6 +8,7 @@ import {
   useContractReads,
   useQuery,
 } from 'wagmi'
+
 import { Address } from 'viem'
 import { getMainnetUsdHex, getPulseXDaiHex } from './util'
 import { HexContext } from './Context'
@@ -140,6 +141,7 @@ const Footer = () => {
 }
 
 function App() {
+  const { t } = useTranslation()
 
   /// URI Stuff
   // look for ?account=addr[:label][&...]'s from URI
@@ -276,38 +278,22 @@ function App() {
                   target="_blank"
                   rel="noopener noreferrer"
                   >
-                  <Badge className="p-2 text-light bg-secondary"><strong>CONTRACT ADDRESS</strong>
+                  <Badge className="p-2 text-light bg-secondary"><strong>{t("CONTRACT ADDRESS")}</strong>
                     <br className="d-md-none" />
                     <span className="text-info">&nbsp;{HEX.CHAIN_ADDRESSES[chainId]}</span>
                   </Badge>
                 </a>
               </Container>
               <Container className="text-center">
-                <Button onClick={handleDisconnect}>Disconnect</Button>
+                <Button onClick={handleDisconnect}>{t("Disconnect")}</Button>
               </Container>
             </>}
           <GitHubInfo className="py-3" />
           <WalletUtils className="py-3" />
         </Container>
-
         <Container id="hexmob_footer" fluid>
           <Footer />
         </Container>
-
-      {/*
-      <Container id="hexmob_body" fluid className="p-1">
-      <div>Total Supply: {formatHex(totalSupply)} </div>
-        <div>Allocated Supply: {formatHex(allocatedSupply)} </div>
-        <div>ADDR: {walletAddress} </div>
-        <div>Coin Balance: {formatEther(balanceData?.value || 0n)} {balanceData?.symbol || "---"}</div>
-        <div>HEX BAL: {formatUnits(hexBalance || BigInt(0), 8)}</div>
-        <div>STAKE COUNT: {stakeCount?.toString()}</div>
-        <div>STAKE LIST: <Stakes /></div>
-        </Container>
-        <Stats parent={this} contract={this.contract} wallet={this.state.wallet} usdhex={this.state.USDHEX} />
-
-        <Web3NetworkSwitch /> <Web3Button icon="hide"/>
-      */}
 
       </HexContext.Provider>
     </Container>

@@ -1,7 +1,6 @@
 import React, { useContext, useRef, useState, PropsWithChildren } from 'react'
 import Container, { ContainerProps } from 'react-bootstrap/Container'
 import Button from 'react-bootstrap/Button'
-import Overlay from 'react-bootstrap/Overlay'
 import OverlayTrigger, { OverlayTriggerProps } from 'react-bootstrap/OverlayTrigger'
 import Tooltip from 'react-bootstrap/Tooltip'
 import Badge from 'react-bootstrap/Badge'
@@ -58,40 +57,26 @@ export const CryptoVal = (props: CryptoValProps) => {
         return <><span className="numeric">{sign}{props.symbol || <></>}{s}</span>{showUnit && <span className="unit">&nbsp;{unit}</span> }</>
 }
 
-type WhatIsThisProps = PropsWithChildren<Omit<OverlayTriggerProps, "target" | "overlay">> & {
+type WhatIsThisProps = PropsWithChildren<Omit<OverlayTriggerProps, "target" | "overlay"> | "showPill"> & {
     tooltip: string | React.ReactNode
     showPill?: boolean
-    placemnet?: OverlayTriggerProps['placement']
-
+    placement?: OverlayTriggerProps['placement']
 }
-export const WhatIsThis = (props: WhatIsThisProps, ...others: unknown[]) => {
+export const WhatIsThis = (props: WhatIsThisProps, {...others}) => {
     const { tooltip, showPill, children, placement } = props
-    const [show, setShow] = useState(false)
-    const target = useRef(null)
-    const _overlay = () => <Overlay
-        target={target}
-        show={show}
-        onHide={() => setShow(false)}
-
-    ><Tooltip>{tooltip}</Tooltip></Overlay>
 
     return (
-        <>
-            <div ref={target} style={{ display: "inline-block", cursor: "pointer" }} onClick={() => setShow(!show)}>
-                <OverlayTrigger
-                    rootClose={true}
-                    placement={placement ? placement : "auto"} flip
-                    delay={{ show: 200, hide: 400 }}
-                    overlay={_overlay}
-                    {...others}
-                >
-                    <>
-                        {children}
-                        {showPill && <sup><Badge pill className="ms-1 bg-info">?</Badge></sup>}
-                    </>
-                </OverlayTrigger>
-            </div>
-        </>
+        <OverlayTrigger
+            // rootClose={true}
+            placement={placement ? placement : "auto"} flip
+            delay={{ show: 200, hide: 400 }}
+            overlay={<Tooltip {...others}>{tooltip}</Tooltip>}
+        >
+            <span>
+                {children}
+                {showPill && <sup><Badge pill className="ms-1 bg-info">?</Badge></sup>}
+            </span>
+        </OverlayTrigger>
     )
 }
 

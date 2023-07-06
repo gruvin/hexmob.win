@@ -364,7 +364,7 @@ const Stakes = (props: {
                         <BurgerHeading>{t("Stake History")}</BurgerHeading>
                     </Accordion.Header>
                     <Accordion.Collapse eventKey="stake_history">
-                        <Suspense fallback={<>loading</>}>
+                        <Suspense fallback={<>{t("loading")}</>}>
                             {selectedCard === "stake_history" && <StakeHistory />}
                         </Suspense>
                     </Accordion.Collapse>

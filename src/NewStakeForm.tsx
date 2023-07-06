@@ -17,6 +17,7 @@ import { formatUnits, parseUnits } from 'viem'
 import { ResponsiveContainer, Bar, BarChart, Rectangle, ReferenceLine, Tooltip, XAxis, YAxis } from 'recharts'
 import { SelectCallback } from '@restart/ui/types'
 import imgGameLogo from './assets/game-logo.png'
+import { Trans, useTranslation } from "react-i18next"
 
 import _axios from 'axios'
 const axios = _axios.create({
@@ -33,6 +34,8 @@ debug('loading')
 
 // extends React.Component<NSFT.Props, NSFT.State> {
 export const NewStakeForm = () => {
+    const { t } = useTranslation()
+
     const hexData = useContext(HexContext)
     if (!hexData) return <>internal error</>
     const { currentDay, globals } = hexData
@@ -258,7 +261,7 @@ export const NewStakeForm = () => {
                             <Col xs={10} sm={12} className="">
                                 <Form.Group controlId="stake_amount" className="">
                                     <Form.Label className="w-100 mb-0">
-                                        Mining Units (HEX)
+                                        {t("Stake Amount")}
                                     </Form.Label>
                                     <InputGroup className="p-0">
                                         <Form.Control
@@ -266,7 +269,7 @@ export const NewStakeForm = () => {
                                             type="number"
                                             value={uiStakeAmount}
                                             placeholder="0"
-                                            aria-label="amount to stake in HEX"
+                                            aria-label={t("amount to stake in HEX")}
                                             aria-describedby="basic-addon1"
                                             onChange={handleAmountChange}
                                         />
@@ -290,7 +293,7 @@ export const NewStakeForm = () => {
                             </Col>
                             <Col xs={9} sm={10} className="mt-2">
                                 <Form.Group controlId="stake_days" className="">
-                                    <Form.Label className="mb-0">Mining Term (Days)</Form.Label>
+                                    <Form.Label className="mb-0">{t("Stake Length (Days)")}</Form.Label>
                                     <InputGroup className="p-0">
                                         <FormControl
                                             className="p-1"
@@ -309,17 +312,17 @@ export const NewStakeForm = () => {
                                             onSelect={handleDaysSelector as SelectCallback}
                                             className="numeric"
                                         >
-                                            <Dropdown.Item as="button" eventKey="new_stake" data-days="max">5555 days (~15yrs, 11wks)</Dropdown.Item>
-                                            <Dropdown.Item as="button" eventKey="new_stake" data-days="10y">Ten Years</Dropdown.Item>
-                                            <Dropdown.Item as="button" eventKey="new_stake" data-days="5y">Five Years</Dropdown.Item>
-                                            <Dropdown.Item as="button" eventKey="new_stake" data-days="3y">Three Years</Dropdown.Item>
-                                            <Dropdown.Item as="button" eventKey="new_stake" data-days="2y">Two Years</Dropdown.Item>
-                                            <Dropdown.Item as="button" eventKey="new_stake" data-days="1y">One Year</Dropdown.Item>
-                                            <Dropdown.Item as="button" eventKey="new_stake" data-days="6m">Six Months</Dropdown.Item>
-                                            <Dropdown.Item as="button" eventKey="new_stake" data-days="3m">Three Months</Dropdown.Item>
-                                            <Dropdown.Item as="button" eventKey="new_stake" data-days="1m">One Month</Dropdown.Item>
-                                            <Dropdown.Item as="button" eventKey="new_stake" data-days="1w">One Week</Dropdown.Item>
-                                            <Dropdown.Item as="button" eventKey="new_stake" data-days="min">MIN (one day)</Dropdown.Item>
+                                            <Dropdown.Item as="button" eventKey="new_stake" data-days="max">{t("5555 days (~15yrs, 11wks)")}</Dropdown.Item>
+                                            <Dropdown.Item as="button" eventKey="new_stake" data-days="10y">{t("Ten Years")}</Dropdown.Item>
+                                            <Dropdown.Item as="button" eventKey="new_stake" data-days="5y">{t("Five Years")}</Dropdown.Item>
+                                            <Dropdown.Item as="button" eventKey="new_stake" data-days="3y">{t("Three Years")}</Dropdown.Item>
+                                            <Dropdown.Item as="button" eventKey="new_stake" data-days="2y">{t("Two Years")}</Dropdown.Item>
+                                            <Dropdown.Item as="button" eventKey="new_stake" data-days="1y">{t("One Year")}</Dropdown.Item>
+                                            <Dropdown.Item as="button" eventKey="new_stake" data-days="6m">{t("Six Months")}</Dropdown.Item>
+                                            <Dropdown.Item as="button" eventKey="new_stake" data-days="3m">{t("Three Months")}</Dropdown.Item>
+                                            <Dropdown.Item as="button" eventKey="new_stake" data-days="1m">{t("One Month")}</Dropdown.Item>
+                                            <Dropdown.Item as="button" eventKey="new_stake" data-days="1w">{t("One Week")}</Dropdown.Item>
+                                            <Dropdown.Item as="button" eventKey="new_stake" data-days="min">{t("MIN (one day)")}</Dropdown.Item>
                                         </DropdownButton>
                                     </InputGroup>
                                 </Form.Group>
@@ -330,35 +333,36 @@ export const NewStakeForm = () => {
                 <Col xs={12} sm={7}>
                     <Container className="px-0 py-3 ps-md-2 ms-0" style={{ maxWidth: "23rem" }}>
                         <Row>
-                            <Col className="col-3 m-0 ps-2 pe-0 text-info h3">Start Day</Col>
+                            <Col className="col-3 m-0 ps-2 pe-0 text-info h3">{t("Start Day")}</Col>
                             <Col className="col-3 text-end numeric">{uiStartDay}</Col>
                             <Col className="col-6 numeric">{uiStartDate}<span className="text-muted d-none d-md-inline"> {uiStartTime}</span></Col>
                         </Row>
                         <Row>
-                            <Col className="col-3 m-0 ps-2 pe-0 text-info h3">End Day</Col>
+                            <Col className="col-3 m-0 ps-2 pe-0 text-info h3">{t("End Day")}</Col>
                             <Col className="col-3 text-end numeric">{uiEndDay}</Col>
                             <Col className="col-6 numeric">{uiEndDate}<span className="text-muted d-none d-md-inline"> {uiEndTime}</span></Col>
                         </Row>
                         <Row>
-                            <Col className="col-12 mt-3 mb-1 ps-2 text-end text-warning text-uppercase h2">I n c e n t i v e&nbsp;&nbsp;&nbsp;B o n u s e s</Col>
+                            <Col className="col-12 mt-3 mb-1 ps-2 text-center bg-warning text-uppercase bonus-heading">
+                                {t("Incentive Bonuses")}</Col>
                         </Row>
                         <Row>
-                            <Col className="col-7 pe-2 text-end text-info h4">Bigger Pays More!</Col>
+                            <Col className="col-7 pe-2 text-end text-info h4">{t("Bigger Pays More!")}</Col>
                             <Col className="col-5 px-0 text-end">{uiBiggerPaysBetter}</Col>
                         </Row>
                         <Row>
-                            <Col className="col-7 pe-2 text-end text-info h4">Longer Pays Better!</Col>
+                            <Col className="col-7 pe-2 text-end text-info h4">{t("Longer Pays Better!")}</Col>
                             <Col className="col-5 px-0 text-end">{uiLongerPaysBetter}</Col>
                         </Row>
                         <Row className="pt-2">
                             <Col className="col-7 pe-2 text-end text-success">
                                 <WhatIsThis showPill tooltip={
-                                    <>
-                                        Effective HEX is the cost of shares had there been no bonuses, which equals
-                                        <span className="text-success"> Stake Amount</span> + <span className="text-success">Stake Bonuses</span>
-                                    </>
+                                    <Trans
+                                        i18nKey="whatIsEffectiveHEX"
+                                        components={{ b: <span className="text-success" />, i: <em /> }}
+                                    />
                                 }>
-                                    <span className="h3">Effective HEX</span>
+                                    <span className="h3">{t("Effective HEX")}</span>
                                 </WhatIsThis>
                             </Col>
                             <Col className="col-5 px-0 text-end text-success bg-success-darkened"><strong>{uiEffectiveHEX}</strong></Col>
@@ -374,25 +378,18 @@ export const NewStakeForm = () => {
                             </Col>
                             <Col className="col-10 ps-0 text-end">
                                 <Row>
-                                    <Col className="col-7 pe-3 text-end h3">TShare Rate</Col>
+                                    <Col className="col-7 pe-3 text-end h3">{t("TShare Rate")}</Col>
                                     <Col className="col-5 px-0 text-end">{uiShareRate}</Col>
                                 </Row>
                                 <Row>
                                     <Col className="col-7 pe-1">
                                         <WhatIsThis showPill tooltip={
-                                            <div>
-                                                <span className="text-success">Miner Shares</span> =
-                                                <span className="text-success"> Effective HEX</span> x
-                                                <span className="text-success"> Share Rate</span><br />
-                                                <span className="text-success">T</span>Share = 1 Trillion shares<br />
-                                                <span className="text-success">B</span>Share = 1 Billion shares<br />
-                                                <span className="text-success">M</span>Share = 1 Million shares<br />
-                                                <span className="text-success">TShare Rate</span> is the cost of one
-                                                <span className="text-success"> T</span>Share<br />
-                                                (in HEX) and only <span className="text-success"><em>increases</em></span> over time.
-                                            </div>
+                                            <Trans
+                                                i18nKey="whatIsTShares"
+                                                components={{ b: <span className="text-success" />, i: <em /> }}
+                                            />
                                         }>
-                                            <span className="text-success h2">Miner Shares</span>
+                                            <span className="text-success h2">{t("Stake Shares")}</span>
                                         </WhatIsThis>
                                     </Col>
                                     <Col className="col-5 text-success text-start h2">
@@ -408,7 +405,7 @@ export const NewStakeForm = () => {
                                 stakedDays={BigInt(uiStakeDays)}
                                 rejectionCallback={() => resetForm}
                                 confirmationCallback={() => resetForm}
-                            >DEPLOY MINER</StakeStartButton>
+                            >{t("START STAKE")}</StakeStartButton>
                         </Container>
                     </Container>
 
@@ -418,8 +415,7 @@ export const NewStakeForm = () => {
                                 <Col>
                                     <WhatIsThis showPill tooltip={
                                         <>
-                                            Reduces as others start new stakes.<br />
-                                            Increases as others end their stakes.
+                                            {t("Reduces as others start new stakes.<br />Increases as others end their stakes.")}
                                         </>
                                     }>
                                         <strong>
@@ -432,15 +428,15 @@ export const NewStakeForm = () => {
                                 <Col className="text-end">{uiBigPayDay} HEX</Col>
                             </Row>
                             <Row>
-                                <Col>% Gain<span className="text-info">*</span> </Col>
+                                <Col>{t("% Gain")}<span className="text-info">*</span> </Col>
                                 <Col className="text-end">{uiPercentGain}</Col>
                             </Row>
                             <Row>
-                                <Col>% APY<span className="text-info">*</span></Col>
+                                <Col>{t("% APY")}<span className="text-info">*</span></Col>
                                 <Col className="text-end">{uiPercentAPY}</Col>
                             </Row>
                             <Row>
-                                <Col className="pt-2"><span className="text-info">*</span> <em>If stake still open on BigPayDay</em></Col>
+                                <Col className="pt-2"><span className="text-info">*</span> <em>{t("If stake was active on BigPayDay")}</em></Col>
                             </Row>
                         </Container>
                     )}
@@ -470,8 +466,8 @@ export const NewStakeForm = () => {
                             </BarChart>
                         </ResponsiveContainer>
                         <div className="text-center">
-                            <h6 className="text-info m-0">Future Market Supply by HEX Day</h6>
-                            <div className="text-muted small">assumes all stakes end on time</div>
+                            <h6 className="text-info m-0">{t("Future Market Supply by HEX Day")}</h6>
+                            <div className="text-muted small">{t("assumes all stakes end on time")}</div>
                         </div>
                     </Container>
                 }
