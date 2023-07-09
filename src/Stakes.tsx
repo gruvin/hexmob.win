@@ -283,12 +283,15 @@ const Stakes = (props: {
                 let totalHexValue = 0n
                 const newStakeData: StakeData[] = stakeList.map((oldStakeData: StakeData) => {
                     const newStakeData = calcStakeEnd(hexData, indexedDailyData, oldStakeData)
-                    const { payout, bigPayDay } = newStakeData
-                    totalHexValue += oldStakeData.stakedHearts + payout + bigPayDay
-                    return {
+                    const { payout, bigPayDay, penalty } = newStakeData
+                    const { stakedHearts } = oldStakeData
+                    debug("HUH? ", { stakedHearts, penalty, payout, bigPayDay})
+                    totalHexValue += oldStakeData.stakedHearts + payout + bigPayDay - penalty
+                    const result = {
                         ...oldStakeData,
                         ...newStakeData,
                     }
+                    return result
                 })
                 setStakeList(newStakeData)
                 setTotalHexValue(totalHexValue)

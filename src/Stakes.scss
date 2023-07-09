@@ -11,7 +11,7 @@
         background-color: #050011;
         & .progress { height: 0.2rem }
     }
-    & .ees-estimate { max-width: fit-content; } 
+    & .ees-estimate { max-width: fit-content; }
     & .stake-history { background-color: map-get(bs.$theme-colors, dark);}
 
     & .btn-exitbtn,
@@ -82,6 +82,8 @@
             }
         }
     }
+
+    & .numeric-total { border-top: double grey; }
 }
 
 #early-end-stake-alert {

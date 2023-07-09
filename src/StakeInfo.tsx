@@ -75,7 +75,7 @@ export const StakeInfo = (props: {
     const { stakedHearts, stakeShares, payout, bigPayDay, penalty } = stake
 
     const residual = stakedHearts - penalty
-    const _netValue = -stakedHearts + payout + bigPayDay + residual // estimated return after penalties if EES now
+    const _netValue = residual + payout + bigPayDay
     const netValue = _netValue >= 0 ? _netValue : 0n
 
     //////////////////////////////////////////////////////////////
@@ -115,7 +115,7 @@ export const StakeInfo = (props: {
         return (
             <ul>
                 <li>
-                    <strong>Residual<sup className="text-danger">&nbsp;*</sup></strong> 
+                    <strong>Residual<sup className="text-danger">&nbsp;*</sup></strong>
                     equals; miner cost {costValue}&nbsp;
                     {penalty > 0n
                         ? <span> minus <span className="text-danger">{penaltyValue}</span> early termination penalties.</span>
@@ -262,7 +262,7 @@ export const StakeInfo = (props: {
                         >
                             <Row className="text-light">
                                 <Col>Miner Cost</Col>
-                                <Col className="ms-3 pe-1 text-end text-danger numeric">
+                                <Col className="ms-3 pe-1 text-end text-danger">
                                     {eesStatsHEX
                                         ? <span>-&nbsp;<CryptoVal value={stakedHearts} currency="HEX" showUnit /></span>
                                         : <span>-&nbsp;$&nbsp;<CryptoVal value={usdStaked} currency="USD" /></span>
@@ -271,7 +271,7 @@ export const StakeInfo = (props: {
                             </Row>
                             <Row>
                                 <Col>Mined</Col>
-                                <Col className="ms-3 pe-1 text-end numeric">
+                                <Col className="ms-3 pe-1 text-end">
                                     {eesStatsHEX
                                         ? <span>+&nbsp;<CryptoVal value={payout} currency="HEX" showUnit /></span>
                                         : <span>+<CryptoVal value={usdPayout} currency="USD" symbol={<>&nbsp;$&nbsp;</>} /></span>
@@ -285,7 +285,7 @@ export const StakeInfo = (props: {
                                         <span className="text-warning">Pay</span>
                                         <span className="text-danger">Day</span>
                                     </Col>
-                                    <Col className="ms-3 pe-1 text-end numeric">
+                                    <Col className="ms-3 pe-1 text-end">
                                         {eesStatsHEX
                                             ? <span>+&nbsp;<CryptoVal value={bigPayDay} currency="HEX"  showUnit /></span>
                                             : <span>+<CryptoVal value={usdBPD} currency="USD" symbol={<>&nbsp;$&nbsp;</>} /></span>
@@ -297,7 +297,7 @@ export const StakeInfo = (props: {
                                 <Col>
                                     Residual{penalty > 0n && <sup className="text-danger">&nbsp;*</sup>}
                                 </Col>
-                                <Col className="ms-3 pe-1 text-end numeric">
+                                <Col className="ms-3 pe-1 text-end">
                                     <span className={residual < 0n ? "text-danger" : ""}>
                                         {eesStatsHEX
                                             ? <span><CryptoVal value={residual} currency="HEX" symbol={<>&nbsp;</>} showUnit /></span>
@@ -307,10 +307,10 @@ export const StakeInfo = (props: {
                                 </Col>
                             </Row>
                             <Row className="text-success">
-                                <Col className="text-uppercase" style={{ width: "7rem" }}>Net Value</Col>
-                                <Col className="ms-3 pe-1 text-end numeric" style={{ borderTop: "double grey", width: "7rem" }}>
+                                <Col className="text-uppercase">Net Value</Col>
+                                <Col className="ms-3 pe-1 text-end numeric-total">
                                     {eesStatsHEX
-                                        ? <span><CryptoVal value={hexNetValue} currency="HEX" showUnit /></span>
+                                        ? <span><CryptoVal value={netValue} currency="HEX" showUnit /></span>
                                         : <span><CryptoVal value={usdNetValue} currency="USD" symbol={<>&nbsp;$&nbsp;</>} /></span>
                                     }
                                 </Col>
@@ -321,7 +321,7 @@ export const StakeInfo = (props: {
                                 </Col>
                             </Row>
                         </Container>
-                        <Container style={{ maxWidth: "fit-content" }}>
+                        <Container>
                             <Row className="small">
                                 <Col>
                                     <Notes />
