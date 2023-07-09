@@ -74,17 +74,21 @@ const StakesHistory = (props: { account?: UriAccount }) => {
                 const d1 = result.args?.data1
                 if (d0 === undefined) return null
                 if (d1 == undefined) return null
+                const mask72 = (1n << 72n) -1n
+                const mask40 = (1n << 72n) -1n
+                const mask16 = (1n << 72n) -1n
                 const decoded = {
                     stakerAddr: result.args.stakerAddr,
                     stakeId: BigInt(result.args?.stakeId || 0),
-                    timestamp: d0 & 2n ** 40n - 1n,
-                    stakedHearts: (d0 >> 40n) & 2n ** 72n - 1n,
-                    stakeShares: (d0 >> 112n) & 2n ** 72n - 1n,
-                    payout: (d0 >> 184n) & 2n ** 72n - 1n,
-                    penalty: d1 & 2n ** 72n - 1n,
-                    servedDays: (d1 >> 72n) & 2n ** 16n - 1n,
+                    timestamp: d0 & mask40,
+                    stakedHearts: (d0 >> 40n) & mask72,
+                    stakeShares: (d0 >> 112n) & mask72,
+                    payout: (d0 >> 184n) & mask72,
+                    penalty: d1 & mask72,
+                    servedDays: (d1 >> 72n) & mask16,
                     prevUnlocked: (d1 >> 88n) & 1n ? true : false,
                 }
+                debug("DXX: %O", decoded)
                 const _stakeReturn = decoded.stakedHearts + decoded.payout - decoded.penalty
                 const stakeReturn = _stakeReturn > 0n ? _stakeReturn : 0n
                 return {

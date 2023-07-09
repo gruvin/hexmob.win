@@ -58,7 +58,8 @@ export const NewStakeForm = () => {
     const startDay = currentDay + 1n
     const endDay = startDay + stakedDays
 
-    const cappedExtraDays = BigInt(uiStakeDays) <= HEX.LPB_MAX_DAYS ? BigInt(uiStakeDays) : HEX.LPB_MAX_DAYS
+    const extraDays = stakedDays -1n
+    const cappedExtraDays = extraDays <= HEX.LPB_MAX_DAYS ? extraDays : HEX.LPB_MAX_DAYS
     const cappedStakedHearts = stakedHearts <= HEX.BPB_MAX_HEARTS ? stakedHearts : HEX.BPB_MAX_HEARTS
 
     const biggerPaysBetter = stakedHearts * cappedStakedHearts / HEX.BPB
@@ -85,8 +86,8 @@ export const NewStakeForm = () => {
     const uiEndTime = _endDate.toLocaleTimeString([], {hour: '2-digit', minute: '2-digit'})
     const uiShareRate = <CryptoVal value={shareRate} currency="TSHARE_PRICE" showUnit />
     const uiBigPayDay = <CryptoVal value={bigPayDay} />
-    const uiBiggerPaysBetter = <CryptoVal value={biggerPaysBetter} showUnit />
-    const uiLongerPaysBetter = <CryptoVal value={longerPaysBetter} showUnit />
+    const uiBiggerPaysBetter = <CryptoVal value={biggerPaysBetter} showUnit wholeNumber />
+    const uiLongerPaysBetter = <CryptoVal value={longerPaysBetter} showUnit wholeNumber />
     const uiEffectiveHEX = <CryptoVal value={effectiveHEX} currency="HEX" showUnit />
     const uiStakeShares = <CryptoVal value={stakeShares} currency="SHARES" showUnit />
     const uiPercentGain = <><CryptoVal value={percentGain} currency="%" />%</>
@@ -347,12 +348,12 @@ export const NewStakeForm = () => {
                                 {t("Incentive Bonuses")}</Col>
                         </Row>
                         <Row>
-                            <Col className="col-7 pe-2 text-end text-info h4">{t("Bigger Pays More!")}</Col>
-                            <Col className="col-5 px-0 text-end">{uiBiggerPaysBetter}</Col>
-                        </Row>
-                        <Row>
                             <Col className="col-7 pe-2 text-end text-info h4">{t("Longer Pays Better!")}</Col>
                             <Col className="col-5 px-0 text-end">{uiLongerPaysBetter}</Col>
+                        </Row>
+                        <Row>
+                            <Col className="col-7 pe-2 text-end text-info h4">{t("Bigger Pays More!")}</Col>
+                            <Col className="col-5 px-0 text-end">{uiBiggerPaysBetter}</Col>
                         </Row>
                         <Row className="pt-2">
                             <Col className="col-7 pe-2 text-end text-success">
