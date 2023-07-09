@@ -1,4 +1,5 @@
 import React, { useContext, useState } from 'react'
+import { Trans, useTranslation } from "react-i18next"
 import Container from "react-bootstrap/Container"
 import ProgressBar from "react-bootstrap/ProgressBar"
 import Accordion from "react-bootstrap/Accordion"
@@ -30,9 +31,10 @@ export const StakeInfo = (props: {
     usdhex: number,
     readOnly?: boolean,
 }) => {
+    const { t } = useTranslation()
     const hexData = useContext(HexContext)
     const currentDay = hexData?.currentDay || 0n
-    if (!currentDay) return <>internal error</>
+    if (!currentDay) return <>{t("internal error")}</>
 
     const esRef = React.useRef(null)
 
@@ -112,22 +114,22 @@ export const StakeInfo = (props: {
                         <Row>
                             <Col xs={6} className="text-start pe-0">
                                 <CryptoVal className="numeric font-weight-bold text-info h2" value={stakeShares} currency="SHARES" />
-                                <span className="text-muted small"> SHARES</span>
+                                <span className="text-muted small"> {t("SHARES")}</span>
                             </Col>
                             <Col xs={6} className="text-end pl-0">
-                                <span className="text-muted small">VALUE </span>
+                                <span className="text-muted small">{t("VALUE")} </span>
                                 <span className="numeric h3 text-success">{"$" + usdSummaryTotal}</span>
                             </Col>
                         </Row>
                         <Row>
                             <Col xs={7} className="pe-0">
-                                <span className="text-muted small">ENDS </span>
+                                <span className="text-muted small">{t("ENDS")} </span>
                                 <span className="small">{endDate}</span>
                             </Col>
                             <Col xs={5} className="text-end pl-0">
-                                {(exitClass === "pendingexit") ? <Badge className="bg-primary">PENDING</Badge>
+                                {(exitClass === "pendingexit") ? <Badge className="bg-primary">{t("PENDING")}</Badge>
                                     : <>
-                                        <span className="text-muted small">PROGRESS </span>
+                                        <span className="text-muted small">{t("PROGRESS")} </span>
                                         <span className="numeric">{Number(progress).toFixed(1) + "%"}</span>
                                     </>
                                 }
@@ -146,26 +148,26 @@ export const StakeInfo = (props: {
                         <Row className="mt-2">
                             <Col className="text-end">
                                 <span className="numeric">{Number(stake.stakedDays)}</span>&nbsp;
-                                <strong>Days</strong>
+                                <strong>{t("Days")}</strong>
                             </Col>
                             <Col className="numeric">
-                                {Number(stake.lockedDay) + 1}&nbsp;to&nbsp;{Number(stake.endDay) + 1}
+                                {Number(stake.lockedDay) + 1}&nbsp;{t("to")}&nbsp;{Number(stake.endDay) + 1}
                             </Col>
                         </Row>
                         <Row>
-                            <Col className="text-end"><strong>Start Date</strong></Col>
+                            <Col className="text-end"><strong>{t("Start Date")}</strong></Col>
                             <Col className="numeric">{startDate}</Col>
                         </Row>
                         <Row>
-                            <Col className="text-end"><strong>End Date</strong></Col>
+                            <Col className="text-end"><strong>{t("End Date")}</strong></Col>
                             <Col className="numeric">{endDate}</Col>
                         </Row>
                         <Row>
-                            <Col className="text-end"><strong>Net Gain</strong></Col>
+                            <Col className="text-end"><strong>{t("Net Gain")}</strong></Col>
                             <Col className="numeric">{percentSummaryGain}%</Col>
                         </Row>
                         <Row>
-                            <Col className="text-end"><strong>APY</strong><span className="text-muted"><sup>TD</sup></span></Col>
+                            <Col className="text-end"><strong>{t("APY")}</strong><span className="text-muted"><sup>TD</sup></span></Col>
                             <Col className="numeric">{percentSummaryAPY}%</Col>
                         </Row>
                         <Row className="mt-3">
@@ -174,26 +176,26 @@ export const StakeInfo = (props: {
                                     target={esRef.current}
                                     container={esRef}
                                     placement={'top'}
-                                    show={esShow}
+                                    show={esShow} 
                                 >
                                     <Popover>
                                         <Popover.Body className="p-0">
                                             <div id="early-end-stake-alert">
                                                 <div className="bg-dark text-light p-3">
-                                                    <h2 className="text-danger text-uppercase text-center">FORFEIT MINER</h2>
+                                                    <h2 className="text-danger text-uppercase text-center">{t("EARLY END STAKE")}</h2>
                                                     <div>
-                                                        Remember that you committed to run this miner to full term!
-                                                        This is an advanced feature. <strong><em>You should NOT
-                                                            proceed </em> unless you <u>understand</u> <em>exactly </em>
-                                                            what it will do</strong>. Forfeiting a miner could potentially<br />
+                                                        <Trans
+                                                            i18nKey="rememberComittment"
+                                                            components={{ b: <strong />, i: <em />, u: <u /> }}
+                                                        />
                                                         <div className="text-light text-uppercase text-center bg-danger mt-2 px-2 py-1" >
-                                                            <strong>lose&nbsp;your&nbsp;entire&nbsp;investment!</strong>
+                                                            <strong>{t("lose your entire investment!")}</strong>
                                                         </div>
                                                     </div>
                                                     <Button
                                                         className="mt-3"
                                                         onClick={() => setEsShow(false)}
-                                                    >CANCEL</Button>
+                                                    >{t("CANCEL")}</Button>
                                                 </div>
                                             </div>
                                         </Popover.Body>
@@ -208,7 +210,7 @@ export const StakeInfo = (props: {
                                             confirmationCallback={() => setEsShow(false)}
                                             rejectionCallback={() => setEsShow(false)}
                                         >
-                                            {isEarly ? <>I UNDERSTAND</> : <>PUBLISH HEX</>}
+                                            {isEarly ? <>{t("I UNDERSTAND")}</> : <>{t("END STAKE")}</>}
                                         </StakeEndButton>
                                     </>}
                                     {isEarly && !esShow && <>
@@ -216,7 +218,7 @@ export const StakeInfo = (props: {
                                             variant="danger"
                                             className={"exitbtn"}
                                             onClick={() => setEsShow(true)}>
-                                            <>FORFEIT MINER</>
+                                            <>{t("EARLY END STAKE")}</>
                                         </Button>
                                     </>}
                                 </>}
@@ -229,7 +231,7 @@ export const StakeInfo = (props: {
                             onClick={() => setEesStatsHEX(!eesStatsHEX)}
                         >
                             <Row className="text-light">
-                                <Col>Miner Cost</Col>
+                                <Col style={{ whiteSpace: "nowrap"}}>{t("Staked Amount")}</Col>
                                 <Col className="ms-3 pe-1 text-end text-info">
                                     {eesStatsHEX
                                         ? <span><CryptoVal value={stakedHearts} currency="HEX" showUnit /></span>
@@ -238,7 +240,7 @@ export const StakeInfo = (props: {
                                 </Col>
                             </Row>
                             <Row>
-                                <Col>Mined</Col>
+                                <Col>{t("Yield")}</Col>
                                 <Col className="ms-3 pe-1 text-end">
                                     {eesStatsHEX
                                         ? <span><CryptoVal value={payout} currency="HEX" showUnit /></span>
@@ -255,7 +257,7 @@ export const StakeInfo = (props: {
                                     </Col>
                                     <Col className="ms-3 pe-1 text-end">
                                         {eesStatsHEX
-                                            ? <span><CryptoVal value={bigPayDay} currency="HEX"  showUnit /></span>
+                                            ? <span><CryptoVal value={bigPayDay} currency="HEX" showUnit /></span>
                                             : <span><CryptoVal value={usdBPD} currency="USD" symbol={<>&nbsp;$&nbsp;</>} /></span>
                                         }
                                     </Col>
@@ -263,7 +265,7 @@ export const StakeInfo = (props: {
                             }
                             <Row>
                                 <Col>
-                                    Penalties<sup className="text-danger">&nbsp;*</sup>
+                                    {t("Penalties")}<sup className="text-danger">&nbsp;*</sup>
                                 </Col>
                                 <Col className="ms-3 pe-1 text-end">
                                     <span className={penalty > 0n ? "text-danger" : ""}>
@@ -275,7 +277,7 @@ export const StakeInfo = (props: {
                                 </Col>
                             </Row>
                             <Row className="text-success">
-                                <Col className="text-uppercase">Net Value</Col>
+                                <Col className="text-uppercase">{t("Net Value")}</Col>
                                 <Col className="ms-3 pe-1 text-end numeric-total">
                                     {eesStatsHEX
                                         ? <span><CryptoVal value={netValue} currency="HEX" showUnit /></span>
@@ -285,7 +287,7 @@ export const StakeInfo = (props: {
                             </Row>
                             <Row>
                                 <Col className="text-center text-muted small">
-                                    tap for {!eesStatsHEX ? "HEX" : "dollar"} units
+                                    {t("tap for")} {!eesStatsHEX ? "HEX" : "dollar"} {t("units")}
                                 </Col>
                             </Row>
                         </Container>
@@ -294,14 +296,13 @@ export const StakeInfo = (props: {
                                 <Col>
                                     <ul>
                                         <li>
-                                            <sup className="text-danger">*&nbsp;</sup>Penalties apply
-                                            when a mining contract is forfeited prior to term completion.
+                                            <sup className="text-danger">*&nbsp;</sup>{t("Penalties apply when a stake is ended earlier than contracted.")}
                                         </li>
                                         {!eesStatsHEX && <li>
-                                            <span>Dollar values calculated from HEX at today&lsquo;s rates. </span>
+                                            {t("Dollar values calculated from HEX at today's rates.")}
                                         </li>}
                                         <li>
-                                            <span>All figures are approximate and may change without notice.</span>
+                                            {t("All figures are approximate and may change without notice.")}
                                         </li>
                                     </ul>
                                 </Col>

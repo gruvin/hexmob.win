@@ -35,6 +35,7 @@ const StakesList = (props: {
     usdhex: number,
     account?: UriAccount
 }) => {
+    const { t } = useTranslation()
     const hexData = useContext(HexContext)
     const currentDay = hexData?.currentDay || 0n
     if (!currentDay) return <>internal error</>
@@ -101,21 +102,21 @@ const StakesList = (props: {
 
     const numStakes = stakeList?.length || 0
     return (numStakes === 0
-        ? <>no miners found for this address</>
+        ? <>{t("no stakes found for this address")}</>
         : <>
             <Card className="mt-1 bg-info-darkened rounded">
                 <Card.Body className="p-1 rounded text-light">
-                    <h2 className="text-center text-bold">Summary To Date</h2>
+                    <h2 className="text-center text-bold">{t("Summary To Date")}</h2>
                     <Row>
-                        <Col className="text-end text-bold">Deployed Mining</Col>
-                        <Col><CryptoVal value={stakedTotal} showUnit /><span className="text-muted small"> BURNED</span></Col>
+                        <Col className="text-end text-bold">{t("Total Staking")}</Col>
+                        <Col><CryptoVal value={stakedTotal} showUnit /><span className="text-muted small"> {t("BURNED")}</span></Col>
                     </Row>
                     <Row>
-                        <Col className="text-end">Shares</Col>
+                        <Col className="text-end">{t("Shares")}</Col>
                         <Col><CryptoVal value={sharesTotal} currency="SHARES" /></Col>
                     </Row>
                     <Row>
-                        <Col className="text-end text-bold">Yield</Col>
+                        <Col className="text-end text-bold">{t("Yield")}</Col>
                         <Col><CryptoVal value={payoutTotal} showUnit /></Col>
                     </Row>
                     {bigPayDayTotal > 0n &&
@@ -129,29 +130,29 @@ const StakesList = (props: {
                         </Row>
                     }
                     <Row>
-                        <Col className="text-end text-bold">Total Value</Col>
+                        <Col className="text-end text-bold">{t("Total Value")}</Col>
                         <Col>
                             <CryptoVal className="text-bold" value={stakedTotal + payoutTotal + bigPayDayTotal} showUnit />
                         </Col>
                     </Row>
                     <Row className="text-success">
-                        <Col className="text-success text-end text-bold">USD Value</Col>
+                        <Col className="text-success text-end text-bold">{t("USD Value")}</Col>
                         <Col className="text-success text-bold">$<CryptoVal value={totalUsdValue} currency="USD" /></Col>
                     </Row>
                     <Row className="mt-2">
-                        <Col className="text-end text-bold">Mean Net Yield</Col>
+                        <Col className="text-end text-bold">{t("Mean Net Yield")}</Col>
                         <Col><CryptoVal value={averagePercentGain} currency="%" />%</Col>
                     </Row>
                     <Row>
-                        <Col className="text-end text-bold">Average APY</Col>
+                        <Col className="text-end text-bold">{t("Average APY")}</Col>
                         <Col><CryptoVal value={averagePercentAPY} currency="%" />%</Col>
                     </Row>
                 </Card.Body>
             </Card>
             <Card className="active-stakes m-0 text-light bg-success-darkened rounded">
                 <Card.Body className="px-2">
-                    <h2 className="text-center mb-0">{numStakes ? <span className="numeric">{numStakes}</span> : "No"} Active Miner{numStakes > 1 && "s"}</h2>
-                    <div className="text-center text-info small">tap each for details</div>
+                    <h2 className="text-center mb-0">{numStakes ? <span className="numeric">{numStakes}</span> : "No"} {t("Active ")}{numStakes > 1 ? t("Stakes") : t("Stake")}</h2>
+                    <div className="text-center text-info small">{t("tap each for details")}</div>
                     {!!hexData && stakeListOutput?.map((stakeList) => {
                         return (
                             <StakeInfo
