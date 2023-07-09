@@ -74,8 +74,7 @@ export const StakeInfo = (props: {
 
     const { stakedHearts, stakeShares, payout, bigPayDay, penalty } = stake
 
-    const residual = stakedHearts - penalty
-    const _netValue = residual + payout + bigPayDay
+    const _netValue = stakedHearts + payout + bigPayDay - penalty
     const netValue = _netValue >= 0 ? _netValue : 0n
 
     //////////////////////////////////////////////////////////////
@@ -93,34 +92,20 @@ export const StakeInfo = (props: {
     const hexPayout = Math.trunc(Number(formatUnits(payout, HEX.DECIMALS)))
     const hexBPD = Math.trunc(Number(formatUnits(bigPayDay, HEX.DECIMALS)))
     const hexPenalty = Math.trunc(Number(formatUnits(penalty, HEX.DECIMALS)))
-    const hexResidual = Math.trunc(Number(formatUnits(residual, HEX.DECIMALS)))
     const hexNetValue = Math.trunc(Number(formatUnits(netValue, HEX.DECIMALS)))
     const usdStaked = Number((hexStaked * usdhex).toFixed(2))
     const usdPayout = Number((hexPayout * usdhex).toFixed(2))
     const usdBPD = Number((hexBPD * usdhex).toFixed(2))
     const usdPenalty = Number((hexPenalty * usdhex).toFixed(2))
-    const usdResidual = Number((hexResidual * usdhex).toFixed(2))
     const usdNetValue = Number((hexNetValue * usdhex).toFixed(2))
     //////////////////////////////////////////////////////////////
 
     const Notes = () => {
-        const costValue = eesStatsHEX
-            ? <span className="text-danger numeric"><CryptoVal className="numeric" value={stakedHearts} currency="HEX" showUnit /></span>
-            : <span>(<span className="text-danger numeric">${usdStaked}</span> worth of HEX at today&rsquo;s price)</span>
-
-        const penaltyValue = eesStatsHEX
-            ? <span><CryptoVal className="numeric" value={penalty} currency="HEX" showUnit /></span>
-            : <span>${usdPenalty}</span>
-
         return (
             <ul>
                 <li>
-                    <strong>Residual<sup className="text-danger">&nbsp;*</sup></strong>
-                    equals; miner cost {costValue}&nbsp;
-                    {penalty > 0n
-                        ? <span> minus <span className="text-danger">{penaltyValue}</span> early termination penalties.</span>
-                        : <span>. No early termination penalties apply.</span>
-                    }
+                    <strong>Penalties<sup className="text-danger">&nbsp;*</sup></strong>
+                    apply when a mining contract is forfeited prior to term completion.
                 </li>
                 {!eesStatsHEX && <li>
                     <span>Dollar values calculated from HEX at today&lsquo;s rates. </span>
@@ -262,10 +247,10 @@ export const StakeInfo = (props: {
                         >
                             <Row className="text-light">
                                 <Col>Miner Cost</Col>
-                                <Col className="ms-3 pe-1 text-end text-danger">
+                                <Col className="ms-3 pe-1 text-end text-info">
                                     {eesStatsHEX
-                                        ? <span>-&nbsp;<CryptoVal value={stakedHearts} currency="HEX" showUnit /></span>
-                                        : <span>-&nbsp;$&nbsp;<CryptoVal value={usdStaked} currency="USD" /></span>
+                                        ? <span><CryptoVal value={stakedHearts} currency="HEX" showUnit /></span>
+                                        : <span><CryptoVal value={usdStaked} currency="USD" /></span>
                                     }
                                 </Col>
                             </Row>
@@ -273,8 +258,8 @@ export const StakeInfo = (props: {
                                 <Col>Mined</Col>
                                 <Col className="ms-3 pe-1 text-end">
                                     {eesStatsHEX
-                                        ? <span>+&nbsp;<CryptoVal value={payout} currency="HEX" showUnit /></span>
-                                        : <span>+<CryptoVal value={usdPayout} currency="USD" symbol={<>&nbsp;$&nbsp;</>} /></span>
+                                        ? <span><CryptoVal value={payout} currency="HEX" showUnit /></span>
+                                        : <span><CryptoVal value={usdPayout} currency="USD" symbol={<>&nbsp;$&nbsp;</>} /></span>
                                     }
                                 </Col>
                             </Row>
@@ -287,21 +272,21 @@ export const StakeInfo = (props: {
                                     </Col>
                                     <Col className="ms-3 pe-1 text-end">
                                         {eesStatsHEX
-                                            ? <span>+&nbsp;<CryptoVal value={bigPayDay} currency="HEX"  showUnit /></span>
-                                            : <span>+<CryptoVal value={usdBPD} currency="USD" symbol={<>&nbsp;$&nbsp;</>} /></span>
+                                            ? <span><CryptoVal value={bigPayDay} currency="HEX"  showUnit /></span>
+                                            : <span><CryptoVal value={usdBPD} currency="USD" symbol={<>&nbsp;$&nbsp;</>} /></span>
                                         }
                                     </Col>
                                 </Row>
                             }
                             <Row>
                                 <Col>
-                                    Residual{penalty > 0n && <sup className="text-danger">&nbsp;*</sup>}
+                                    Penalties<sup className="text-danger">&nbsp;*</sup>
                                 </Col>
                                 <Col className="ms-3 pe-1 text-end">
-                                    <span className={residual < 0n ? "text-danger" : ""}>
+                                    <span className={penalty > 0n ? "text-danger" : ""}>
                                         {eesStatsHEX
-                                            ? <span><CryptoVal value={residual} currency="HEX" symbol={<>&nbsp;</>} showUnit /></span>
-                                            : <span><CryptoVal value={usdResidual} currency="USD" symbol={<>&nbsp;$&nbsp;</>} /></span>
+                                            ? <span><CryptoVal value={penalty} currency="HEX" symbol={<>&nbsp;</>} showUnit /></span>
+                                            : <span><CryptoVal value={usdPenalty} currency="USD" symbol={<>&nbsp;$&nbsp;</>} /></span>
                                         }
                                     </span>
                                 </Col>
@@ -322,7 +307,7 @@ export const StakeInfo = (props: {
                             </Row>
                         </Container>
                         <Container>
-                            <Row className="small">
+                            <Row>
                                 <Col>
                                     <Notes />
                                 </Col>
