@@ -100,23 +100,6 @@ export const StakeInfo = (props: {
     const usdNetValue = Number((hexNetValue * usdhex).toFixed(2))
     //////////////////////////////////////////////////////////////
 
-    const Notes = () => {
-        return (
-            <ul>
-                <li>
-                    <strong>Penalties<sup className="text-danger">&nbsp;*</sup></strong>
-                    apply when a mining contract is forfeited prior to term completion.
-                </li>
-                {!eesStatsHEX && <li>
-                    <span>Dollar values calculated from HEX at today&lsquo;s rates. </span>
-                </li>}
-                <li>
-                    <span>All figures are approximate and could change.</span>
-                </li>
-            </ul>
-        )
-    }
-
     return (
         <Accordion className="my-2" defaultActiveKey="0"
             onSelect={eventKey => {
@@ -309,7 +292,18 @@ export const StakeInfo = (props: {
                         <Container>
                             <Row>
                                 <Col>
-                                    <Notes />
+                                    <ul>
+                                        <li>
+                                            <sup className="text-danger">*&nbsp;</sup>Penalties apply
+                                            when a mining contract is forfeited prior to term completion.
+                                        </li>
+                                        {!eesStatsHEX && <li>
+                                            <span>Dollar values calculated from HEX at today&lsquo;s rates. </span>
+                                        </li>}
+                                        <li>
+                                            <span>All figures are approximate and may change without notice.</span>
+                                        </li>
+                                    </ul>
                                 </Col>
                             </Row>
                         </Container>
