@@ -355,7 +355,7 @@ export const calcStakeEnd = (
         ))
 
     } else {
-        if (stake.isAutoStake) return { stakeReturn: 0n, payout: 0n, bigPayDay: 0n, penalty: 0n, cappedPenalty: 0n }
+        if (stake.isAutoStake) return { stakeReturn: stake.stakedHearts, payout: 0n, bigPayDay: 0n, penalty: 0n, cappedPenalty: 0n }
         stakeReturn = stake.stakedHearts
     }
 
