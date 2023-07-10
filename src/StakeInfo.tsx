@@ -294,7 +294,7 @@ export const StakeInfo = (props: {
                         <Container>
                             <Row>
                                 <Col>
-                                    <ul>
+                                    <ul className="no-bullets text-center">
                                         <li>
                                             <sup className="text-danger">*&nbsp;</sup>{t("Penalties apply when a stake is ended earlier than contracted.")}
                                         </li>
