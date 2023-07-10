@@ -75,8 +75,8 @@ const StakesHistory = (props: { account?: UriAccount }) => {
                 if (d0 === undefined) return null
                 if (d1 == undefined) return null
                 const mask72 = (1n << 72n) -1n
-                const mask40 = (1n << 72n) -1n
-                const mask16 = (1n << 72n) -1n
+                const mask40 = (1n << 40n) -1n
+                const mask16 = (1n << 16n) -1n
                 const decoded = {
                     stakerAddr: result.args.stakerAddr,
                     stakeId: BigInt(result.args?.stakeId || 0),
@@ -133,7 +133,7 @@ const StakesHistory = (props: { account?: UriAccount }) => {
             </Row>
             {pastStakes === null
                 ? <div className="text-center"><Spinner animation="grow" variant="info" size="sm"/>&nbsp;&nbsp;retrieving data</div>
-                : pastStakes.length === 0 
+                : pastStakes.length === 0
                 ? <>no history found</>
                 : pastStakes.map((stake, index: number) => {
                     if (stake === null) return <>internal error</>
