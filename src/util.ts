@@ -333,15 +333,13 @@ export const calcStakeEnd = (
     let servedDays = 0n
 
     // .sol:1414 stakeEnd
-    if (currentDay >= stake.lockedDay) {
-        if (stake.lockedDay < currentDay) { // .sol:1449
-            if (stake.unlockedDay > 0) { // good accounted
-                servedDays = stake.stakedDays
-            } else {
-                servedDays = currentDay - stake.lockedDay;
-                if (servedDays > stake.stakedDays) {
-                    servedDays = stake.stakedDays;
-                }
+    if (currentDay >= stake.lockedDay) { // .sol:1449
+        if (stake.unlockedDay > 0) { // good accounted
+            servedDays = stake.stakedDays
+        } else {
+            servedDays = currentDay - stake.lockedDay;
+            if (servedDays > stake.stakedDays) {
+                servedDays = stake.stakedDays;
             }
         }
         ({ stakeReturn, payout, bigPayDay, penalty, cappedPenalty = 0n } = calcPayoutAndEarlyPenalty(
@@ -353,18 +351,9 @@ export const calcStakeEnd = (
             servedDays,
             stake.stakeShares,
         ))
-
     } else {
-        if (stake.isAutoStake) return { stakeReturn: stake.stakedHearts, payout: 0n, bigPayDay: 0n, penalty: 0n, cappedPenalty: 0n }
+        if (stake.isAutoStake) return { stakeReturn: 0n, payout: 0n, bigPayDay: 0n, penalty: 0n, cappedPenalty: 0n }
         stakeReturn = stake.stakedHearts
-    }
-
-    // This never happens for a real stakeEnd because there can be no part day after end.
-    // However, go.hex.com includes current partial day for in-progress stakes.
-    if (currentDay <= stake.lockedDay + stake.stakedDays) {
-        const partDayPayout = estimatePayoutRewardsDay(hexData, stake.stakeShares, currentDay)
-        payout += partDayPayout
-        stakeReturn += partDayPayout
     }
 
     return { stakeReturn, payout, bigPayDay, penalty, cappedPenalty }

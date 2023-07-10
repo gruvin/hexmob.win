@@ -20,7 +20,13 @@ const StakeHistory = lazy(() => import('./StakeHistory'));
 import ReactGA from 'react-ga'
 
 import './Stakes.scss'
-import { findEarliestDay, calcStakeEnd, calcPercentGain, calcPercentAPY } from './util'
+import {
+    findEarliestDay,
+    calcStakeEnd,
+    calcPercentGain,
+    calcPercentAPY,
+    estimatePayoutRewardsDay
+} from './util'
 
 import { UriAccount } from './lib/App'
 import { StakeData, StakeList } from './lib/Stakes'
@@ -234,13 +240,21 @@ const Stakes = (props: {
                 const endDay = lockedDay + stakedDays + 1
                 const progress = (Number(currentDay) - Number(lockedDay)) / Number(stakedDays) * 100
                 totalHexValue += stakedHearts
+                    
+                // add payout (so far) from current partial day
+                let payout = 0n
+                if (currentDay < lockedDay + stakedDays) {
+                    const partDayPayout = estimatePayoutRewardsDay(hexData, stakeShares, currentDay)
+                    payout += partDayPayout
+                }
+
                 return {
                     stakeIndex: BigInt(index),
                     stakeId: BigInt(stakeId),
                     stakedHearts: BigInt(stakedHearts),
                     stakeShares: BigInt(stakeShares),
                     bigPayDay: 0n,
-                    payout: 0n,
+                    payout,
                     penalty: 0n,
                     stakeReturn: 0n,
                     cappedPenalty: 0n,
@@ -283,14 +297,14 @@ const Stakes = (props: {
                 if (!indexedDailyData) return Promise.reject("internal error [1]")
                 let totalHexValue = 0n
                 const newStakeData: StakeData[] = stakeList.map((oldStakeData: StakeData) => {
-                    const newStakeData = calcStakeEnd(hexData, indexedDailyData, oldStakeData)
-                    const { payout, bigPayDay, penalty } = newStakeData
-                    const { stakedHearts } = oldStakeData
-                    debug("HUH? ", { stakedHearts, penalty, payout, bigPayDay})
+                    const stakeReturnnData = calcStakeEnd(hexData, indexedDailyData, oldStakeData)
+                    const { payout, bigPayDay, penalty } = stakeReturnnData
+                    const partDayPayout = oldStakeData.payout // calculated from HEX globals, before dailyData retrieval
                     totalHexValue += oldStakeData.stakedHearts + payout + bigPayDay - penalty
                     const result = {
                         ...oldStakeData,
-                        ...newStakeData,
+                        ...stakeReturnnData,
+                        payout: payout + partDayPayout,
                     }
                     return result
                 })

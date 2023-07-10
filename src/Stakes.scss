@@ -11,7 +11,12 @@
         background-color: #050011;
         & .progress { height: 0.2rem }
     }
-    & .ees-estimate { max-width: fit-content; }
+    & .ees-estimate {
+        max-width: -moz-fit-content;
+        max-width: fit-content;
+        cursor: pointer;
+    }
+
     & .stake-history { background-color: map-get(bs.$theme-colors, dark);}
 
     & .btn-exitbtn,
