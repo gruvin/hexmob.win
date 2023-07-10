@@ -1,4 +1,5 @@
 import React, { useContext, useEffect, useState } from 'react'
+import { useTranslation } from "react-i18next"
 import { useNetwork, usePublicClient, useQuery } from 'wagmi'
 import HEX from './hex_contract'
 import { EventStakeHistory } from './lib/Stakes'
@@ -15,9 +16,10 @@ const debug = _debug("StakeHistory")
 debug("loaded")
 
 const StakesHistory = (props: { account?: UriAccount }) => {
+    const { t } = useTranslation()
     const hexData = useContext(HexContext)
     const walletAddress = props.account?.address || hexData?.walletAddress
-    if (!walletAddress) return <>internal error</>
+    if (!walletAddress) return <>{t("internal error")}</>
 
     const [sortKey, setSortKey] = useState({ keyField: "timestamp", dir: -1 } as { keyField: string, dir: number })
     const [pastStakes, setPastStakes] = useState(null as EventStakeHistory[] | null)
@@ -121,22 +123,22 @@ const StakesHistory = (props: { account?: UriAccount }) => {
 
     return (
         <Container className="row-highlight-even">
-            <h3 className="text-center">HEX Units</h3>
+            <h3 className="text-center">{t("HEX Units")}</h3>
             <Row className="my-2 xs-small text-end text-bold" key="hist_head">
-                <Col className="col-2 px-0 text-center"><a href="#sort_timestamp" onClick={handleSortSelection}>Ended</a></Col>
-                <Col className="col-1 ps-0 pe-0"><a href="#sort_servedDays" onClick={handleSortSelection}>Days</a></Col>
-                <Col className="ps-2 pe-0"><a href="#sort_stakedHearts" onClick={handleSortSelection}>Cost</a></Col>
-                <Col className="ps-2 pe-0"><a href="#sort_stakeShares" onClick={handleSortSelection}>Shares</a></Col>
-                <Col className="ps-2 pe-0"><a href="#sort_payout" onClick={handleSortSelection}>Payout</a></Col>
-                <Col className="ps-2 pe-0"><a href="#sort_penalty" onClick={handleSortSelection}>Penalty</a></Col>
-                <Col className="ps-2 pe-0"><a href="#sort_stakeReturn" onClick={handleSortSelection}>Result</a></Col>
+                <Col className="col-2 px-0 text-center"><a href="#sort_timestamp" onClick={handleSortSelection}>{t("Ended")}</a></Col>
+                <Col className="col-1 ps-0 pe-0"><a href="#sort_servedDays" onClick={handleSortSelection}>{t("Days")}</a></Col>
+                <Col className="ps-2 pe-0"><a href="#sort_stakedHearts" onClick={handleSortSelection}>{t("Staked")}</a></Col>
+                <Col className="ps-2 pe-0"><a href="#sort_stakeShares" onClick={handleSortSelection}>{t("Shares")}</a></Col>
+                <Col className="ps-2 pe-0"><a href="#sort_payout" onClick={handleSortSelection}>{t("Yield")}</a></Col>
+                <Col className="ps-2 pe-0"><a href="#sort_penalty" onClick={handleSortSelection}>{t("Penalties")}</a></Col>
+                <Col className="ps-2 pe-0"><a href="#sort_stakeReturn" onClick={handleSortSelection}>{t("Return")}</a></Col>
             </Row>
             {pastStakes === null
-                ? <div className="text-center"><Spinner animation="grow" variant="info" size="sm"/>&nbsp;&nbsp;retrieving data</div>
+                ? <div className="text-center"><Spinner animation="grow" variant="info" size="sm"/>&nbsp;&nbsp;{t("retrieving data")}</div>
                 : pastStakes.length === 0
                 ? <>no history found</>
                 : pastStakes.map((stake, index: number) => {
-                    if (stake === null) return <>internal error</>
+                    if (stake === null) return <>{t("internal error")}</>
                     const { timestamp, servedDays, stakedHearts, stakeShares, payout, penalty, stakeReturn } = stake
                     const endDate = new Date(Number(timestamp) * 1000).toLocaleDateString()
                     return (
