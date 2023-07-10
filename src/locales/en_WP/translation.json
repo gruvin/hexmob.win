@@ -50,7 +50,7 @@
     "% Gain": "% Gain",
     "% APY": "% APY",
     "APY": "APY",
-    "Penalties apply when a mining contract is forfeited prior to term completion.": "Penalties apply when a mining contract is forfeited prior to term completion.",
+    "Penalties apply when a stake is ended earlier than contracted.": "Penalties apply when a mining contract is forfeited prior to term completion.",
     "Dollar values calculated from HEX at today&lsquo;s rates.": "Dollar values calculated from HEX at today's rates.",
     "All figures are approximate and may change without notice.": "All figures are approximate and may change without notice.",
     "Staked Amount": "Miner Cost",
