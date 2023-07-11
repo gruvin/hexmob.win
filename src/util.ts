@@ -1,5 +1,5 @@
 import HEX from './hex_contract'
-import { formatUnits, parseUnits } from 'viem'
+import { parseUnits } from 'viem'
 import { Globals, HexData, DailyData } from './hex_contract'
 import { StakeData, StakeList } from './lib/Stakes'
 import { TewkStakeList } from './lib/Tewkenaire'
