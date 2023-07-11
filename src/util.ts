@@ -28,10 +28,10 @@ export const getPulseXDaiHex = async () => {
 *  where v is a Number() or String() or BN() or ethers.BigNumber and MUST be whole number (int)
  */
 export function formatUnitsWithCommas(n: bigint, exp: number, decimals: number = 3, maxlen: number = 7) {
-    const s = n.toString().padStart(exp - Number(n / 10n), '0')
+    const s = n.toString().padStart(exp, '0')
     const parts = [
         s.slice(0, s.length - exp).replace(/\B(?=(\d{3})+(?!\d))/g, ","),
-        s.slice(-exp)
+        exp ? s.slice(-exp) : ""
     ]
     let decimalPart = ""
     if (
@@ -39,8 +39,8 @@ export function formatUnitsWithCommas(n: bigint, exp: number, decimals: number =
         &&  parts[1].length > 0
         && decimals > 0
     )
-        decimalPart =  '.'+parts[1].padEnd(8, '0').slice(0, decimals)
-    return (parts[0] + decimalPart).slice(0, maxlen)
+    decimalPart =  '.'+parts[1].slice(0, decimals)
+    return ((parts[0] !== "" ? parts[0] : "0") + decimalPart).slice(0, maxlen)
 }
 export const cryptoFormat = (_v: number | bigint | string, currency: string) => {
     if (_v === "") return { valueString: "NaN", unit: "", valueWithUnit: "" }
@@ -74,15 +74,12 @@ export const cryptoFormat = (_v: number | bigint | string, currency: string) => 
         case "PLS":
         case "ETH":
             if (v === 0n) out = '0.000'
-            if (len < 7) { unit = "wei"; si = ""; out = formatUnitsWithCommas(v, 0); }
-            else if (len < 13) { unit = "wei"; si = "G"; out = formatUnits(v, 9); }
-            else if (len < 14) { unit = "wei"; si = "G"; out = formatUnitsWithCommas(v, 9); }
+            if (len < 7) { unit = "wei"; si = ""; out = formatUnitsWithCommas(v, 0, 0); }
+            else if (len < 12) { unit = "wei"; si = "G"; out = formatUnitsWithCommas(v, 9); }
             else if (len < 15) { unit = "wei"; si = "G"; out = formatUnitsWithCommas(v, 9); }
-            else if (len < 16) { unit = "wei"; si = "G"; out = formatUnitsWithCommas(v, 9); }
-            else if (len < 22) { unit = "ETH"; si = ""; out = formatUnitsWithCommas(v, 18); }
-            else if (len < 24) { unit = "ETH"; si = ""; out = formatUnitsWithCommas(v, 18); }
-            else if (len < 25) { unit = "ETH"; si = ""; out = formatUnitsWithCommas(v, 18); }
-            else { unit = "ETH"; si = "M"; out = formatUnitsWithCommas(v, 24); } // <= nnn,nnn Gwei (one comma no decimals)
+            else if (len < 16) { unit = "wei"; si = "G"; out = formatUnitsWithCommas(v, 9, 3, 8); }
+            else if (len < 25) { unit = "ETH"; si = ""; out = formatUnitsWithCommas(v, 18, 4); }
+            else { unit = "ETH"; si = "M"; out = formatUnitsWithCommas(v, 24, 4); } // <= nnn,nnn Gwei (one comma no decimals)
             break
 
         case "TSHARE_PRICE":

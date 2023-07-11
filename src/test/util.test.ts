@@ -17,25 +17,25 @@ describe('CryptoVal number formatter - ETH: ', () => {
         { input:                        '1234'  , expected: { unit: "wei",    valueString:    "1,234" } }, //   1.234 kwei
         { input:                       '12345'  , expected: { unit: "wei",    valueString:   "12,345" } }, //  12.345 kwei
         { input:                      '123456'  , expected: { unit: "wei",    valueString:  "123,456" } }, // 123.456 kwei
-        { input:                     '1234567'  , expected: { unit: "wei",    valueString: "0.00123G" } }, //   1.230 mwei
-        { input:                    '12345678'  , expected: { unit: "wei",    valueString: "0.01234G" } }, //  12.340 mwei
-        { input:                   '123456789'  , expected: { unit: "wei",    valueString: "0.12345G" } }, // 123.450 mwei
-        { input:                  '1234567890'  , expected: { unit: "wei",    valueString: "1.23456G" } }, //         gwei
-        { input:                 '12345678901'  , expected: { unit: "wei",    valueString: "12.3456G" } }, //         gwei
+        { input:                     '1234567'  , expected: { unit: "wei",    valueString:   "0.001G" } }, //   1.230 mwei
+        { input:                    '12345678'  , expected: { unit: "wei",    valueString:   "0.012G" } }, //  12.340 mwei
+        { input:                   '123456789'  , expected: { unit: "wei",    valueString:   "0.123G" } }, // 123.450 mwei
+        { input:                  '1234567890'  , expected: { unit: "wei",    valueString:   "1.234G" } }, //         gwei
+        { input:                 '12345678901'  , expected: { unit: "wei",    valueString:  "12.345G" } }, //         gwei
         { input:                '123456789012'  , expected: { unit: "wei",    valueString: "123.456G" } }, //         gwei
         { input:               '1234567890123'  , expected: { unit: "wei",    valueString: "1,234.5G" } }, //   1.234 szabo
         { input:              '12345678901234'  , expected: { unit: "wei",    valueString:  "12,345G" } }, //  12.345 szabo
         { input:             '123456789012345'  , expected: { unit: "wei",    valueString: "123,456G" } }, // 123.456 szabo
-        { input:            '1234567890123456'  , expected: { unit: "ETH",    valueString: "0.001234" } }, //   1.234 finney
-        { input:           '12345678901234567'  , expected: { unit: "ETH",    valueString: "0.012345" } }, //  12.345 finney
-        { input:          '123456789012345678'  , expected: { unit: "ETH",    valueString: "0.123456" } }, // 123.456 finney
-        { input:         '1234567890123456789'  , expected: { unit: "ETH",    valueString: "1.234567" } }, // ETH
-        { input:        '12345678901234567890'  , expected: { unit: "ETH",    valueString: "12.34567" } }, // ETH
-        { input:       '123456789012345678901'  , expected: { unit: "ETH",    valueString: "123.4567" } }, // ETH
-        { input:      '1234567890123456789012'  , expected: { unit: "ETH",    valueString: "1,234.56" } }, // ETH
-        { input:     '12345678901234567890123'  , expected: { unit: "ETH",    valueString: "12,345.6" } }, // ETH
+        { input:            '1234567890123456'  , expected: { unit: "ETH",    valueString:   "0.0012" } }, //   1.234 finney
+        { input:           '12345678901234567'  , expected: { unit: "ETH",    valueString:   "0.0123" } }, //  12.345 finney
+        { input:          '123456789012345678'  , expected: { unit: "ETH",    valueString:   "0.1234" } }, // 123.456 finney
+        { input:         '1234567890123456789'  , expected: { unit: "ETH",    valueString:   "1.2345" } }, // ETH
+        { input:        '12345678901234567890'  , expected: { unit: "ETH",    valueString:  "12.3456" } }, // ETH
+        { input:       '123456789012345678901'  , expected: { unit: "ETH",    valueString:  "123.456" } }, // ETH
+        { input:      '1234567890123456789012'  , expected: { unit: "ETH",    valueString:  "1,234.5" } }, // ETH
+        { input:     '12345678901234567890123'  , expected: { unit: "ETH",    valueString:   "12,345" } }, // ETH
         { input:    '123456789012345678901234'  , expected: { unit: "ETH",    valueString:  "123,456" } }, // ETH
-        { input:   '1234567890123456789012345'  , expected: { unit: "ETH",    valueString: "1.23456M" } }, // ETH
+        { input:   '1234567890123456789012345'  , expected: { unit: "ETH",    valueString:  "1.2345M" } }, // ETH
     ]
 
     ETH.forEach(t => {
@@ -66,19 +66,19 @@ describe('CryptoVal number formatter — HEX: ', () => {
         { input:                    '123456' , expected: { unit: "Hearts", valueString:   "123,456" } },
         { input:                   '1234567' , expected: { unit:    "HEX", valueString:     "0.012" } },
         { input:                  '12345678' , expected: { unit:    "HEX", valueString:     "0.123" } },
-        { input:                 '123456789' , expected: { unit:    "HEX", valueString:     "1.245" } },
+        { input:                 '123456789' , expected: { unit:    "HEX", valueString:     "1.234" } },
         { input:                '1234567890' , expected: { unit:    "HEX", valueString:    "12.345" } },
         { input:               '12345678901' , expected: { unit:    "HEX", valueString:   "123.456" } },
         { input:              '123456789012' , expected: { unit:    "HEX", valueString:   "1,234.5" } },
         { input:             '1234567890123' , expected: { unit:    "HEX", valueString:    "12,345" } },
         { input:            '12345678901234' , expected: { unit:    "HEX", valueString:   "123,456" } },
-        { input:           '123456789012345' , expected: { unit:    "HEX", valueString:    "1.235M" } },
+        { input:           '123456789012345' , expected: { unit:    "HEX", valueString:    "1.234M" } },
         { input:          '1234567890123456' , expected: { unit:    "HEX", valueString:   "12.345M" } },
         { input:          '1234000000000000' , expected: { unit:    "HEX", valueString:   "12.340M" } },
         { input:         '12345678901234567' , expected: { unit:    "HEX", valueString:  "123.456M" } },
         { input:        '123456789012345678' , expected: { unit:    "HEX", valueString:    "1.234B" } },
         { input:       '1234567890123456789' , expected: { unit:    "HEX", valueString:   "12.345B" } },
-        { input:      '12345678901234567890' , expected: { unit:    "HEX", valueString:   "123.45B" } },
+        { input:      '12345678901234567890' , expected: { unit:    "HEX", valueString:   "123.456B" } },
         { input:     '123456789012345678901' , expected: { unit:    "HEX", valueString:    "1.234T" } },
         { input:    '1234567890123456789012' , expected: { unit:    "HEX", valueString:   "12.345T" } },
     ]
@@ -103,9 +103,9 @@ describe('CryptoVal number formatter — HEX: ', () => {
 describe('CryptoVal number formatter — SHARES: ', () => {
     const c = 'SHARES'
     const SHARES = [
-        { input:                          123   , expect: { unit: "Sh",    valueString:  "123.000" } },
-        { input:                         '123'  , expect: { unit: "Sh",    valueString:  "123.000" } },
-        { input:                        '1234'  , expect: { unit: "Sh",    valueString:  "1,234.1" } },
+        { input:                          123   , expect: { unit: "Sh",    valueString:     "123" } },
+        { input:                         '123'  , expect: { unit: "Sh",    valueString:     "123" } },
+        { input:                        '1234'  , expect: { unit: "Sh",    valueString:    "1,234" } },
         { input:                       '12345'  , expect: { unit: "Sh",    valueString:   "12,345" } },
         { input:                      '123456'  , expect: { unit: "Sh",    valueString:  "123,456" } },
         { input:                     '1234567'  , expect: { unit: "Sh",    valueString:   "1.234M" } },
