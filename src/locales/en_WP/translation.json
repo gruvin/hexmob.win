@@ -80,6 +80,12 @@
     "Total Value": "Total Value",
     "USD Value": "USD Value",
     "Mean Net Yield": "Mean Net Yield",
-    "Average APY": "Average APY"
+    "Average APY": "Average APY",
+    "Staked": "Cost",
+    "HEX Units": "HEX Units",
+    "Ended": "Ended",
+    "Penalty": "Penalty",
+    "Return": "Result",
+    "retrieving data": "retrieving data"
 
 }

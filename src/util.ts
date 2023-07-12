@@ -1,6 +1,5 @@
 import HEX from './hex_contract'
-import { commify } from '@ethersproject/units'
-import { formatUnits, parseUnits } from 'viem'
+import { parseUnits } from 'viem'
 import { Globals, HexData, DailyData } from './hex_contract'
 import { StakeData, StakeList } from './lib/Stakes'
 import { TewkStakeList } from './lib/Tewkenaire'
@@ -28,6 +27,21 @@ export const getPulseXDaiHex = async () => {
  * displays unitized .3 U formatted values (eg. 12.345 M) with 50% opacity for fractional part
 *  where v is a Number() or String() or BN() or ethers.BigNumber and MUST be whole number (int)
  */
+export function formatUnitsWithCommas(n: bigint, exp: number, decimals: number = 3, maxlen: number = 7) {
+    const s = n.toString().padStart(exp, '0')
+    const parts = [
+        s.slice(0, s.length - exp).replace(/\B(?=(\d{3})+(?!\d))/g, ","),
+        exp ? s.slice(-exp) : ""
+    ]
+    let decimalPart = ""
+    if (
+        parts[0].length < maxlen - 1
+        &&  parts[1].length > 0
+        && decimals > 0
+    )
+    decimalPart =  '.'+parts[1].slice(0, decimals)
+    return ((parts[0] !== "" ? parts[0] : "0") + decimalPart).slice(0, maxlen)
+}
 export const cryptoFormat = (_v: number | bigint | string, currency: string) => {
     if (_v === "") return { valueString: "NaN", unit: "", valueWithUnit: "" }
     if (typeof currency === 'undefined' || currency === "") currency = "HEX"
@@ -60,25 +74,22 @@ export const cryptoFormat = (_v: number | bigint | string, currency: string) => 
         case "PLS":
         case "ETH":
             if (v === 0n) out = '0.000'
-            if (len < 7) { unit = "wei"; si = ""; out = commify(v.toString()); }
-            else if (len < 13) { unit = "wei"; si = "G"; out = formatUnits(v, 9).slice(0, 7); }
-            else if (len < 14) { unit = "wei"; si = "G"; out = commify(formatUnits(v, 9).slice(0, 6)); }
-            else if (len < 15) { unit = "wei"; si = "G"; out = commify(formatUnits(v, 9).slice(0, 5)); }
-            else if (len < 16) { unit = "wei"; si = "G"; out = commify(formatUnits(v, 9).slice(0, 6)); }
-            else if (len < 22) { unit = "ETH"; si = ""; out = commify(formatUnits(v, 18).slice(0, 8)); }
-            else if (len < 24) { unit = "ETH"; si = ""; out = commify(formatUnits(v, 18).slice(0, 7)); }
-            else if (len < 25) { unit = "ETH"; si = ""; out = commify(formatUnits(v, 18).slice(0, 6)); }
-            else { unit = "ETH"; si = "M"; out = commify(formatUnits(v, 24).slice(0, 7)); } // <= nnn,nnn Gwei (one comma no decimals)
+            if (len < 7) { unit = "wei"; si = ""; out = formatUnitsWithCommas(v, 0, 0); }
+            else if (len < 12) { unit = "wei"; si = "G"; out = formatUnitsWithCommas(v, 9); }
+            else if (len < 15) { unit = "wei"; si = "G"; out = formatUnitsWithCommas(v, 9); }
+            else if (len < 16) { unit = "wei"; si = "G"; out = formatUnitsWithCommas(v, 9, 3, 8); }
+            else if (len < 25) { unit = "ETH"; si = ""; out = formatUnitsWithCommas(v, 18, 4); }
+            else { unit = "ETH"; si = "M"; out = formatUnitsWithCommas(v, 24, 4); } // <= nnn,nnn Gwei (one comma no decimals)
             break
 
         case "TSHARE_PRICE":
         case "SHARES":
             unit = currency === "SHARES" ? "Sh" : "HEX"
-            if (len < 7) { si = ""; out = commify(v.toString()); }
-            else if (len < 10) { si = "M"; out = commify(formatUnits(v, 6).slice(0, len - 2)); }
-            else if (len < 13) { si = "B"; out = commify(formatUnits(v, 9).slice(0, len - 5)); }
-            else if (len < 16) { si = "T"; out = commify(formatUnits(v, 12).slice(0, len - 8)); }
-            else if (len < 19) { si = "P"; out = commify(formatUnits(v, 15).slice(0, 7)); }
+            if (len < 7) { si = ""; out = formatUnitsWithCommas(v, 0); }
+            else if (len < 10) { si = "M"; out = formatUnitsWithCommas(v, 6);}
+            else if (len < 13) { si = "B"; out = formatUnitsWithCommas(v, 9); }
+            else if (len < 16) { si = "T"; out = formatUnitsWithCommas(v, 12); }
+            else if (len < 19) { si = "P"; out = formatUnitsWithCommas(v, 15); }
             else { si = "!"; out = "whoa" }
             break
 
@@ -120,13 +131,13 @@ export const cryptoFormat = (_v: number | bigint | string, currency: string) => 
         case 'HEX':
             unit = "HEX"
             if (v === 0n) out = '0'
-            if (len < 7) { unit = v === 0n ? "HEX" : "Hearts"; si = ""; out = commify(v.toString()); }
-            else if (len < 13) { si = ""; out = commify(formatUnits(v, 8).slice(0, 6)) }
-            else if (len < 14) { si = ""; out = commify(formatUnits(v, 8).slice(0, 5)) } // 5 because comma
-            else if (len < 15) { si = ""; out = commify(formatUnits(v, 8).slice(0, 6)) }
-            else if (len < 18) { si = "M"; out = commify(formatUnits(v, 14).slice(0, 6)) }
-            else if (len < 21) { si = "B"; out = commify(formatUnits(v, 17).slice(0, 6)) }
-            else { si = "T"; out = commify(formatUnits(v, 20).slice(0, 6)) }
+            if (len < 7) { unit = v === 0n ? "HEX" : "Hearts"; si = ""; out = formatUnitsWithCommas(v, 0); }
+            else if (len < 13) { si = ""; out = formatUnitsWithCommas(v, 8); }
+            else if (len < 14) { si = ""; out = formatUnitsWithCommas(v, 8); } // 5 because comma
+            else if (len < 15) { si = ""; out = formatUnitsWithCommas(v, 8); }
+            else if (len < 18) { si = "M"; out = formatUnitsWithCommas(v, 14);}
+            else if (len < 21) { si = "B"; out = formatUnitsWithCommas(v, 17); }
+            else { si = "T"; out = formatUnitsWithCommas(v, 20); }
             break
 
         case "USD":

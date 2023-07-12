@@ -1,4 +1,4 @@
-import React, { useContext, useState } from 'react'
+import React, { useContext, useState } from "react"
 import { Trans, useTranslation } from "react-i18next"
 import Container from "react-bootstrap/Container"
 import ProgressBar from "react-bootstrap/ProgressBar"
@@ -9,22 +9,22 @@ import Badge from "react-bootstrap/Badge"
 import Button from "react-bootstrap/Button"
 import Overlay from "react-bootstrap/Overlay"
 import Popover from "react-bootstrap/Popover"
-import { StakeData } from './lib/Stakes'
-import './Stakes.scss'
-import HEX from './hex_contract'
-import { HexContext } from './Context'
-import { format } from 'd3-format'
-import { formatUnits } from 'viem'
-import { CryptoVal, StakeEndButton } from './Widgets'
+import { StakeData } from "./lib/Stakes"
+import "./Stakes.scss"
+import HEX from "./hex_contract"
+import { HexContext } from "./Context"
+import { format } from "d3-format"
+import { formatUnits } from "viem"
+import { CryptoVal, StakeEndButton } from "./Widgets"
 import {
     calcPercentGain,
     calcPercentAPY,
-} from './util'
-import ReactGA from 'react-ga'
+} from "./util"
+import ReactGA from "react-ga"
 
-import _debug from 'debug'
-const debug = _debug('StakeInfo')
-debug('loading')
+import _debug from "debug"
+const debug = _debug("StakeInfo")
+debug("loading")
 
 export const StakeInfo = (props: {
     stake: StakeData,
@@ -176,7 +176,7 @@ export const StakeInfo = (props: {
                                     target={esRef.current}
                                     container={esRef}
                                     placement={'top'}
-                                    show={esShow} 
+                                    show={esShow}
                                 >
                                     <Popover>
                                         <Popover.Body className="p-0">
