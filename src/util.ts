@@ -323,6 +323,22 @@ const calcPayoutAndEarlyPenalty = (
     return { stakeReturn, payout, bigPayDay, penalty, cappedPenalty: penalty > stakeReturn ? stakeReturn : penalty }
 }
 
+export const calcLatePenalty = (
+    lockedDay: bigint,
+    stakedDays: bigint,
+    unlockedDay: bigint,
+    rawStakeReturn: bigint
+): bigint => {
+    /* Allow grace time before penalties accrue */
+    const maxUnlockedDay = lockedDay + stakedDays + HEX.LATE_PENALTY_GRACE_DAYS;
+    if (unlockedDay <= maxUnlockedDay) {
+        return 0n;
+    }
+
+    /* Calculate penalty as a percentage of stake return based on time */
+    return rawStakeReturn * (unlockedDay - maxUnlockedDay) / HEX.LATE_PENALTY_SCALE_DAYS;
+}
+
 export const calcStakeEnd = (
     hexData: HexData,
     dailyData: DailyData[],
@@ -365,6 +381,19 @@ export const calcStakeEnd = (
     } else {
         if (stake.isAutoStake) return { stakeReturn: 0n, payout: 0n, bigPayDay: 0n, penalty: 0n, cappedPenalty: 0n }
         stakeReturn = stake.stakedHearts
+        penalty = calcLatePenalty(stake.lockedDay, stake.stakedDays, currentDay, stakeReturn)
+    }
+
+    if (penalty != 0n) {
+        if (penalty > stakeReturn) {
+            /* Cannot have a negative stake return */
+            cappedPenalty = stakeReturn;
+            stakeReturn = 0n;
+        } else {
+            /* Remove penalty from the stake return */
+            cappedPenalty = penalty;
+            stakeReturn -= cappedPenalty;
+        }
     }
 
     return { stakeReturn, payout, bigPayDay, penalty, cappedPenalty }

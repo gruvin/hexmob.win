@@ -13,7 +13,7 @@ export type StakeData = {
     stakeReturn: bigint
     cappedPenalty: bigint
     isAutoStake: boolean
-    isTewkStake: boolean
+    isTewkStake?: boolean
     progress?: number
 }
 export type StakeList = StakeData[]

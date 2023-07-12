@@ -117,7 +117,7 @@ export const StakeInfo = (props: {
                                 <span className="text-muted small"> {t("SHARES")}</span>
                             </Col>
                             <Col xs={6} className="text-end pl-0">
-                                <span className="text-muted small">{t("VALUE")} </span>
+                                <span className="text-muted small">{t("FULL TERM ATP")} </span>
                                 <span className="numeric h3 text-success">{"$" + usdSummaryTotal}</span>
                             </Col>
                         </Row>
@@ -235,7 +235,7 @@ export const StakeInfo = (props: {
                                 <Col className="ms-3 pe-1 text-end text-info">
                                     {eesStatsHEX
                                         ? <span><CryptoVal value={stakedHearts} currency="HEX" showUnit /></span>
-                                        : <span><CryptoVal value={usdStaked} currency="USD" /></span>
+                                        : <span><CryptoVal value={usdStaked} currency="USD"  symbol={<>&nbsp;$&nbsp;</>} /></span>
                                     }
                                 </Col>
                             </Row>
@@ -296,11 +296,8 @@ export const StakeInfo = (props: {
                                 <Col>
                                     <ul className="no-bullets text-center">
                                         <li>
-                                            <sup className="text-danger">*&nbsp;</sup>{t("Penalties apply when a stake is ended earlier than contracted.")}
+                                            <sup className="text-danger">*&nbsp;</sup>{t("penaltiesApplyWhen")}
                                         </li>
-                                        {!eesStatsHEX && <li>
-                                            {t("Dollar values calculated from HEX at today's rates.")}
-                                        </li>}
                                         <li>
                                             {t("All figures are approximate and may change without notice.")}
                                         </li>

@@ -169,6 +169,7 @@ const StakesList = (props: {
                             />
                         )
                     })}
+                    <div className="text-center">{t("dollarValuesATP")}</div>
                 </Card.Body>
             </Card>
         </>)
@@ -264,7 +265,6 @@ const Stakes = (props: {
                     endDay: BigInt(endDay),
                     progress,
                     isAutoStake: !!isAutoStake,
-                    isTewkStake: false,
                 }
             })
             setStakeList(_stakeList)
@@ -297,13 +297,13 @@ const Stakes = (props: {
                 if (!indexedDailyData) return Promise.reject("internal error [1]")
                 let totalHexValue = 0n
                 const newStakeData: StakeData[] = stakeList.map((oldStakeData: StakeData) => {
-                    const stakeReturnnData = calcStakeEnd(hexData, indexedDailyData, oldStakeData)
-                    const { payout, bigPayDay, penalty } = stakeReturnnData
+                    const stakeReturnData = calcStakeEnd(hexData, indexedDailyData, oldStakeData)
+                    const { payout, bigPayDay } = stakeReturnData
                     const partDayPayout = oldStakeData.payout // calculated from HEX globals, before dailyData retrieval
-                    totalHexValue += oldStakeData.stakedHearts + payout + bigPayDay - penalty
+                    totalHexValue += oldStakeData.stakedHearts + payout + bigPayDay
                     const result = {
                         ...oldStakeData,
-                        ...stakeReturnnData,
+                        ...stakeReturnData,
                         payout: payout + partDayPayout,
                     }
                     return result
@@ -362,7 +362,7 @@ const Stakes = (props: {
                         <Row className="w-100">
                             <Col className="pe-0"><BurgerHeading>{t("Active Stakes")}</BurgerHeading></Col>
                             <Col className="col-5 lh-lg px-0 text-end text-success">
-                                <small className="text-muted small align-baseline me-1">USD</small>
+                                <small className="text-muted small align-baseline me-1">USD ATP</small>
                                 <CryptoVal
                                     className="fw-bold"
                                     value={totalUsdValue}

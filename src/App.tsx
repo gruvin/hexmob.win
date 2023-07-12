@@ -39,6 +39,7 @@ import './App.scss'
 import { format } from 'd3-format'
 import _debug from 'debug'
 const debug = _debug('app')
+
 const uriQuery = new URLSearchParams(window.location.search)
 
 switch (window.location.hostname) {
@@ -58,13 +59,13 @@ switch (window.location.hostname) {
 const Header = (props: { usdhex: number }) => {
   const hexData = useContext(HexContext)
   const currentDay = hexData?.currentDay || 0n
-  
   const { i18n } = useTranslation()
+
   const handleLanguageChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
     const languageValue = e.target.value
     i18n.changeLanguage(languageValue)
   }
-
+    
   return (<>
     <BrandLogo />
     {uriQuery.has("wording") && 
@@ -141,7 +142,7 @@ const Footer = () => {
 }
 
 function App() {
-  const { t } = useTranslation()
+  const { i18n, t } = useTranslation()
 
   /// URI Stuff
   // look for ?account=addr[:label][&...]'s from URI
@@ -152,6 +153,18 @@ function App() {
       const s = account.split(":");
       return { address: s[0] as Address, name: s[1] as string || "" }
     })
+  }
+
+  switch (uriQuery.get("lang")) {
+    case "en":
+    case "original":
+    case "classic":
+    case "0":
+      if (i18n.language != "en") i18n.changeLanguage("en")
+      break
+
+    default:
+      if (i18n.language != "en_WP") i18n.changeLanguage("en_WP")
   }
 
   // "state" variables
