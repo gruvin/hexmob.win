@@ -50,7 +50,7 @@
     "% Gain": "% Gain",
     "% APY": "% APY",
     "APY": "APY",
-    "penaltiesApplyWhen": "Penalties apply when a mining contract is forfeited prior to (or more than 14 days later) than term end.",
+    "penaltiesApplyWhen": "Penalties apply when a mining contract is forfeited prior to (or more than 14 days later than) term completion.",
     "dollarValuesATP": "All dollar values are calculated from HEX at today's price (ATP)",
     "All figures are approximate and may change without notice.": "All figures are approximate and may change without notice.",
     "Staked Amount": "Miner Cost",
