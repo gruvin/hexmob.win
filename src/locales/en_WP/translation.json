@@ -43,7 +43,7 @@
     "whatIsEffectiveHEX": "Effective HEX equals share cost without bonuses —<br /><b>Mining Units</b> + <b>Bonuses</b>",
     "whatIsTShares": "<b>Miner Shares</b> = <b>Effective HEX</b> x <b>Share Rate</b><br /> <b>T</b>Share = 1 Trillion shares<br /> <b>B</b>Share = 1 Billion shares<br /> <b>M</b>Share = 1 Million shares<br /> <b>TShare Rate</b> is the cost of one <b>T</b>Share (in HEX)<br/ >and only <b><i>increases</i></b> over time.",
     "START STAKE": "DEPLOY MINER",
-    "Reduces as others start new stakes.<br />Increases as others end their stakes.": "Reduces as others start new stakes.<br />Increases as others end their stakes.",
+    "Reduces as others start new stakes.<br />Increases as others end their stakes.": "Reduces as others deploy miners.<br />Increases as other mining ends.",
     "If stake was active on BigPayDay": "If miner was active on BigPayDay",
     "Future Market Supply by HEX Day": "Future Market Supply by HEX Day",
     "assumes all stakes end on time": "assumes all mining ends on time",

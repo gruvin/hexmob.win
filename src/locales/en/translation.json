@@ -45,7 +45,7 @@
     "% Gain": "% Gain",
     "% APY": "% APY",
     "APY": "APY",
-    "penaltiesApplyWhen": "Penalties apply when a stake is ended earlier (or more than 14 days later) than contracted term end.",
+    "penaltiesApplyWhen": "Penalties apply when a stake is ended earlier (or more than 14 days later) than contract completion.",
     "dollarValuesATP": "All dollar values are calculated from HEX at today's price (ATP)",
     "All figures are approximate and may change without notice.": "All figures are approximate and may change without notice.",
     "Staked Amount": "Staked Amount",
