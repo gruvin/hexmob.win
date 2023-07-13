@@ -225,8 +225,8 @@ export interface PayoutRewardsInput {
 export interface PayoutRewardsResult {
     payout: bigint
     bigPayDay: bigint
-    penalty: bigint
 }
+/// @dev unlike the HEX contract, here we split out BigPayDay and Payout figures
 export const calcPayoutRewards = (
     {
         hexData,
@@ -237,7 +237,7 @@ export const calcPayoutRewards = (
     }: PayoutRewardsInput
 ): PayoutRewardsResult => {
     const { currentDay, globals } = hexData
-    if (globals === undefined || dailyData === undefined) return { payout: 0n, bigPayDay: 0n, penalty: 0n }
+    if (globals === undefined || dailyData === undefined) return { payout: 0n, bigPayDay: 0n }
 
     let payout = 0n
     let bigPayDay = 0n
@@ -259,7 +259,7 @@ export const calcPayoutRewards = (
         const bonuses = calcAdoptionBonus(bigPaySlice, globals)
         bigPayDay = bigPaySlice + bonuses
     }
-    return { payout, bigPayDay, penalty: 0n }
+    return { payout, bigPayDay }
 }
 
 /*** .sol:1724 (payout, penalty) = _calcPayoutAndEarlyPenalty(...) ***/
@@ -276,13 +276,12 @@ const calcPayoutAndEarlyPenalty = (
     payout: bigint,
     bigPayDay: bigint,
     penalty: bigint,
-    cappedPenalty: bigint
 } => {
+    const servedEndDay = lockedDay + servedDays
+
     /* 50% of stakedDays (rounded up) with a minimum applied */
     let penaltyDays = (stakedDays + 1n) / 2n
     if (penaltyDays < HEX.EARLY_PENALTY_MIN_DAYS) penaltyDays = HEX.EARLY_PENALTY_MIN_DAYS
-
-    const servedEndDay = lockedDay + servedDays
 
     // acumulators
     let stakeReturn = 0n
@@ -291,21 +290,27 @@ const calcPayoutAndEarlyPenalty = (
     let penalty = 0n
 
     if (servedDays === 0n) { // .sol:1743
-        /* Fill penalty days with the estimated average payout */
         penalty = estimatePayoutRewardsDay(hexData, stakeShares, lockedDay) * penaltyDays // .sol:1745-1746
         stakeReturn = stakedHearts + payout + bigPayDay
-        return { stakeReturn, payout, bigPayDay, penalty, cappedPenalty: penalty > stakeReturn ? stakeReturn : penalty }
+        return { stakeReturn, payout, bigPayDay, penalty }
     }
 
-    if (servedDays >= penaltyDays) { // .sol:1750
+    if (penaltyDays < servedDays) { // .sol:1750
+        /*
+            Simplified explanation of intervals where end-day is non-inclusive:
+
+            penalty:    [lockedDay  ...  penaltyEndDay)
+            delta:                      [penaltyEndDay  ...  servedEndDay)
+            payout:     [lockedDay  .......................  servedEndDay)
+        */
         const penaltyEndDay = lockedDay + penaltyDays
-        const interest = calcPayoutRewards({ hexData, dailyData, stakeShares, beginDay: lockedDay, endDay: penaltyEndDay })
-        const interestDelta = calcPayoutRewards({ hexData, dailyData, stakeShares, beginDay: penaltyEndDay, endDay: servedEndDay })
-        payout = interest.payout + interestDelta.payout
-        penalty = interest.payout + interest.bigPayDay // the contract combines payout & bigPayDay into one sum
-        bigPayDay = interest.bigPayDay // don't include any bigPayDay from the delta period)
+        const payoutPenalty = calcPayoutRewards({ hexData, dailyData, stakeShares, beginDay: lockedDay, endDay: penaltyEndDay })
+        const payoutDelta = calcPayoutRewards({ hexData, dailyData, stakeShares, beginDay: penaltyEndDay, endDay: servedEndDay })
+        penalty = payoutPenalty.payout + payoutDelta.bigPayDay
+        payout = payoutPenalty.payout + payoutDelta.payout
+        bigPayDay = payoutPenalty.bigPayDay + payoutDelta.bigPayDay
         stakeReturn = stakedHearts + payout + bigPayDay
-        return { stakeReturn, payout, bigPayDay, penalty, cappedPenalty: penalty > stakeReturn ? stakeReturn : penalty }
+        return { stakeReturn, payout, bigPayDay, penalty }
     }
 
     // .sol:1767
@@ -320,7 +325,64 @@ const calcPayoutAndEarlyPenalty = (
         penalty = interest * penaltyDays / servedDays
     }
     stakeReturn = stakedHearts + payout + bigPayDay
-    return { stakeReturn, payout, bigPayDay, penalty, cappedPenalty: penalty > stakeReturn ? stakeReturn : penalty }
+    return { stakeReturn, payout, bigPayDay, penalty }
+}
+
+const stakePerformance = (
+    hexData: HexData,
+    dailyData: DailyData[],
+    stake: StakeData,
+    servedDays: bigint,
+): {
+    stakeReturn: bigint,
+    payout: bigint,
+    bigPayDay: bigint,
+    penalty: bigint,
+    cappedPenalty: bigint
+} => {
+    let payout = 0n
+    let bigPayDay = 0n
+    let penalty = 0n
+    let cappedPenalty = 0n
+    let stakeReturn = 0n
+
+    if (servedDays < stake.stakedDays) {
+        ({payout, bigPayDay, penalty} = calcPayoutAndEarlyPenalty(
+            hexData,
+            dailyData,
+            stake.stakedHearts,
+            stake.lockedDay,
+            stake.stakedDays,
+            servedDays,
+            stake.stakeShares
+        ))
+        stakeReturn = stake.stakedHearts + payout + bigPayDay;
+    } else {
+        // servedDays must == stakedDays here
+        ({ payout, bigPayDay } = calcPayoutRewards({
+            hexData,
+            dailyData,
+            stakeShares: stake.stakeShares,
+            beginDay: stake.lockedDay,
+            endDay: stake.lockedDay + servedDays
+        }))
+        stakeReturn = stake.stakedHearts + payout + bigPayDay;
+        debug("XXXXXXXXXXXX: ", stake.stakedHearts, payout, bigPayDay, stake.stakedHearts + payout + bigPayDay)
+        penalty = calcLatePenalty(stake.lockedDay, stake.stakedDays, hexData.currentDay, stakeReturn)
+    }
+
+    if (penalty !== 0n) {
+        if (penalty > stakeReturn) {
+            /* Cannot have a negative stake return */
+            cappedPenalty = stakeReturn;
+            stakeReturn = 0n;
+        } else {
+            /* Remove penalty from the stake return */
+            cappedPenalty = penalty;
+            stakeReturn -= cappedPenalty;
+        }
+    }
+    return { stakeReturn, payout, bigPayDay, penalty, cappedPenalty }
 }
 
 export const calcLatePenalty = (
@@ -369,31 +431,16 @@ export const calcStakeEnd = (
                 servedDays = stake.stakedDays;
             }
         }
-        ({ stakeReturn, payout, bigPayDay, penalty, cappedPenalty = 0n } = calcPayoutAndEarlyPenalty(
+        // .sol: (stakeReturn, payout, penalty, cappedPenalty) = _stakePerformance(g, st, servedDays);
+        ({ stakeReturn, payout, bigPayDay, penalty, cappedPenalty = 0n } = stakePerformance(
             hexData,
             dailyData,
-            stake.stakedHearts,
-            stake.lockedDay,
-            stake.stakedDays,
+            stake,
             servedDays,
-            stake.stakeShares,
         ))
     } else {
         if (stake.isAutoStake) return { stakeReturn: 0n, payout: 0n, bigPayDay: 0n, penalty: 0n, cappedPenalty: 0n }
         stakeReturn = stake.stakedHearts
-        penalty = calcLatePenalty(stake.lockedDay, stake.stakedDays, currentDay, stakeReturn)
-    }
-
-    if (penalty != 0n) {
-        if (penalty > stakeReturn) {
-            /* Cannot have a negative stake return */
-            cappedPenalty = stakeReturn;
-            stakeReturn = 0n;
-        } else {
-            /* Remove penalty from the stake return */
-            cappedPenalty = penalty;
-            stakeReturn -= cappedPenalty;
-        }
     }
 
     return { stakeReturn, payout, bigPayDay, penalty, cappedPenalty }

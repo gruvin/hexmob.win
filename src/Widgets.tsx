@@ -1,4 +1,5 @@
 import React, { useContext, useState, PropsWithChildren } from 'react'
+import { Trans, useTranslation } from "react-i18next"
 import Container, { ContainerProps } from 'react-bootstrap/Container'
 import Button from 'react-bootstrap/Button'
 import OverlayTrigger, { OverlayTriggerProps } from 'react-bootstrap/OverlayTrigger'
@@ -96,6 +97,7 @@ export const StakeStartButton = (props: React.PropsWithChildren<{
     rejectionCallback?: () => void,
     confirmationCallback?: () => void
 }>) => {
+    const { t } = useTranslation()
     const hexData = useContext(HexContext)
     const chainId = hexData?.chainId || 0
     const explorerUrl = (CHAINS[chainId]?.explorerURL || "").replace(/\/$/, "") // remove trailing / for consistency
@@ -128,28 +130,28 @@ export const StakeStartButton = (props: React.PropsWithChildren<{
         }
     }, [txReceipt])
 
-    let buttonContent = props.children ? props.children : <>PUBLISH HEX</>
+    let buttonContent = props.children ? props.children : <>{t("START STAKE")}</>
     let txHash = <></>
     if (!chainId) {
         buttonContent = <><FontAwesomeIcon icon={faExclamation} /> {buttonContent}</>
     } else {
         if (confirmedState) {
-            buttonContent = <><FontAwesomeIcon icon={faSmileWink} />&nbsp;confirmed</>
+            buttonContent = <><FontAwesomeIcon icon={faSmileWink} />&nbsp;{t("confirmed")}</>
             setTimeout(() => {
                 reset()
                 setConfirmedState(false)
             }, 3000)
         } else if (isLoading) {
-            buttonContent = <><FontAwesomeIcon icon={faWalkieTalkie} />&nbsp;requesting</>
+            buttonContent = <><FontAwesomeIcon icon={faWalkieTalkie} />&nbsp;{t("requesting")}</>
         } else if (isError) {
             debug("StartStakeButon::write error: ", data)
-            buttonContent = <><FontAwesomeIcon icon={faFrown} />&nbsp;rejected</>
+            buttonContent = <><FontAwesomeIcon icon={faFrown} />&nbsp;{t("rejected")}</>
             setTimeout(() => {
                 reset()
                 if (typeof props.rejectionCallback === 'function') props.rejectionCallback()
             }, 3000)
         } else if (isSuccess) {
-            buttonContent = <><FontAwesomeIcon icon={faHourglass} />&nbsp;confirming</>
+            buttonContent = <><FontAwesomeIcon icon={faHourglass} />&nbsp;{t("confirming")}</>
             txHash = <>
                 <CopyToClipboard text={data?.hash || ""}
                     onCopy={() => {
@@ -157,7 +159,7 @@ export const StakeStartButton = (props: React.PropsWithChildren<{
                         setTimeout(() => setCopied(false), 3000)
                     }
                 }>
-                    <span style={{cursor: "pointer"}}>{copied ? <>COPIED </> : <>&nbsp;&nbsp;<FontAwesomeIcon icon={faCopy} />&nbsp;&nbsp;&nbsp;</>}</span>
+                    <span style={{cursor: "pointer"}}>{copied ? <>{t("COPIED")} </> : <>&nbsp;&nbsp;<FontAwesomeIcon icon={faCopy} />&nbsp;&nbsp;&nbsp;</>}</span>
                 </CopyToClipboard>
                 <a
                     className="txhash-link"
@@ -185,6 +187,7 @@ export const StakeEndButton = (
         rejectionCallback?: () => void,
         confirmationCallback?: () => void,
 }>) => {
+    const { t } = useTranslation()
     const hexData = useContext(HexContext)
     const chainId = hexData?.chainId || 0
     const explorerUrl = (CHAINS[chainId]?.explorerURL || "").replace(/\/$/, "") // remove trailing / for consistency
@@ -211,28 +214,28 @@ export const StakeEndButton = (
         }
     }, [txReceipt])
 
-    let buttonContent = props.children ? props.children : <>PUBLISH HEX</>
+    let buttonContent = props.children ? props.children : <>{t("END STAKE")}</>
     let txHash = <></>
     if (!chainId) {
         buttonContent = <><FontAwesomeIcon icon={faExclamation} /> {buttonContent}</>
     } else {
         if (confirmedState) {
-            buttonContent = <><FontAwesomeIcon icon={faSmileWink} />&nbsp;confirmed</>
+            buttonContent = <><FontAwesomeIcon icon={faSmileWink} />&nbsp;{t("confirmed")}</>
             setTimeout(() => {
                 reset()
                 setConfirmedState(false)
             }, 3000)
         } else if (isLoading) {
-            buttonContent = <><FontAwesomeIcon icon={faWalkieTalkie} />&nbsp;requesting</>
+            buttonContent = <><FontAwesomeIcon icon={faWalkieTalkie} />&nbsp;{t("requesting")}</>
         } else if (isError) {
             debug("StartEndButon::write error: ", data)
-            buttonContent = <><FontAwesomeIcon icon={faFrown} />&nbsp;rejected</>
+            buttonContent = <><FontAwesomeIcon icon={faFrown} />&nbsp;{t("rejected")}</>
             setTimeout(() => {
                 reset()
                 if (typeof props.rejectionCallback === 'function') props.rejectionCallback()
             }, 3000)
         } else if (isSuccess) {
-            buttonContent = <><FontAwesomeIcon icon={faHourglass} />&nbsp;confirming</>
+            buttonContent = <><FontAwesomeIcon icon={faHourglass} />&nbsp;{t("confirming")}</>
             txHash = <>
                 <CopyToClipboard text={data?.hash || ""}
                     onCopy={() => {
@@ -240,7 +243,7 @@ export const StakeEndButton = (
                         setTimeout(() => setCopied(false), 3000)
                     }
                 }>
-                    <span style={{cursor: "pointer"}}>{copied ? <>COPIED </> : <>&nbsp;&nbsp;<FontAwesomeIcon icon={faCopy} />&nbsp;&nbsp;&nbsp;</>}</span>
+                    <span style={{cursor: "pointer"}}>{copied ? <>{t("COPIED")} </> : <>&nbsp;&nbsp;<FontAwesomeIcon icon={faCopy} />&nbsp;&nbsp;&nbsp;</>}</span>
                 </CopyToClipboard>
                 <a
                     className="txhash-link"
@@ -259,7 +262,7 @@ export const StakeEndButton = (
             >
                 {buttonContent}
             </Button>
-            {write === undefined && <><br/><Badge bg="danger">insufficient funds for gas?</Badge></>}
+            {write === undefined && <><br/><Badge bg="danger">{t("gas error ?")}</Badge></>}
             <div>{txHash}&nbsp;</div>
         </div>
     )

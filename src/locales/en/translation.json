@@ -82,5 +82,11 @@
     "Ended": "Ended",
     "Penalty": "Penalty",
     "Return": "Return",
-    "retrieving data": "retrieving data"
+    "retrieving data": "retrieving data",
+    "gas error ?": "gas error ?",
+    "COPIED": "COPIED",
+    "confirmed": "confirmed",
+    "requesting": "requesting",
+    "rejected": "rejected",
+    "confirming": "confirming"
 }

@@ -74,10 +74,7 @@ export const StakeInfo = (props: {
     const _endDate = new Date(HEX.START_DATE.getTime() + Number(endDay * 24n * 3600n * 1000n))
     const endDate = _endDate.toLocaleDateString() + ' ' + _endDate.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
 
-    const { stakedHearts, stakeShares, payout, bigPayDay, penalty } = stake
-
-    const _netValue = stakedHearts + payout + bigPayDay - penalty
-    const netValue = _netValue >= 0 ? _netValue : 0n
+    const { stakedHearts, stakeShares, payout, bigPayDay, penalty, stakeReturn } = stake
 
     //////////////////////////////////////////////////////////////
     // SUMMARY TOTALS
@@ -94,7 +91,7 @@ export const StakeInfo = (props: {
     const hexPayout = Math.trunc(Number(formatUnits(payout, HEX.DECIMALS)))
     const hexBPD = Math.trunc(Number(formatUnits(bigPayDay, HEX.DECIMALS)))
     const hexPenalty = Math.trunc(Number(formatUnits(penalty, HEX.DECIMALS)))
-    const hexNetValue = Math.trunc(Number(formatUnits(netValue, HEX.DECIMALS)))
+    const hexNetValue = Math.trunc(Number(formatUnits(stakeReturn, HEX.DECIMALS)))
     const usdStaked = Number((hexStaked * usdhex).toFixed(2))
     const usdPayout = Number((hexPayout * usdhex).toFixed(2))
     const usdBPD = Number((hexBPD * usdhex).toFixed(2))
@@ -280,7 +277,7 @@ export const StakeInfo = (props: {
                                 <Col className="text-uppercase">{t("Net Value")}</Col>
                                 <Col className="ms-3 pe-1 text-end numeric-total">
                                     {eesStatsHEX
-                                        ? <span><CryptoVal value={netValue} currency="HEX" showUnit /></span>
+                                        ? <span><CryptoVal value={stakeReturn} currency="HEX" showUnit /></span>
                                         : <span><CryptoVal value={usdNetValue} currency="USD" symbol={<>&nbsp;$&nbsp;</>} /></span>
                                     }
                                 </Col>

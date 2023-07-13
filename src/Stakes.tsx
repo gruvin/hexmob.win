@@ -238,10 +238,11 @@ const Stakes = (props: {
                     unlockedDay,
                     isAutoStake,
                 ] = (stake.result as [bigint, bigint, bigint, number, number, number, boolean])
+
                 const endDay = lockedDay + stakedDays + 1
                 const progress = (Number(currentDay) - Number(lockedDay)) / Number(stakedDays) * 100
                 totalHexValue += stakedHearts
-                    
+
                 // add payout (so far) from current partial day
                 let payout = 0n
                 if (currentDay < lockedDay + stakedDays) {
