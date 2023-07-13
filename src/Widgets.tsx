@@ -1,5 +1,5 @@
 import React, { useContext, useState, PropsWithChildren } from 'react'
-import { Trans, useTranslation } from "react-i18next"
+import { useTranslation } from "react-i18next"
 import Container, { ContainerProps } from 'react-bootstrap/Container'
 import Button from 'react-bootstrap/Button'
 import OverlayTrigger, { OverlayTriggerProps } from 'react-bootstrap/OverlayTrigger'
