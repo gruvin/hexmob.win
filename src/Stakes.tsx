@@ -243,12 +243,11 @@ const Stakes = (props: {
                 const progress = (Number(currentDay) - Number(lockedDay)) / Number(stakedDays) * 100
                 totalHexValue += stakedHearts
 
-                // add payout (so far) from current partial day
-                let payout = 0n
-                if (currentDay < lockedDay + stakedDays) {
-                    const partDayPayout = estimatePayoutRewardsDay(hexData, stakeShares, currentDay)
-                    payout += partDayPayout
-                }
+                // this is a duplicated in dailyData processing but that only gets executed if there is
+                // at least one day of daily data, which there is not on the first partial day of staking
+                const partDayPayout = (currentDay < lockedDay + stakedDays)
+                    ? estimatePayoutRewardsDay(hexData, stakeShares, currentDay)
+                    : 0n
 
                 return {
                     stakeIndex: BigInt(index),
@@ -256,7 +255,7 @@ const Stakes = (props: {
                     stakedHearts: BigInt(stakedHearts),
                     stakeShares: BigInt(stakeShares),
                     bigPayDay: 0n,
-                    payout,
+                    payout: partDayPayout,
                     penalty: 0n,
                     stakeReturn: 0n,
                     cappedPenalty: 0n,
@@ -276,7 +275,7 @@ const Stakes = (props: {
     // "dailyDataRange"
     const dailyDataCount = hexData?.globals?.dailyDataCount || hexData?.currentDay || 0n
     const earliestDay = findEarliestDay(stakeList, dailyDataCount)
-    const rangeStart = earliestDay > 0 ? earliestDay -1n : 0n
+    const rangeStart = earliestDay > 0 ? earliestDay - 1n : 0n
     const rangeEnd = dailyDataCount - 1n
     useContractRead({
         enabled: rangeEnd > rangeStart && stakeList.length > 0,
@@ -298,10 +297,17 @@ const Stakes = (props: {
                 if (!indexedDailyData) return Promise.reject("internal error [1]")
                 let totalHexValue = 0n
                 const newStakeData: StakeData[] = stakeList.map((oldStakeData: StakeData) => {
+
                     const stakeReturnData = calcStakeEnd(hexData, indexedDailyData, oldStakeData)
                     const { payout, bigPayDay } = stakeReturnData
-                    const partDayPayout = oldStakeData.payout // calculated from HEX globals, before dailyData retrieval
+
+                    const { lockedDay, stakedDays, stakeShares } = oldStakeData
+                    const partDayPayout = (currentDay < lockedDay + stakedDays)
+                        ? estimatePayoutRewardsDay(hexData, stakeShares, currentDay)
+                        : 0n
+
                     totalHexValue += oldStakeData.stakedHearts + payout + bigPayDay
+
                     const result = {
                         ...oldStakeData,
                         ...stakeReturnData,
@@ -337,9 +343,9 @@ const Stakes = (props: {
                             <Row className="w-100">
                                 <Col className="pe-0">
                                     <BurgerHeading>
-                                    <Trans i18nKey='hdgNewStake' >
-                                        New <span className="d-none d-sm-inline">HEX</span> Stake
-                                    </Trans>
+                                        <Trans i18nKey='hdgNewStake' >
+                                            New <span className="d-none d-sm-inline">HEX</span> Stake
+                                        </Trans>
                                     </BurgerHeading></Col>
                                 <Col className="col-5 lh-lg px-0 text-end text-success">
                                     <span className="text-muted small align-baseline me-1"><span className="d-none d-sm-inline">{t("Available")} </span>HEX</span>
