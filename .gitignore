@@ -31,3 +31,6 @@ dist-ssr
 # Private Files
 .env
 release/
+
+# Local Netlify folder
+.netlify
