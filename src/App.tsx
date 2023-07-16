@@ -34,6 +34,7 @@ import Col from 'react-bootstrap/Col'
 import Button from 'react-bootstrap/Button'
 import Badge from 'react-bootstrap/Badge'
 import Form from 'react-bootstrap/Form';
+import Alert from 'react-bootstrap/Alert'
 
 import './App.scss'
 import { format } from 'd3-format'
