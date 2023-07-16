@@ -26,7 +26,7 @@ import Tewkenaire from './Tewkenaire'
 import CopyToClipboard from 'react-copy-to-clipboard'
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
 import { faCopy } from '@fortawesome/free-solid-svg-icons'
-import { WhatIsThis, WalletUtils } from "./Widgets"
+import { WalletUtils } from "./Widgets"
 import ProgressBar from "react-bootstrap/ProgressBar"
 import Container from 'react-bootstrap/Container'
 import Row from 'react-bootstrap/Row'
@@ -34,6 +34,7 @@ import Col from 'react-bootstrap/Col'
 import Button from 'react-bootstrap/Button'
 import Badge from 'react-bootstrap/Badge'
 import Form from 'react-bootstrap/Form';
+import Alert from 'react-bootstrap/Alert'
 
 import './App.scss'
 import { format } from 'd3-format'
@@ -65,10 +66,10 @@ const Header = (props: { usdhex: number }) => {
     const languageValue = e.target.value
     i18n.changeLanguage(languageValue)
   }
-    
+
   return (<>
     <BrandLogo />
-    {uriQuery.has("wording") && 
+    {uriQuery.has("wording") &&
       <Form id="language-select">
         <Form.Select onChange={handleLanguageChange}>
           <option value="en_WP">Free Speech</option>
@@ -112,6 +113,7 @@ const Body = (props: { accounts: UriAccount[], usdhex: number }) => {
 }
 
 const Footer = () => {
+  const [ show, setShow] = useState(false)
   const hexData = useContext(HexContext)
   const { chain } = useNetwork()
   const chainId = chain?.id || 0n
@@ -127,14 +129,21 @@ const Footer = () => {
       <Row>
         <Col><Badge bg={chainId !== 1 ? "danger" : "success"} className="small">{networkName}</Badge></Col>
         <Col className="text-end">
-          <WhatIsThis tooltip={address}><>
-            <Badge bg="secondary" className="text-info">
-              <CopyToClipboard text={address}><>
-                {addressFragment}
-                <FontAwesomeIcon icon={faCopy} /></>
-              </CopyToClipboard>
-            </Badge></>
-          </WhatIsThis>
+          {show && <Badge bg="info"> copied </Badge>}
+          <CopyToClipboard
+            text={address}
+            onCopy={() => {
+              setShow(true)
+              setTimeout(
+                () => setShow(false), 2000)
+              }
+            }
+          >
+            <Badge bg="secondary" className="text-info pointer">
+              {addressFragment}{' '}
+              <FontAwesomeIcon icon={faCopy}/>
+            </Badge>
+          </CopyToClipboard>
         </Col>
       </Row>
     </Container>
