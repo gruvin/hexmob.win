@@ -367,7 +367,6 @@ const stakePerformance = (
             endDay: stake.lockedDay + servedDays
         }))
         stakeReturn = stake.stakedHearts + payout + bigPayDay;
-        debug("XXXXXXXXXXXX: ", stake.stakedHearts, payout, bigPayDay, stake.stakedHearts + payout + bigPayDay)
         penalty = calcLatePenalty(stake.lockedDay, stake.stakedDays, hexData.currentDay, stakeReturn)
     }
 
