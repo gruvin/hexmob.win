@@ -245,7 +245,7 @@ const Stakes = (props: {
 
                 // this is a duplicated in dailyData processing but that only gets executed if there is
                 // at least one day of daily data, which there is not on the first partial day of staking
-                const partDayPayout = (currentDay < lockedDay + stakedDays)
+                const partDayPayout = (currentDay >= lockedDay && currentDay < (lockedDay + stakedDays))
                     ? estimatePayoutRewardsDay(hexData, stakeShares, currentDay)
                     : 0n
 
