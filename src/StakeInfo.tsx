@@ -310,15 +310,15 @@ export const StakeInfo = (props: {
                 they would be penalized for early terminating stakes — "breaking
                 their promise" — (his own words) he chose not to include any
                 function in the contract to query this information ahead of
-                time. We asked him about this, and he doubled down on his
+                time. We asked him about this and he doubled down on his
                 decision not to tell people how badly penalized they would be if
-                they early terminated a stake. The official go.hex.com user
-                interface for the contract doesn't not make any attempt to show
-                these figures, to this day. In fact, by my recollection, Mati
-                had to apply significant pressure just to get a cryptic warning
-                shown. Users used to just get hit with penalties without any
-                warning at time of transaction. I <em>tried</em> to mitigate
-                this here but evidently just made it worse! :/
+                they early terminated a stake. To this day, the official
+                go.hex.com user interface for the contract makes no attempt to
+                show these figures. In fact, by my recollection, Mati had to
+                apply significant pressure just to get a cryptic warning shown.
+                Users used to just get hit with penalties without any warning at
+                time of transaction. I <em>tried</em> to mitigate this here but
+                evidently just made it worse! :/
               </p>
               <p className="text-info">
                 Since everyone in HEX that believed in staking has been royally{" "}
