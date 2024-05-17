@@ -302,8 +302,7 @@ export const StakeInfo = (props: {
                 Richard Heart never released a public testnet version of the HEX
                 contract, making testing these things difficult. Evidently,
                 despite many hours trying, this developer failed to translate
-                the contract's internal math and logic correctly. (Others have
-                apparently succeeded.)
+                the contract's internal math and logic correctly.
               </p>
               <p>
                 Also, because Richard Heart did not want people to know how much
@@ -315,8 +314,10 @@ export const StakeInfo = (props: {
                 go.hex.com user interface for the contract makes no attempt to
                 show these figures. In fact, by my recollection, Mati had to
                 apply significant pressure just to get a cryptic warning shown.
-                Users used to just get hit with penalties without any warning at
-                time of transaction. I <em>tried</em> to mitigate this here but
+                Originally, people just geo hit with potentially severe
+                penalties without any warning at all in the user interface at
+                the time of transaction confirmation. I <em>tried</em> to
+                mitigate this here (as other have done successfully) but
                 evidently just made it worse! :/
               </p>
               <p className="text-info">
