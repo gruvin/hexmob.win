@@ -316,9 +316,9 @@ export const StakeInfo = (props: {
                 apply significant pressure just to get a cryptic warning shown.
                 Originally, people just got hit by as much as their entire
                 principal without any warning at all in the user interface at
-                the time of transaction confirmation. I <em>tried</em> to
-                mitigate this here (as other have done successfully) but
-                evidently just made it worse! :/
+                the time of transaction. I <em>tried</em> to mitigate this here
+                (as other have done successfully) but evidently just made it
+                worse! :/
               </p>
               <p className="text-info">
                 Since everyone in HEX that believed in staking has been royally{" "}
