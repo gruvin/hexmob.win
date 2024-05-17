@@ -314,7 +314,7 @@ export const StakeInfo = (props: {
                 go.hex.com user interface for the contract makes no attempt to
                 show these figures. In fact, by my recollection, Mati had to
                 apply significant pressure just to get a cryptic warning shown.
-                Originally, people just geo hit with potentially severe
+                Originally, people just got hit with potentially severe
                 penalties without any warning at all in the user interface at
                 the time of transaction confirmation. I <em>tried</em> to
                 mitigate this here (as other have done successfully) but
