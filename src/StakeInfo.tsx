@@ -317,20 +317,21 @@ export const StakeInfo = (props: {
                 Originally, people just got hit by as much as their entire
                 principal without any warning at all in the user interface at
                 the time of transaction. I <em>tried</em> to mitigate this here
-                (as other have done successfully) but evidently just made it
-                worse! :/
+                (as others have done more successfully) though evidently just
+                making it worse! :/
               </p>
               <p className="text-info">
-                Since everyone in HEX that believed in staking has been royally{" "}
+                Everyone in HEX that believed in staking long term has
+                been royally{" "}
                 <a href="https://medium.com/@influencio/decoding-rekt-an-internet-slang-phenomenon-c45e6e5e297d">
                   #rekt
                 </a>{" "}
-                by everything Richard Heart has done (and not done) since he
+                by most everything Richard Heart has done (and not done) since he
                 first announced his, "World's Largest Airdrop" Pulsechain
-                mistake, I no longer have ANY MONEY or motivation to do anything
-                about it.{" "}
+                disaster. Whilst I probably could, I no longer have any money
+                or motivation to try again to fix this coding error.{" "}
                 <span className="text-warning">
-                  It is my sole opinion that Richard Heart is an unapologetic,
+                  In fact, it is my sole opinion that Richard Heart is an unapologetic,
                   self-serving, glory seeking, deceptive psychopath, who should
                   not be trusted for anything, ever.
                 </span>
