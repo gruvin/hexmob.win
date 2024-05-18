@@ -194,18 +194,24 @@ export const estimatePayoutRewardsDay = (hexData: HexData, stakeShares: bigint, 
     if (globals.claimStats === undefined) return 0n
 
     // the contract calls _dailyRoundCalc(...) which has no return value but it does update
-    // global rs._payoutTotal, so we emulate that here ...
-    let partDayInterestTotal = allocatedSupply * 1000n / 100448995n // .sol:1245:  rs._payoutTotal
-    // ignore the claim phase days of long ago (.sol:1247-1255)
-    if (globals.stakePenaltyTotal !== 0n) partDayInterestTotal += globals.stakePenaltyTotal
+    // global rs._payoutTotal. We emulate that here to calculate the total inflation for the current day,
+    // so far (allocatedSupply can change throughout the day as stakes start and end)
+    let inflationPayoutTotal = allocatedSupply * 10000n / 100448995n // .sol:1245:  rs._payoutTotal
+    // ignore the AA Bitcoin claim phase days of long ago (.sol:1247-1255)
 
+    // add any penalities for the day thus far
+    if (globals.stakePenaltyTotal !== 0n) inflationPayoutTotal += globals.stakePenaltyTotal
+
+    // Now calculate this stake's share of the total payout
     // .sol:1193 payout = rs._payoutTotal * stakeSharesParam / gTmp._stakeSharesTotal
-    let payout = partDayInterestTotal * stakeShares / globals.stakeSharesTotal
+    let payout = inflationPayoutTotal * stakeShares / globals.stakeSharesTotal
 
+    // if applicable, add on this stake's proportion of BigPayDay bonuses
     if (day === HEX.BIG_PAY_DAY) { // .sol:1195
         const bigPaySlice = globals.claimStats.unclaimedSatoshisTotal * HEX.HEARTS_PER_SATOSHI * stakeShares / globals.stakeSharesTotal
         payout += bigPaySlice + calcAdoptionBonus(payout, globals)
     }
+
     return payout
 }
 
