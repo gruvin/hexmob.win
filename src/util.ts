@@ -36,10 +36,10 @@ export function formatUnitsWithCommas(n: bigint, exp: number, decimals: number =
     let decimalPart = ""
     if (
         parts[0].length < maxlen - 1
-        &&  parts[1].length > 0
+        && parts[1].length > 0
         && decimals > 0
     )
-    decimalPart =  '.'+parts[1].slice(0, decimals)
+        decimalPart = '.' + parts[1].slice(0, decimals)
     return ((parts[0] !== "" ? parts[0] : "0") + decimalPart).slice(0, maxlen)
 }
 export const cryptoFormat = (_v: number | bigint | string, currency: string) => {
@@ -86,7 +86,7 @@ export const cryptoFormat = (_v: number | bigint | string, currency: string) => 
         case "SHARES":
             unit = currency === "SHARES" ? "Sh" : "HEX"
             if (len < 7) { si = ""; out = formatUnitsWithCommas(v, 0); }
-            else if (len < 10) { si = "M"; out = formatUnitsWithCommas(v, 6);}
+            else if (len < 10) { si = "M"; out = formatUnitsWithCommas(v, 6); }
             else if (len < 13) { si = "B"; out = formatUnitsWithCommas(v, 9); }
             else if (len < 16) { si = "T"; out = formatUnitsWithCommas(v, 12); }
             else if (len < 19) { si = "P"; out = formatUnitsWithCommas(v, 15); }
@@ -135,7 +135,7 @@ export const cryptoFormat = (_v: number | bigint | string, currency: string) => 
             else if (len < 13) { si = ""; out = formatUnitsWithCommas(v, 8); }
             else if (len < 14) { si = ""; out = formatUnitsWithCommas(v, 8); } // 5 because comma
             else if (len < 15) { si = ""; out = formatUnitsWithCommas(v, 8); }
-            else if (len < 18) { si = "M"; out = formatUnitsWithCommas(v, 14);}
+            else if (len < 18) { si = "M"; out = formatUnitsWithCommas(v, 14); }
             else if (len < 21) { si = "B"; out = formatUnitsWithCommas(v, 17); }
             else { si = "T"; out = formatUnitsWithCommas(v, 20); }
             break
@@ -157,15 +157,15 @@ export const cryptoFormat = (_v: number | bigint | string, currency: string) => 
     }
 }
 
-export const findEarliestDay = (stakeList: StakeList | TewkStakeList | null, dailyDataCount: bigint): bigint => {
+export const findEarliestDay = (stakeList: StakeList | TewkStakeList | null, dailyDataCount: bigint): number => {
     let earliestDay: bigint = dailyDataCount
-    if (!stakeList) return 0n
+    if (!stakeList) return 0
     if (!!dailyDataCount && earliestDay === dailyDataCount) {
         stakeList.forEach(stake => {
             if (stake.lockedDay < earliestDay) earliestDay = BigInt(stake.lockedDay)
         })
     }
-    return earliestDay
+    return Number(earliestDay)
 }
 
 export const calcAdoptionBonus = (payout: bigint, globals: Globals): bigint => {
@@ -179,10 +179,10 @@ export const calcAdoptionBonus = (payout: bigint, globals: Globals): bigint => {
 }
 
 /**
- * @dev Estimate stake payout for an incomplete day
+ * Emulate contract's _dailyRoundCalc() to include day-thus-far inflation payout (yield)
  * @param hexData context
  * @param stakeShares stake's shares to calculate payout from
- * @param day day to calculate bonusses for
+ * @param day day to calculate bonuses for
  * @returns bigint payout
  */
 export const estimatePayoutRewardsDay = (hexData: HexData, stakeShares: bigint, day: bigint): bigint => {
@@ -194,25 +194,32 @@ export const estimatePayoutRewardsDay = (hexData: HexData, stakeShares: bigint, 
     if (globals.claimStats === undefined) return 0n
 
     // the contract calls _dailyRoundCalc(...) which has no return value but it does update
-    // global rs._payoutTotal, so we emulate that here ...
-    let partDayInterestTotal = allocatedSupply * 1000n / 100448995n // .sol:1245:  rs._payoutTotal
-    // ignore the claim phase days of long ago (.sol:1247-1255)
-    if (globals.stakePenaltyTotal !== 0n) partDayInterestTotal += globals.stakePenaltyTotal
+    // global rs._payoutTotal. We emulate that here to calculate the total inflation for the current day,
+    // so far (allocatedSupply can change throughout the day as stakes start and end)
+    let dayInflationPoolTotal = allocatedSupply * 10000n / 100448995n // .sol:1245:  rs._payoutTotal
 
+    // ignore the AA Bitcoin claim phase days of long ago (.sol:1247-1255)
+
+    // add any penalities accumulated for currentDay, thus far
+    if (globals.stakePenaltyTotal !== 0n) dayInflationPoolTotal += globals.stakePenaltyTotal
+
+    // Now calculate this stake's share of the total payout
     // .sol:1193 payout = rs._payoutTotal * stakeSharesParam / gTmp._stakeSharesTotal
-    let payout = partDayInterestTotal * stakeShares / globals.stakeSharesTotal
+    let payout = dayInflationPoolTotal * stakeShares / globals.stakeSharesTotal
 
+    // if applicable, add on this stake's proportion of BigPayDay bonuses
     if (day === HEX.BIG_PAY_DAY) { // .sol:1195
         const bigPaySlice = globals.claimStats.unclaimedSatoshisTotal * HEX.HEARTS_PER_SATOSHI * stakeShares / globals.stakeSharesTotal
         payout += bigPaySlice + calcAdoptionBonus(payout, globals)
     }
+
     return payout
 }
 
 export const calcBigPayDaySlice = (shares: bigint, sharePool: bigint, globals: Globals): bigint => {
     if (globals === undefined) return 0n
     const unclaimedSatoshisTotal = globals?.claimStats?.unclaimedSatoshisTotal || 0n
-    return unclaimedSatoshisTotal * HEX.HEARTS_PER_SATOSHI * shares / sharePool
+    return sharePool ? unclaimedSatoshisTotal * HEX.HEARTS_PER_SATOSHI * shares / sharePool : 0n
 }
 
 export interface PayoutRewardsInput {
@@ -222,9 +229,9 @@ export interface PayoutRewardsInput {
     beginDay: bigint
     endDay: bigint
 }
-export interface PayoutRewardsResult {
-    payout: bigint
-    bigPayDay: bigint
+export type PayoutRewardsResult = {
+    payout: bigint,
+    bigPayDay: bigint,
 }
 /// @dev unlike the HEX contract, here we split out BigPayDay and Payout figures
 export const calcPayoutRewards = (
@@ -249,7 +256,8 @@ export const calcPayoutRewards = (
         payout += dayPayout
     }
 
-    // payout += calcPartDayBonuses(hexData, stake)
+    // include currentDay thus far
+    payout += estimatePayoutRewardsDay(hexData, stakeShares, currentDay)
 
     if (beginDay <= HEX.BIG_PAY_DAY && endDay > HEX.BIG_PAY_DAY) {
         const bpdStakeSharesTotal = (currentDay < 352n) // day is zero based internally
@@ -262,6 +270,12 @@ export const calcPayoutRewards = (
     return { payout, bigPayDay }
 }
 
+interface CalcPayoutAndEarlyPenalty {
+    stakeReturn: bigint
+    payout: bigint
+    bigPayDay: bigint
+    penalty: bigint
+}
 /*** .sol:1724 (payout, penalty) = _calcPayoutAndEarlyPenalty(...) ***/
 const calcPayoutAndEarlyPenalty = (
     hexData: HexData,
@@ -271,19 +285,15 @@ const calcPayoutAndEarlyPenalty = (
     stakedDays: bigint,
     servedDays: bigint,
     stakeShares: bigint,
-): {
-    stakeReturn: bigint,
-    payout: bigint,
-    bigPayDay: bigint,
-    penalty: bigint,
-} => {
+): CalcPayoutAndEarlyPenalty => {
     const servedEndDay = lockedDay + servedDays
 
+    // .sol:1737
     /* 50% of stakedDays (rounded up) with a minimum applied */
     let penaltyDays = (stakedDays + 1n) / 2n
     if (penaltyDays < HEX.EARLY_PENALTY_MIN_DAYS) penaltyDays = HEX.EARLY_PENALTY_MIN_DAYS
 
-    // acumulators
+    // accumulators
     let stakeReturn = 0n
     let payout = 0n
     let bigPayDay = 0n
@@ -291,7 +301,7 @@ const calcPayoutAndEarlyPenalty = (
 
     if (servedDays === 0n) { // .sol:1743
         penalty = estimatePayoutRewardsDay(hexData, stakeShares, lockedDay) * penaltyDays // .sol:1745-1746
-        stakeReturn = stakedHearts + payout + bigPayDay
+        stakeReturn = stakedHearts + payout + bigPayDay // == stakedHearts + 0n + 0n
         return { stakeReturn, payout, bigPayDay, penalty }
     }
 
@@ -306,9 +316,9 @@ const calcPayoutAndEarlyPenalty = (
         const penaltyEndDay = lockedDay + penaltyDays
         const payoutPenalty = calcPayoutRewards({ hexData, dailyData, stakeShares, beginDay: lockedDay, endDay: penaltyEndDay })
         const payoutDelta = calcPayoutRewards({ hexData, dailyData, stakeShares, beginDay: penaltyEndDay, endDay: servedEndDay })
-        penalty = payoutPenalty.payout + payoutDelta.bigPayDay
+        penalty = payoutPenalty.payout + payoutPenalty.bigPayDay + payoutDelta.bigPayDay // bigPayDay should be completely cancelled for early end stake
         payout = payoutPenalty.payout + payoutDelta.payout
-        bigPayDay = payoutPenalty.bigPayDay + payoutDelta.bigPayDay
+        bigPayDay = payoutPenalty.bigPayDay + payoutDelta.bigPayDay // this is he BPD bonus they WOULD have received if not early ending
         stakeReturn = stakedHearts + payout + bigPayDay
         return { stakeReturn, payout, bigPayDay, penalty }
     }
@@ -318,36 +328,38 @@ const calcPayoutAndEarlyPenalty = (
     const _interest = calcPayoutRewards({ hexData, dailyData, stakeShares, beginDay: lockedDay, endDay: servedEndDay })
     payout = _interest.payout
     bigPayDay = _interest.bigPayDay
+
     const interest = payout + bigPayDay
     if (penaltyDays === servedDays) {
-        penalty = interest
+        penalty = interest + bigPayDay
     } else if (servedDays < stakedDays) {
-        penalty = interest * penaltyDays / servedDays
+        penalty = (interest * penaltyDays / servedDays) + bigPayDay
     }
     stakeReturn = stakedHearts + payout + bigPayDay
     return { stakeReturn, payout, bigPayDay, penalty }
 }
 
+interface StakePerformance {
+    payout: bigint
+    bigPayDay: bigint
+    penalty: bigint
+    cappedPenalty: bigint
+}
 const stakePerformance = (
     hexData: HexData,
     dailyData: DailyData[],
     stake: StakeData,
     servedDays: bigint,
-): {
-    stakeReturn: bigint,
-    payout: bigint,
-    bigPayDay: bigint,
-    penalty: bigint,
-    cappedPenalty: bigint
-} => {
+): StakePerformance => {
     let payout = 0n
     let bigPayDay = 0n
     let penalty = 0n
     let cappedPenalty = 0n
     let stakeReturn = 0n
 
+
     if (servedDays < stake.stakedDays) {
-        ({payout, bigPayDay, penalty} = calcPayoutAndEarlyPenalty(
+        ({ payout, bigPayDay, penalty } = calcPayoutAndEarlyPenalty(
             hexData,
             dailyData,
             stake.stakedHearts,
@@ -400,28 +412,30 @@ export const calcLatePenalty = (
     return rawStakeReturn * (unlockedDay - maxUnlockedDay) / HEX.LATE_PENALTY_SCALE_DAYS;
 }
 
+interface CalcStakeEnd {
+    stakeReturn: bigint
+    payout: bigint
+    bigPayDay: bigint
+    penalty: bigint
+    cappedPenalty: bigint
+}
 export const calcStakeEnd = (
     hexData: HexData,
     dailyData: DailyData[],
     stake: StakeData
-): {
-    stakeReturn: bigint,
-    payout: bigint,
-    bigPayDay: bigint,
-    penalty: bigint,
-    cappedPenalty: bigint
-} => {
+): CalcStakeEnd => {
     const { currentDay } = hexData
 
+    let servedDays = 0n
     let stakeReturn = 0n
     let payout = 0n
     let bigPayDay = 0n
     let penalty = 0n
     let cappedPenalty = 0n
-    let servedDays = 0n
 
     // .sol:1414 stakeEnd
     if (currentDay >= stake.lockedDay) { // .sol:1449
+        // calculate penalties
         if (stake.unlockedDay > 0) { // good accounted
             servedDays = stake.stakedDays
         } else {
@@ -438,6 +452,7 @@ export const calcStakeEnd = (
             servedDays,
         ))
     } else {
+        // no penalties
         if (stake.isAutoStake) return { stakeReturn: 0n, payout: 0n, bigPayDay: 0n, penalty: 0n, cappedPenalty: 0n }
         stakeReturn = stake.stakedHearts
     }
@@ -465,5 +480,5 @@ export const calcPercentAPY = (currentDay: bigint, stakeData: StakeData): number
 }
 
 export const compactHexString = (hex: `0x${string}`): string => {
-    return hex.slice(0,6)+"..."+hex.slice(-4)
+    return hex.slice(0, 6) + "..." + hex.slice(-4)
 }

@@ -77,6 +77,7 @@ const CHAIN_ADDRESSES = {
   369: "0x2b591e99afe9f32eaa6214f7b7629768c40eeb39", // PulseChain
   943: "0x2b591e99afe9f32eaa6214f7b7629768c40eeb39", // PLS testnet v4
   10001: "0x2b591e99afe9f32eaa6214f7b7629768c40eeb39", // ETHw
+  31337: "0x7412a5522f21ECaf720c1a679585E5CA3F2F60CC", // Hardhat
   513100: "0x2b591e99afe9f32eaa6214f7b7629768c40eeb39", // ETHf
 } as { [index: number]: `0x${string}` }
 
