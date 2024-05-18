@@ -3,7 +3,7 @@ export interface TChain {
     name: string
     rpcURL: string
     wssURL: string
-    explorerURL: string
+    explorerURL: string | undefined
 }
 export interface TChainArray {
     [ index: number]: TChain
@@ -50,6 +50,13 @@ export default {
       rpcURL: "https://mainnet.ethereumpow.org",
       wssURL: "",
       explorerURL: "https://www.oklink.com/en/ethw/tx/"
+    },
+    31337: {
+      description: "Hardhat",
+      name: "Hardhat",
+      rpcURL: "http://localhost:8545",
+      wssURL: "",
+      explorerURL: undefined
     },
     513100: {
         description: "ETH FAIR",

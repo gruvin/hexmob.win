@@ -212,7 +212,7 @@ export const estimatePayoutRewardsDay = (hexData: HexData, stakeShares: bigint, 
 export const calcBigPayDaySlice = (shares: bigint, sharePool: bigint, globals: Globals): bigint => {
     if (globals === undefined) return 0n
     const unclaimedSatoshisTotal = globals?.claimStats?.unclaimedSatoshisTotal || 0n
-    return unclaimedSatoshisTotal * HEX.HEARTS_PER_SATOSHI * shares / sharePool
+    return sharePool ? unclaimedSatoshisTotal * HEX.HEARTS_PER_SATOSHI * shares / sharePool : 0n
 }
 
 export interface PayoutRewardsInput {

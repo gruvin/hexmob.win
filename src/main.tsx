@@ -1,7 +1,7 @@
 import React from 'react'
 import ReactDOM from 'react-dom/client'
 import { configureChains, createConfig, WagmiConfig } from 'wagmi'
-import { mainnet, goerli, pulsechain, pulsechainV4 } from 'wagmi/chains'
+import { mainnet, goerli, pulsechain, pulsechainV4, hardhat } from 'wagmi/chains'
 import { EthereumClient, w3mConnectors, w3mProvider } from '@web3modal/ethereum'
 import { infuraProvider } from 'wagmi/providers/infura'
 // import { jsonRpcProvider } from 'wagmi/providers/jsonRpc'
@@ -10,7 +10,7 @@ import App from './App.tsx'
 import './App.scss'
 import "./i18n"
 
-const chains = [mainnet, goerli, pulsechain, pulsechainV4]
+const chains = [mainnet, goerli, pulsechain, pulsechainV4, hardhat]
 
 // ref: https://wagmi.sh/react/providers/configuring-chains
 const projectId = import.meta.env.VITE_WALLET_CONNECT_ID
