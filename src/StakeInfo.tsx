@@ -286,7 +286,7 @@ export const StakeInfo = (props: {
               </Col>
             </Row>
             {/* PREDICTED MINER TERMINATION FIGURES */}
-            <Container className="text-light" style={{ marginTop: "2em" }}>
+            {/* <Container className="text-light" style={{ marginTop: "2em" }}>
               <h1 className="text-center">FIGURES BELOW ARE INACCURATE</h1>
               <h2 className="text-danger text-center">
                 Actual payout / "net value" may be as much as 40%
@@ -355,7 +355,7 @@ export const StakeInfo = (props: {
                 responsibility. As with everything in this crypto dystopia, you
                 have no choice but to proceed — or not — at your own risk.
               </p>
-            </Container>{" "}
+            </Container>{" "} */}
             <Container
               className="ees-estimate mt-3"
               onClick={() => setEesStatsHEX(!eesStatsHEX)}
