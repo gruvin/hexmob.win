@@ -339,10 +339,11 @@ const calcPayoutAndEarlyPenalty = (
     return { stakeReturn, payout, bigPayDay, penalty }
 }
 
-interface StakePerformance {
-    payout: bigint
-    bigPayDay: bigint
-    penalty: bigint
+type StakePerformance = {
+    stakeReturn: bigint,
+    payout: bigint,
+    bigPayDay: bigint,
+    penalty: bigint,
     cappedPenalty: bigint
 }
 const stakePerformance = (

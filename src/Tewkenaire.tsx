@@ -153,7 +153,7 @@ const TewkStakeList = (props: {
     // dailyData for payout/bigPayDay/etc
     const dailyDataCount = hexData?.globals?.dailyDataCount || hexData?.currentDay || 0n
     const earliestDay = findEarliestDay(tewkStakeList, dailyDataCount)
-    const rangeStart = earliestDay > 0 ? earliestDay - 1n : 0n
+    const rangeStart = earliestDay > 0 ? earliestDay - 1 : 0
     const rangeEnd = dailyDataCount - 1n
 
     /*
