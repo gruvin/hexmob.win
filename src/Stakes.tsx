@@ -88,7 +88,7 @@ const StakesList = (props: {
       props.usdhex;
 
     const stake = {
-      ...stakeList,
+      ...stakeData,
       startDay,
       endDay,
       startDate,
