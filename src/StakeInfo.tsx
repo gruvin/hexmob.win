@@ -449,7 +449,7 @@ export const StakeInfo = (props: {
                 </Col>
               </Row>
               <Row className="text-success">
-                <Col className="text-uppercase">{t("Net Value")}</Col>
+                <Col className="text-uppercase" style={{ whiteSpace: 'nowrap' }}>{t("Net Value")}</Col>
                 <Col className="ms-3 pe-1 text-end numeric-total">
                   {eesStatsHEX ? (
                     <span>
