@@ -11,7 +11,7 @@ import {
 } from "wagmi";
 
 import { Address } from "viem";
-import { getMainnetUsdHex, getPulseXDaiHex } from "./util";
+import { getPulseXDaiHex } from "./util";
 import { HexContext } from "./Context";
 import { UriAccount } from "./lib/App";
 
