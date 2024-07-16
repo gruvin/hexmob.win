@@ -5,6 +5,7 @@ import {
   useNetwork,
   useAccount,
   useDisconnect,
+  useContractRead,
   useContractReads,
   useQuery,
 } from "wagmi";
@@ -229,16 +230,82 @@ function App() {
     onSuccess: (data) => setUSDHEX(data),
   });
 
-  useQuery([networkName, "UsdHex"], getMainnetUsdHex, {
+  // Uniswap V2 Pair contract ABI
+  const UNISWAP_V2_PAIR_ABI = [
+    {
+      constant: true,
+      inputs: [],
+      name: "getReserves",
+      outputs: [
+        { internalType: "uint112", name: "reserve0", type: "uint112" },
+        { internalType: "uint112", name: "reserve1", type: "uint112" },
+        { internalType: "uint32", name: "blockTimestampLast", type: "uint32" },
+      ],
+      payable: false,
+      stateMutability: "view",
+      type: "function",
+    },
+    {
+      constant: true,
+      inputs: [],
+      name: "token0",
+      outputs: [{ internalType: "address", name: "", type: "address" }],
+      payable: false,
+      stateMutability: "view",
+      type: "function",
+    },
+    {
+      constant: true,
+      inputs: [],
+      name: "token1",
+      outputs: [{ internalType: "address", name: "", type: "address" }],
+      payable: false,
+      stateMutability: "view",
+      type: "function",
+    },
+  ];
+  // useQuery([networkName, "UsdHex"], getMainnetUsdHex, {
+  //   enabled: chainId == 1,
+  //   refetchInterval: 10000,
+  //   retry: 5,
+  //   retryDelay: 5000,
+  //   onSuccess: (data) => setUSDHEX(data),
+  // });
+
+  const { data: price } = useContractRead({
+    address: "0xF6DCdce0ac3001B2f67F750bc64ea5beB37B5824",
+    abi: UNISWAP_V2_PAIR_ABI,
+    functionName: "getReserves",
     enabled: chainId == 1,
-    refetchInterval: 10000,
-    retry: 5,
-    retryDelay: 5000,
-    onSuccess: (data) => setUSDHEX(data),
-  });
+    watch: true,
+    cacheTime: 10000, // 10 seconds
+    staleTime: 10000, // 10 seconds
+    select: (reserves) => {
+      const [reserve0, reserve1, _blockTimestampLast] = reserves as [ bigint, bigint, number ]
+      const bnPrice = reserve0 > 0 ? (reserve1 * 100000000n) / reserve0 : 0.0
+      const price = Number(bnPrice) / 1000000
+      debug("HEX USDC: ", price)
+      return price
+    },
+  })
+
+  useEffect(() => {
+    setUSDHEX(price || 0.00);
+  }, [price]);
+
+  // Refetch Mainnet Price every 10 seconds
+  // useEffect(() => {
+  //   let interval: NodeJS.Timer | undefined = undefined;
+  //   if (chainId == 1) {
+  //     interval = setInterval(() => {
+  //       refetchMainnetPrice();
+  //     }, 10000);
+  //     return () => clearInterval(interval);
+  //   } else if (interval) clearInterval(interval);
+  // }, [refetchMainnetPrice, chainId]);
 
   // start the show when walletAddress appears
-  // Lo and behold! Hardhat (Viem) appears to come with Multicall3 built in. 
+  // Lo and behold! Hardhat (Viem) appears to come with Multicall3 built in.
   useContractReads({
     enabled: !!walletAddress,
     scopeKey: `HexData:${chainId}`,
