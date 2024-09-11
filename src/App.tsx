@@ -264,13 +264,6 @@ function App() {
       type: "function",
     },
   ];
-  // useQuery([networkName, "UsdHex"], getMainnetUsdHex, {
-  //   enabled: chainId == 1,
-  //   refetchInterval: 10000,
-  //   retry: 5,
-  //   retryDelay: 5000,
-  //   onSuccess: (data) => setUSDHEX(data),
-  // });
 
   const { data: price } = useContractRead({
     address: "0xF6DCdce0ac3001B2f67F750bc64ea5beB37B5824", // Uniswap v2 HEX / USDC
@@ -292,17 +285,6 @@ function App() {
   useEffect(() => {
     setUSDHEX(price || 0.00);
   }, [price]);
-
-  // Refetch Mainnet Price every 10 seconds
-  // useEffect(() => {
-  //   let interval: NodeJS.Timer | undefined = undefined;
-  //   if (chainId == 1) {
-  //     interval = setInterval(() => {
-  //       refetchMainnetPrice();
-  //     }, 10000);
-  //     return () => clearInterval(interval);
-  //   } else if (interval) clearInterval(interval);
-  // }, [refetchMainnetPrice, chainId]);
 
   // start the show when walletAddress appears
   // Lo and behold! Hardhat (Viem) appears to come with Multicall3 built in.

@@ -14,24 +14,21 @@ const chains = [mainnet, goerli, pulsechain, pulsechainV4, hardhat]
 
 // ref: https://wagmi.sh/react/providers/configuring-chains
 const projectId = import.meta.env.VITE_WALLET_CONNECT_ID
-const { publicClient } = configureChains(
-  chains,
-  [
-    // jsonRpcProvider({
-    //   rpc: (chain) => {
-    //     if (chain.id == 943) return {
-    //       http: "http://pulsechainv4.local:8545",
-    //       webSocket: `ws://pulsechainv4.local:8546`,
-    //     }
-    //     return null
-    //   }
-    // }),
+const { publicClient } = configureChains(chains, [
+  // jsonRpcProvider({
+  //   rpc: (chain) => {
+  //     if (chain.id == 943) return {
+  //       http: "http://pulsechainv4.local:8545",
+  //       webSocket: `ws://pulsechainv4.local:8546`,
+  //     }
+  //     return null
+  //   }
+  // }),
 
-    // it seems to matter that w3wmprovider comes FIRST
-    w3mProvider({ projectId }),
-    infuraProvider({ apiKey: import.meta.env.VITE_INFURA_ID }),
-  ],
-)
+  // it seems to matter that w3wmprovider comes FIRST. Probably due to rate limiting with Infura free account?
+  w3mProvider({ projectId }),
+  infuraProvider({ apiKey: import.meta.env.VITE_INFURA_ID }), // apparently not used, because w3mProvider takes precedence?
+]);
 
 const wagmiConfig = createConfig({
   autoConnect: true,
