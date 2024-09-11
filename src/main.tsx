@@ -15,6 +15,9 @@ const chains = [mainnet, goerli, pulsechain, pulsechainV4, hardhat]
 // ref: https://wagmi.sh/react/providers/configuring-chains
 const projectId = import.meta.env.VITE_WALLET_CONNECT_ID
 const { publicClient } = configureChains(chains, [
+  // Providers here are used in preference according to order they appear in this array. If a request fails,
+  // Wagmi will try the next applicable provider in the list.
+  
   // jsonRpcProvider({
   //   rpc: (chain) => {
   //     if (chain.id == 943) return {
@@ -25,9 +28,9 @@ const { publicClient } = configureChains(chains, [
   //   }
   // }),
 
-  // it seems to matter that w3wmprovider comes FIRST. Probably due to rate limiting with Infura free account?
+  // WalletConnect's Blockchain API allows for a generous 6 million requests per projectId per 30 days, on their free tier.
   w3mProvider({ projectId }),
-  infuraProvider({ apiKey: import.meta.env.VITE_INFURA_ID }), // apparently not used, because w3mProvider takes precedence?
+  infuraProvider({ apiKey: import.meta.env.VITE_INFURA_ID }), // fallback; generally never used because w3mProvider, as above.
 ]);
 
 const wagmiConfig = createConfig({
