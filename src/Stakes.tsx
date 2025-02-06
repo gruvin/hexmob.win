@@ -115,7 +115,7 @@ const StakesList = (props: {
 
   const numStakes = stakeList?.length || 0;
   return numStakes === 0 ? (
-    <>{t("no stakes found for this address")}</>
+    <>{t("noStakesFound")}</>
   ) : (
     <>
       <Card className="mt-1 bg-info-darkened rounded">
@@ -464,7 +464,7 @@ const Stakes = (props: {
             </Row>
           </Accordion.Header>
           <Accordion.Body>
-            <StakesList stakeList={stakeList} usdhex={props.usdhex} />
+            <StakesList stakeList={stakeList} usdhex={props.usdhex} account={props.account} />
           </Accordion.Body>
         </Accordion.Item>
         <Accordion.Item

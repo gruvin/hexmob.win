@@ -214,7 +214,7 @@ export const StakeEndButton = (
         }
     }, [txReceipt])
 
-    let buttonContent = props.children ? props.children : <>{t("END STAKE")}</>
+    let buttonContent = props.children ? props.children : <>{t("endStake")}</>
     let txHash = <></>
     if (!chainId) {
         buttonContent = <><FontAwesomeIcon icon={faExclamation} /> {buttonContent}</>
