@@ -9,29 +9,6 @@ import _debug from 'debug'
 const debug = _debug("util")
 debug("loaded")
 
-// export const getMainnetUsdHex = async () => {
-//     const response = await axios.get("https://uniswapdataapi.azurewebsites.net/api/hexPrice")
-//     debug("HEX-USD: ", response.data?.hexUsd)
-//     return parseFloat(response.data?.hexUsd || "?.??")
-// }
-
-export const getMainnetUsdHex = async () => {
-    const response = await axios.post(
-        "https://api.thegraph.com/subgraphs/name/uniswap/uniswap-v2",
-        {
-            query: '{pair(id:"0xF6DCdce0ac3001B2f67F750bc64ea5beB37B5824"){token1Price}}' // HEX-USDC, where token1Price => USDC per HEX
-        },
-        {
-            headers: {
-                "Content-Type": "application/json",
-            },
-            responseType: "json",
-        }
-    )
-    debug("HEX-USDC: ", response.data.data.pair.token1Price)
-    return parseFloat(response.data.data.pair?.token1Price || "?.??")
-}
-
 export const getPulseXDaiHex = async () => {
     const response = await axios.post("https://graph.pulsechain.com/subgraphs/name/pulsechain/pulsex", {
         query: '{pair(id:"0x6f1747370b1cacb911ad6d4477b718633db328c8"){token1Price}}' // HEX/DAI, where token1Price => DAI per HEX
@@ -107,7 +84,7 @@ export const cryptoFormat = (_v: number | bigint | string, currency: string) => 
             else if (len < 13) { si = "B"; out = formatUnitsWithCommas(v, 9); }
             else if (len < 16) { si = "T"; out = formatUnitsWithCommas(v, 12); }
             else if (len < 19) { si = "P"; out = formatUnitsWithCommas(v, 15); }
-            else { si = "!"; out = "whoa" }
+            else { si = "!"; out = "FU RH!" }
             break
 
         case "%":
