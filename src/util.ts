@@ -84,7 +84,7 @@ export const cryptoFormat = (_v: number | bigint | string, currency: string) => 
             else if (len < 13) { si = "B"; out = formatUnitsWithCommas(v, 9); }
             else if (len < 16) { si = "T"; out = formatUnitsWithCommas(v, 12); }
             else if (len < 19) { si = "P"; out = formatUnitsWithCommas(v, 15); }
-            else { si = "!"; out = "whoa" }
+            else { si = "!"; out = "FU RH!" }
             break
 
         case "%":
