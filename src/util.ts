@@ -313,7 +313,7 @@ const calcPayoutAndEarlyPenalty = (
         const payoutDelta = calcPayoutRewards({ hexData, dailyData, stakeShares, beginDay: penaltyEndDay, endDay: servedEndDay })
         penalty = payoutPenalty.payout + payoutPenalty.bigPayDay + payoutDelta.bigPayDay // bigPayDay should be completely cancelled for early end stake
         payout = payoutPenalty.payout + payoutDelta.payout
-        bigPayDay = payoutPenalty.bigPayDay + payoutDelta.bigPayDay // this is he BPD bonus they WOULD have received if not early ending
+        bigPayDay = payoutPenalty.bigPayDay + payoutDelta.bigPayDay // this is the BPD bonus they WOULD have received if not early ending
         stakeReturn = stakedHearts + payout + bigPayDay
         return { stakeReturn, payout, bigPayDay, penalty }
     }
@@ -324,7 +324,7 @@ const calcPayoutAndEarlyPenalty = (
     payout = _interest.payout
     bigPayDay = _interest.bigPayDay
 
-    const interest = payout + bigPayDay
+    const interest = payout
     if (penaltyDays === servedDays) {
         penalty = interest + bigPayDay
     } else if (servedDays < stakedDays) {
