@@ -10,11 +10,6 @@ const Blurb = () => {
         <Container id="mobile_devices" className="bg-light text-dark rounded p-3 my-3 overflow-hidden text-start">
             <Row>
                 <Col className="text-center">
-                    {
-                        window.hostIsTSA
-                        ? <h3 className="text-muted">go.TShare.app</h3>
-                        : <h3 className="text-muted">HEX<sup>mob.win</sup></h3>
-                    }
                     <h1 className="text-uppercase">HEX mining interface</h1>
                     <p className="text-muted">independent community project</p>
                 </Col>
