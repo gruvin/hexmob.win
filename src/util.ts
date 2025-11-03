@@ -2,7 +2,6 @@ import HEX from './hex_contract'
 import { parseUnits } from 'viem'
 import { Globals, HexData, DailyData } from './hex_contract'
 import { StakeData, StakeList } from './lib/Stakes'
-import { TewkStakeList } from './lib/Tewkenaire'
 import { format } from 'd3-format'
 import axios from 'axios'
 import _debug from 'debug'
@@ -152,11 +151,11 @@ export const cryptoFormat = (_v: number | bigint | string, currency: string) => 
     }
 }
 
-export const findEarliestDay = (stakeList: StakeList | TewkStakeList | null, dailyDataCount: bigint): number => {
+export const findEarliestDay = (stakeList: StakeList | null, dailyDataCount: bigint): number => {
     let earliestDay: bigint = dailyDataCount
     if (!stakeList) return 0
     if (!!dailyDataCount && earliestDay === dailyDataCount) {
-        stakeList.forEach(stake => {
+        stakeList.forEach((stake: StakeData) => {
             if (stake.lockedDay < earliestDay) earliestDay = BigInt(stake.lockedDay)
         })
     }

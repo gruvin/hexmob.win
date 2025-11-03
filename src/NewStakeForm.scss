@@ -1,12 +1,13 @@
+@use "sass:map";
 @use "theme" as bs;
 
 .btn-stake {
     &.btn-start { 
         /* START STAKE BUTTON */
-        color: map-get(bs.$theme-colors, success); 
-        border: 2px map-get(bs.$theme-colors, success) solid; 
+        color: map.get(bs.$theme-colors, success); 
+        border: 2px map.get(bs.$theme-colors, success) solid; 
         &:hover {
-            color: map-get(bs.$theme-colors, success); 
+            color: map.get(bs.$theme-colors, success); 
         }
         &:hover:enabled {
             color: #ddd; 
@@ -15,10 +16,10 @@
     }
 }
 
-.xAxis .recharts-label { font-size: 12px; fill: map-get(bs.$theme-colors, success); } 
-.yAxis .recharts-label { font-size: 12px; fill: map-get(bs.$theme-colors, success); } 
-.recharts-bar { fill: map-get(bs.$theme-colors, info )}
-.recharts-reference-line-line { stroke: map-get(bs.$theme-colors, warning )}
+.xAxis .recharts-label { font-size: 12px; fill: map.get(bs.$theme-colors, success); } 
+.yAxis .recharts-label { font-size: 12px; fill: map.get(bs.$theme-colors, success); } 
+.recharts-bar { fill: map.get(bs.$theme-colors, info )}
+.recharts-reference-line-line { stroke: map.get(bs.$theme-colors, warning )}
 
 .icon-wait-bg {
     background: url('assets//hex_planet.gif') 130px 30px no-repeat

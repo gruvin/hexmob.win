@@ -1,14 +1,23 @@
 import React, { useState, useEffect, useContext } from "react";
 import { useTranslation } from "react-i18next";
-import { Web3Button } from "@web3modal/react";
 import {
-  useNetwork,
+  useChainId,
   useAccount,
   useDisconnect,
-  useContractRead,
-  useContractReads,
-  useQuery,
+  useReadContract,
+  useReadContracts,
 } from "wagmi";
+import { useQuery } from "@tanstack/react-query";
+
+// Declare the Web3Modal web component
+declare global {
+  namespace JSX {
+    interface IntrinsicElements {
+      'w3m-button': React.DetailedHTMLProps<React.HTMLAttributes<HTMLElement>, HTMLElement>;
+      'w3m-account-button': React.DetailedHTMLProps<React.HTMLAttributes<HTMLElement>, HTMLElement>;
+    }
+  }
+}
 
 import { Address } from "viem";
 import { getPulseXDaiHex } from "./util";
@@ -22,18 +31,14 @@ import { GitHubInfo } from "./Widgets";
 import BrandLogo from "./BrandLogo";
 import Blurb from "./Blurb";
 import Stakes from "./Stakes";
-import Tewkenaire from "./Tewkenaire";
 
-import CopyToClipboard from "react-copy-to-clipboard";
-import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
-import { faCopy } from "@fortawesome/free-solid-svg-icons";
 import { WalletUtils } from "./Widgets";
 import ProgressBar from "react-bootstrap/ProgressBar";
 import Container from "react-bootstrap/Container";
 import Row from "react-bootstrap/Row";
 import Col from "react-bootstrap/Col";
-import Button from "react-bootstrap/Button";
 import Badge from "react-bootstrap/Badge";
+import Button from "react-bootstrap/Button";
 import Form from "react-bootstrap/Form";
 
 import "./App.scss";
@@ -126,7 +131,6 @@ const Body = (props: { accounts: UriAccount[]; usdhex: number }) => {
               usdhex={props.usdhex}
             />
           ))}
-          {uriQuery.has("tewkens") && <Tewkenaire usdhex={props.usdhex} />}
           {/* <Lobby parent={this} contract={this.contract} wallet={this.state.wallet} /> */}
           {/* <Stats parent={this} contract={this.contract} wallet={this.state.wallet} usdhex={this.state.USDHEX} /> */}
         </>
@@ -136,39 +140,27 @@ const Body = (props: { accounts: UriAccount[]; usdhex: number }) => {
 };
 
 const Footer = () => {
-  const [show, setShow] = useState(false);
-  const hexData = useContext(HexContext);
-  const { chain } = useNetwork();
-  const chainId = chain?.id || 0n;
-  const networkName = chain?.name || "unknown";
-
-  const address = hexData?.walletAddress || "";
-  const addressFragment = address
-    ? address.slice(0, 6) + "..." + address.slice(-4)
-    : "unknown";
+  const { disconnect } = useDisconnect();
+  const { isConnected } = useAccount();
 
   return (
     <Container id="wallet_status" fluid>
-      <Row>
-        <Col>
-          <Badge bg={chainId !== 1 ? "danger" : "success"} className="small">
-            {networkName}
-          </Badge>
+      <Row className="align-items-center justify-content-center">
+        <Col xs="auto">
+          <w3m-button />
         </Col>
-        <Col className="text-end">
-          {show && <Badge bg="info"> copied </Badge>}
-          <CopyToClipboard
-            text={address}
-            onCopy={() => {
-              setShow(true);
-              setTimeout(() => setShow(false), 2000);
-            }}
-          >
-            <Badge bg="secondary" className="text-info pointer">
-              {addressFragment} <FontAwesomeIcon icon={faCopy} />
-            </Badge>
-          </CopyToClipboard>
-        </Col>
+        {isConnected && (
+          <Col xs="auto" className="ms-3">
+            <Button 
+              variant="outline-secondary" 
+              size="sm" 
+              onClick={() => disconnect()}
+              title="Disconnect Wallet"
+            >
+              Disconnect
+            </Button>
+          </Col>
+        )}
       </Row>
     </Container>
   );
@@ -210,9 +202,9 @@ function App() {
   // const referrer = (uriQuery?.get("r") || "").toLowerCase() // will never be used again (?)
   ///
 
-  const { chain } = useNetwork();
-  const chainId = chain ? chain.id : 0;
-  const networkName = chain ? chain.name : "not connected";
+  const chainId = useChainId();
+  const currentChain = CHAINS[chainId] || CHAINS[0];
+  const networkName = currentChain.name;
 
   const hexAddress = HEX.CHAIN_ADDRESSES[chainId];
   const hexContract = { address: hexAddress, abi: HEX.ABI };
@@ -222,13 +214,20 @@ function App() {
     setWalletAddress(address);
   }, [address]);
 
-  useQuery([networkName, "DaiHex"], getPulseXDaiHex, {
+  useQuery({
+    queryKey: [networkName, "DaiHex"],
+    queryFn: getPulseXDaiHex,
     enabled: chainId === 369,
     refetchInterval: 10000,
     retry: 5,
     retryDelay: 5000,
-    onSuccess: (data) => setUSDHEX(data),
   });
+
+  useEffect(() => {
+    if (chainId === 369) {
+      getPulseXDaiHex().then((data: any) => setUSDHEX(data)).catch(() => {});
+    }
+  }, [chainId]);
 
   // Uniswap V2 Pair contract ABI
   const UNISWAP_V2_PAIR_ABI = [
@@ -265,33 +264,29 @@ function App() {
     },
   ];
 
-  const { data: price } = useContractRead({
+  const { data: price } = useReadContract({
     address: "0xF6DCdce0ac3001B2f67F750bc64ea5beB37B5824", // Uniswap v2 HEX / USDC
     abi: UNISWAP_V2_PAIR_ABI,
     functionName: "getReserves",
-    enabled: chainId == 1,
-    watch: true,
-    cacheTime: 10000, // 10 seconds
-    staleTime: 10000, // 10 seconds
-    select: (reserves) => {
-      const [reserve0, reserve1, _blockTimestampLast] = reserves as [ bigint, bigint, number ]
-      const bnPrice = reserve0 > 0 ? (reserve1 * 100000000n) / reserve0 : 0.0
-      const price = Number(bnPrice) / 1000000
-      debug("HEX USDC: ", price)
-      return price
-    },
-  })
+    query: {
+      enabled: chainId == 1,
+      refetchInterval: 10000, // 10 seconds
+    }
+  });
 
   useEffect(() => {
-    setUSDHEX(price || 0.00);
+    if (price) {
+      const [reserve0, reserve1, _blockTimestampLast] = price as [bigint, bigint, number];
+      const bnPrice = reserve0 > 0 ? (reserve1 * 100000000n) / reserve0 : 0n;
+      const calculatedPrice = Number(bnPrice) / 1000000;
+      debug("HEX USDC: ", calculatedPrice);
+      setUSDHEX(calculatedPrice);
+    }
   }, [price]);
 
   // start the show when walletAddress appears
   // Lo and behold! Hardhat (Viem) appears to come with Multicall3 built in.
-  useContractReads({
-    enabled: !!walletAddress,
-    scopeKey: `HexData:${chainId}`,
-    watch: true,
+  const { data: contractsData } = useReadContracts({
     contracts: [
       { ...hexContract, functionName: "currentDay" },
       {
@@ -308,19 +303,16 @@ function App() {
       { ...hexContract, functionName: "totalSupply" },
       { ...hexContract, functionName: "globals" },
     ],
-    // multicallAddress: (
-    //   chainId === 31337
-    //     ? "0xEd0810Fa0B29d69b48157Cd8a7527FC7EdCD0d1e"
-    //     : "0xcA11bde05977b3631167028862bE2a173976CA11"
-    // ),
-    onError: (e) =>
-      debug(
-        "MULTICALL ERROR: Multicall3 contract doesn't exist on PulseChain Testnet v4",
-        e
-      ),
-    onSuccess: (data) => {
-      debug("HexData: %O", data);
-      const _globals = data?.[5].result as readonly [
+    query: {
+      enabled: !!walletAddress,
+      refetchInterval: 10000,
+    }
+  });
+
+  useEffect(() => {
+    if (contractsData) {
+      debug("HexData: %O", contractsData);
+      const _globals = contractsData?.[5].result as readonly [
         bigint,
         bigint,
         number,
@@ -337,12 +329,12 @@ function App() {
           address: hexAddress,
           abi: HEX.ABI,
         },
-        currentDay: data?.[0].result,
+        currentDay: contractsData?.[0].result,
         walletAddress,
-        hexBalance: data?.[1].result,
-        stakeCount: data?.[2].result,
-        allocatedSupply: data?.[3].result,
-        totalSupply: data?.[4].result,
+        hexBalance: contractsData?.[1].result,
+        stakeCount: contractsData?.[2].result,
+        allocatedSupply: contractsData?.[3].result,
+        totalSupply: contractsData?.[4].result,
         globals: {
           lockedHeartsTotal: _globals[0],
           nextStakeSharesTotal: _globals[1],
@@ -361,19 +353,8 @@ function App() {
         },
       } as HexData;
       setHexData(hexData);
-    },
-  });
-
-  const { disconnect } = useDisconnect();
-
-  const resetApp = () => {
-    window.location.reload();
-  };
-
-  const handleDisconnect = () => {
-    disconnect();
-    resetApp();
-  };
+    }
+  }, [contractsData, chainId, hexAddress, walletAddress]);
 
   const explorerUrl = CHAINS[chainId].explorerURL
     ? `${CHAINS[chainId].explorerURL?.replace(/\/$/, "")}/address/${
@@ -392,8 +373,10 @@ function App() {
             <Body accounts={accounts} usdhex={USDHEX} />
           ) : (
             <Container fluid className="mt-3 text-center mb-3">
-              <Web3Button icon="hide" />
               <Blurb />
+              <div className="mt-3">
+                <p className="text-muted">Connect your wallet using the button in the status bar below</p>
+              </div>
             </Container>
           )}
           {walletAddress && explorerUrl && (
@@ -408,9 +391,6 @@ function App() {
                     </span>
                   </Badge>
                 </a>
-              </Container>
-              <Container className="text-center">
-                <Button onClick={handleDisconnect}>{t("Disconnect")}</Button>
               </Container>
             </>
           )}

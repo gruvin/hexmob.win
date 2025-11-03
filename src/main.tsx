@@ -1,50 +1,68 @@
 import React from 'react'
 import ReactDOM from 'react-dom/client'
-import { configureChains, createConfig, WagmiConfig } from 'wagmi'
+import { WagmiProvider } from 'wagmi'
 import { mainnet, goerli, pulsechain, pulsechainV4, hardhat } from 'wagmi/chains'
-import { EthereumClient, w3mConnectors, w3mProvider } from '@web3modal/ethereum'
-import { infuraProvider } from 'wagmi/providers/infura'
-// import { jsonRpcProvider } from 'wagmi/providers/jsonRpc'
-import { Web3Modal } from '@web3modal/react'
+import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
+import { createWeb3Modal, defaultWagmiConfig } from '@web3modal/wagmi/react'
+import { walletConnect, injected } from 'wagmi/connectors'
 import App from './App.tsx'
 import './App.scss'
 import "./i18n"
 
-const chains = [mainnet, goerli, pulsechain, pulsechainV4, hardhat]
+const chains = [mainnet, goerli, pulsechain, pulsechainV4, hardhat] as const
 
-// ref: https://wagmi.sh/react/providers/configuring-chains
-const projectId = import.meta.env.VITE_WALLET_CONNECT_ID
-const { publicClient } = configureChains(chains, [
-  // Providers here are used in preference according to order they appear in this array. If a request fails,
-  // Wagmi will try the next applicable provider in the list.
-  
-  // jsonRpcProvider({
-  //   rpc: (chain) => {
-  //     if (chain.id == 943) return {
-  //       http: "http://pulsechainv4.local:8545",
-  //       webSocket: `ws://pulsechainv4.local:8546`,
-  //     }
-  //     return null
-  //   }
-  // }),
+// Get project ID from environment
+const projectId = import.meta.env.VITE_WALLET_CONNECT_ID || 'fallback-project-id'
 
-  // WalletConnect's Blockchain API allows for a generous 6 million requests per projectId per 30 days, on their free tier.
-  w3mProvider({ projectId }),
-  infuraProvider({ apiKey: import.meta.env.VITE_INFURA_ID }), // fallback; generally never used because w3mProvider, as above.
-]);
+// 1. Get projectId from https://cloud.walletconnect.com
+if (!projectId) throw new Error('Project ID is not defined')
 
-const wagmiConfig = createConfig({
-  autoConnect: true,
-  connectors: w3mConnectors({ projectId, chains }),
-  publicClient,
+const metadata = {
+  name: 'HexMob',
+  description: 'HEX Mobile Wallet Interface',
+  url: 'https://hexmob.win', // origin must match your domain & subdomain
+  icons: ['https://avatars.githubusercontent.com/u/37784886']
+}
+
+// 2. Create wagmiConfig
+const wagmiConfig = defaultWagmiConfig({
+  chains,
+  projectId,
+  metadata,
+  connectors: [
+    injected({ 
+      target: 'metaMask',
+      shimDisconnect: true,
+    }),
+    injected({
+      shimDisconnect: true,
+    }),
+    walletConnect({ 
+      projectId,
+      showQrModal: false,
+    }),
+  ],
 })
-const ethereumClient = new EthereumClient(wagmiConfig, chains)
+
+// 3. Create modal
+createWeb3Modal({
+  wagmiConfig,
+  projectId,
+  enableAnalytics: false,
+  allowUnsupportedChain: true,
+  themeMode: 'dark',
+  enableOnramp: false,
+})
+
+// Create Query Client
+const queryClient = new QueryClient()
 
 ReactDOM.createRoot(document.getElementById('root') as HTMLElement).render(
   <React.StrictMode>
-    <WagmiConfig config={wagmiConfig} >
-      <App />
-    </WagmiConfig>
-    <Web3Modal projectId={projectId} ethereumClient={ethereumClient} />
+    <WagmiProvider config={wagmiConfig}>
+      <QueryClientProvider client={queryClient}>
+        <App />
+      </QueryClientProvider>
+    </WagmiProvider>
   </React.StrictMode>,
 )

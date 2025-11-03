@@ -15,9 +15,8 @@ import { HexContext } from './Context'
 import CHAINS from './chains'
 import { cryptoFormat, compactHexString } from './util.js'
 import {
-    useContractWrite,
-    usePrepareContractWrite,
-    useWaitForTransaction
+    useWriteContract,
+    useWaitForTransactionReceipt
 } from 'wagmi'
 
 import _debug from 'debug'
@@ -101,24 +100,31 @@ export const StakeStartButton = (props: React.PropsWithChildren<{
     const hexData = useContext(HexContext)
     const chainId = hexData?.chainId || 0
     const explorerUrl = (CHAINS[chainId]?.explorerURL || "").replace(/\/$/, "") // remove trailing / for consistency
-    const hexBalance = hexData?.hexBalance || 0n
-    const { stakedHearts, stakedDays } = props
+    // const hexBalance = hexData?.hexBalance || 0n // Commented out as it's not used
+    // const { stakedHearts, stakedDays } = props // Commented out as they're not used
 
-    // enabled == true => will use .call() in background to simulate the tx. If the call reverts,
-    // write() => undefined (null?) and onError => true
-    // maybe better not to clog up the network until we actually want to write BUT having the
-    // simulation run is kind of fun? shrug
-    const { config } = usePrepareContractWrite({
-        enabled: stakedHearts > 0 && hexBalance >= stakedHearts && stakedDays > 0,
-        address: HEX.CHAIN_ADDRESSES[chainId],
-        abi: HEX.ABI,
-        functionName: "stakeStart",
-        args: [props.stakedHearts, props.stakedDays]
+    // In wagmi v2, we use useWriteContract directly without preparation
+    const { 
+        data: hash, 
+        isPending: isLoading, 
+        isSuccess, 
+        isError, 
+        reset, 
+        writeContract: write 
+    } = useWriteContract()
+    
+    const { data: txReceipt } = useWaitForTransactionReceipt({
+        hash
     })
-    const { data, isLoading, isSuccess, isError, reset, write } = useContractWrite(config)
-    const { data: txReceipt } = useWaitForTransaction({
-        hash: data?.hash
-    })
+
+    const handleWrite = () => {
+        write({
+            address: HEX.CHAIN_ADDRESSES[chainId],
+            abi: HEX.ABI,
+            functionName: "stakeStart",
+            args: [props.stakedHearts, props.stakedDays]
+        })
+    }
 
     const [confirmedState, setConfirmedState] = useState(false)
     const [copied, setCopied] = useState(false)
@@ -144,7 +150,7 @@ export const StakeStartButton = (props: React.PropsWithChildren<{
         } else if (isLoading) {
             buttonContent = <><FontAwesomeIcon icon={faWalkieTalkie} />&nbsp;{t("requesting")}</>
         } else if (isError) {
-            debug("StartStakeButon::write error: ", data)
+            debug("StartStakeButon::write error: ", hash)
             buttonContent = <><FontAwesomeIcon icon={faFrown} />&nbsp;{t("rejected")}</>
             setTimeout(() => {
                 reset()
@@ -153,7 +159,7 @@ export const StakeStartButton = (props: React.PropsWithChildren<{
         } else if (isSuccess) {
             buttonContent = <><FontAwesomeIcon icon={faHourglass} />&nbsp;{t("confirming")}</>
             txHash = <>
-                <CopyToClipboard text={data?.hash || ""}
+                <CopyToClipboard text={hash || ""}
                     onCopy={() => {
                         setCopied(true)
                         setTimeout(() => setCopied(false), 3000)
@@ -163,14 +169,14 @@ export const StakeStartButton = (props: React.PropsWithChildren<{
                 </CopyToClipboard>
                 <a
                     className="txhash-link"
-                    href={explorerUrl+"/tx/"+(data?.hash || "0x")}
-                >{compactHexString(data?.hash || "0x")}</a>
+                    href={explorerUrl+"/tx/"+(hash || "0x")}
+                >{compactHexString(hash || "0x")}</a>
             </>
         }
     }
     return (
         <div className="btn-stake-start">
-            <Button className={props.className} disabled={!write || !chainId} onClick={() => write?.()}>
+            <Button className={props.className} disabled={!write || !chainId} onClick={() => handleWrite()}>
                 {buttonContent}
             </Button>
             <div>{txHash}</div>
@@ -191,18 +197,29 @@ export const StakeEndButton = (
     const hexData = useContext(HexContext)
     const chainId = hexData?.chainId || 0
     const explorerUrl = (CHAINS[chainId]?.explorerURL || "").replace(/\/$/, "") // remove trailing / for consistency
-    const { config } = usePrepareContractWrite({
-        enabled: !!props.stakeId,
-        address: HEX.CHAIN_ADDRESSES[chainId],
-        abi: HEX.ABI,
-        functionName: "stakeEnd",
-        args: [props.stakeIndex, Number(props.stakeId)],
-        onError: (e) => debug("ERROR: ", e)
+    
+    // In wagmi v2, we use useWriteContract directly
+    const { 
+        data: hash, 
+        isPending: isLoading, 
+        isSuccess, 
+        isError, 
+        reset, 
+        writeContract: write 
+    } = useWriteContract()
+    
+    const { data: txReceipt } = useWaitForTransactionReceipt({
+        hash
     })
-    const { data, isLoading, isSuccess, isError, reset, write } = useContractWrite(config)
-    const { data: txReceipt } = useWaitForTransaction({
-        hash: data?.hash
-    })
+
+    const handleWrite = () => {
+        write({
+            address: HEX.CHAIN_ADDRESSES[chainId],
+            abi: HEX.ABI,
+            functionName: "stakeEnd",
+            args: [props.stakeIndex, Number(props.stakeId)]
+        })
+    }
 
     const [confirmedState, setConfirmedState] = useState(false)
     const [copied, setCopied] = useState(false)
@@ -228,7 +245,7 @@ export const StakeEndButton = (
         } else if (isLoading) {
             buttonContent = <><FontAwesomeIcon icon={faWalkieTalkie} />&nbsp;{t("requesting")}</>
         } else if (isError) {
-            debug("StartEndButon::write error: ", data)
+            debug("StartEndButon::write error: ", hash)
             buttonContent = <><FontAwesomeIcon icon={faFrown} />&nbsp;{t("rejected")}</>
             setTimeout(() => {
                 reset()
@@ -237,7 +254,7 @@ export const StakeEndButton = (
         } else if (isSuccess) {
             buttonContent = <><FontAwesomeIcon icon={faHourglass} />&nbsp;{t("confirming")}</>
             txHash = <>
-                <CopyToClipboard text={data?.hash || ""}
+                <CopyToClipboard text={hash || ""}
                     onCopy={() => {
                         setCopied(true)
                         setTimeout(() => setCopied(false), 3000)
@@ -247,8 +264,8 @@ export const StakeEndButton = (
                 </CopyToClipboard>
                 <a
                     className="txhash-link"
-                    href={explorerUrl+"/tx/"+(data?.hash || "0x")}
-                >{compactHexString(data?.hash || "0x")}</a>
+                    href={explorerUrl+"/tx/"+(hash || "0x")}
+                >{compactHexString(hash || "0x")}</a>
             </>
         }
     }
@@ -258,7 +275,7 @@ export const StakeEndButton = (
                 variant={props.variant || "primary"}
                 className={props.className || "exitbtn"}
                 disabled={!write || !chainId}
-                onClick={() =>  write?.()}
+                onClick={() => handleWrite()}
             >
                 {buttonContent}
             </Button>
