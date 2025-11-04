@@ -1,4 +1,3 @@
-import type { ContractFunctionConfig } from 'viem'
 import { Address } from 'viem'
 
 const START_DATE_POSIX = 1575331200000  // some browsers cannot parse '2019-12-03 00:00:00[Z|GMT|UTC]' correctly (Safari)
@@ -29,7 +28,11 @@ const EARLY_PENALTY_MIN_DAYS = 90n
 const LATE_PENALTY_GRACE_DAYS = 14n
 const LATE_PENALTY_SCALE_DAYS = 700n
 
-export type Contract = Pick<ContractFunctionConfig, "abi" | "address"> | { chainId?: number }
+export type Contract = { 
+  abi: any; 
+  address: Address; 
+  chainId?: number;
+}
 export type HexContract = Contract
 
 export interface ClaimStats {

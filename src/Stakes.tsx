@@ -1,7 +1,7 @@
-import { lazy, Suspense, useContext, useState } from "react";
+import React, { lazy, Suspense, useContext, useState } from "react";
 import { Trans, useTranslation } from "react-i18next";
 import HEX, { DailyData } from "./hex_contract";
-import { useNetwork, useContractRead, useContractReads } from "wagmi";
+import { useChainId, useReadContract, useReadContracts } from "wagmi";
 import { formatUnits, Address } from "viem";
 
 import { HexContext } from "./Context";
@@ -227,8 +227,7 @@ const Stakes = (props: {
   const accountName = props.account?.name || "address";
   const hexBalance = hexData?.hexBalance || 0n;
 
-  const { chain } = useNetwork();
-  const chainId = chain?.id || 0;
+  const chainId = useChainId() || 0;
 
   const [stakeList, setStakeList] = useState([] as StakeList);
   const [selectedCard, setSelectedCard] = useState(
@@ -239,19 +238,18 @@ const Stakes = (props: {
   // const [ loadingProgress, setLoadingProgress ] = useState(20)
 
   // stakeCount
-  const { data: stakeCount } = useContractRead({
-    enabled: !!walletAddress,
-    watch: true,
+  const { data: stakeCount } = useReadContract({
     address: HEX.CHAIN_ADDRESSES[chainId],
     abi: HEX.ABI,
     functionName: "stakeCount",
     args: [walletAddress || "0x0"],
+    query: {
+      enabled: !!walletAddress,
+      refetchInterval: 10000, // wagmi v2 uses query options instead of watch
+    }
   });
   // stakeLists[]
-  useContractReads({
-    enabled:
-      !!hexData && !!walletAddress && stakeList.length != Number(stakeCount),
-    scopeKey: `stakes:${chainId}:${walletAddress}`,
+  const { data: stakesData } = useReadContracts({
     contracts: (() => {
       if (!stakeCount) return [];
       const stakeListsContracts = [];
@@ -264,29 +262,36 @@ const Stakes = (props: {
         });
       return stakeListsContracts;
     })(),
-    onSuccess: (data) => {
-      if (data === undefined) return;
-      // data contains the entire fetched data array
-      // setLoadingProgress(prev => prev < 90 ? prev+20 : prev)
-      let totalHexValue = 0n;
-      const _stakeList = data.map((stake, index: number): StakeData => {
-        const [
-          stakeId,
-          stakedHearts,
-          stakeShares,
-          lockedDay,
-          stakedDays,
-          unlockedDay,
-          isAutoStake,
-        ] = stake.result as [
-          bigint,
-          bigint,
-          bigint,
-          number,
-          number,
-          number,
-          boolean
-        ];
+    query: {
+      enabled: !!hexData && !!walletAddress && stakeList.length != Number(stakeCount),
+    }
+  });
+
+  // Process stakes data when it changes
+  React.useEffect(() => {
+    if (!stakesData) return;
+    
+    // data contains the entire fetched data array
+    // setLoadingProgress(prev => prev < 90 ? prev+20 : prev)
+    let totalHexValue = 0n;
+    const _stakeList = stakesData.map((stake: any, index: number): StakeData => {
+      const [
+        stakeId,
+        stakedHearts,
+        stakeShares,
+        lockedDay,
+        stakedDays,
+        unlockedDay,
+        isAutoStake,
+      ] = stake.result as [
+        bigint,
+        bigint,
+        bigint,
+        number,
+        number,
+        number,
+        boolean
+      ];
 
         const endDay = lockedDay + stakedDays + 1;
         const progress =
@@ -320,8 +325,7 @@ const Stakes = (props: {
       });
       setStakeList(_stakeList);
       setTotalHexValue(totalHexValue);
-    },
-  });
+  }, [stakesData, hexData, currentDay]); // Add dependencies for useEffect
 
   /**
    * Daily Data
@@ -336,60 +340,67 @@ const Stakes = (props: {
   const earliestDay = findEarliestDay(stakeList, dailyDataCount);
   const rangeStart = BigInt(earliestDay > 0 ? earliestDay - 1 : 0);
   const rangeEnd = dailyDataCount - 1n;
-  useContractRead({
-    enabled: rangeEnd > rangeStart && stakeList.length > 0,
-    scopeKey: `dailyData:${chainId}:${walletAddress}:${rangeStart}:${rangeEnd}`,
+  const { data: dailyDataResult } = useReadContract({
     address: HEX.CHAIN_ADDRESSES[chainId],
     abi: HEX.ABI,
     functionName: "dailyDataRange",
     args: [rangeStart, rangeEnd],
-    onSuccess: (result) => {
-      if (!!stakeList && stakeList.length > 0) {
-        const indexedDailyData: DailyData[] = [];
-        for (let index = 0; index < result.length; index++) {
-          const day = result[index];
-
-          // Javascript allows indexedDailyData[] to contain [ <earliestDay empty items>, index... ])
-          indexedDailyData[earliestDay + index] = {
-            payoutTotal: day & HEX.HEART_UINT_MASK, // .sol:807 uint72 dayPayoutTotal
-            stakeSharesTotal:
-              (day >> HEX.HEART_UINT_SIZE) & HEX.HEART_UINT_MASK, // .sol:808 uint72 dayStakeSharesTotal
-            unclaimedSatoshisTotal: day >> (HEX.HEART_UINT_SIZE * 2n), // .sol:809 uint56 dayUnclaimedSatoshisTotal;
-          } as DailyData;
-        }
-        if (!indexedDailyData.length) return Promise.reject("internal error [1]");
-
-        let totalHexValue = 0n;
-        const newStakeData: StakeData[] = stakeList.map(
-          (prevStakeData: StakeData) => {
-            const stakeReturnData = calcStakeEnd(
-              hexData,
-              indexedDailyData,
-              prevStakeData
-            );
-            const { payout, bigPayDay } = stakeReturnData;
-
-            const { lockedDay, stakedDays, stakeShares } = prevStakeData;
-            const partDayPayout =
-              currentDay < lockedDay + stakedDays
-                ? estimatePayoutRewardsDay(hexData, stakeShares, currentDay)
-                : 0n;
-
-            totalHexValue += prevStakeData.stakedHearts + payout + bigPayDay;
-
-            const result = {
-              ...prevStakeData,
-              ...stakeReturnData,
-              payout: payout + partDayPayout,
-            };
-            return result;
-          }
-        );
-        setStakeList(newStakeData);
-        setTotalHexValue(totalHexValue);
-      }
-    },
+    query: {
+      enabled: rangeEnd > rangeStart && stakeList.length > 0,
+    }
   });
+
+  // Process daily data when it changes
+  React.useEffect(() => {
+    if (!dailyDataResult || !stakeList || stakeList.length === 0) return;
+    
+    const indexedDailyData: DailyData[] = [];
+    for (let index = 0; index < dailyDataResult.length; index++) {
+      const day = dailyDataResult[index];
+
+      // Javascript allows indexedDailyData[] to contain [ <earliestDay empty items>, index... ])
+      indexedDailyData[earliestDay + index] = {
+        payoutTotal: day & HEX.HEART_UINT_MASK, // .sol:807 uint72 dayPayoutTotal
+        stakeSharesTotal:
+          (day >> HEX.HEART_UINT_SIZE) & HEX.HEART_UINT_MASK, // .sol:808 uint72 dayStakeSharesTotal
+        unclaimedSatoshisTotal: day >> (HEX.HEART_UINT_SIZE * 2n), // .sol:809 uint56 dayUnclaimedSatoshisTotal;
+      } as DailyData;
+    }
+    if (!indexedDailyData.length) return;
+
+    let totalHexValue = 0n;
+    const newStakeData: StakeData[] = stakeList.map(
+      (prevStakeData: StakeData) => {
+        const stakeReturnData = calcStakeEnd(
+          hexData,
+          indexedDailyData,
+          prevStakeData
+        );
+        const { payout, bigPayDay } = stakeReturnData;
+
+        const { lockedDay, stakedDays, stakeShares } = prevStakeData;
+        const endDay = lockedDay + stakedDays;
+        const isCompleted = currentDay >= endDay;
+        
+        // For active stakes, add current day estimate
+        // For completed stakes, don't add partial day (full payout already calculated)
+        const partDayPayout = !isCompleted && currentDay >= lockedDay
+            ? estimatePayoutRewardsDay(hexData, stakeShares, currentDay)
+            : 0n;
+
+        totalHexValue += prevStakeData.stakedHearts + payout + bigPayDay;
+
+        const result = {
+          ...prevStakeData,
+          ...stakeReturnData,
+          payout: payout + partDayPayout,
+        };
+        return result;
+      }
+    );
+    setStakeList(newStakeData);
+    setTotalHexValue(totalHexValue);
+  }, [dailyDataResult, hexData, currentDay, earliestDay]);
 
   const totalUsdValue =
     Number(formatUnits(totalHexValue, HEX.DECIMALS)) * props.usdhex;

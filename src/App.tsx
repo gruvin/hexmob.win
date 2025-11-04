@@ -1,14 +1,22 @@
 import React, { useState, useEffect, useContext } from "react";
 import { useTranslation } from "react-i18next";
-import { Web3Button } from "@web3modal/react";
 import {
-  useNetwork,
+  useChainId,
   useAccount,
-  useDisconnect,
-  useContractRead,
-  useContractReads,
-  useQuery,
+  useReadContract,
+  useReadContracts,
 } from "wagmi";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
+
+// Declare the AppKit web components
+declare global {
+  namespace JSX {
+    interface IntrinsicElements {
+      'appkit-button': any;
+      'appkit-account-button': any;
+    }
+  }
+}
 
 import { Address } from "viem";
 import { getPulseXDaiHex } from "./util";
@@ -22,17 +30,12 @@ import { GitHubInfo } from "./Widgets";
 import BrandLogo from "./BrandLogo";
 import Blurb from "./Blurb";
 import Stakes from "./Stakes";
-import Tewkenaire from "./Tewkenaire";
 
-import CopyToClipboard from "react-copy-to-clipboard";
-import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
-import { faCopy } from "@fortawesome/free-solid-svg-icons";
 import { WalletUtils } from "./Widgets";
 import ProgressBar from "react-bootstrap/ProgressBar";
 import Container from "react-bootstrap/Container";
 import Row from "react-bootstrap/Row";
 import Col from "react-bootstrap/Col";
-import Button from "react-bootstrap/Button";
 import Badge from "react-bootstrap/Badge";
 import Form from "react-bootstrap/Form";
 
@@ -95,7 +98,6 @@ const Header = (props: { usdhex: number }) => {
         <span className="numeric text-success h2">
           {"$" + (isNaN(props.usdhex) ? "-.--" : format(",.4f")(props.usdhex))}
         </span>
-        {/* <ProgressBar variant="secondary" now={50} animated={false} ref={r => this.usdProgress = r} /> */}
       </div>
     </>
   );
@@ -126,7 +128,6 @@ const Body = (props: { accounts: UriAccount[]; usdhex: number }) => {
               usdhex={props.usdhex}
             />
           ))}
-          {uriQuery.has("tewkens") && <Tewkenaire usdhex={props.usdhex} />}
           {/* <Lobby parent={this} contract={this.contract} wallet={this.state.wallet} /> */}
           {/* <Stats parent={this} contract={this.contract} wallet={this.state.wallet} usdhex={this.state.USDHEX} /> */}
         </>
@@ -135,39 +136,37 @@ const Body = (props: { accounts: UriAccount[]; usdhex: number }) => {
   );
 };
 
-const Footer = () => {
-  const [show, setShow] = useState(false);
-  const hexData = useContext(HexContext);
-  const { chain } = useNetwork();
-  const chainId = chain?.id || 0n;
-  const networkName = chain?.name || "unknown";
 
-  const address = hexData?.walletAddress || "";
-  const addressFragment = address
-    ? address.slice(0, 6) + "..." + address.slice(-4)
-    : "unknown";
+const Footer = () => {
+  const { isConnected } = useAccount();
+  const chainId = useChainId();
+  debug(chainId);
+  
+  // Only trust chainId if actually connected; otherwise use offline
+  const effectiveChainId = isConnected ? chainId : 0;
+  const currentChain = CHAINS[effectiveChainId] ?? undefined;
+
+  const chainMeta = {
+    "mainnet": { name: "Ethereum", avatar: "/ethereum.png" },
+    "pulsechain": { name: "Pulsechain", avatar: "/pulsechain.png" },
+    "offline": { name: "offline", avatar: undefined},
+  } as const;
+  type ChainKey = keyof typeof chainMeta;
+
+  const currentMeta = (currentChain?.name as ChainKey | undefined) ?? "offline";
+  const currentName = chainMeta[currentMeta].name;
+  const currentAvatar = chainMeta[currentMeta].avatar;
 
   return (
     <Container id="wallet_status" fluid>
-      <Row>
-        <Col>
-          <Badge bg={chainId !== 1 ? "danger" : "success"} className="small">
-            {networkName}
-          </Badge>
-        </Col>
-        <Col className="text-end">
-          {show && <Badge bg="info"> copied </Badge>}
-          <CopyToClipboard
-            text={address}
-            onCopy={() => {
-              setShow(true);
-              setTimeout(() => setShow(false), 2000);
-            }}
-          >
-            <Badge bg="secondary" className="text-info pointer">
-              {addressFragment} <FontAwesomeIcon icon={faCopy} />
-            </Badge>
-          </CopyToClipboard>
+      <Row className="align-items-center justify-content-center">
+        <Col xs="auto">{isConnected ? <appkit-account-button /> : <appkit-button />}</Col>
+        <Col xs="auto" className="text-info small ms-3">
+          {currentAvatar ? (
+            <img src={currentAvatar} alt={currentName} title={currentName} style={{ height: "32px" }} />
+          ) : (
+            <span>{currentName}</span>
+          )}
         </Col>
       </Row>
     </Container>
@@ -210,25 +209,40 @@ function App() {
   // const referrer = (uriQuery?.get("r") || "").toLowerCase() // will never be used again (?)
   ///
 
-  const { chain } = useNetwork();
-  const chainId = chain ? chain.id : 0;
-  const networkName = chain ? chain.name : "not connected";
+  const chainId = useChainId();
+  const currentChain = CHAINS[chainId] || CHAINS[0];
+  const networkName = currentChain?.name || 'offline';
+  const queryClient = useQueryClient();
 
-  const hexAddress = HEX.CHAIN_ADDRESSES[chainId];
-  const hexContract = { address: hexAddress, abi: HEX.ABI };
+  const hexAddress = HEX.CHAIN_ADDRESSES[chainId as keyof typeof HEX.CHAIN_ADDRESSES];
+  const hexContract = hexAddress ? { address: hexAddress, abi: HEX.ABI } : undefined as any;
 
-  const { address } = useAccount();
+  const { address, isConnected: accountIsConnected } = useAccount();
   useEffect(() => {
     setWalletAddress(address);
   }, [address]);
 
-  useQuery([networkName, "DaiHex"], getPulseXDaiHex, {
+  // When chain changes, clear derived HEX data to force a fresh load on new chain
+  useEffect(() => {
+    setHexData(undefined);
+    // Invalidate all queries so fresh data is fetched for the new chain
+    queryClient.invalidateQueries();
+  }, [chainId]);
+
+  useQuery({
+    queryKey: [networkName, "DaiHex"],
+    queryFn: getPulseXDaiHex,
     enabled: chainId === 369,
     refetchInterval: 10000,
     retry: 5,
     retryDelay: 5000,
-    onSuccess: (data) => setUSDHEX(data),
   });
+
+  useEffect(() => {
+    if (chainId === 369) {
+      getPulseXDaiHex().then((data: any) => setUSDHEX(data)).catch(() => {});
+    }
+  }, [chainId]);
 
   // Uniswap V2 Pair contract ABI
   const UNISWAP_V2_PAIR_ABI = [
@@ -265,138 +279,124 @@ function App() {
     },
   ];
 
-  const { data: price } = useContractRead({
+  const { data: price } = useReadContract({
     address: "0xF6DCdce0ac3001B2f67F750bc64ea5beB37B5824", // Uniswap v2 HEX / USDC
     abi: UNISWAP_V2_PAIR_ABI,
     functionName: "getReserves",
-    enabled: chainId == 1,
-    watch: true,
-    cacheTime: 10000, // 10 seconds
-    staleTime: 10000, // 10 seconds
-    select: (reserves) => {
-      const [reserve0, reserve1, _blockTimestampLast] = reserves as [ bigint, bigint, number ]
-      const bnPrice = reserve0 > 0 ? (reserve1 * 100000000n) / reserve0 : 0.0
-      const price = Number(bnPrice) / 1000000
-      debug("HEX USDC: ", price)
-      return price
-    },
-  })
+    query: {
+      enabled: chainId == 1,
+      refetchInterval: 10000 // 10 seconds
+    }
+  });
 
   useEffect(() => {
-    setUSDHEX(price || 0.00);
+    if (price) {
+      const [reserve0, reserve1, _blockTimestampLast] = price as [bigint, bigint, number];
+      const bnPrice = reserve0 > 0 ? (reserve1 * 100000000n) / reserve0 : 0n;
+      const calculatedPrice = Number(bnPrice) / 1000000;
+      debug("HEX USDC: ", calculatedPrice);
+      setUSDHEX(calculatedPrice);
+    }
   }, [price]);
 
   // start the show when walletAddress appears
   // Lo and behold! Hardhat (Viem) appears to come with Multicall3 built in.
-  useContractReads({
-    enabled: !!walletAddress,
-    scopeKey: `HexData:${chainId}`,
-    watch: true,
-    contracts: [
-      { ...hexContract, functionName: "currentDay" },
+  const { data: contractsData } = useReadContracts({
+    contracts: hexContract ? [
+      { ...hexContract, chainId, functionName: "currentDay" },
       {
-        ...hexContract,
+        ...hexContract, chainId,
         functionName: "balanceOf",
-        args: [walletAddress ?? "0x0"],
+        args: [walletAddress ?? "0x0000000000000000000000000000000000000000"],
       },
       {
-        ...hexContract,
+        ...hexContract, chainId,
         functionName: "stakeCount",
-        args: [walletAddress ?? "0x0"],
+        args: [walletAddress ?? "0x0000000000000000000000000000000000000000"],
       },
-      { ...hexContract, functionName: "allocatedSupply" },
-      { ...hexContract, functionName: "totalSupply" },
-      { ...hexContract, functionName: "globals" },
-    ],
-    // multicallAddress: (
-    //   chainId === 31337
-    //     ? "0xEd0810Fa0B29d69b48157Cd8a7527FC7EdCD0d1e"
-    //     : "0xcA11bde05977b3631167028862bE2a173976CA11"
-    // ),
-    onError: (e) =>
-      debug(
-        "MULTICALL ERROR: Multicall3 contract doesn't exist on PulseChain Testnet v4",
-        e
-      ),
-    onSuccess: (data) => {
-      debug("HexData: %O", data);
-      const _globals = data?.[5].result as readonly [
-        bigint,
-        bigint,
-        number,
-        bigint,
-        number,
-        bigint,
-        number,
-        bigint
-      ];
-      const _stats = _globals[7] || 0n;
-      const hexData = {
+      { ...hexContract, chainId, functionName: "allocatedSupply" },
+      { ...hexContract, chainId, functionName: "totalSupply" },
+      { ...hexContract, chainId, functionName: "globals" },
+    ] : [],
+    query: {
+      // Enable reads even without a connected wallet to refresh UI on chain changes
+      enabled: !!hexContract,
+      refetchInterval: 10000
+    }
+  });
+
+  useEffect(() => {
+    if (!contractsData || !hexAddress) return;
+    // Ensure all expected results exist before accessing by index
+    const results = contractsData.map((c) => c?.result).filter((r) => r !== undefined);
+    if (results.length < 6) return;
+
+    try {
+      debug("HexData: %O", contractsData);
+      const globalsEntry = contractsData?.[5]?.result as
+        | readonly [bigint, bigint, number, bigint, number, bigint, number, bigint]
+        | undefined;
+      if (!globalsEntry) return;
+
+      const _globals = globalsEntry;
+      const _stats = (_globals?.[7] as bigint) ?? 0n;
+      const next: HexData = {
         chainId,
         contract: {
           address: hexAddress,
           abi: HEX.ABI,
         },
-        currentDay: data?.[0].result,
+        currentDay: (contractsData?.[0]?.result as bigint) ?? 0n,
         walletAddress,
-        hexBalance: data?.[1].result,
-        stakeCount: data?.[2].result,
-        allocatedSupply: data?.[3].result,
-        totalSupply: data?.[4].result,
+        hexBalance: (contractsData?.[1]?.result as bigint) ?? 0n,
+        stakeCount: (contractsData?.[2]?.result as bigint) ?? 0n,
+        allocatedSupply: (contractsData?.[3]?.result as bigint) ?? 0n,
+        totalSupply: (contractsData?.[4]?.result as bigint) ?? 0n,
         globals: {
           lockedHeartsTotal: _globals[0],
           nextStakeSharesTotal: _globals[1],
-          shareRate: BigInt(_globals[2]),
+          shareRate: BigInt(_globals[2] || 0),
           stakePenaltyTotal: _globals[3],
-          dailyDataCount: BigInt(_globals[4]),
+          dailyDataCount: BigInt(_globals[4] || 0),
           stakeSharesTotal: _globals[5],
-          latestStakeId: BigInt(_globals[6]),
+          latestStakeId: BigInt(_globals[6] || 0),
           claimStats: {
-            // ref: https://etherscan.io/token/0x2b591e99afe9f32eaa6214f7b7629768c40eeb39#code Line 1152
             claimedBtcAddrCount: _stats >> (HEX.SATOSHI_UINT_SIZE * 2n),
             claimedSatoshisTotal:
               (_stats >> HEX.SATOSHI_UINT_SIZE) & HEX.SATOSHI_UINT_MASK,
             unclaimedSatoshisTotal: _stats & HEX.SATOSHI_UINT_MASK,
           },
         },
-      } as HexData;
-      setHexData(hexData);
-    },
-  });
+      };
+      setHexData(next);
+    } catch (err) {
+      debug('Failed to parse HEX globals: %O', { error: err, contractsData });
+    }
+  }, [contractsData, chainId, hexAddress, walletAddress]);
 
-  const { disconnect } = useDisconnect();
-
-  const resetApp = () => {
-    window.location.reload();
-  };
-
-  const handleDisconnect = () => {
-    disconnect();
-    resetApp();
-  };
-
-  const explorerUrl = CHAINS[chainId].explorerURL
-    ? `${CHAINS[chainId].explorerURL?.replace(/\/$/, "")}/address/${
-        HEX.CHAIN_ADDRESSES[chainId]
-      }`
+  const explorerUrl = CHAINS[chainId]?.explorerURL && HEX.CHAIN_ADDRESSES[chainId]
+    ? `${(CHAINS[chainId]?.explorerURL || '').replace(/\/$/, "")}/address/${HEX.CHAIN_ADDRESSES[chainId]}`
     : undefined;
 
   return (
     <Container className="m-0 p-0" fluid>
-      <HexContext.Provider value={hexData}>
+      {/* Re-mount downstream consumers when chain changes to ensure fresh reads */}
+      <HexContext.Provider key={`chain-${chainId}`} value={hexData}>
         <Container id="hexmob_header" fluid>
           <Header usdhex={USDHEX} />
         </Container>
         <Container id="hexmob_body" fluid>
-          {walletAddress !== undefined ? (
+          {accountIsConnected && walletAddress ? (
             <Body accounts={accounts} usdhex={USDHEX} />
           ) : (
             <Container fluid className="mt-3 text-center mb-3">
-              <Web3Button icon="hide" />
               <Blurb />
+              <div className="mt-3">
+                <p className="text-muted">Connect your wallet using the button in the status bar below</p>
+              </div>
             </Container>
           )}
-          {walletAddress && explorerUrl && (
+          {accountIsConnected && walletAddress && explorerUrl && (
             <>
               <Container className="text-center py-3">
                 <a href={explorerUrl} target="_blank" rel="noopener noreferrer">
@@ -408,9 +408,6 @@ function App() {
                     </span>
                   </Badge>
                 </a>
-              </Container>
-              <Container className="text-center">
-                <Button onClick={handleDisconnect}>{t("Disconnect")}</Button>
               </Container>
             </>
           )}

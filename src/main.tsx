@@ -1,50 +1,78 @@
 import React from 'react'
 import ReactDOM from 'react-dom/client'
-import { configureChains, createConfig, WagmiConfig } from 'wagmi'
-import { mainnet, goerli, pulsechain, pulsechainV4, hardhat } from 'wagmi/chains'
-import { EthereumClient, w3mConnectors, w3mProvider } from '@web3modal/ethereum'
-import { infuraProvider } from 'wagmi/providers/infura'
-// import { jsonRpcProvider } from 'wagmi/providers/jsonRpc'
-import { Web3Modal } from '@web3modal/react'
+import { WagmiProvider } from 'wagmi'
+import { http } from 'viem'
+import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
+import { createAppKit } from '@reown/appkit/react'
+import { WagmiAdapter } from '@reown/appkit-adapter-wagmi'
+import { mainnet, pulsechain as pulsechainDefault } from '@reown/appkit/networks'
+import type { AppKitNetwork } from '@reown/appkit/networks'
 import App from './App.tsx'
 import './App.scss'
 import "./i18n"
 
-const chains = [mainnet, goerli, pulsechain, pulsechainV4, hardhat]
+// Get AppKit Project ID from environment
+const REOWN_APPKIT_ID = import.meta.env.VITE_REOWN_APPKIT_ID;
 
-// ref: https://wagmi.sh/react/providers/configuring-chains
-const projectId = import.meta.env.VITE_WALLET_CONNECT_ID
-const { publicClient } = configureChains(chains, [
-  // Providers here are used in preference according to order they appear in this array. If a request fails,
-  // Wagmi will try the next applicable provider in the list.
-  
-  // jsonRpcProvider({
-  //   rpc: (chain) => {
-  //     if (chain.id == 943) return {
-  //       http: "http://pulsechainv4.local:8545",
-  //       webSocket: `ws://pulsechainv4.local:8546`,
-  //     }
-  //     return null
-  //   }
-  // }),
+// AppKit ID is required for the WagmiAdapter and AppKit
+if (!REOWN_APPKIT_ID) throw new Error('AppKit ID (REOWN_APPKIT_ID) is not defined')
 
-  // WalletConnect's Blockchain API allows for a generous 6 million requests per projectId per 30 days, on their free tier.
-  w3mProvider({ projectId }),
-  infuraProvider({ apiKey: import.meta.env.VITE_INFURA_ID }), // fallback; generally never used because w3mProvider, as above.
-]);
+const metadata = {
+  name: 'HexMob',
+  description: 'HEX Mobile Wallet Interface',
+  url: window.location.origin,
+  icons: ['https://avatars.githubusercontent.com/u/37784886']
+}
 
-const wagmiConfig = createConfig({
-  autoConnect: true,
-  connectors: w3mConnectors({ projectId, chains }),
-  publicClient,
+// Create custom Pulsechain network with icon
+// Mainnet uses the default icon from AppKit, but we add a custom icon for Pulsechain
+const pulsechain: AppKitNetwork = {
+  ...pulsechainDefault,
+  chainImage: '/pulsechain.png'
+} as AppKitNetwork
+
+// Set the networks for Wagmi and AppKit
+const networks = [pulsechain, mainnet] as [AppKitNetwork, ...AppKitNetwork[]]
+
+// Create Wagmi Adapter with explicit RPC transports
+// This allows reads/writes to work reliably without depending on WalletConnect RPC
+const infuraId = import.meta.env.VITE_INFURA_ID as string | undefined
+const wagmiAdapter = new WagmiAdapter({
+  networks,
+  projectId: REOWN_APPKIT_ID,
+  transports: {
+    [mainnet.id]: http(
+      infuraId ? `https://mainnet.infura.io/v3/${infuraId}` : 'https://eth.llamarpc.com'
+    ),
+    [pulsechain.id]: http('https://rpc.pulsechain.com')
+  },
+  ssr: false
 })
-const ethereumClient = new EthereumClient(wagmiConfig, chains)
+
+// Initialize AppKit with Wagmi adapter
+// AppKit provides wallet selection UI and network switching capabilities
+createAppKit({
+  adapters: [wagmiAdapter],
+  networks,
+  projectId: REOWN_APPKIT_ID,
+  metadata,
+  features: {
+    analytics: false,
+    allWallets: true
+  },
+  themeMode: 'dark',
+  defaultNetwork: pulsechain
+})
+
+// Create Query Client for TanStack Query
+const queryClient = new QueryClient()
 
 ReactDOM.createRoot(document.getElementById('root') as HTMLElement).render(
   <React.StrictMode>
-    <WagmiConfig config={wagmiConfig} >
-      <App />
-    </WagmiConfig>
-    <Web3Modal projectId={projectId} ethereumClient={ethereumClient} />
+    <WagmiProvider config={wagmiAdapter.wagmiConfig}>
+      <QueryClientProvider client={queryClient}>
+        <App />
+      </QueryClientProvider>
+    </WagmiProvider>
   </React.StrictMode>,
 )

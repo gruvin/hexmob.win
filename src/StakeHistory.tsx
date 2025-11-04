@@ -1,6 +1,7 @@
 import React, { useContext, useEffect, useState } from 'react'
 import { useTranslation } from "react-i18next"
-import { useNetwork, usePublicClient, useQuery } from 'wagmi'
+import { useChainId, usePublicClient } from 'wagmi'
+import { useQuery } from '@tanstack/react-query'
 import HEX from './hex_contract'
 import { EventStakeHistory } from './lib/Stakes'
 import { HexContext } from './Context'
@@ -24,8 +25,7 @@ const StakesHistory = (props: { account?: UriAccount }) => {
     const [sortKey, setSortKey] = useState({ keyField: "timestamp", dir: -1 } as { keyField: string, dir: number })
     const [pastStakes, setPastStakes] = useState(null as EventStakeHistory[] | null)
 
-    const { chain } = useNetwork()
-    const chainId = chain?.id || 0
+    const chainId = useChainId()
     const publicClient = usePublicClient()
 
     const sortPastStakesStateByField = (keyField: string, _dir?: number) => {
@@ -45,18 +45,38 @@ const StakesHistory = (props: { account?: UriAccount }) => {
         )
     }
 
-    useQuery(
-        ["StartEvents", `${chainId}`, walletAddress],
-        async () => (
-            await publicClient.getLogs({
+    useQuery({
+        queryKey: ["StartEvents", `${chainId}`, walletAddress],
+        queryFn: async () => {
+            if (!publicClient) throw new Error('Public client not available')
+            return await publicClient.getLogs({
                 address: HEX.CHAIN_ADDRESSES[chainId],
                 event: getAbiItem({ abi: HEX.ABI, name: "StakeEnd" }),
                 args: { stakerAddr: walletAddress },
                 fromBlock: HEX.GENESIS_BLOCK,
                 toBlock: 'latest',
             })
-        ), {
-        onSuccess: (data) => {
+        },
+        enabled: !!publicClient && !!walletAddress && chainId in HEX.CHAIN_ADDRESSES,
+    })
+
+    const { data: stakeEndEvents } = useQuery({
+        queryKey: ["StakeEndEvents", `${chainId}`, walletAddress],
+        queryFn: async () => {
+            if (!publicClient) throw new Error('Public client not available')
+            return await publicClient.getLogs({
+                address: HEX.CHAIN_ADDRESSES[chainId],
+                event: getAbiItem({ abi: HEX.ABI, name: "StakeEnd" }),
+                args: { stakerAddr: walletAddress },
+                fromBlock: HEX.GENESIS_BLOCK,
+                toBlock: 'latest',
+            })
+        },
+        enabled: !!publicClient && !!walletAddress && chainId in HEX.CHAIN_ADDRESSES,
+    })
+
+    useEffect(() => {
+        if (stakeEndEvents) {
             /*
             emit StakeEnd( // (auto-generated event)
                 uint256(uint40(block.timestamp)) // data0
@@ -70,7 +90,7 @@ const StakesHistory = (props: { account?: UriAccount }) => {
                 stakeId
             );
             */
-            const decodedHistory: EventStakeHistory[] = data.map(result => {
+            const decodedHistory: EventStakeHistory[] = stakeEndEvents.map((result: any) => {
                 if (result.args === undefined) return null
                 const d0 = result.args?.data0
                 const d1 = result.args?.data1
@@ -97,10 +117,10 @@ const StakesHistory = (props: { account?: UriAccount }) => {
                     ...decoded,
                     stakeReturn,
                 }
-            })
+            }).filter(Boolean) as EventStakeHistory[]
             setPastStakes(decodedHistory)
         }
-    })
+    }, [stakeEndEvents])
 
     useEffect(() => {
         setPastStakes(null)

@@ -1,11 +1,12 @@
+@use "sass:map";
 @use "./theme" as bs;
-@forward '../node_modules/bootstrap/scss/bootstrap' with (
+@use '../node_modules/bootstrap/scss/bootstrap' with (
     $theme-colors: bs.$theme-colors
 );
 
 body {
     font-family: 'Titillium Web', Arial, sans-serif;
-    color: map-get(bs.$theme-colors, light);
+    color: map.get(bs.$theme-colors, light);
     background:  black;
     background-size: auto;
     font-size: 1.10rem;
@@ -18,7 +19,7 @@ h4, .h4 { font-size: 1.0rem; }
 h6, .h6 { font-weight: bold }
 small, .small { font-size: 0.75rem; }
 .xs-small { font-size: 1.00rem; }
-.text-muted { font-weight: normal; color: map-get(bs.$theme-colors, muted) !important }
+.text-muted { font-weight: normal; color: map.get(bs.$theme-colors, muted) !important }
 
 /* iPhone 11 1792x828px at 326ppi */
 @media only screen
@@ -140,8 +141,8 @@ small, .small { font-size: 0.75rem; }
 #hexmob_body {
     position: fixed;
     top: 40px;
-    bottom: 27px;
-    padding: 0;
+    bottom: 84px; // Updated to accommodate new footer height (60px + padding)
+    padding: 0 0 20px 0; // Add bottom padding for visual breathing room
     margin: auto;
     overflow-x: hidden;
     overflow-y: scroll;
@@ -152,11 +153,30 @@ small, .small { font-size: 0.75rem; }
 
 #hexmob_footer {
     position: fixed;
-    bottom:0;
-    height: 26px;
-    padding: 0;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    min-height: 60px;
+    padding: 12px 0;
     margin: 0;
-    background-color: black;
+    background: linear-gradient(135deg, rgba(13, 17, 23, 0.95), rgba(21, 32, 43, 0.95));
+    backdrop-filter: blur(10px);
+    border-top: 1px solid rgba(255, 255, 255, 0.1);
+    z-index: 1000;
+}
+
+#wallet_status {
+    .row {
+        align-items: center;
+        justify-content: center;
+        min-height: 36px;
+    }
+    
+    // Web3Modal button styling adjustments
+    w3m-button, w3m-account-button {
+        --w3m-border-radius-master: 8px;
+        --w3m-font-size-master: 14px;
+    }
 }
 
 .connect-button {
@@ -165,7 +185,7 @@ small, .small { font-size: 0.75rem; }
     font-weight: bold;
     margin: 0.6em;
     color: #777;
-    background-color: map-get(bs.$theme-colors, light);
+    background-color: map.get(bs.$theme-colors, light);
     min-width: 160px;
     min-height: 48px;
 
@@ -201,14 +221,14 @@ small, .small { font-size: 0.75rem; }
 
 .accordion {
     padding-bottom: 0.25em;
-    color: map-get(bs.$theme-colors, primary);
+    color: map.get(bs.$theme-colors, primary);
 
     &-item {
         margin: 0.3rem 0 0.3rem 0;
         border-width: 2px !important;
         border-radius: 5px !important;
         border-color:  rgba(20,20,20,1);
-        color: map-get(bs.$theme-colors, light);
+        color: map.get(bs.$theme-colors, light);
         background-color: rgba(30,30,30,1);
     }
     &-body, &-collapse {
@@ -217,7 +237,7 @@ small, .small { font-size: 0.75rem; }
 
     &-button { // inside <Accordion.Header/>
         cursor: pointer;
-        background: map-get(bs.$theme-colors, secondary);
+        background: map.get(bs.$theme-colors, secondary);
         color: #eee; font-weight: bold;
         margin: 0;
         padding: 0;
@@ -267,10 +287,10 @@ small, .small { font-size: 0.75rem; }
     font-size: .9em;
     max-width: 365px;
     padding: 1em .5em;
-    border: 3px map-get(bs.$theme-colors, info) solid;
+    border: 3px map.get(bs.$theme-colors, info) solid;
     border-radius: 3px;
-    color: map-get(bs.$theme-colors, info);
-    background-color: map-get(bs.$theme-colors, info-darkened);
+    color: map.get(bs.$theme-colors, info);
+    background-color: map.get(bs.$theme-colors, info-darkened);
     box-shadow: 3px 3px 3px 1px rgba(0, 0, 0, 0.5);
 }
 .tooltip.show {
@@ -283,7 +303,7 @@ input.donate_addr {
     font-family: "Courier New", monospace;
     font-size: 0.65rem;
     color: #ccc;
-    background-color: map-get(bs.$theme-colors, warning);
+    background-color: map.get(bs.$theme-colors, warning);
     border: 0;
 }
 
@@ -309,4 +329,6 @@ ul.no-bullets > li {
 .pointer {
     cursor: pointer;
 }
+
+
 

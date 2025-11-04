@@ -1,3 +1,4 @@
+@use "sass:map";
 @use "theme" as bs;
 
 #stakes_accordion {
@@ -17,7 +18,7 @@
         cursor: pointer;
     }
 
-    & .stake-history { background-color: map-get(bs.$theme-colors, dark);}
+    & .stake-history { background-color: map.get(bs.$theme-colors, dark);}
 
     & .btn-exitbtn,
     & .btn-stake,
@@ -31,59 +32,59 @@
     // the upper left corner phong thing
     .accordion-button:not(.collapsed) > .container {
         color: #eee; font-weight: bold;
-        background: linear-gradient(135deg, map-get(bs.$theme-colors, info) 0, map-get(bs.$theme-colors, dark) 18px);
+        background: linear-gradient(135deg, map.get(bs.$theme-colors, info) 0, map.get(bs.$theme-colors, dark) 18px);
     }
 
     & .btn-exitbtn {
         &.pendingexit {
             /* PENDING EXIT BUTTON */
-            color: map-get(bs.$theme-colors, info);
-            border: 2px map-get(bs.$theme-colors, secondary) solid;
+            color: map.get(bs.$theme-colors, info);
+            border: 2px map.get(bs.$theme-colors, secondary) solid;
             &:hover {
-                color: map-get(bs.$theme-colors, info);
-                border-color: map-get(bs.$theme-colors, info);
+                color: map.get(bs.$theme-colors, info);
+                border-color: map.get(bs.$theme-colors, info);
             }
         }
 
         &.earlyexit {
             /* EARLY EXIT BUTTON -- DANGER! */
-            color: map-get(bs.$theme-colors, danger);
-            border: 2px map-get(bs.$theme-colors, secondary) solid;
+            color: map.get(bs.$theme-colors, danger);
+            border: 2px map.get(bs.$theme-colors, secondary) solid;
             &:hover {
-                color: map-get(bs.$theme-colors, danger);
-                border-color: map-get(bs.$theme-colors, danger);
+                color: map.get(bs.$theme-colors, danger);
+                border-color: map.get(bs.$theme-colors, danger);
             }
         }
 
         &.midexit {
             /* EARLY BUT PAST MID TERM EXIT BUTTON */
-            color: map-get(bs.$theme-colors, warning);
-            border: 2px map-get(bs.$theme-colors, secondary) solid;
+            color: map.get(bs.$theme-colors, warning);
+            border: 2px map.get(bs.$theme-colors, secondary) solid;
             &:hover {
-                color: map-get(bs.$theme-colors, warning);
-                border-color: map-get(bs.$theme-colors, warning);
+                color: map.get(bs.$theme-colors, warning);
+                border-color: map.get(bs.$theme-colors, warning);
             }
         }
 
         &.termexit {
             /* AT TERM PLUS UP TO ONE WEEK LATE EXIT BUTTON */
-            color: map-get(bs.$theme-colors, success);
-            border: 2px map-get(bs.$theme-colors, secondary) solid;
+            color: map.get(bs.$theme-colors, success);
+            border: 2px map.get(bs.$theme-colors, secondary) solid;
             &:hover {
-                color: map-get(bs.$theme-colors, success);
-                border-color: map-get(bs.$theme-colors, success);
+                color: map.get(bs.$theme-colors, success);
+                border-color: map.get(bs.$theme-colors, success);
             }
         }
 
         &.lateexit {
             /* LATER THAN TERM PLUS TWO WEEKS EXIT BUTTON */
-            color: map-get(bs.$theme-colors, info);
+            color: map.get(bs.$theme-colors, info);
             padding-left: 22px;
-            border-color: map-get(bs.$theme-colors, secondary);
+            border-color: map.get(bs.$theme-colors, secondary);
             background-size: 10px 26px;
             &:hover {
-                color: map-get(bs.$theme-colors, success);
-                border-color: map-get(bs.$theme-colors, success);
+                color: map.get(bs.$theme-colors, success);
+                border-color: map.get(bs.$theme-colors, success);
             }
         }
     }
@@ -95,12 +96,12 @@
     text-align: center;
     -webkit-animation: Danger 3s linear infinite forwards;
     animation: dangerAnimation 3s linear infinite forwards;
-    background-color: map-get(bs.$theme-colors, danger);
+    background-color: map.get(bs.$theme-colors, danger);
     background: repeating-linear-gradient(
         135deg,
-        map-get(bs.$theme-colors, info),
-        map-get(bs.$theme-colors, danger),
-        map-get(bs.$theme-colors, info) 20px,
+        map.get(bs.$theme-colors, info),
+        map.get(bs.$theme-colors, danger),
+        map.get(bs.$theme-colors, info) 20px,
     );
     background-size: 164%;
     padding: 5px;
