@@ -404,7 +404,7 @@ export const WalletUtils = (props: React.PropsWithChildren<ContainerProps>): Rea
 
         try {
             // wasAdded is a boolean. Like any RPC method, an error may be thrown.
-            await window.ethereum?.request({
+            await (window.ethereum as any)?.request({
                 method: "wallet_watchAsset",
                 params: {
                     type: "ERC20", // Initially only supports ERC20, but eventually more!
@@ -422,7 +422,7 @@ export const WalletUtils = (props: React.PropsWithChildren<ContainerProps>): Rea
     }
 
     const addPulseChain = async () => {
-        await window.ethereum?.request({
+        await (window.ethereum as any)?.request({
             method: "wallet_addEthereumChain",
             params: [{
                 chainId: "0x"+Number(369).toString(16),

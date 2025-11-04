@@ -2,7 +2,7 @@
 GIT=/usr/local/bin/git
 GPG=/usr/local/bin/gpg
 RSYNC=/usr/local/bin/rsync
-RSYNC_ARGS=--exclude='.ht*' --exclude='.DS*' --exclude='.Trashes'
+RSYNC_ARGS="--exclude='.ht*' --exclude='.DS*' --exclude='.Trashes'"
 SCP=/usr/bin/scp
 TAR=/usr/bin/tar
 BUILD_DIR="./dist/" # must include trailing / for rsync !

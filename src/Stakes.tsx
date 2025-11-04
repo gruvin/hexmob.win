@@ -379,8 +379,12 @@ const Stakes = (props: {
         const { payout, bigPayDay } = stakeReturnData;
 
         const { lockedDay, stakedDays, stakeShares } = prevStakeData;
-        const partDayPayout =
-          currentDay < lockedDay + stakedDays
+        const endDay = lockedDay + stakedDays;
+        const isCompleted = currentDay >= endDay;
+        
+        // For active stakes, add current day estimate
+        // For completed stakes, don't add partial day (full payout already calculated)
+        const partDayPayout = !isCompleted && currentDay >= lockedDay
             ? estimatePayoutRewardsDay(hexData, stakeShares, currentDay)
             : 0n;
 
