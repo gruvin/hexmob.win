@@ -34,3 +34,6 @@ release/
 
 # Local Netlify folder
 .netlify
+
+# ggshield cache
+.cache_ggshield
