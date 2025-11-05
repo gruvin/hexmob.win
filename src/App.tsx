@@ -50,7 +50,7 @@ switch (window.location.hostname) {
     window.hostIsHM = false;
 }
 
-const Header = (props: { usdhex: number }) => {
+const Header = (props: { usdhex: number; ethPrice: number; pulsePrice: number; priceSource: 'ethereum' | 'pulsechain'; onTogglePrice: () => void }) => {
   const hexData = useContext(HexContext);
   const currentDay = hexData?.currentDay || 0n;
   const { i18n } = useTranslation();
@@ -85,9 +85,19 @@ const Header = (props: { usdhex: number }) => {
       </div>
       <div id="usdhex">
         <span className="text-muted small me-1">USD</span>
-        <span className="numeric text-success h2">
+        <span 
+          className="numeric text-success h2" 
+          onClick={props.onTogglePrice}
+          style={{ cursor: 'pointer', userSelect: 'none', display: 'inline-block' }}
+          title={`Click to toggle between ${props.ethPrice > 0 ? 'Ethereum' : '(no Ethereum price)'} and ${props.pulsePrice > 0 ? 'Pulsechain' : '(no Pulsechain price)'}`}
+        >
           {"$" + (isNaN(props.usdhex) ? "-.--" : format(",.4f")(props.usdhex))}
         </span>
+        <img 
+          src={props.priceSource === 'ethereum' ? '/ethereum.png' : '/pulsechain.png'}
+          alt={props.priceSource}
+          style={{ height: '20.8px', marginLeft: '8px', verticalAlign: 'top', display: 'inline-block' }}
+        />
       </div>
     </>
   );
@@ -191,13 +201,27 @@ function App() {
     undefined as Address | undefined
   );
   const [USDHEX, setUSDHEX] = useState(0.0);
+  const [ethPrice, setEthPrice] = useState(0.0);
+  const [pulsePrice, setPulsePrice] = useState(0.0);
+  const [priceSource, setPriceSource] = useState<'ethereum' | 'pulsechain'>('pulsechain');
+
+  const handleTogglePrice = () => {
+    // Only toggle if both prices are available
+    if (ethPrice > 0 && pulsePrice > 0) {
+      if (priceSource === 'ethereum') {
+        setUSDHEX(pulsePrice);
+        setPriceSource('pulsechain');
+      } else {
+        setUSDHEX(ethPrice);
+        setPriceSource('ethereum');
+      }
+    }
+  };
 
   // const referrer = (uriQuery?.get("r") || "").toLowerCase() // will never be used again (?)
   ///
 
   const chainId = useChainId();
-  const currentChain = CHAINS[chainId] || CHAINS[0];
-  const networkName = currentChain?.name || 'offline';
   const queryClient = useQueryClient();
 
   const hexAddress = HEX.CHAIN_ADDRESSES[chainId as keyof typeof HEX.CHAIN_ADDRESSES];
@@ -208,6 +232,26 @@ function App() {
     setWalletAddress(address);
   }, [address]);
 
+  // When wallet connects, switch price source to the connected network
+  useEffect(() => {
+    if (accountIsConnected) {
+      // If connected to Ethereum, use Ethereum price; otherwise use Pulsechain
+      if (chainId === 1 && ethPrice > 0) {
+        setUSDHEX(ethPrice);
+        setPriceSource('ethereum');
+      } else if (pulsePrice > 0) {
+        setUSDHEX(pulsePrice);
+        setPriceSource('pulsechain');
+      }
+    } else {
+      // When not connected, default to Pulsechain
+      if (pulsePrice > 0) {
+        setUSDHEX(pulsePrice);
+        setPriceSource('pulsechain');
+      }
+    }
+  }, [accountIsConnected, chainId, ethPrice, pulsePrice]);
+
   // When chain changes, clear derived HEX data to force a fresh load on new chain
   useEffect(() => {
     setHexData(undefined);
@@ -216,19 +260,30 @@ function App() {
   }, [chainId]);
 
   useQuery({
-    queryKey: [networkName, "DaiHex"],
+    queryKey: ["pulsechain", "DaiHex"],
     queryFn: getPulseXDaiHex,
-    enabled: chainId === 369,
     refetchInterval: 10000,
     retry: 5,
     retryDelay: 5000,
   });
 
+  // Always fetch Pulsechain price independently
   useEffect(() => {
-    if (chainId === 369) {
-      getPulseXDaiHex().then((data: any) => setUSDHEX(data)).catch(() => {});
-    }
-  }, [chainId]);
+    getPulseXDaiHex()
+      .then((data: any) => {
+        setPulsePrice(data);
+      })
+      .catch(() => {});
+
+    // Set up interval to refresh
+    const interval = setInterval(() => {
+      getPulseXDaiHex()
+        .then((data: any) => setPulsePrice(data))
+        .catch(() => {});
+    }, 10000);
+
+    return () => clearInterval(interval);
+  }, []);
 
   // Uniswap V2 Pair contract ABI
   const UNISWAP_V2_PAIR_ABI = [
@@ -270,7 +325,7 @@ function App() {
     abi: UNISWAP_V2_PAIR_ABI,
     functionName: "getReserves",
     query: {
-      enabled: chainId == 1,
+      enabled: true, // Always enabled to fetch Ethereum price
       refetchInterval: 10000 // 10 seconds
     }
   });
@@ -281,7 +336,7 @@ function App() {
       const bnPrice = reserve0 > 0 ? (reserve1 * 100000000n) / reserve0 : 0n;
       const calculatedPrice = Number(bnPrice) / 1000000;
       debug("HEX USDC: ", calculatedPrice);
-      setUSDHEX(calculatedPrice);
+      setEthPrice(calculatedPrice);
     }
   }, [price]);
 
@@ -369,7 +424,7 @@ function App() {
       {/* Re-mount downstream consumers when chain changes to ensure fresh reads */}
       <HexContext.Provider key={`chain-${chainId}`} value={hexData}>
         <Container id="hexmob_header" fluid>
-          <Header usdhex={USDHEX} />
+          <Header usdhex={USDHEX} ethPrice={ethPrice} pulsePrice={pulsePrice} priceSource={priceSource} onTogglePrice={handleTogglePrice} />
         </Container>
         <Container id="hexmob_body" fluid>
           {accountIsConnected && walletAddress ? (
