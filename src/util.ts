@@ -250,10 +250,7 @@ export const calcPayoutRewards = (
         payout += dayPayout
     }
 
-    // Only include currentDay estimate if the current day is within the stake range and stake is still active
-    if (currentDay >= beginDay && currentDay < endDay) {
-        payout += estimatePayoutRewardsDay(hexData, stakeShares, currentDay)
-    }
+    payout += estimatePayoutRewardsDay(hexData, stakeShares, currentDay)
 
     if (beginDay <= HEX.BIG_PAY_DAY && endDay > HEX.BIG_PAY_DAY) {
         const bpdStakeSharesTotal = (currentDay < 352n) // day is zero based internally
