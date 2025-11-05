@@ -150,7 +150,7 @@ export const StakeStartButton = (props: React.PropsWithChildren<{
         } else if (isLoading) {
             buttonContent = <><FontAwesomeIcon icon={faWalkieTalkie} />&nbsp;{t("requesting")}</>
         } else if (isError) {
-            debug("StartStakeButon::write error: ", hash)
+            debug("StartStakeButton::write error: ", hash)
             buttonContent = <><FontAwesomeIcon icon={faFrown} />&nbsp;{t("rejected")}</>
             setTimeout(() => {
                 reset()

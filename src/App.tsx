@@ -8,16 +8,6 @@ import {
 } from "wagmi";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 
-// Declare the AppKit web components
-declare global {
-  namespace JSX {
-    interface IntrinsicElements {
-      'appkit-button': any;
-      'appkit-account-button': any;
-    }
-  }
-}
-
 import { Address } from "viem";
 import { getPulseXDaiHex } from "./util";
 import { HexContext } from "./Context";
@@ -142,20 +132,10 @@ const Footer = () => {
   const chainId = useChainId();
   debug(chainId);
   
-  // Only trust chainId if actually connected; otherwise use offline
-  const effectiveChainId = isConnected ? chainId : 0;
-  const currentChain = CHAINS[effectiveChainId] ?? undefined;
-
-  const chainMeta = {
-    "mainnet": { name: "Ethereum", avatar: "/ethereum.png" },
-    "pulsechain": { name: "Pulsechain", avatar: "/pulsechain.png" },
-    "offline": { name: "offline", avatar: undefined},
-  } as const;
-  type ChainKey = keyof typeof chainMeta;
-
-  const currentMeta = (currentChain?.name as ChainKey | undefined) ?? "offline";
-  const currentName = chainMeta[currentMeta].name;
-  const currentAvatar = chainMeta[currentMeta].avatar;
+  const currentChain = isConnected ? chainId : 0;
+  
+  const currentName = CHAINS[currentChain].name;
+  const currentAvatar = CHAINS[currentChain].avatar;
 
   return (
     <Container id="wallet_status" fluid>
@@ -176,8 +156,11 @@ const Footer = () => {
 function App() {
   const { i18n, t } = useTranslation();
 
-  /// URI Stuff
-  // look for ?account=addr[:label][&...]'s from URI
+  // ============================================================================
+  // Parse URL Query Parameters
+  // ============================================================================
+  
+  // Parse ?account=addr[:label][&...] query parameters for multi-account view
   let accounts: UriAccount[] = [];
   if (uriQuery.has("account")) {
     const uriAccounts = uriQuery.getAll("account");
@@ -187,6 +170,7 @@ function App() {
     });
   }
 
+  // Set language from ?lang query parameter (defaults to Free Speech "mining" variant)
   switch (uriQuery.get("lang")) {
     case "en":
     case "original":
@@ -198,6 +182,8 @@ function App() {
     default:
       if (i18n.language != "en_WP") i18n.changeLanguage("en_WP");
   }
+  
+  // ============================================================================
 
   // "state" variables
   const [hexData, setHexData] = useState(undefined as HexData | undefined);
@@ -299,8 +285,8 @@ function App() {
     }
   }, [price]);
 
-  // start the show when walletAddress appears
-  // Lo and behold! Hardhat (Viem) appears to come with Multicall3 built in.
+  // Start the show when walletAddress appears
+  // Uses Viem's built-in Multicall3. Nice.
   const { data: contractsData } = useReadContracts({
     contracts: hexContract ? [
       { ...hexContract, chainId, functionName: "currentDay" },

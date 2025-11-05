@@ -1,23 +1,2 @@
-VITE_WALLET_CONNECT_ID='deaddeef8008135deaddeef800813500'
-VITE_REOWN_APPKIT_ID='deaddeef-8008-135d-eadd-eef80081350'
-VITE_INFURA_ID='deaddeef8008135deaddeef800813500'
-VITE_PORTIS_ID='2b008135-5555-0369-l17e-baaaabaaaaaa'
-VITE_MORALIS_DEFAULT_API_KEY='7TfnncCX7e9uKHLu8gDNY4Zlq8OheogNilHcJYVD55FE6Ue3c7jA4D395H5tFX85'
-
-# Wagmi + AppKit Configuration:
-# - Uses Wagmi via WagmiAdapter for all wallet interactions and multi-chain support
-# - Uses AppKit for wallet UI, network switching, and account management
-# - VITE_REOWN_APPKIT_ID is required for both WagmiAdapter and AppKit initialization
-# - VITE_INFURA_ID is optional for Ethereum mainnet (falls back to llamarpc if not set)
-#
-# Development (npm run dev):
-# - AppKit will make requests to Reown endpoints (api.web3modal.org, rpc.walletconnect.org)
-# - These requests will fail with 403/401 errors if your dev domain is not whitelisted
-# - This is EXPECTED and HARMLESS - console errors are automatically filtered
-# - Wallet connections work normally via Wagmi and direct RPC calls
-# - To avoid errors: whitelist your dev domain in https://dashboard.reown.com
-#   (e.g., add "https://dev.hexmob.win" or "http://localhost:5173" to allowed origins)
-#
-# Production:
-# - Ensure your production domain is whitelisted in https://dashboard.reown.com
-# - All Reown/AppKit features will work normally
+VITE_REOWN_APPKIT_ID='deaddeef-8008-13457-deed-571077345'
+VITE_INFURA_ID='deaddeaddeaddeaddeaddead'

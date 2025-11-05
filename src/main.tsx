@@ -13,13 +13,11 @@ import "./i18n"
 
 // Get AppKit Project ID from environment
 const REOWN_APPKIT_ID = import.meta.env.VITE_REOWN_APPKIT_ID;
-
-// AppKit ID is required for the WagmiAdapter and AppKit
 if (!REOWN_APPKIT_ID) throw new Error('AppKit ID (REOWN_APPKIT_ID) is not defined')
 
 const metadata = {
-  name: 'HexMob',
-  description: 'HEX Mobile Wallet Interface',
+  name: 'HEXMOB',
+  description: 'HEX Mining Mobile Interface',
   url: window.location.origin,
   icons: ['https://avatars.githubusercontent.com/u/37784886']
 }
