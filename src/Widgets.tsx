@@ -1,4 +1,4 @@
-import React, { useContext, useState, PropsWithChildren } from 'react'
+import React, { useContext, useState, PropsWithChildren, useEffect } from 'react'
 import { useTranslation } from "react-i18next"
 import Container, { ContainerProps } from 'react-bootstrap/Container'
 import Button from 'react-bootstrap/Button'
@@ -16,7 +16,8 @@ import CHAINS from './chains'
 import { cryptoFormat, compactHexString } from './util.js'
 import {
     useWriteContract,
-    useWaitForTransactionReceipt
+    useWaitForTransactionReceipt,
+    useAccount
 } from 'wagmi'
 
 import _debug from 'debug'
@@ -394,7 +395,42 @@ export const GitHubInfo = (props: PropsWithChildren<ContainerProps>): React.Reac
 }
 
 export const WalletUtils = (props: React.PropsWithChildren<ContainerProps>): React.ReactElement => {
-    if (!window.ethereum || !window.ethereum?._metamask) return <></>
+    const { isConnected } = useAccount()
+    const [supportsWatchAsset, setSupportsWatchAsset] = useState(false)
+    const [supportsAddChain, setSupportsAddChain] = useState(false)
+
+    // Check wallet capabilities on component mount and when connection changes
+    useEffect(() => {
+        const checkWalletCapabilities = async () => {
+            // First check if window.ethereum exists and is accessible
+            if (!window.ethereum) {
+                setSupportsWatchAsset(false)
+                setSupportsAddChain(false)
+                return
+            }
+
+            // Try to check if the wallet supports these methods
+            // We'll assume basic support if ethereum.request exists and wallet is connected
+            const hasEthereumRequest = typeof (window.ethereum as any)?.request === 'function'
+            
+            if (!hasEthereumRequest) {
+                setSupportsWatchAsset(false)
+                setSupportsAddChain(false)
+                return
+            }
+
+            // If connected, we can assume the wallet supports these standard methods
+            // Most EIP-1193 compliant wallets support wallet_watchAsset and wallet_addEthereumChain
+            if (isConnected) {
+                setSupportsWatchAsset(true)
+                setSupportsAddChain(true)
+            }
+        }
+
+        checkWalletCapabilities()
+    }, [isConnected])
+
+    if (!supportsWatchAsset && !supportsAddChain) return <></>
 
     const addHEXtoken = async () => {
         const tokenAddress = "0x2b591e99afe9f32eaa6214f7b7629768c40eeb39"
@@ -403,16 +439,15 @@ export const WalletUtils = (props: React.PropsWithChildren<ContainerProps>): Rea
         const tokenImage = "https://hex.com/downloads/logo/HEXagon.png"
 
         try {
-            // wasAdded is a boolean. Like any RPC method, an error may be thrown.
             await (window.ethereum as any)?.request({
                 method: "wallet_watchAsset",
                 params: {
-                    type: "ERC20", // Initially only supports ERC20, but eventually more!
+                    type: "ERC20",
                     options: {
-                        address: tokenAddress, // The address that the token is at.
-                        symbol: tokenSymbol, // A ticker symbol or shorthand, up to 5 chars.
-                        decimals: tokenDecimals, // The number of decimals in the token
-                        image: tokenImage, // A string url of the token logo
+                        address: tokenAddress,
+                        symbol: tokenSymbol,
+                        decimals: tokenDecimals,
+                        image: tokenImage,
                     },
                 },
             })
@@ -422,37 +457,45 @@ export const WalletUtils = (props: React.PropsWithChildren<ContainerProps>): Rea
     }
 
     const addPulseChain = async () => {
-        await (window.ethereum as any)?.request({
-            method: "wallet_addEthereumChain",
-            params: [{
-                chainId: "0x"+Number(369).toString(16),
-                chainName: "Pulsechain",
-                nativeCurrency: {
-                    name: "Pulse",
-                    symbol: "PLS",
-                    decimals: 18
-                },
-                rpcUrls: ["https://rpc.pulsechain.com/"],
-                blockExplorerUrls: ["https://otter.pulsechain.com/"],
-                iconUrls: [] // ignored
-            }]
-        })
+        try {
+            await (window.ethereum as any)?.request({
+                method: "wallet_addEthereumChain",
+                params: [{
+                    chainId: "0x"+Number(369).toString(16),
+                    chainName: "Pulsechain",
+                    nativeCurrency: {
+                        name: "Pulse",
+                        symbol: "PLS",
+                        decimals: 18
+                    },
+                    rpcUrls: ["https://rpc.pulsechain.com/"],
+                    blockExplorerUrls: ["https://otter.pulsechain.com/"],
+                    iconUrls: []
+                }]
+            })
+        } catch (error) {
+            debug(error)
+        }
     }
 
     return (
         <Container {...props}>
             <Row>
                 <Col className="col-12 text-light text-center mb-1 ">
-                    <h4>Metamask Helpers</h4>
+                    <h4>Wallet Helpers</h4>
                 </Col>
             </Row>
             <Row>
-                <Col className="text-end">
-                    <Button onClick={addHEXtoken}>Add HEX Token</Button>
-                </Col>
-                <Col className="text-start">
-                    <Button onClick={addPulseChain}>Add Pulsechain</Button>
-                </Col>
+                {supportsWatchAsset && (
+                    <Col className="text-end">
+                        <Button onClick={addHEXtoken}>Add HEX Token</Button>
+                    </Col>
+                )}
+                {supportsAddChain && (
+                    <Col className="text-start">
+                        <Button onClick={addPulseChain}>Add Pulsechain</Button>
+                    </Col>
+                )}
             </Row>
         </Container>
     )

@@ -429,10 +429,7 @@ const Stakes = (props: {
                 </Col>
                 <Col className="col-5 lh-lg px-0 text-end text-success">
                   <span className="text-muted small align-baseline me-1">
-                    <span className="d-none d-sm-inline">
-                      {t("Available")}{" "}
-                    </span>
-                    HEX
+                   {t("Available")}{" HEX"}
                   </span>
                   <CryptoVal className="fw-bold" value={hexBalance} />
                 </Col>
