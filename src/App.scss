@@ -80,6 +80,20 @@ small, .small { font-size: 0.75rem; }
         width: fit-content;
         margin: 0.8em auto 0 auto;
         text-align: center;
+        
+        .numeric {
+            cursor: pointer;
+            transition: opacity 0.2s ease;
+            
+            &:hover {
+                opacity: 0.8;
+            }
+            
+            &:active {
+                opacity: 0.6;
+            }
+        }
+        
         & .progress {
             width: 100%;
             height: 0.1rem;

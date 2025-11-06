@@ -1,11 +1,6 @@
 import React, { useState, useEffect, useContext } from "react";
 import { useTranslation } from "react-i18next";
-import {
-  useChainId,
-  useAccount,
-  useReadContract,
-  useReadContracts,
-} from "wagmi";
+import { useChainId, useAccount, useReadContract, useReadContracts } from "wagmi";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 
 import { Address } from "viem";
@@ -44,13 +39,20 @@ switch (window.location.hostname) {
     break;
 
   case "127.0.0.1":
+  case "localhost":
   case "go.tshare.app":
   default:
     window.hostIsTSA = true;
     window.hostIsHM = false;
 }
 
-const Header = (props: { usdhex: number }) => {
+const Header = (props: {
+  usdhex: number;
+  ethPrice: number;
+  pulsePrice: number;
+  headerPriceSource: "ethereum" | "pulsechain";
+  onTogglePrice: () => void;
+}) => {
   const hexData = useContext(HexContext);
   const currentDay = hexData?.currentDay || 0n;
   const { i18n } = useTranslation();
@@ -59,6 +61,8 @@ const Header = (props: { usdhex: number }) => {
     const languageValue = e.target.value;
     i18n.changeLanguage(languageValue);
   };
+
+  const headerDisplayPrice = props.headerPriceSource === "ethereum" ? props.ethPrice : props.pulsePrice;
 
   return (
     <>
@@ -73,8 +77,7 @@ const Header = (props: { usdhex: number }) => {
       )}
       <div id="version-day">
         <h3>
-          {import.meta.env.VITE_VERSION || "v0.0.0A"}{" "}
-          <strong className="text-warning">WP</strong>
+          {import.meta.env.VITE_VERSION || "v0.0.0A"} <strong className="text-warning">WP</strong>
         </h3>
         <div>
           <span className="text-muted small align-baseline me-1">DAY</span>
@@ -84,10 +87,20 @@ const Header = (props: { usdhex: number }) => {
         </div>
       </div>
       <div id="usdhex">
-        <span className="text-muted small me-1">USD</span>
-        <span className="numeric text-success h2">
-          {"$" + (isNaN(props.usdhex) ? "-.--" : format(",.4f")(props.usdhex))}
+        <span className="text-muted small me-1">{props.headerPriceSource === "ethereum" ? "USDC" : "DAI"}</span>
+        <span
+          className="numeric text-success h2"
+          onClick={props.onTogglePrice}
+          style={{ cursor: "pointer", userSelect: "none", display: "inline-block" }}
+          title={`Click to toggle network price source`}
+        >
+          {"$" + (isNaN(headerDisplayPrice) ? "-.--" : format(",.4f")(headerDisplayPrice))}
         </span>
+        <img
+          src={props.headerPriceSource === "ethereum" ? "/ethereum.png" : "/pulsechain.png"}
+          alt={props.headerPriceSource}
+          style={{ height: "20.8px", marginLeft: "8px", verticalAlign: "top", display: "inline-block" }}
+        />
       </div>
     </>
   );
@@ -99,24 +112,12 @@ const Body = (props: { accounts: UriAccount[]; usdhex: number }) => {
   return (
     <Container>
       {!hexData ? (
-        <ProgressBar
-          variant="secondary"
-          animated
-          now={60}
-          label="initializing"
-        />
+        <ProgressBar variant="secondary" animated now={60} label="initializing" />
       ) : (
         <>
-          <Stakes
-            openActive={uriQuery.has("closed") ? false : true}
-            usdhex={props.usdhex}
-          />
+          <Stakes openActive={uriQuery.has("closed") ? false : true} usdhex={props.usdhex} />
           {props.accounts.map((account) => (
-            <Stakes
-              key={account.address}
-              account={account}
-              usdhex={props.usdhex}
-            />
+            <Stakes key={account.address} account={account} usdhex={props.usdhex} />
           ))}
           {/* <Lobby parent={this} contract={this.contract} wallet={this.state.wallet} /> */}
           {/* <Stats parent={this} contract={this.contract} wallet={this.state.wallet} usdhex={this.state.USDHEX} /> */}
@@ -126,14 +127,13 @@ const Body = (props: { accounts: UriAccount[]; usdhex: number }) => {
   );
 };
 
-
 const Footer = () => {
   const { isConnected } = useAccount();
   const chainId = useChainId();
   debug(chainId);
-  
+
   const currentChain = isConnected ? chainId : 0;
-  
+
   const currentName = CHAINS[currentChain].name;
   const currentAvatar = CHAINS[currentChain].avatar;
 
@@ -159,7 +159,7 @@ function App() {
   // ============================================================================
   // Parse URL Query Parameters
   // ============================================================================
-  
+
   // Parse ?account=addr[:label][&...] query parameters for multi-account view
   let accounts: UriAccount[] = [];
   if (uriQuery.has("account")) {
@@ -182,31 +182,59 @@ function App() {
     default:
       if (i18n.language != "en_WP") i18n.changeLanguage("en_WP");
   }
-  
+
   // ============================================================================
 
   // "state" variables
   const [hexData, setHexData] = useState(undefined as HexData | undefined);
-  const [walletAddress, setWalletAddress] = useState(
-    undefined as Address | undefined
-  );
+  const [walletAddress, setWalletAddress] = useState(undefined as Address | undefined);
   const [USDHEX, setUSDHEX] = useState(0.0);
+  const [ethPrice, setEthPrice] = useState(0.0);
+  const [pulsePrice, setPulsePrice] = useState(0.0);
+  // Separate state for header price display toggle (independent of global app price)
+  const [headerPriceSource, setHeaderPriceSource] = useState<"ethereum" | "pulsechain">("pulsechain");
+
+  const handleTogglePrice = () => {
+    // Only toggle the header display if both prices are available
+    if (ethPrice > 0 && pulsePrice > 0) {
+      if (headerPriceSource === "ethereum") {
+        setHeaderPriceSource("pulsechain");
+      } else {
+        setHeaderPriceSource("ethereum");
+      }
+    }
+  };
 
   // const referrer = (uriQuery?.get("r") || "").toLowerCase() // will never be used again (?)
   ///
 
   const chainId = useChainId();
-  const currentChain = CHAINS[chainId] || CHAINS[0];
-  const networkName = currentChain?.name || 'offline';
   const queryClient = useQueryClient();
 
   const hexAddress = HEX.CHAIN_ADDRESSES[chainId as keyof typeof HEX.CHAIN_ADDRESSES];
-  const hexContract = hexAddress ? { address: hexAddress, abi: HEX.ABI } : undefined as any;
+  const hexContract = hexAddress ? { address: hexAddress, abi: HEX.ABI } : (undefined as any);
 
   const { address, isConnected: accountIsConnected } = useAccount();
   useEffect(() => {
     setWalletAddress(address);
   }, [address]);
+
+  // When wallet connects, switch price to the connected network
+  useEffect(() => {
+    if (accountIsConnected) {
+      // If connected to Ethereum, use Ethereum price; otherwise use Pulsechain
+      if (chainId === 1 && ethPrice > 0) {
+        setUSDHEX(ethPrice);
+      } else if (pulsePrice > 0) {
+        setUSDHEX(pulsePrice);
+      }
+    } else {
+      // When not connected, default to Pulsechain
+      if (pulsePrice > 0) {
+        setUSDHEX(pulsePrice);
+      }
+    }
+  }, [accountIsConnected, chainId, ethPrice, pulsePrice]);
 
   // When chain changes, clear derived HEX data to force a fresh load on new chain
   useEffect(() => {
@@ -216,19 +244,30 @@ function App() {
   }, [chainId]);
 
   useQuery({
-    queryKey: [networkName, "DaiHex"],
+    queryKey: ["pulsechain", "DaiHex"],
     queryFn: getPulseXDaiHex,
-    enabled: chainId === 369,
     refetchInterval: 10000,
     retry: 5,
     retryDelay: 5000,
   });
 
+  // Always fetch Pulsechain price independently
   useEffect(() => {
-    if (chainId === 369) {
-      getPulseXDaiHex().then((data: any) => setUSDHEX(data)).catch(() => {});
-    }
-  }, [chainId]);
+    getPulseXDaiHex()
+      .then((data: any) => {
+        setPulsePrice(data);
+      })
+      .catch(() => {});
+
+    // Set up interval to refresh
+    const interval = setInterval(() => {
+      getPulseXDaiHex()
+        .then((data: any) => setPulsePrice(data))
+        .catch(() => {});
+    }, 10000);
+
+    return () => clearInterval(interval);
+  }, []);
 
   // Uniswap V2 Pair contract ABI
   const UNISWAP_V2_PAIR_ABI = [
@@ -269,10 +308,11 @@ function App() {
     address: "0xF6DCdce0ac3001B2f67F750bc64ea5beB37B5824", // Uniswap v2 HEX / USDC
     abi: UNISWAP_V2_PAIR_ABI,
     functionName: "getReserves",
+    chainId: 1, // Always read from Ethereum mainnet
     query: {
-      enabled: chainId == 1,
-      refetchInterval: 10000 // 10 seconds
-    }
+      enabled: true, // Always enabled to fetch Ethereum price
+      refetchInterval: 10000, // 10 seconds
+    },
   });
 
   useEffect(() => {
@@ -281,34 +321,38 @@ function App() {
       const bnPrice = reserve0 > 0 ? (reserve1 * 100000000n) / reserve0 : 0n;
       const calculatedPrice = Number(bnPrice) / 1000000;
       debug("HEX USDC: ", calculatedPrice);
-      setUSDHEX(calculatedPrice);
+      setEthPrice(calculatedPrice);
     }
   }, [price]);
 
   // Start the show when walletAddress appears
   // Uses Viem's built-in Multicall3. Nice.
   const { data: contractsData } = useReadContracts({
-    contracts: hexContract ? [
-      { ...hexContract, chainId, functionName: "currentDay" },
-      {
-        ...hexContract, chainId,
-        functionName: "balanceOf",
-        args: [walletAddress ?? "0x0000000000000000000000000000000000000000"],
-      },
-      {
-        ...hexContract, chainId,
-        functionName: "stakeCount",
-        args: [walletAddress ?? "0x0000000000000000000000000000000000000000"],
-      },
-      { ...hexContract, chainId, functionName: "allocatedSupply" },
-      { ...hexContract, chainId, functionName: "totalSupply" },
-      { ...hexContract, chainId, functionName: "globals" },
-    ] : [],
+    contracts: hexContract
+      ? [
+          { ...hexContract, chainId, functionName: "currentDay" },
+          {
+            ...hexContract,
+            chainId,
+            functionName: "balanceOf",
+            args: [walletAddress ?? "0x0000000000000000000000000000000000000000"],
+          },
+          {
+            ...hexContract,
+            chainId,
+            functionName: "stakeCount",
+            args: [walletAddress ?? "0x0000000000000000000000000000000000000000"],
+          },
+          { ...hexContract, chainId, functionName: "allocatedSupply" },
+          { ...hexContract, chainId, functionName: "totalSupply" },
+          { ...hexContract, chainId, functionName: "globals" },
+        ]
+      : [],
     query: {
       // Enable reads even without a connected wallet to refresh UI on chain changes
       enabled: !!hexContract,
-      refetchInterval: 10000
-    }
+      refetchInterval: 10000,
+    },
   });
 
   useEffect(() => {
@@ -348,28 +392,34 @@ function App() {
           latestStakeId: BigInt(_globals[6] || 0),
           claimStats: {
             claimedBtcAddrCount: _stats >> (HEX.SATOSHI_UINT_SIZE * 2n),
-            claimedSatoshisTotal:
-              (_stats >> HEX.SATOSHI_UINT_SIZE) & HEX.SATOSHI_UINT_MASK,
+            claimedSatoshisTotal: (_stats >> HEX.SATOSHI_UINT_SIZE) & HEX.SATOSHI_UINT_MASK,
             unclaimedSatoshisTotal: _stats & HEX.SATOSHI_UINT_MASK,
           },
         },
       };
       setHexData(next);
     } catch (err) {
-      debug('Failed to parse HEX globals: %O', { error: err, contractsData });
+      debug("Failed to parse HEX globals: %O", { error: err, contractsData });
     }
   }, [contractsData, chainId, hexAddress, walletAddress]);
 
-  const explorerUrl = CHAINS[chainId]?.explorerURL && HEX.CHAIN_ADDRESSES[chainId]
-    ? `${(CHAINS[chainId]?.explorerURL || '').replace(/\/$/, "")}/address/${HEX.CHAIN_ADDRESSES[chainId]}`
-    : undefined;
+  const explorerUrl =
+    CHAINS[chainId]?.explorerURL && HEX.CHAIN_ADDRESSES[chainId]
+      ? `${(CHAINS[chainId]?.explorerURL || "").replace(/\/$/, "")}/address/${HEX.CHAIN_ADDRESSES[chainId]}`
+      : undefined;
 
   return (
     <Container className="m-0 p-0" fluid>
       {/* Re-mount downstream consumers when chain changes to ensure fresh reads */}
       <HexContext.Provider key={`chain-${chainId}`} value={hexData}>
         <Container id="hexmob_header" fluid>
-          <Header usdhex={USDHEX} />
+          <Header
+            usdhex={USDHEX}
+            ethPrice={ethPrice}
+            pulsePrice={pulsePrice}
+            headerPriceSource={headerPriceSource}
+            onTogglePrice={handleTogglePrice}
+          />
         </Container>
         <Container id="hexmob_body" fluid>
           {accountIsConnected && walletAddress ? (
@@ -389,9 +439,7 @@ function App() {
                   <Badge className="p-2 text-light bg-secondary">
                     <strong>{t("CONTRACT ADDRESS")}</strong>
                     <br className="d-md-none" />
-                    <span className="text-info">
-                      &nbsp;{HEX.CHAIN_ADDRESSES[chainId]}
-                    </span>
+                    <span className="text-info">&nbsp;{HEX.CHAIN_ADDRESSES[chainId]}</span>
                   </Badge>
                 </a>
               </Container>
