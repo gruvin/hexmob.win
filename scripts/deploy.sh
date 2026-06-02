@@ -1,14 +1,28 @@
 #!/bin/zsh
+
+if [[ -f ./.env.local ]]; then
+    set -a
+    source ./.env.local
+    set +a
+fi
+
 GIT=/usr/local/bin/git
 GPG=/usr/local/bin/gpg
+LFTP=/usr/local/bin/lftp
 RSYNC=/usr/local/bin/rsync
-RSYNC_ARGS="--exclude='.ht*' --exclude='.DS*' --exclude='.Trashes'"
+RSYNC_ARGS="--exclude='.ht*' --exclude='.DS*' --exclude='.Trashes' --exclude='.well-known'"
+LFTP_MIRROR_ARGS="--delete --verbose --parallel=6 --exclude-glob .ht* --exclude-glob .DS* --exclude-glob .Trashes --exclude-glob .well-known"
 SCP=/usr/bin/scp
 TAR=/usr/bin/tar
 BUILD_DIR="./dist/" # must include trailing / for rsync !
-DEST_DEV='hexmob:~/dev.hexmob.win'
-DEST_HEXMOB='hexmob:~/public_html'
+DEST_DEV='ftp.hexmob.win:/dev.hexmob.win'
+DEST_HEXMOB='ftp.hexmob.win:/public_html'
 DEST_TSA='tsa:~/go.tshare.app'
+DEST_DEV_TRANSPORT='ftp'
+DEST_HEXMOB_TRANSPORT='ftp'
+DEST_TSA_TRANSPORT='rsync'
+DEST_FTP_PROTOCOL='ftps'
+DEST_FTP_PORT='21'
 autoload throw catch
 
 # target unique files list ...
@@ -31,6 +45,14 @@ _cleanup() {
     ${GIT} stash pop  > /dev/null 2>&1
     unset TARGET
     unset DEST
+    unset DEPLOY_TARGET
+    unset DEST_TRANSPORT
+    unset DEST_FTP_PROTOCOL
+    unset DEST_FTP_PORT
+    unset DEST_FTP_HOST
+    unset DEST_FTP_DIR
+    unset DEST_FTP_USERNAME
+    unset DEST_FTP_PASSWORD
 }
 
 TRAPINT() {
@@ -41,12 +63,109 @@ TRAPINT() {
 }
 
 # @args: TARGET DEST
+_configure_target() {
+    case "${DEPLOY_TARGET:-$TARGET}" in
+        (tsa)
+            DEST=${DEST_TSA}
+            DEST_TRANSPORT=${DEST_TSA_TRANSPORT}
+            ;;
+        (dev)
+            DEST=${DEST_DEV}
+            DEST_TRANSPORT=${DEST_DEV_TRANSPORT}
+            DEST_FTP_PROTOCOL=${DEST_FTP_PROTOCOL}
+            DEST_FTP_PORT=${DEST_FTP_PORT}
+            DEST_FTP_USERNAME=${DEST_DEV_FTP_USERNAME}
+            DEST_FTP_PASSWORD=${DEST_DEV_FTP_PASSWORD}
+            [[ "$DEST_TRANSPORT" == 'ftp' ]] && _configure_ftp_destination
+            ;;
+        (hexmob)
+            DEST=${DEST_HEXMOB}
+            DEST_TRANSPORT=${DEST_HEXMOB_TRANSPORT}
+            DEST_FTP_PROTOCOL=${DEST_FTP_PROTOCOL}
+            DEST_FTP_PORT=${DEST_FTP_PORT}
+            DEST_FTP_USERNAME=${DEST_HEXMOB_FTP_USERNAME}
+            DEST_FTP_PASSWORD=${DEST_HEXMOB_FTP_PASSWORD}
+            [[ "$DEST_TRANSPORT" == 'ftp' ]] && _configure_ftp_destination
+            ;;
+        (*)
+            DEST=${DEST_DEV}
+            DEST_TRANSPORT=${DEST_DEV_TRANSPORT}
+            DEST_FTP_PROTOCOL=${DEST_FTP_PROTOCOL}
+            DEST_FTP_PORT=${DEST_FTP_PORT}
+            DEST_FTP_USERNAME=${DEST_DEV_FTP_USERNAME}
+            DEST_FTP_PASSWORD=${DEST_DEV_FTP_PASSWORD}
+            [[ "$DEST_TRANSPORT" == 'ftp' ]] && _configure_ftp_destination
+            ;;
+    esac
+}
+
+_prompt_for_secret() {
+    local PROMPT="$1"
+    local SECRET
+
+    read -s SECRET\?"${PROMPT}: "
+    print ""
+    print -- "$SECRET"
+}
+
+_configure_ftp_destination() {
+    [[ "$DEST" == *:* ]] || throw "FTP destination must be host:/path, got ${DEST}"
+
+    DEST_FTP_HOST=${DEST%%:*}
+    DEST_FTP_DIR=${DEST#*:}
+
+    [[ "$DEST_FTP_HOST" == "" ]] && throw 'DEST_FTP_HOST not set'
+    [[ "$DEST_FTP_DIR" == "" ]] && throw 'DEST_FTP_DIR not set'
+}
+
+_deploy_build_output() {
+    case "$DEST_TRANSPORT" in
+        (rsync)
+            print "RSYNCing ${BUILD_DIR} => ${DEST}"
+            ${RSYNC} ${RSYNC_APPLE_ARGS} -r --delete ${BUILD_DIR} ${DEST} || throw ''
+            ;;
+        (ftp)
+            [[ -x ${LFTP} ]] || throw "Missing ${LFTP}"
+            [[ "$DEST_FTP_HOST" == "" ]] && throw 'DEST_FTP_HOST not set'
+            [[ "$DEST_FTP_USERNAME" == "" ]] && read DEST_FTP_USERNAME\?"FTP username for ${TARGET}: "
+            [[ "$DEST_FTP_PASSWORD" == "" ]] && DEST_FTP_PASSWORD=$(_prompt_for_secret "FTP password for ${DEST_FTP_USERNAME}@${DEST_FTP_HOST}")
+
+            local OPEN_URL="ftp://${DEST_FTP_HOST}"
+            local SSL_FORCE=false
+            local SSL_PROTECT_DATA=false
+
+            case "$DEST_FTP_PROTOCOL" in
+                (ftp)
+                    ;;
+                (ftps)
+                    SSL_FORCE=true
+                    ;;
+                (ftps-legacy)
+                    OPEN_URL="ftps://${DEST_FTP_HOST}"
+                    SSL_FORCE=true
+                    ;;
+                (*)
+                    throw "Unsupported DEST_FTP_PROTOCOL: ${DEST_FTP_PROTOCOL}"
+                    ;;
+            esac
+
+            print "FTP mirroring ${BUILD_DIR} => ${DEST}"
+            ${LFTP} -e "set dns:order inet; set ftp:ssl-force ${SSL_FORCE}; set ftp:ssl-protect-data ${SSL_PROTECT_DATA}; set ftp:passive-mode true; set ftp:prefer-epsv false; set ftp:fix-pasv-address true; set ssl:verify-certificate false; open -u \"${DEST_FTP_USERNAME}\",\"${DEST_FTP_PASSWORD}\" -p ${DEST_FTP_PORT} ${OPEN_URL}; cd ${DEST_FTP_DIR}; mirror -R ${LFTP_MIRROR_ARGS} ${BUILD_DIR} .; bye" || throw ''
+            ;;
+        (*)
+            throw "Unsupported transport: ${DEST_TRANSPORT}"
+            ;;
+    esac
+}
+
 _build() {
     {
         [[ "$TARGET" == "" ]] && throw 'TARGET not set'
+        _configure_target
         [[ "$DEST" == "" ]] && throw 'DEST not set'
+        [[ "$DEST_TRANSPORT" == "" ]] && throw 'DEST_TRANSPORT not set'
 
-        print "\nBuild target is ${TARGET} ( => ${DEST})\n"
+        print "\nBuild target is ${TARGET} ( => ${DEST} via ${DEST_TRANSPORT})\n"
         # dual branding stuff
         for FILE in $FILES; do
             SLASH=""
@@ -59,8 +178,7 @@ _build() {
         yarn build || throw ''
         print "BUILD DONE"
 
-        print "RSYNCing ${BUILD_DIR} => ${DEST}"
-        ${RSYNC} ${RSYNC_APPLE_ARGS} -r  --delete ${BUILD_DIR} ${DEST} || throw ''
+        _deploy_build_output
 
     } always {
         if catch '*'; then
@@ -96,10 +214,10 @@ case "$DEPLOY_TYPE" in
 
                 print "Deploying version ${TAG} ..."
 
-                TARGET=tsa DEST=${DEST_TSA} _build
+                TARGET=tsa _build
                 sleep 1
 
-                TARGET=hexmob DEST=${DEST_HEXMOB} _build
+                TARGET=hexmob _build
                 sleep 1
 
                 # Create release tarbal for gpg signing and upload to repo 'official release tag'
@@ -120,7 +238,7 @@ case "$DEPLOY_TYPE" in
 
     (*)
         print "Deploying to dev target ..."
-        TARGET=tsa DEST=${DEST_DEV} _build
+        DEPLOY_TARGET=dev TARGET=tsa _build
         ;;
 esac
 
