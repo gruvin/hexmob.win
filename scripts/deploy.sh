@@ -157,7 +157,7 @@ _deploy_build_output() {
             esac
 
             print "FTP mirroring ${BUILD_DIR} => ${DEST}"
-            ${LFTP} -e "set dns:order inet; set ftp:ssl-force ${SSL_FORCE}; set ftp:ssl-protect-data ${SSL_PROTECT_DATA}; set ftp:passive-mode true; set ftp:prefer-epsv false; set ftp:fix-pasv-address true; set ssl:verify-certificate false; open -u \"${DEST_FTP_USERNAME}\",\"${DEST_FTP_PASSWORD}\" -p ${DEST_FTP_PORT} ${OPEN_URL}; cd ${DEST_FTP_DIR}; mirror -R ${LFTP_MIRROR_ARGS} ${BUILD_DIR} .; bye" || throw ''
+            ${LFTP} -e "set dns:order inet; set ftp:ssl-force ${SSL_FORCE}; set ftp:ssl-protect-data ${SSL_PROTECT_DATA}; set ftp:passive-mode true; set ftp:prefer-epsv false; set ftp:fix-pasv-address true; set ssl:verify-certificate false; open -u \"${DEST_FTP_USERNAME}\",\"${DEST_FTP_PASSWORD}\" -p ${DEST_FTP_PORT} ${OPEN_URL}; cd ${DEST_FTP_DIR}; rm -f index.html; mirror -R ${LFTP_MIRROR_ARGS} ${BUILD_DIR} .; bye" || throw ''
             ;;
         (*)
             throw "Unsupported transport: ${DEST_TRANSPORT}"
