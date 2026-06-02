@@ -125,7 +125,11 @@ _deploy_build_output() {
             ${RSYNC} ${RSYNC_APPLE_ARGS} -r --delete ${BUILD_DIR} ${DEST} || throw ''
             ;;
         (ftp)
-            [[ -x ${LFTP} ]] || throw "Missing ${LFTP}"
+            if [[ -z ${LFTP} || ! -x ${LFTP} ]]; then
+                print "Error: lftp is not installed or not found in PATH."
+                print "Install it with: brew install lftp"
+                throw ''
+            fi
             [[ "$DEST_FTP_HOST" == "" ]] && throw 'DEST_FTP_HOST not set'
             [[ "$DEST_FTP_USERNAME" == "" ]] && read DEST_FTP_USERNAME\?"FTP username for ${TARGET}: "
             [[ "$DEST_FTP_PASSWORD" == "" ]] && DEST_FTP_PASSWORD=$(_prompt_for_secret "FTP password for ${DEST_FTP_USERNAME}@${DEST_FTP_HOST}")
