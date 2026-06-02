@@ -25,6 +25,8 @@ DEST_FTP_PROTOCOL='ftps'
 DEST_FTP_PORT='21'
 autoload throw catch
 
+STARTING_BRANCH=$(git rev-parse --abbrev-ref HEAD)
+
 # target unique files list ...
 FILES=('index.html' 'src/theme.scss' 'src/BrandLogo.tsx' 'public')
 
@@ -41,7 +43,8 @@ _cleanup() {
         [[ -e "./${F}${SLASH}" ]] && ( $RSYNC -r -I --delete "./${F}${SLASH}" "./${FILE}${SLASH}" || throw '' )
         [[ -e "./${F}${SLASH}" ]] && ( rm -rf "./${F}${SLASH}" || throw '' )
     done
-    ${GIT} checkout dev  > /dev/null 2>&1
+    # If deployed from master, return to dev to avoid accidental commits to master
+    [[ "$STARTING_BRANCH" == "master" ]] && ${GIT} checkout dev > /dev/null 2>&1
     ${GIT} stash pop  > /dev/null 2>&1
     unset TARGET
     unset DEST
