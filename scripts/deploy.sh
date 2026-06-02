@@ -6,10 +6,10 @@ if [[ -f ./.env.local ]]; then
     set +a
 fi
 
-GIT=/usr/local/bin/git
-GPG=/usr/local/bin/gpg
-LFTP=/usr/local/bin/lftp
-RSYNC=/usr/local/bin/rsync
+GIT=$(command -v git)
+GPG=$(command -v gpg)
+LFTP=$(command -v lftp)
+RSYNC=$(command -v rsync)
 RSYNC_ARGS="--exclude='.ht*' --exclude='.DS*' --exclude='.Trashes' --exclude='.well-known'"
 LFTP_MIRROR_ARGS="--delete --verbose --parallel=6 --exclude-glob .ht* --exclude-glob .DS* --exclude-glob .Trashes --exclude-glob .well-known"
 SCP=/usr/bin/scp
