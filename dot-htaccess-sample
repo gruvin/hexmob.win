@@ -1,0 +1,23 @@
+# Sample .htaccess cache-control directives for hexmob.win / dev.hexmob.win
+#
+# Apply this content to .htaccess in the web root on the server.
+# It is NOT deployed automatically — configure once per server/hosting account.
+#
+# Strategy:
+#   - index.html: short TTL (5 min) so new deployments propagate quickly.
+#     Transparent caches ignore no-cache/no-store but honour real expiry times.
+#   - Vite-hashed assets (e.g. index-C7h0xmLY.js): immutable, 1-year TTL.
+#     The content hash in the filename guarantees freshness — a new build
+#     produces new filenames, so there is no stale-asset risk.
+
+<IfModule mod_headers.c>
+    # Vite content-hashed assets — filename changes with content, safe to cache forever
+    <FilesMatch "-[A-Za-z0-9_-]{8}\.(js|css|woff2?|ttf|eot|png|jpg|jpeg|svg|gif|ico|webp)$">
+        Header set Cache-Control "public, max-age=31536000, immutable"
+    </FilesMatch>
+
+    # HTML entry point — short TTL so deploys propagate within ~5 minutes
+    <FilesMatch "\.html$">
+        Header set Cache-Control "public, max-age=300"
+    </FilesMatch>
+</IfModule>

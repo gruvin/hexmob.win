@@ -21,6 +21,9 @@ export default defineConfig({
   css: {
     preprocessorOptions: {
       scss: {
+        // Bootstrap 5 internals use legacy Sass APIs (darken/lighten, @import, abs()).
+        // Our own SCSS already uses modern @use/color.scale() syntax.
+        // Remove these once Bootstrap 6 ships with modern Sass.
         silenceDeprecations: ['color-functions', 'global-builtin', 'import', 'abs-percent'],
       }
     }

@@ -457,7 +457,7 @@ export const NewStakeForm = () => {
                                 <Tooltip
                                     filterNull={true}
                                     labelFormatter={(label) => <>{"day " + { label }}</>}
-                                    formatter={(value: string) => ([parseFloat(value).toFixed(3) + " MHEX", ""])}
+                                    formatter={(value) => ([parseFloat(String(value ?? 0)).toFixed(3) + " MHEX", ""])}
                                     wrapperStyle={{ padding: "0" }}
                                     contentStyle={{ padding: "3px", backgroundColor: "rgba(0,0,0,0.3)", border: "none", borderRadius: "3px" }}
                                     labelStyle={{ lineHeight: "1em", padding: "2px 5px", color: "#ffdd00", fontWeight: "bold" }}

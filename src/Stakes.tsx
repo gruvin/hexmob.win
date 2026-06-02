@@ -17,8 +17,6 @@ import { NewStakeForm } from "./NewStakeForm";
 import { StakeInfo } from "./StakeInfo";
 const StakeHistory = lazy(() => import("./StakeHistory"));
 
-import ReactGA from "react-ga";
-
 import "./Stakes.scss";
 import {
   findEarliestDay,
@@ -413,7 +411,6 @@ const Stakes = (props: {
         defaultActiveKey={selectedCard}
         onSelect={(eventKey) => {
           !!eventKey && setSelectedCard(eventKey as string);
-          if (eventKey) ReactGA.pageview("/" + eventKey);
         }}
       >
         {!props.account && ( // NewStakeForm not shown for read only ?address=

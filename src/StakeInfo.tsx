@@ -17,8 +17,6 @@ import { format } from "d3-format";
 import { formatUnits } from "viem";
 import { CryptoVal, StakeEndButton } from "./Widgets";
 import { calcPercentGain, calcPercentAPY } from "./util";
-import ReactGA from "react-ga";
-
 import _debug from "debug";
 const debug = _debug("StakeInfo");
 debug("loading");
@@ -117,9 +115,6 @@ export const StakeInfo = (props: {
     <Accordion
       className="my-2"
       defaultActiveKey="0"
-      onSelect={(eventKey) => {
-        if (eventKey) ReactGA.pageview("/current_stakes/" + eventKey);
-      }}
     >
       <Accordion.Item className="bg-dark" eventKey={stake.stakeId.toString()}>
         <Accordion.Header>
