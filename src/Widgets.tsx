@@ -62,7 +62,7 @@ type WhatIsThisProps = PropsWithChildren<Omit<OverlayTriggerProps, "target" | "o
     showPill?: boolean
     placement?: OverlayTriggerProps['placement']
 }
-export const WhatIsThis = (props: WhatIsThisProps, {...others}) => {
+export const WhatIsThis = (props: WhatIsThisProps) => {
     const { tooltip, showPill, children, placement } = props
 
     return (
@@ -70,7 +70,7 @@ export const WhatIsThis = (props: WhatIsThisProps, {...others}) => {
             // rootClose={true}
             placement={placement ? placement : "auto"} flip
             delay={{ show: 200, hide: 400 }}
-            overlay={<Tooltip {...others}>{tooltip}</Tooltip>}
+            overlay={<Tooltip>{tooltip}</Tooltip>}
         >
             <span>
                 {children}
