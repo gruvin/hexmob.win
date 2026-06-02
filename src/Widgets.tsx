@@ -9,7 +9,6 @@ import Row from 'react-bootstrap/Row'
 import Col from 'react-bootstrap/Col'
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
 import { faCopy, faExclamation, faFrown, faHourglass, faSmileWink, faWalkieTalkie } from '@fortawesome/free-solid-svg-icons'
-import { CopyToClipboard } from 'react-copy-to-clipboard'
 import HEX from './hex_contract.js'
 import { HexContext } from './Context'
 import CHAINS from './chains'
@@ -160,14 +159,7 @@ export const StakeStartButton = (props: React.PropsWithChildren<{
         } else if (isSuccess) {
             buttonContent = <><FontAwesomeIcon icon={faHourglass} />&nbsp;{t("confirming")}</>
             txHash = <>
-                <CopyToClipboard text={hash || ""}
-                    onCopy={() => {
-                        setCopied(true)
-                        setTimeout(() => setCopied(false), 3000)
-                    }
-                }>
-                    <span style={{cursor: "pointer"}}>{copied ? <>{t("COPIED")} </> : <>&nbsp;&nbsp;<FontAwesomeIcon icon={faCopy} />&nbsp;&nbsp;&nbsp;</>}</span>
-                </CopyToClipboard>
+                <span style={{cursor: "pointer"}} onClick={() => { navigator.clipboard.writeText(hash || ""); setCopied(true); setTimeout(() => setCopied(false), 3000) }}>{copied ? <>{t("COPIED")} </> : <>&nbsp;&nbsp;<FontAwesomeIcon icon={faCopy} />&nbsp;&nbsp;&nbsp;</>}</span>
                 <a
                     className="txhash-link"
                     href={explorerUrl+"/tx/"+(hash || "0x")}
@@ -255,14 +247,7 @@ export const StakeEndButton = (
         } else if (isSuccess) {
             buttonContent = <><FontAwesomeIcon icon={faHourglass} />&nbsp;{t("confirming")}</>
             txHash = <>
-                <CopyToClipboard text={hash || ""}
-                    onCopy={() => {
-                        setCopied(true)
-                        setTimeout(() => setCopied(false), 3000)
-                    }
-                }>
-                    <span style={{cursor: "pointer"}}>{copied ? <>{t("COPIED")} </> : <>&nbsp;&nbsp;<FontAwesomeIcon icon={faCopy} />&nbsp;&nbsp;&nbsp;</>}</span>
-                </CopyToClipboard>
+                <span style={{cursor: "pointer"}} onClick={() => { navigator.clipboard.writeText(hash || ""); setCopied(true); setTimeout(() => setCopied(false), 3000) }}>{copied ? <>{t("COPIED")} </> : <>&nbsp;&nbsp;<FontAwesomeIcon icon={faCopy} />&nbsp;&nbsp;&nbsp;</>}</span>
                 <a
                     className="txhash-link"
                     href={explorerUrl+"/tx/"+(hash || "0x")}
