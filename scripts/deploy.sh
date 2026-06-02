@@ -50,8 +50,6 @@ _cleanup() {
     unset DEST
     unset DEPLOY_TARGET
     unset DEST_TRANSPORT
-    unset DEST_FTP_PROTOCOL
-    unset DEST_FTP_PORT
     unset DEST_FTP_HOST
     unset DEST_FTP_DIR
     unset DEST_FTP_USERNAME
