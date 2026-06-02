@@ -12,7 +12,7 @@
   resolved "https://registry.yarnpkg.com/@adraffy/ens-normalize/-/ens-normalize-1.11.1.tgz#6c2d657d4b2dfb37f8ea811dcb3e60843d4ac24a"
   integrity sha512-nhCBV3quEgesuf7c7KYfperqSS14T8bYuvJ8PcLJp6znkZpFc0AuW4qBtr8eKVyPPe/8RSr7sglCWPU5eaxwKQ==
 
-"@babel/runtime@^7.1.2", "@babel/runtime@^7.21.0", "@babel/runtime@^7.22.5", "@babel/runtime@^7.5.5", "@babel/runtime@^7.6.3", "@babel/runtime@^7.8.7":
+"@babel/runtime@^7.1.2", "@babel/runtime@^7.21.0", "@babel/runtime@^7.5.5", "@babel/runtime@^7.6.3", "@babel/runtime@^7.8.7":
   version "7.22.6"
   resolved "https://registry.yarnpkg.com/@babel/runtime/-/runtime-7.22.6.tgz#57d64b9ae3cff1d67eb067ae117dac087f5bd438"
   integrity sha512-wDb5pWm4WDdF6LFUde3Jl8WzPA+3ZbxYqkC6xAXuD3irdEHN1k0NfTRrJD8ZD378SJ61miMLCqIOXYhd8x+AJQ==
@@ -23,6 +23,11 @@
   version "7.28.4"
   resolved "https://registry.yarnpkg.com/@babel/runtime/-/runtime-7.28.4.tgz#a70226016fabe25c5783b2f22d3e1c9bc5ca3326"
   integrity sha512-Q/N6JNWvIvPnLDvjlE1OUBLPQHH6l3CltCEsHIujp45zQUSSh8K+gHnaEX45yAT1nyngnINhvWtzN+Nb9D8RAQ==
+
+"@babel/runtime@^7.29.2":
+  version "7.29.7"
+  resolved "https://registry.yarnpkg.com/@babel/runtime/-/runtime-7.29.7.tgz#12022450c45a4da6d8d8287b18a4ff2ddb23f768"
+  integrity sha512-Nq8OhGWiZIZGV6hLHoyAKLLcJihP/xFeBMGJoUrxTX2psI8dCifzLhZISFb+VWS3wFMRDmCGw5R+dOySCqPLhw==
 
 "@base-org/account@2.4.0":
   version "2.4.0"
@@ -3985,12 +3990,10 @@ humanize-ms@^1.2.1:
   dependencies:
     ms "^2.0.0"
 
-i18next@^23.2.7:
-  version "23.2.7"
-  resolved "https://registry.yarnpkg.com/i18next/-/i18next-23.2.7.tgz#1e528b71061ca62668d7d2b6586fb4e6cfe5adb4"
-  integrity sha512-EsbHHvF6b+p+B6Cht5fYWY7VE/WYOrqB1+DNwa1UpLTw6mG5g4tc8KCEjUUOSMUA2yqCsdYQP+PqVq5nBMtOtQ==
-  dependencies:
-    "@babel/runtime" "^7.22.5"
+i18next@^26:
+  version "26.3.0"
+  resolved "https://registry.yarnpkg.com/i18next/-/i18next-26.3.0.tgz#057c1165589b3f312714ea2a0c3f368c2c7cd84f"
+  integrity sha512-gHSgGpUXVmuqE2El1W61DmxeyeTlFfZgdJRWMo9jScAn5pu7TuTuiccb1zh3E2J9hEBVGJ23+96x0ieBhfuIHA==
 
 idb-keyval@6.2.1:
   version "6.2.1"
@@ -4917,13 +4920,14 @@ react-dom@^19:
   dependencies:
     scheduler "^0.27.0"
 
-react-i18next@^13.0.1:
-  version "13.0.1"
-  resolved "https://registry.yarnpkg.com/react-i18next/-/react-i18next-13.0.1.tgz#4d047d2d63d9616f7f5fd4ca88b1cc449cc15290"
-  integrity sha512-gMO6N2GfSfuH7xlHSsZ/mZf+Py9bLm/+EDKIn5fNTuDTjcCcwmMU5UEuGCDk5mdfivbo7ySyYXBN7B9tbGUxiA==
+react-i18next@^17:
+  version "17.0.8"
+  resolved "https://registry.yarnpkg.com/react-i18next/-/react-i18next-17.0.8.tgz#a3880ddbfd956846f4600004313b048c1c705aee"
+  integrity sha512-0ooKbGLU8JXhe1zwpQUWIeXSgLPOfwJmgheWRIUpcoA0CpyabpGhayjdG+/eA5esC1AQ8h2jWpXjJfzQzeDOCw==
   dependencies:
-    "@babel/runtime" "^7.22.5"
+    "@babel/runtime" "^7.29.2"
     html-parse-stringify "^3.0.1"
+    use-sync-external-store "^1.6.0"
 
 react-is@^16.10.2, react-is@^16.13.1, react-is@^16.3.2:
   version "16.13.1"
@@ -5539,6 +5543,11 @@ use-sync-external-store@1.4.0:
   version "1.4.0"
   resolved "https://registry.yarnpkg.com/use-sync-external-store/-/use-sync-external-store-1.4.0.tgz#adbc795d8eeb47029963016cefdf89dc799fcebc"
   integrity sha512-9WXSPC5fMv61vaupRkCKCxsPxBocVnwakBEkMIHHpkTTg6icbJtg6jzgtLDm4bl3cSHAca52rYWih0k4K3PfHw==
+
+use-sync-external-store@^1.6.0:
+  version "1.6.0"
+  resolved "https://registry.yarnpkg.com/use-sync-external-store/-/use-sync-external-store-1.6.0.tgz#b174bfa65cb2b526732d9f2ac0a408027876f32d"
+  integrity sha512-Pp6GSwGP/NrPIrxVFAIkOQeyw8lFenOHijQWkUTrDvrF4ALqylP2C/KCkeS9dpUM3KvYRQhna5vt7IL95+ZQ9w==
 
 utf-8-validate@^5.0.2:
   version "5.0.10"
