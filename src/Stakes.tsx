@@ -5,11 +5,14 @@ import { useChainId, useReadContract, useReadContracts } from "wagmi";
 import { formatUnits, Address } from "viem";
 
 import { HexContext } from "./Context";
+import CHAINS from "./chains";
 // import Container from 'react-bootstrap/Container'
 import Accordion from "react-bootstrap/Accordion";
 import Card from "react-bootstrap/Card";
 import Row from "react-bootstrap/Row";
 import Col from "react-bootstrap/Col";
+import Spinner from "react-bootstrap/Spinner";
+import Button from "react-bootstrap/Button";
 // import ProgressBar from 'react-bootstrap/ProgressBar'
 
 import { CryptoVal, BurgerHeading } from "./Widgets";
@@ -236,7 +239,11 @@ const Stakes = (props: {
   // const [ loadingProgress, setLoadingProgress ] = useState(20)
 
   // stakeCount
-  const { data: stakeCount } = useReadContract({
+  const {
+    data: stakeCount,
+    isError: stakeCountError,
+    refetch: refetchStakeCount,
+  } = useReadContract({
     address: HEX.CHAIN_ADDRESSES[chainId],
     abi: HEX.ABI,
     functionName: "stakeCount",
@@ -247,7 +254,11 @@ const Stakes = (props: {
     }
   });
   // stakeLists[]
-  const { data: stakesData } = useReadContracts({
+  const {
+    data: stakesData,
+    isError: stakesDataError,
+    refetch: refetchStakesData,
+  } = useReadContracts({
     contracts: (() => {
       if (!stakeCount) return [];
       const stakeListsContracts = [];
@@ -403,6 +414,50 @@ const Stakes = (props: {
   const totalUsdValue =
     Number(formatUnits(totalHexValue, HEX.DECIMALS)) * props.usdhex;
 
+  // Discriminated view of the active-stakes body. The bare "no stakes found"
+  // string must only appear on a *confirmed* zero-count read — never while a
+  // read is still loading or has errored (otherwise a slow/flaky RPC looks
+  // identical to an empty wallet and alarms the user).
+  const haveCount = stakeCount !== undefined; // stakeCount read has succeeded
+  const count = Number(stakeCount ?? 0);
+  const networkName = CHAINS[chainId]?.name ?? "this network";
+
+  const loadingBlock = (label: string) => (
+    <div className="text-center text-muted py-3">
+      <Spinner animation="border" size="sm" variant="secondary" className="me-2" />
+      {label}
+    </div>
+  );
+  const errorBlock = (onRetry: () => void) => (
+    <div className="text-center py-3">
+      <div className="text-warning mb-2">{t("stakesLoadError")}</div>
+      <Button variant="outline-secondary" size="sm" onClick={onRetry}>
+        {t("retry")}
+      </Button>
+    </div>
+  );
+
+  const renderStakesBody = () => {
+    if (!walletAddress) return null;
+    if (stakeCountError) return errorBlock(() => refetchStakeCount());
+    if (!haveCount) return loadingBlock(t("stakesLoading"));
+    if (count === 0)
+      return (
+        <div className="text-center text-muted py-3">
+          {t("noStakesOnNetwork", { network: networkName })}
+        </div>
+      );
+    // We know there are stakes; details still loading on first paint only
+    // (length 0). A background count change never blanks an existing list.
+    if (stakeList.length === 0)
+      return stakesDataError
+        ? errorBlock(() => refetchStakesData())
+        : loadingBlock(t("stakesLoadingCount", { count }));
+    return (
+      <StakesList stakeList={stakeList} usdhex={props.usdhex} account={props.account} />
+    );
+  };
+
   return (
     <>
       <Accordion
@@ -468,9 +523,7 @@ const Stakes = (props: {
               </Col>
             </Row>
           </Accordion.Header>
-          <Accordion.Body>
-            <StakesList stakeList={stakeList} usdhex={props.usdhex} account={props.account} />
-          </Accordion.Body>
+          <Accordion.Body>{renderStakesBody()}</Accordion.Body>
         </Accordion.Item>
         <Accordion.Item
           className="stake-history text-light pb-0"

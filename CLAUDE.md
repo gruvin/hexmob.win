@@ -25,7 +25,7 @@ There is **no CI** — the GitHub Actions workflow was removed (`.github/workflo
 
 ## Architecture & data flow
 
-**Entry** (`src/main.tsx`): provider tree `WagmiProvider` (WagmiAdapter from AppKit) → `QueryClientProvider` → `App`. `createAppKit` configures networks `[pulsechain, mainnet]`, defaultNetwork pulsechain, dark theme. Explicit `http` transports per chain: mainnet via Infura (`VITE_INFURA_ID`, falls back to llamarpc), pulsechain via `rpc.pulsechain.com`. Requires `VITE_REOWN_APPKIT_ID` (throws if missing).
+**Entry** (`src/main.tsx`): provider tree `WagmiProvider` (WagmiAdapter from AppKit) → `QueryClientProvider` → `App`. `createAppKit` configures networks `[pulsechain, mainnet]`, defaultNetwork pulsechain, dark theme. Transports are `http()` with **no hardcoded URL** per chain, so each resolves to its chain-definition default RPC (pulsechain → `rpc.pulsechain.com`, mainnet → viem's maintained default) — deliberately avoiding our own endpoints that could rot (Infura/llamarpc were removed once the old on-chain stats/history queries went away). Reads (`call()`) go through a Viem **Public Client** = the transport, **never the wallet**; writes/signing always go through the wallet. So transports are a read-path concern only, and read-only data (price, HEX day, stakes) works with or without a connected wallet. Requires `VITE_REOWN_APPKIT_ID` (throws if missing).
 
 **Key files (`src/`):**
 - `App.tsx` — top-level. `Header` (price toggle, version/day, wording switcher), `Body` (renders `Stakes`). Reads on-chain globals via `useReadContracts` multicall, builds `HexData`, fetches both prices. Host detection sets `window.hostIsHM` / `window.hostIsTSA`.
@@ -65,13 +65,15 @@ Same codebase ships as two brands; `App.tsx` host-detection sets `window.hostIsH
 
 **Shared-hosting cache busting:** the production host (nginx + PHP-FPM) has an `open_file_cache` that serves stale `index.html` for days. deploy.sh renames built `dist/index.html` → `index.php` (served via PHP-FPM, bypassing the static cache) and, on the FTP target, runs `rm -f index.html; rm -f index.php` before the `mirror`. `dot-htaccess-sample` (cache-control directives) is committed as reference.
 
-`.env.local` (gitignored) supplies `VITE_REOWN_APPKIT_ID`, `VITE_INFURA_ID`, and FTP creds. Sample in `dot-env.local-sample`.
+`.env.local` (gitignored) supplies `VITE_REOWN_APPKIT_ID` and FTP creds. Sample in `dot-env.local-sample`. (`VITE_INFURA_ID` is no longer used — mainnet RPC now uses the chain-default endpoint.)
 
 ## Conventions & gotchas
 
 - **Strict TS** (`strict`, `noUnusedLocals`, `noUnusedParameters`, `noFallthroughCasesInSwitch`). Build runs `tsc` first, so unused vars/params break the build.
 - **bigint everywhere** for HEX contract values (currentDay, shares, hearts, payouts). `util.ts` math is bigint; display uses `formatUnitsWithCommas` / `cryptoFormat` / `d3-format`.
 - **Wallet/chain data via wagmi hooks** — `useReadContract`/`useReadContracts` (multicall), `useChainId`, `useAccount`. Don't add ethers; legacy ethers5 was removed.
+- **MetaMask "locked" ≠ "disconnected" (hard-won).** A *locked* MetaMask still leaves the site **authorized**: it keeps that authorization in its *own* extension storage (clearing the dApp's site-data does **not** disconnect it) and still answers `eth_accounts` with the address, so wagmi auto-reconnects and the app shows as connected — reading public data over RPC without the wallet. The vault lock only gates *signing*; the user gets MetaMask's unlock prompt when a tx needs a signature. The **only** dApp-visible "logout" is the user explicitly *Disconnecting the site* in MetaMask (→ `eth_accounts` returns `[]`). There is **no reliable dApp signal for "wallet UI is locked"** (`_metamask.isUnlocked()` proved unreliable and is MetaMask-only). So don't try to gate the UI on lock state — it can't be done. Auto-reconnect (`enableReconnect`/`reconnectOnMount`, both default-on) is intentionally left enabled.
+- **Empty-state must distinguish loading/error/zero.** Stake reads (`Stakes.tsx`) only show "no stakes" on a *confirmed successful zero-count* read — spinner while loading, retry on error — so a slow/flaky RPC never looks like an empty wallet (which alarmed users). Don't collapse these back to a bare `stakeList.length === 0` check.
 - **Debug logging:** `import _debug from "debug"; const debug = _debug("<scope>")` per module (scopes: app, Stakes, util, …). Enable via `localStorage.debug` / `DEBUG`.
 - **i18n wording modes:** default language is `en_WP` ("Free Speech"/WP variant), alt is `en` ("Original"). `keySeparator: false`. Strings in `src/locales/{en,en_WP}/translation.json`. The "WP" badge in the header reflects this default.
 - **Be conservative.** Git history shows several reverts of over-eager AI edits (e.g. "reverted AI induced regression", re-instated an "errantly removed" key). Don't remove keys/config you don't understand.

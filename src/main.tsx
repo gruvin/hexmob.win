@@ -32,17 +32,20 @@ const pulsechain: AppKitNetwork = {
 // Set the networks for Wagmi and AppKit
 const networks = [pulsechain, mainnet] as [AppKitNetwork, ...AppKitNetwork[]]
 
-// Create Wagmi Adapter with explicit RPC transports
-// This allows reads/writes to work reliably without depending on WalletConnect RPC
-const infuraId = import.meta.env.VITE_INFURA_ID as string | undefined
+// Create Wagmi Adapter.
+// Reads (call()) go through a Viem Public Client — the transport below — NOT the
+// wallet; writes/signing always go through the wallet regardless. So the transport
+// is purely a read-path concern. We use each chain's *definition default* RPC
+// (http() with no URL) rather than hardcoding endpoints we'd have to maintain:
+// PulseChain resolves to rpc.pulsechain.com via its network def, mainnet to viem's
+// maintained default. This avoids the app breaking because one of our own
+// hardcoded providers went away. A user's wallet RPC config is theirs to manage.
 const wagmiAdapter = new WagmiAdapter({
   networks,
   projectId: REOWN_APPKIT_ID,
   transports: {
-    [mainnet.id]: http(
-      infuraId ? `https://mainnet.infura.io/v3/${infuraId}` : 'https://eth.llamarpc.com'
-    ),
-    [pulsechain.id]: http('https://rpc.pulsechain.com')
+    [mainnet.id]: http(),
+    [pulsechain.id]: http()
   },
   ssr: false
 })
