@@ -32,6 +32,9 @@ dist-ssr
 .env
 release/
 
+# Claude Code — track shared .claude/settings.json, ignore machine-local settings
+.claude/settings.local.json
+
 # Local Netlify folder
 .netlify
 
