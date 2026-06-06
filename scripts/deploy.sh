@@ -238,8 +238,10 @@ case "$DEPLOY_TYPE" in
                 print "Done!"
 
                 print "\nLIVE DEPLOYMENT COMPLETED."
-                echo -n "gpg --yes -b ${RELEASE_TGZ}" | pbcopy
-                print "\nRemember to sign the release tarbal: \"gpg --yes -b ${RELEASE_TGZ}\" [copied to clipboard]"
+                print "\nSigning release tarball ..."
+                ${GPG} --yes -b "${RELEASE_TGZ}" \
+                    && print "Signed: ${RELEASE_TGZ}.sig" \
+                    || { echo -n "gpg --yes -b ${RELEASE_TGZ}" | pbcopy; print "GPG signing failed — command copied to clipboard. Run it manually." }
                 ;;
         esac
         ;;

@@ -50,11 +50,17 @@ if [[ -z "$NEW_TAG" ]]; then
     exit 0
 fi
 
-# Sanity check: tag must not already exist
+# If tag already exists, offer to delete and recreate it
 if ${GIT} rev-parse "$NEW_TAG" > /dev/null 2>&1; then
-    print "ERROR: tag '${NEW_TAG}' already exists."
-    ${GIT} checkout dev
-    exit 1
+    read -k1 YN\?"Tag '${NEW_TAG}' already exists. Delete and recreate? [y/N]: "
+    print ""
+    if [[ "$YN" == "y" || "$YN" == "Y" ]]; then
+        ${GIT} tag -d "${NEW_TAG}" || { print "ERROR: could not delete tag"; ${GIT} checkout dev; exit 1 }
+    else
+        print "Aborted."
+        ${GIT} checkout dev
+        exit 0
+    fi
 fi
 
 # ── 5. Create signed tag ──────────────────────────────────────────────────────
