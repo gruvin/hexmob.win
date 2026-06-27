@@ -16,6 +16,7 @@ import { HexContext } from "./Context";
 import { format } from "d3-format";
 import { formatUnits } from "viem";
 import { CryptoVal, StakeEndButton } from "./Widgets";
+import { SimulateStakeEndButton } from "./SimulateStakeEndButton";
 import { calcPercentGain, calcPercentAPY } from "./util";
 import _debug from "debug";
 const debug = _debug("StakeInfo");
@@ -348,6 +349,9 @@ export const StakeInfo = (props: {
                 </Col>
               </Row>
             </Container>
+            {!props.readOnly && currentDay >= startDay && stake.stakeIndex !== undefined && (
+              <SimulateStakeEndButton stake={stake} />
+            )}
             <Container>
               <Row>
                 <Col>
