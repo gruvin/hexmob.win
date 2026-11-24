@@ -167,7 +167,7 @@ hexmob.win the old one, with a tag, tarball and signature describing only one ho
 **Decision (yours):** build both, publish both — never publish unless both builds succeed, and
 keep one worktree per brand side by side so the phases can be separated.
 
-**Done** — `<COMMIT>`. `_build` split into two phases over per-brand worktrees:
+**Done** — `cf07042`. `_build` split into two phases over per-brand worktrees:
 `_assemble <brand>` (overlay → build → prune → rename, no upload) and `_publish <brand>`
 (`_configure_target` → upload), both wrapped in `_guarded` for labelled failures and exit 2.
 A release is now: `_assemble tsa`, `_assemble hexmob`, then `_publish tsa`, `_publish hexmob`.
