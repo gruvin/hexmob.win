@@ -25,6 +25,7 @@ Tick these as they are fixed; the sections below hold the detail for each.
 - [ ] **A2** — production run re-applies the stash between the two brand builds; signed tarball can contain WIP; HEAD left detached
 - [ ] **B1** — FTP password visible in `ps`; certificate verification off; payload not TLS-protected
 - [ ] **B2** — entry point deleted before upload leaves a live 404 window
+- [ ] **B3** — macOS artefacts already on a server are protected from `--delete`, not removed (nothing Apple is uploaded; this is cleanup only)
 - [ ] **C1** — *DEFERRED* — `dev` and `master` disagree on how the release is signed; `release.sh` exists only on `master`
 - [ ] **C2** — *DEFERRED* — untested hypothesis: automated GPG signing needs an interactive TTY
 - [ ] **C3** — failure reporting is opaque (`CAUGHT: []`)
@@ -194,6 +195,28 @@ gone" guarantee — that part is load-bearing.
 **Verify.** Watch a deploy from a browser: `/` should never 404. `/index.html` should still
 be 404 afterwards.
 
+### B3 — macOS artefacts already on a server are protected, not cleaned up
+
+**What.** `.ht*` / `.well-known` / `APPLE_JUNK` are all *excludes*, and rsync treats an exclude
+as both "do not transfer" and "protect from `--delete`". So nothing Apple is ever uploaded
+(the guarantee that matters), but any `.DS_Store` / `._*` already in a destination web root is
+also never removed — the mirror leaves it alone forever.
+
+**Evidence.** Verified with a local rsync dry run (`--itemize-changes`): a destination
+containing `.htaccess`, `.well-known/acme/chal`, `.DS_Store` and `assets/._old.js` reports only
+the stale app file as deleted.
+
+**Impact.** Cosmetic/hygiene only: served dot-files are not in any index and are small. Worth
+doing only because "no Apple artefacts on a production server" is cleaner as an absolute.
+
+**Fix (only if wanted).** Separate the two intents using rsync filter rules: replace the
+`.ht*` / `.well-known` excludes with *protect-only* rules (`--filter='P .ht*'`,
+`--filter='P .well-known'`) and add `--delete-excluded`, so the receiver is swept of exactly
+the `APPLE_JUNK` patterns while hosting plumbing stays protected. Filter order matters (first
+match wins: protect rules first). This changes delete semantics on a live web root, so it must
+be proven with a local rsync pair — and then a `-n --itemize-changes` dry run against
+`go.tshare.app` — before it is allowed near a deploy. Not worth doing until A2/B1/B2 are done.
+
 ---
 
 ## C. Release tooling
@@ -291,10 +314,7 @@ name, so consistency matters.
 ### C6 — dead code and no-op assignments around the target configuration
 
 **What.** `GPG` (`:10`) and `SCP` are resolved but unused on `dev` (`GPG` is used on master,
-`SCP` on neither); the exclude patterns are now maintained twice — once as `RSYNC_ARGS`
-(rsync syntax) and once inside `LFTP_MIRROR_ARGS` (`--exclude-glob` syntax) — so a new
-pattern has to be added in two places or the two transports silently diverge;
-`_configure_target` contains
+`SCP` on neither); `_configure_target` contains
 self-assignments like `DEST_FTP_PROTOCOL=${DEST_FTP_PROTOCOL}` (`:79-80`, `:88-89`,
 `:97-98`) that do nothing; the FTP protocol/port are global constants but treated as
 per-target state.
@@ -403,3 +423,11 @@ lands in):
   (the runtime brand switch disagreeing with the published brand) is tracked as A3.
 - [x] **D3 — local `master` was 27 commits stale; fast-forwarded to `origin/master`** (no
   push). `dev` needed no pull — it was already current with `origin/dev`.
+- [x] **D4 — no macOS artefact may be deployed.** `APPLE_JUNK` is now the single list
+  (`.DS_Store`, `._*`, `.AppleDouble`, `.Trashes`, `.Trash`, `.Spotlight-V100`, `.fseventsd`,
+  `.TemporaryItems`, `.DocumentRevisions-V100`, `.apdisk`) generating the rsync excludes, the
+  lftp `--exclude-glob` list, and a post-build prune of `dist/`. The prune is what makes the
+  guarantee transport-independent — and it keeps the signed tarball clean too, since that is
+  made from `dist/`. Verified by seeding a fake `dist/` with ten artefacts (two nested
+  `.DS_Store`, nested `._*`, the V100/fseventsd/TemporaryItems directories): all removed,
+  real files untouched. Receiver-side protection semantics reviewed and tracked as B3.

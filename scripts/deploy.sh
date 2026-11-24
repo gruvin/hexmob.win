@@ -10,12 +10,20 @@ GIT=$(command -v git)
 GPG=$(command -v gpg)
 LFTP=$(command -v lftp)
 RSYNC=$(command -v rsync)
-# Excludes for the rsync transport (lftp has its own glob list below). These protect
-# hosting plumbing in the destination web root from --delete: server config, ACME
-# challenge dirs, and macOS litter. Kept as an array so each pattern stays one argument;
-# the same patterns inside a quoted string would arrive with literal quotes attached.
-RSYNC_ARGS=(--exclude='.ht*' --exclude='.DS*' --exclude='.Trashes' --exclude='.well-known')
-LFTP_MIRROR_ARGS="--delete --verbose --parallel=6 --exclude-glob .ht* --exclude-glob .DS* --exclude-glob .Trashes --exclude-glob .well-known"
+# macOS artefacts must never reach a deployed server, or the signed release tarball. One
+# list, consumed by both transports and by the pre-upload prune, so they cannot drift.
+APPLE_JUNK=(.DS_Store '._*' .AppleDouble .Trashes .Trash .Spotlight-V100 .fseventsd .TemporaryItems .DocumentRevisions-V100 .apdisk)
+
+# Excludes for the rsync transport (lftp gets the same set below, in its glob syntax). The
+# dot-file patterns protect hosting plumbing in the destination web root from --delete:
+# server config and ACME challenge dirs. Kept as an array so each pattern stays one
+# argument; the same patterns inside a quoted string would arrive with literal quotes.
+RSYNC_ARGS=(--exclude='.ht*' --exclude='.well-known')
+for JUNK in ${APPLE_JUNK}; do RSYNC_ARGS+=(--exclude="${JUNK}"); done
+
+LFTP_MIRROR_ARGS="--delete --verbose --parallel=6 --exclude-glob .ht* --exclude-glob .well-known"
+for JUNK in ${APPLE_JUNK}; do LFTP_MIRROR_ARGS="${LFTP_MIRROR_ARGS} --exclude-glob ${JUNK}"; done
+unset JUNK
 SCP=/usr/bin/scp
 TAR=/usr/bin/tar
 BUILD_DIR="./dist/" # must include trailing / for rsync !
@@ -126,6 +134,24 @@ _configure_ftp_destination() {
     [[ "$DEST_FTP_DIR" == "" ]] && throw 'DEST_FTP_DIR not set'
 }
 
+# No macOS artefact may reach a deployed server (or the signed release tarball, which is
+# made from dist/). Transport excludes are not enough on their own: public/ is staged from
+# master.pub/public.<brand>/ and Vite copies it verbatim into dist/, so junk can enter the
+# build output from a Finder visit to any of those directories. Prune the output itself.
+_prune_apple_junk() {
+    local JUNK FOUND COUNT=0
+    for JUNK in ${APPLE_JUNK}; do
+        FOUND=$(find "${BUILD_DIR}" -name "${JUNK}" -prune -print 2>/dev/null)
+        if [[ -n "${FOUND}" ]]; then
+            print "  removing: ${FOUND//$'\n'/, }"
+            find "${BUILD_DIR}" -name "${JUNK}" -prune -exec rm -rf {} + 2>/dev/null
+            COUNT=$(( COUNT + $(print -r -- "${FOUND}" | wc -l | tr -d ' ') ))
+        fi
+    done
+    [[ ${COUNT} -gt 0 ]] && print "Pruned ${COUNT} macOS artefact(s) from ${BUILD_DIR}"
+    return 0
+}
+
 _deploy_build_output() {
     case "$DEST_TRANSPORT" in
         (rsync)
@@ -194,6 +220,7 @@ _build() {
         export VITE_BRAND="${TARGET}"
         yarn build || throw ''
         print "BUILD DONE"
+        _prune_apple_junk
         # Rename to .php so nginx serves it via PHP-FPM rather than the static
         # open_file_cache, which on this host holds stale content for days.
         mv "${BUILD_DIR}index.html" "${BUILD_DIR}index.php" || throw 'Failed to rename index.html to index.php'

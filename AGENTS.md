@@ -145,8 +145,23 @@ why it stayed on rsync. TLS is configured to encrypt the control channel and to 
 the host's certificate chain, since that is the strongest mode the shared host supports.
 
 Uploads are mirrors with `--delete`: the remote directory is made to match `dist/`. Server
-config and dot-files are excluded from that reconciliation (`.ht*`, `.DS*`, `.Trashes`,
-`.well-known`) so hosting plumbing survives a deploy.
+config and dot-files are excluded from that reconciliation (`.ht*`, `.well-known`) so hosting
+plumbing survives a deploy.
+
+**No macOS artefact may ever be deployed.** `.DS_Store`, AppleDouble `._*`, `.Trashes`,
+`.Spotlight-V100`, `.fseventsd`, `.TemporaryItems`, `.DocumentRevisions-V100`, `.apdisk` and
+friends are listed once, as `APPLE_JUNK`, and that single list feeds three consumers: the
+rsync excludes, the lftp `--exclude-glob` list, and `_prune_apple_junk`, which deletes them
+from `dist/` immediately after the build. The prune is the load-bearing one: it is
+transport-independent, and `dist/` also feeds the signed release tarball, which must not ship
+macOS litter either. This is not a hypothetical path — `public/` is staged from
+`master.pub/public.<brand>/` and Vite copies it verbatim into `dist/`, so a single Finder visit
+to any of those directories propagates junk into a build.
+
+Consequence on the receiver side: an *exclude* also protects matching files from `--delete`,
+so macOS junk already sitting on a server is left in place rather than removed (tracked as
+`ISSUES.md` B3). Nothing Apple is ever uploaded; that is the guarantee, and it is the stronger
+of the two.
 
 ---
 
