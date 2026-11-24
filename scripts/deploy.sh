@@ -10,7 +10,11 @@ GIT=$(command -v git)
 GPG=$(command -v gpg)
 LFTP=$(command -v lftp)
 RSYNC=$(command -v rsync)
-RSYNC_ARGS="--exclude='.ht*' --exclude='.DS*' --exclude='.Trashes' --exclude='.well-known'"
+# Excludes for the rsync transport (lftp has its own glob list below). These protect
+# hosting plumbing in the destination web root from --delete: server config, ACME
+# challenge dirs, and macOS litter. Kept as an array so each pattern stays one argument;
+# the same patterns inside a quoted string would arrive with literal quotes attached.
+RSYNC_ARGS=(--exclude='.ht*' --exclude='.DS*' --exclude='.Trashes' --exclude='.well-known')
 LFTP_MIRROR_ARGS="--delete --verbose --parallel=6 --exclude-glob .ht* --exclude-glob .DS* --exclude-glob .Trashes --exclude-glob .well-known"
 SCP=/usr/bin/scp
 TAR=/usr/bin/tar
@@ -126,7 +130,7 @@ _deploy_build_output() {
     case "$DEST_TRANSPORT" in
         (rsync)
             print "RSYNCing ${BUILD_DIR} => ${DEST}"
-            ${RSYNC} ${RSYNC_APPLE_ARGS} -r --delete ${BUILD_DIR} ${DEST} || throw ''
+            ${RSYNC} "${RSYNC_ARGS[@]}" -r --delete ${BUILD_DIR} ${DEST} || throw ''
             ;;
         (ftp)
             if [[ -z ${LFTP} || ! -x ${LFTP} ]]; then
