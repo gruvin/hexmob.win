@@ -28,7 +28,7 @@ There is **no CI** — the GitHub Actions workflow was removed (`.github/workflo
 **Entry** (`src/main.tsx`): provider tree `WagmiProvider` (WagmiAdapter from AppKit) → `QueryClientProvider` → `App`. `createAppKit` configures networks `[pulsechain, mainnet]`, defaultNetwork pulsechain, dark theme. Transports are `http()` with **no hardcoded URL** per chain, so each resolves to its chain-definition default RPC (pulsechain → `rpc.pulsechain.com`, mainnet → viem's maintained default) — deliberately avoiding our own endpoints that could rot (Infura/llamarpc were removed once the old on-chain stats/history queries went away). Reads (`call()`) go through a Viem **Public Client** = the transport, **never the wallet**; writes/signing always go through the wallet. So transports are a read-path concern only, and read-only data (price, HEX day, stakes) works with or without a connected wallet. Requires `VITE_REOWN_APPKIT_ID` (throws if missing).
 
 **Key files (`src/`):**
-- `App.tsx` — top-level. `Header` (price toggle, version/day, wording switcher), `Body` (renders `Stakes`). Reads on-chain globals via `useReadContracts` multicall, builds `HexData`, fetches both prices. Host detection sets `window.hostIsHM` / `window.hostIsTSA`.
+- `App.tsx` — top-level. `Header` (price toggle, version/day, wording switcher), `Body` (renders `Stakes`). Reads on-chain globals via `useReadContracts` multicall, builds `HexData`, fetches both prices. Brand is a build-time constant: `deploy.sh` exports `VITE_BRAND` from `TARGET`, `src/brand.ts` folds it into `IS_HM`/`IS_TSA`, and the loser brand's markup is dead-code eliminated. `window.hostIsHM`/`hostIsTSA` are set for compat but nothing reads them.
 - `Stakes.tsx` — per-account stake list; reads stakeCount + stakeLists via wagmi multicall, builds `StakeData[]`, merges dailyData. `StakesList` sub-component sorts/renders.
 - `StakeInfo.tsx` — single stake row detail.
 - `NewStakeForm.tsx` — create-stake UI. `StakeHistory.tsx` (lazy-loaded) — ended stakes.
@@ -36,6 +36,7 @@ There is **no CI** — the GitHub Actions workflow was removed (`.github/workflo
 - `hex_contract.ts` — ABI, addresses, types (`HexData`, `Globals`, `StakeData`, `ClaimStats`, `DailyData`), default export object. `hex_contract.sol` is the reference Solidity source. `CHAIN_ADDRESSES` maps chainId→HEX contract.
 - `util.ts` — pure HEX math: `calcPayoutRewards`, `calcAdoptionBonus`, `estimatePayoutRewardsDay`, `calcBigPayDaySlice`, `calcLatePenalty`, `calcStakeEnd`, `calcPercentGain`, `calcPercentAPY`, `cryptoFormat`, `formatUnitsWithCommas`, `getPulseXDaiHex` (price), `compactHexString`.
 - `chains.ts` — `TChain` metadata map (avatar, rpcURL, explorerURL) keyed by chainId; 0 = "Not Connected".
+- `brand.ts` — `BRAND` / `IS_HM` / `IS_TSA`, derived at build time from `VITE_BRAND` (stamped by deploy.sh); falls back to hostname detection under `yarn dev`, where the branch is the only place a brand is decided at runtime.
 - `Context.tsx` — `HexContext` (React context carrying `HexData | undefined`); consumed via `useContext(HexContext)`.
 - `lib/*.d.ts` — type decls (`App.d.ts` → `UriAccount`, `Stakes.d.ts` → `StakeData`/`StakeList`).
 
@@ -53,7 +54,7 @@ There is **no CI** — the GitHub Actions workflow was removed (`.github/workflo
 
 ## Dual branding & deploy (`scripts/deploy.sh`, zsh)
 
-Same codebase ships as two brands; `App.tsx` host-detection sets `window.hostIsHM` vs `window.hostIsTSA` at runtime:
+Same codebase ships as two brands. The brand is decided at **build** time (`VITE_BRAND` → `src/brand.ts` → `IS_HM`/`IS_TSA`), with hostname detection kept only as the fallback for `yarn dev`:
 - **hexmob** → hexmob.win (and dev.hexmob.win)
 - **tsa** → go.tshare.app ("tshare.app" / TSA)
 

@@ -187,6 +187,11 @@ _build() {
         done
 
         # build
+        # Stamp the brand that is actually being compiled into the bundle, so the runtime
+        # brand switch (window.hostIsHM / hostIsTSA) follows the published brand rather
+        # than the hostname - dev.hexmob.win deliberately serves the tsa brand. Set per
+        # _build call, since production compiles both brands in one process.
+        export VITE_BRAND="${TARGET}"
         yarn build || throw ''
         print "BUILD DONE"
         # Rename to .php so nginx serves it via PHP-FPM rather than the static

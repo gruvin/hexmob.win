@@ -92,13 +92,25 @@ Two mechanisms coexist, and it matters which one applies to what:
 - **Compile-time overlay** (this directory): for things that must be *absent* from a build
   or are read before any JavaScript runs — page title, `<meta>` tags, favicons, the CSS
   palette. A build cannot ship both brands' social cards.
-- **Runtime switch** (`window.hostIsHM` / `window.hostIsTSA`, set from
-  `window.location.hostname` in `App.tsx`): for React components that simply render
-  different markup per brand, e.g. `BrandLogo`. These need no overlay at all — one source
-  file serves both products, which is why `BrandLogo.tsx` is not in the overlay list.
+- **Build-time brand constant** (`IS_HM` / `IS_TSA` from `src/brand.ts`): for React
+  components that render different markup per brand — `BrandLogo`, the Heart Game promo in
+  `NewStakeForm`. `deploy.sh` exports `VITE_BRAND` from `TARGET` before each build, Vite
+  inlines that literal, and the constants fold to `true`/`false`, so the non-matching brand's
+  markup is dead code and never reaches `dist/`. One source file serves both products, which
+  is why `BrandLogo.tsx` is not in the overlay list.
 
-New per-brand differences should default to the runtime switch; reach for the overlay only
-when the difference has to exist in the built artifact itself.
+A **runtime** brand switch must never survive into a production bundle. The hostname check in
+`src/brand.ts` (`window.location.hostname === "hexmob.win"`) exists only as the fallback for
+builds with no stamped brand — `yarn dev`, and a manual `yarn build` — and is eliminated
+whenever `VITE_BRAND` is set. So: any component needing a brand decision takes it from
+`IS_HM` / `IS_TSA`, never from the hostname. `window.hostIsHM` / `window.hostIsTSA` are still
+assigned (from those constants) for console debugging, but nothing in `src/` reads them — do
+not add readers, or the branch stops folding.
+
+New per-brand differences should default to the build-time constant; reach for the overlay
+only when the difference has to exist in the built artifact itself (SEO tags, CSS palette,
+image assets). Either way, verify the result: the *other* brand's markup must be absent from
+the built bundle.
 
 ### `.env.local` (gitignored, sample in `dot-env.local-sample`)
 
@@ -166,9 +178,9 @@ not a structural one.
 the legacy product; the tshare presentation is the one most users prefer today, so the dev
 host previews that brand rather than the hexmob one. This is a product decision, not an
 oversight — do not "correct" it to `TARGET=hexmob`. It does mean the dev host exercises the
-tsa overlay even though its hostname says hexmob, which is why the runtime brand switch is
-better driven by the brand that was compiled than by `window.location.hostname` (see
-`ISSUES.md`).
+tsa overlay even though its hostname says hexmob — which is exactly why the brand comes from
+the compiled brand (`VITE_BRAND` → `IS_HM` / `IS_TSA`, §2) and not from
+`window.location.hostname`.
 
 ---
 
@@ -318,6 +330,7 @@ Cheap, objective checks — no screenshots needed:
 | Which brand did a target receive? | Fetch the root HTML: `<title>` and `og:site_name` carry the brand (`HEXmob.win` vs `go.tshare.app`), and the hashed JS/CSS asset names change per build. |
 | Did the palette change reach a host? | The hashed CSS asset contains the palette's hex values (e.g. the brand's info/warning colours). |
 | Did a React change reach a host? | Grep the hashed JS asset for a string that only exists in the new code. |
+| Which brand is in a build? | The other brand's markup must be **absent** from the hashed JS (e.g. a tsa build must not contain the HEXmob `header_logo` text, and must not contain a `location.hostname` brand check of its own). |
 
 `master.pub/*-orig` entries left behind, or a dirty `git status` after a run, mean a deploy
 did not complete its contract.
