@@ -55,9 +55,14 @@ flow needs to run the build step twice with different branding:
 | `_configure_target` | Resolve `TARGET` (brand) and `DEPLOY_TARGET` (destination) into the concrete `DEST` / `DEST_TRANSPORT` / FTP variables for this run. |
 | `_configure_ftp_destination` | Split a `host:/path` destination into `DEST_FTP_HOST` + `DEST_FTP_DIR`. |
 | `_prompt_for_secret` | Read an FTP password without echoing it, when `.env.local` does not supply one. |
-| `_build` | The whole per-brand unit of work: overlay branding → `yarn build` → rename entry point → upload. Wrapped in a `try`/`always` so the tree is restored whatever happens. |
+| `_guarded` | Runs one phase and turns a `throw` into a labelled message plus exit 2. |
+| `_assemble` | Build phase for one brand: overlay → `yarn build` → prune → rename entry point. **No upload.** |
+| `_publish` | Publish phase for one brand: resolve the target, then upload that brand's `dist/`. **No build.** |
 | `_deploy_build_output` | Transport layer: push `dist/` to the resolved destination via lftp (FTPS mirror) or `rsync --delete`. |
-| `_cleanup` | The restore contract — see §6. Also reached from the SIGINT trap, so Ctrl-C mid-deploy still leaves a usable repo. |
+| `_write_ftp_command_file` | Writes the lftp command script (settings, credentials, `rm`, `mirror`) to a 0600 temp file, so credentials never reach `argv`. |
+| `_make_worktree` / `_remove_worktrees` | Create/remove the per-brand disposable worktrees (§5.1). |
+| `_require_tty` / `_require_clean_tree` / `_require_release_branch` / `_require_tag` / `_require_overlay` | The guards (§5) — they block with exit 5 rather than repairing anything. |
+| `_cleanup` | Per-phase teardown: return to `$ORIG_PWD`, delete the transient FTP command file (§6). |
 
 `TARGET` and `DEPLOY_TARGET` are deliberately **independent knobs**: `TARGET` says which
 brand to compile, `DEPLOY_TARGET` says which destination to upload to. That is what makes
@@ -141,8 +146,30 @@ precisely so that a deploy can never clobber the live server config.
 
 The shared hexmob host has no shell access, which is why it is driven over FTPS via lftp
 (parallel mirror uploads) instead of rsync; the tshare host is a normal ssh host, which is
-why it stayed on rsync. TLS is configured to encrypt the control channel and to tolerate
-the host's certificate chain, since that is the strongest mode the shared host supports.
+why it stayed on rsync.
+
+### FTP transport: credentials and TLS policy
+
+**Credentials never appear in `argv`.** lftp is invoked as `lftp -f <file>`, where the file
+(mode 0600, removed by `_cleanup`) holds the settings, the `open -u user,pass`, the entry-point
+`rm` and the `mirror`. Passing them on the command line would expose them through `ps` for
+the whole upload. Note that lftp's `LFTP_PASSWORD` fallback is *not* an option: it only
+applies to `open <site>` forms, not `open -u user` — verified, it silently falls back to
+anonymous login, which also gets you rate-limited for failed logins.
+
+**TLS policy** (overridable per deployment; both defaults verified against the host):
+
+| knob | default | why |
+|---|---|---|
+| `DEST_FTP_VERIFY_CERT` → `ssl:verify-certificate` | `true` | The host presents its provider's wildcard cert (`CN=*.myownserver.net`), so trust validates against the system store even though… |
+| `DEST_FTP_CHECK_HOSTNAME` → `ssl:check-hostname` | `false` | …the *hostname* can never match. Checking it would fail every deploy. Chain validation is the part that requires a CA-signed certificate and is what protects against a substituted cert. |
+| `DEST_FTP_PROTECT_DATA` → `ftp:ssl-protect-data` | `true` | The host accepts `PROT P` (`200 Data protection level set to "private"`), so the payload is encrypted as well as the control channel. |
+
+**`set cmd:fail-exit true` is load-bearing.** Without it a failed command (a bad `cd`, say) is
+followed by a successful one and lftp still exits 0 — the deploy would report success having
+uploaded to the wrong place. The entry-point `rm`s are written as
+`rm -f index.html || echo …` because that is the only way to tolerate a missing file under
+`cmd:fail-exit` (a failure followed by an unconditional command aborts; a chained one does not).
 
 Uploads are mirrors with `--delete`: the remote directory is made to match `dist/`. Server
 config and dot-files are excluded from that reconciliation (`.ht*`, `.well-known`) so hosting

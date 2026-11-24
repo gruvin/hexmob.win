@@ -24,7 +24,7 @@ Tick these as they are fixed; the sections below hold the detail for each.
 - [x] **A3** — runtime brand switch follows the hostname, not the published brand (`dev.hexmob.win` shows the HEXmob logo on a tsa-branded page)
 - [x] **A2** — production run re-applied the stash between the two brand builds; signed tarball could contain WIP; HEAD left detached
 - [x] **A4** — failure while building the second brand left a half-published release (now: build both, then publish both)
-- [ ] **B1** — FTP password visible in `ps`; certificate verification off; payload not TLS-protected
+- [x] **B1** — FTP password was visible in `ps`; certificate verification off; payload not TLS-protected
 - [ ] **B2** — entry point deleted before upload leaves a live 404 window
 - [ ] **B3** — macOS artefacts already on a server are protected from `--delete`, not removed (nothing Apple is uploaded; this is cleanup only)
 - [ ] **C1** — *DEFERRED* — `dev` and `master` disagree on how the release is signed; `release.sh` exists only on `master`
@@ -186,31 +186,39 @@ to state both.
 
 ## B. Transport & secrets hygiene
 
-### B1 — FTP credentials are visible in the process table; data channel is plaintext
+### B1 — FTP credentials were visible in the process table; TLS was weakened
 
-**What.** The password is interpolated into the `lftp -e "...open -u user,pass..."` command
-string (`scripts/deploy.sh:161`), so it appears in `ps` output for the duration of the
-upload. The same line sets `ssl:verify-certificate false` (no protection against a
-substituted certificate) and leaves `ssl-protect-data false` (the HTTP payload is uploaded
-unencrypted; only the control channel is TLS).
+**What (as it was).** Three separate weaknesses in `_deploy_build_output`:
 
-**Evidence.** `scripts/deploy.sh:150-161`.
+1. The password was interpolated into `lftp -e "… open -u user,pass …"`, i.e. into `argv`,
+   where `ps` shows it to any local user for the duration of the upload.
+2. `ssl:verify-certificate false` meant no certificate validation at all — any certificate,
+   self-signed included, would be accepted.
+3. `ftp:ssl-protect-data false` sent the payload in the clear; only the control channel was
+   under TLS.
 
-**Impact.** Local credential exposure while a deploy runs; interception risk on a hostile
-network. Shared-hosting constraints may cap what is achievable for the data channel, but the
-`ps` exposure and the blanket certificate-trust-off are our own choices.
+**Done** — `<COMMIT>`.
 
-**Fix.** Hand lftp the credentials out-of-band: write a transient config file (mode 600,
-`open -u` inside it, `chmod`/`rm` in `_cleanup`), or use `lftp -u "$user" ...` relying on
-`LFTP_PASSWORD` in the environment. Try `ssl:verify-certificate true` first; if the host's
-chain is genuinely broken, record *why* in a comment and consider pinning the CA. Enable
-`ssl:protect-data true` only if the host supports `PROT P` — test before committing.
+- lftp now runs as `lftp -f <file>`, with the settings/credentials/`rm`/`mirror` in a **0600
+  temp file** that `_cleanup` removes. Verified by inspecting the live process: the command
+  line is `lftp -f /tmp/hexmob-ftp.xxxx`, no credentials. (lftp's `LFTP_PASSWORD` env fallback
+  is *not* usable here: with `open -u user` it ignores it and falls back to anonymous login —
+  confirmed the hard way, with two failed logins.)
+- `ssl:verify-certificate true` by default. The host serves its provider's wildcard cert
+  (`CN=*.myownserver.net`), so hostname checking is off — it would fail every deploy — but the
+  chain now has to validate against the system store. Confirmed by login.
+- `ftp:ssl-protect-data true` by default: the host accepts `PROT P` (`200 Data protection
+  level set to "private"`), so the payload is encrypted too. Confirmed from a protocol trace.
+- All three are overridable (`DEST_FTP_VERIFY_CERT`, `DEST_FTP_CHECK_HOSTNAME`,
+  `DEST_FTP_PROTECT_DATA`), documented in `dot-env.local-sample` and `AGENTS.md` §3.
+- Adjacent silent-failure bug fixed: `set cmd:fail-exit true` is now set. Without it, a failed
+  command followed by a successful one makes lftp exit **0** — a bad `cd` would report a
+  successful deploy that uploaded to the wrong directory.
 
-**Verify.** Run a deploy and `ps aux | grep lftp` from another shell mid-upload; no password
-should appear. `openssl s_client -connect ftp.hexmob.win:21 -starttls ftp` should succeed
-with verification on.
-
----
+**Still worth knowing.** Hostname verification is impossible on this host until the hosting
+provider offers a cert matching our domain, so a MITM with *any* CA-signed certificate for
+another name would pass. Accepting that is the price of shared hosting; the alternative is a
+different host or a proxy (see C7-adjacent work if ever revisited).
 
 ### B2 — entry point is deleted before the mirror, leaving a live 404 window
 

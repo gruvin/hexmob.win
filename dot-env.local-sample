@@ -3,3 +3,7 @@ DEST_DEV_FTP_USERNAME=''
 DEST_DEV_FTP_PASSWORD=''
 DEST_HEXMOB_FTP_USERNAME=''
 DEST_HEXMOB_FTP_PASSWORD=''
+# Optional FTP/TLS overrides (defaults are correct for ftp.hexmob.win; see AGENTS.md 3).
+# DEST_FTP_VERIFY_CERT='true'       # validate the server certificate chain
+# DEST_FTP_CHECK_HOSTNAME='false'   # host cert is CN=*.myownserver.net, so this must stay off
+# DEST_FTP_PROTECT_DATA='true'      # encrypt the payload (PROT P)

@@ -40,6 +40,7 @@ autoload throw catch
 STARTING_BRANCH=$(git rev-parse --abbrev-ref HEAD)
 ORIG_PWD="$PWD"   # builds run inside throwaway worktrees; everything comes back here
 WT_PARENT=""      # mktemp dir holding this run's worktrees, removed via TRAPEXIT
+FTP_CMD_FILE=""   # transient lftp command file (holds credentials); removed by _cleanup
 typeset -A WORKTREES # brand => worktree path; one per brand, built side by side
 
 # ----------------------------------------------------------------------------
@@ -238,6 +239,10 @@ fi
 # DEPLOY_TARGET - that is a per-run decision (which destination), not a per-phase one.
 _cleanup() {
     cd "${ORIG_PWD}" > /dev/null 2>&1
+    if [[ -n "${FTP_CMD_FILE}" ]]; then
+        rm -f "${FTP_CMD_FILE}"
+        FTP_CMD_FILE=""
+    fi
 }
 
 TRAPINT() {
@@ -321,6 +326,40 @@ _prune_apple_junk() {
     return 0
 }
 
+# Writes the lftp command script. Credentials live in this 0600 file rather than on
+# lftp's command line, where `ps` would show them to any local user for the duration of
+# the upload. lftp's LFTP_PASSWORD fallback is not used because it only applies to `open
+# <site>` forms, not `open -u user` (verified against the live host: it silently falls
+# back to anonymous).
+# @args: none (reads the DEST_FTP_* / SSL_* values from the caller's scope)
+_write_ftp_command_file() {
+    FTP_CMD_FILE=$(mktemp "${TMPDIR:-/tmp}/hexmob-ftp.XXXXXX") || throw 'mktemp failed for the FTP command file'
+    chmod 600 "${FTP_CMD_FILE}" || throw 'chmod 600 failed for the FTP command file'
+    cat > "${FTP_CMD_FILE}" <<EOF || throw 'could not write the FTP command file'
+# Without fail-exit, a failed command (a bad cd, say) is followed by a successful one and
+# lftp still exits 0 - the deploy would report success having uploaded the wrong thing.
+set cmd:fail-exit true
+set dns:order inet
+set ftp:ssl-force ${SSL_FORCE}
+set ftp:ssl-protect-data ${SSL_PROTECT_DATA}
+set ssl:verify-certificate ${SSL_VERIFY}
+set ssl:check-hostname ${SSL_CHECK_HOSTNAME}
+set ftp:passive-mode true
+set ftp:prefer-epsv false
+set ftp:fix-pasv-address true
+open -u "${DEST_FTP_USERNAME}","${DEST_FTP_PASSWORD}" -p ${DEST_FTP_PORT} ${OPEN_URL}
+cd ${DEST_FTP_DIR}
+# The entry point must not survive as index.html (that is the stale-cache problem), but a
+# missing file must not abort the run either - hence the tolerated form, which cmd:fail-exit
+# honours: a failure followed by an unconditional command aborts, a chained OR does not.
+rm -f index.html || echo "(no remote index.html to remove)"
+rm -f index.php || echo "(no remote index.php to remove)"
+mirror -R ${LFTP_MIRROR_ARGS} ${BUILD_DIR} .
+bye
+EOF
+    return 0
+}
+
 _deploy_build_output() {
     case "$DEST_TRANSPORT" in
         (rsync)
@@ -331,7 +370,7 @@ _deploy_build_output() {
             if [[ -z ${LFTP} || ! -x ${LFTP} ]]; then
                 print "Error: lftp is not installed or not found in PATH."
                 print "Install it with: brew install lftp"
-                throw ''
+                throw 'lftp is not installed'
             fi
             [[ "$DEST_FTP_HOST" == "" ]] && throw 'DEST_FTP_HOST not set'
             [[ "$DEST_FTP_USERNAME" == "" ]] && read DEST_FTP_USERNAME\?"FTP username for ${TARGET}: "
@@ -339,7 +378,6 @@ _deploy_build_output() {
 
             local OPEN_URL="ftp://${DEST_FTP_HOST}"
             local SSL_FORCE=false
-            local SSL_PROTECT_DATA=false
 
             case "$DEST_FTP_PROTOCOL" in
                 (ftp)
@@ -356,8 +394,22 @@ _deploy_build_output() {
                     ;;
             esac
 
+            # TLS policy, overridable per deployment. Both defaults were confirmed against
+            # the host (see AGENTS.md 3): AUTH TLS/PBSZ/PROT P all succeed, and the cert
+            # chain validates against the system store.
+            #  - verify-certificate: the host presents its provider's wildcard cert
+            #    (CN=*.myownserver.net), so the *hostname* cannot be verified - checking it
+            #    would fail every deploy. The chain is still validated, which is the part
+            #    that requires a CA-signed certificate.
+            #  - protect-data: encrypts the payload (PROT P) as well as the control channel.
+            local SSL_VERIFY=${DEST_FTP_VERIFY_CERT:-true}
+            local SSL_CHECK_HOSTNAME=${DEST_FTP_CHECK_HOSTNAME:-false}
+            local SSL_PROTECT_DATA=${DEST_FTP_PROTECT_DATA:-true}
+
             print "FTP mirroring ${BUILD_DIR} => ${DEST}"
-            ${LFTP} -e "set dns:order inet; set ftp:ssl-force ${SSL_FORCE}; set ftp:ssl-protect-data ${SSL_PROTECT_DATA}; set ftp:passive-mode true; set ftp:prefer-epsv false; set ftp:fix-pasv-address true; set ssl:verify-certificate false; open -u \"${DEST_FTP_USERNAME}\",\"${DEST_FTP_PASSWORD}\" -p ${DEST_FTP_PORT} ${OPEN_URL}; cd ${DEST_FTP_DIR}; rm -f index.html; rm -f index.php; mirror -R ${LFTP_MIRROR_ARGS} ${BUILD_DIR} .; bye" || throw ''
+            print "  tls: force=${SSL_FORCE} verify-certificate=${SSL_VERIFY} check-hostname=${SSL_CHECK_HOSTNAME} protect-data=${SSL_PROTECT_DATA}"
+            _write_ftp_command_file || throw 'could not prepare the FTP command file'
+            ${LFTP} -f "${FTP_CMD_FILE}" || throw "FTP mirror to ${DEST_FTP_HOST} failed"
             ;;
         (*)
             throw "Unsupported transport: ${DEST_TRANSPORT}"
