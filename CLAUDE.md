@@ -57,7 +57,7 @@ Same codebase ships as two brands; `App.tsx` host-detection sets `window.hostIsH
 - **hexmob** → hexmob.win (and dev.hexmob.win)
 - **tsa** → go.tshare.app ("tshare.app" / TSA)
 
-**Branding swap:** `master.pub/` holds per-brand overrides. `FILES=('index.html' 'src/theme.scss' 'src/BrandLogo.tsx' 'public')`. Before build, deploy.sh backs up each to `master.pub/<file>-orig`, copies `master.pub/<file>.<TARGET>` (e.g. `index.html.hexmob`, `public.hexmob/`, `public.tsa/`) over the working copy, runs `yarn build`, deploys `dist/`, then `_cleanup` restores originals (`git checkout dev` + `git stash pop`). **Don't casually edit the brand-swapped files** — they're overwritten at deploy time.
+**Branding swap:** `master.pub/` holds per-brand overrides. `FILES=('index.html' 'src/theme.scss' 'public')` — `src/BrandLogo.tsx` is deliberately *not* swapped; it picks its brand at runtime from `window.hostIsHM`. Before build, deploy.sh backs up each to `master.pub/<file>-orig`, copies `master.pub/<file>.<TARGET>` (e.g. `index.html.hexmob`, `public.hexmob/`, `public.tsa/`) over the working copy, runs `yarn build`, deploys `dist/`, then `_cleanup` restores originals (`git checkout dev` + `git stash pop`). **Don't casually edit the brand-swapped files** — they're overwritten at deploy time.
 
 **Transports/targets:** dev & hexmob → FTP (lftp, ftps) using `.env.local` creds (`DEST_DEV_FTP_*`, `DEST_HEXMOB_FTP_*`). tsa → rsync. Dest hosts: `ftp.hexmob.win:/dev.hexmob.win`, `ftp.hexmob.win:/public_html`, `tsa:~/go.tshare.app`.
 

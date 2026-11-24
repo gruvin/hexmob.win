@@ -27,8 +27,11 @@ autoload throw catch
 
 STARTING_BRANCH=$(git rev-parse --abbrev-ref HEAD)
 
-# target unique files list ...
-FILES=('index.html' 'src/theme.scss' 'src/BrandLogo.tsx' 'public')
+# Files that differ per brand and must be swapped in before a build: the parts that
+# cannot coexist in one built artifact (SEO metadata, CSS palette, image assets).
+# BrandLogo.tsx is deliberately absent - it selects its own brand at runtime from
+# window.hostIsHM, so a single source serves both builds.
+FILES=('index.html' 'src/theme.scss' 'public')
 
 if [[ ! ( -f ./index.html && -d ./master.pub && -d ./src ) ]]; then
     print "ERROR: $0 needs to be run for project root"
