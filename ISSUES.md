@@ -287,9 +287,9 @@ region.
 version tag by hand; sign it; push `master` + tags to GitHub; then either **attach the new
 build to the existing latest release** (the usual case — a small patch) or, when the patch is
 significant enough, **create a brand-new release** and attach it there. For the usual case
-that means: delete the previous build's assets from the release, upload the new signed pair
-from `release/`, and append a line or two to the release's "Changes" notes. Tedious, and done
-by hand every time.
+that means: move the existing release onto the **newly pushed tag**, delete the previous
+build's assets from it, upload the new signed pair from `release/`, and append a line or two
+to the release's "Changes" notes. Tedious, and done by hand every time.
 
 **Why a release looks the way it does.** Releases here are not a distribution channel —
 nothing is installed from them. They exist so the signed source of a deploy can be checked
@@ -319,16 +319,26 @@ lands in):
 7. resolve the target release and prompt, defaulting to the latest existing release
    (`gh release view --json tagName,isLatest`), with a "create new release" option for
    significant patches:
-   - existing (the usual path) → delete the previous build's assets
-     (`gh release delete-asset <tag> <name> --yes`, `.tgz` and `.sig`), then
-     `gh release upload <tag> release/*.tgz release/*.tgz.sig --clobber`, then append the new
-     entry to the "Changes" notes (`gh release edit <tag> --notes-file <tmp>`);
+   - existing (the usual path) → **retag it onto the new tag** (`gh release edit <release>
+     --tag <newtag>`, possible only once the tag exists remotely, hence step 6), then delete
+     the previous build's assets (`gh release delete-asset <newtag> <name> --yes`, `.tgz` and
+     `.sig`), then `gh release upload <newtag> release/*.tgz release/*.tgz.sig --clobber`,
+     then append the new entry to the "Changes" notes (`gh release edit <newtag>
+     --notes-file <tmp>`);
    - new (milestone) → `gh release create <tag> release/*.tgz release/*.tgz.sig --draft
      --title … --notes …`, optionally seeded from `git log <prevTag>..<tag> --oneline`;
 8. print the resulting release URL.
 
 **Design notes / gotchas.**
 
+- **Retagging is part of the usual path.** The existing release is moved onto the new tag
+  (`gh release edit --tag`), so the release always advertises the build that is currently
+  served, while the individual tags stay in git as the per-build record. This must happen
+  *after* `git push --tags` (a release can only point at a tag that exists on the remote) and
+  *before* the asset swap (so the assets are addressed under the release's new tag).
+  Side effect to be aware of: GitHub release URLs are `/releases/tag/<tag>`, so any link to
+  the release under its previous tag stops resolving — fine here, since the release is a
+  moving pointer by design, but don't rely on old release URLs.
 - **Replacing the previous build is the normal path, not the exception.** Because asset names
   embed the tag (`hexmob.win-<TAG>-build.tgz`), uploading a new tag's files does *not* displace
   the old ones — they accumulate. The step must be: delete the stale assets

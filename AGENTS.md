@@ -224,11 +224,12 @@ and it is the only reason the signing ceremony in §5 exists at all.
 
 That purpose makes several unconventional-looking practices correct rather than sloppy:
 
-- **One release per milestone, many builds per release.** Each production deploy replaces
-  the artifacts on the *current* release instead of creating a new one; a new release is
-  created only when a group of changes is significant enough to deserve its own milestone.
-  Tags stay **per build** (the deploy and its signature are tag-anchored); releases are
-  **per milestone**. That decoupling is deliberate.
+- **One release per milestone, many builds per release.** Each production deploy moves the
+  *current* release onto the newly pushed tag and replaces its artifacts, instead of creating
+  a new release; a new release is created only when a group of changes is significant enough
+  to deserve its own milestone. So tags stay **per build** (the deploy and its signature are
+  tag-anchored, and every tag remains in git as a permanent record), while the release is a
+  **moving pointer** to whatever is currently served. That decoupling is deliberate.
 - **A release describes the current build, not the history of builds.** The `.tgz` and its
   `.sig` are replaced on each patch. Because asset filenames embed the tag
   (`hexmob.win-<TAG>-build.tgz`), uploading a new tag's build does **not** displace the
