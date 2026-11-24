@@ -1,0 +1,371 @@
+# ISSUES.md — Deploy & Branding Subsystem
+
+Working checklist of known issues in `scripts/deploy.sh`, `master.pub/`, and the runtime
+brand switch. Companion to `AGENTS.md` (which describes how the subsystem is *meant* to
+work); this file lists where reality diverges from that, and what to do about it.
+
+How to use:
+
+- One checkbox per item. Tick it when the fix is committed, and leave a one-line note with
+  the commit hash — the evidence below is what makes an item re-verifiable later.
+- Prefer one item (or one tight group) per commit.
+- Keep `AGENTS.md` in step: if a fix changes the described contract, update that section in
+  the same commit.
+- Items marked **DEFERRED** are knowingly not being worked on yet. Don't tick them by
+  accident; move them back to open if the assumption behind the deferral changes.
+
+Suggested order: A1 → A3 → A2 → B1 → B2 → C3 → C4 → C5 → C1/C2 (deferred) → C6 → C7 (deferred).
+
+## Index
+
+Tick these as they are fixed; the sections below hold the detail for each.
+
+- [ ] **A1** — tsa rsync target deploys with `--delete` and no excludes (can delete `.htaccess` / `.well-known`)
+- [ ] **A3** — runtime brand switch follows the hostname, not the published brand (`dev.hexmob.win` shows the HEXmob logo on a tsa-branded page)
+- [ ] **A2** — production run re-applies the stash between the two brand builds; signed tarball can contain WIP; HEAD left detached
+- [ ] **B1** — FTP password visible in `ps`; certificate verification off; payload not TLS-protected
+- [ ] **B2** — entry point deleted before upload leaves a live 404 window
+- [ ] **C1** — *DEFERRED* — `dev` and `master` disagree on how the release is signed; `release.sh` exists only on `master`
+- [ ] **C2** — *DEFERRED* — untested hypothesis: automated GPG signing needs an interactive TTY
+- [ ] **C3** — failure reporting is opaque (`CAUGHT: []`)
+- [ ] **C4** — `dot-htaccess-sample` describes the superseded `index.html` cache strategy
+- [ ] **C5** — tag naming drift (prompt says `v0.2.3B`, real tags are `0.4.26`)
+- [ ] **C6** — dead variables and no-op assignments around target configuration
+- [ ] **C7** — *DEFERRED* — semi-automate tag → sign → push → GitHub release with `gh` (replace assets + append "Changes" notes on the latest release; new release only for milestones)
+
+---
+
+## A. Correctness / integrity
+
+### A1 — rsync transport deploys with `--delete` and **no excludes** (destructive)
+
+**What.** The tsa target (`rsync -r --delete dist/ tsa:~/go.tshare.app`) is invoked with
+`${RSYNC_APPLE_ARGS}`, a variable that is never defined anywhere. The intended excludes
+(`.ht*`, `.DS*`, `.Trashes`, `.well-known`) live in `RSYNC_ARGS` (`scripts/deploy.sh:13`),
+which nothing reads. zsh does not run with `nounset`, so the undefined variable expands to
+nothing and the upload proceeds bare.
+
+**Evidence.** `scripts/deploy.sh:129` uses `RSYNC_APPLE_ARGS`;
+`grep -n RSYNC_ARGS scripts/deploy.sh` shows only the definition at :13.
+
+**Impact.** A single tsa deploy will `--delete` server-side files that are not in `dist/` —
+including the web root's `.htaccess` and `.well-known/` (ACME/Let's Encrypt challenges).
+The FTP path is unaffected (its excludes are in `LFTP_MIRROR_ARGS`), which is why this has
+gone unnoticed: hexmob/dev are the targets used most.
+
+**Fix.** Rename the use site to `RSYNC_ARGS`, and change the definition to an array so the
+quoting is correct — the current value has single quotes *inside* a double-quoted string,
+so even the right variable would pass `--exclude='.ht*'` as one literal argument including
+the quotes. e.g. `RSYNC_ARGS=(--exclude='.ht*' --exclude='.DS*' --exclude='.Trashes'
+--exclude='.well-known')` and `${RSYNC} ${RSYNC_ARGS} -r --delete ...`.
+
+**Verify.** Dry run against the tsa host with `-n --itemize-changes` and confirm no `.ht*`
+or `.well-known` deletions appear in the output.
+
+---
+
+### A3 — runtime brand switch follows the hostname, not the published brand
+
+**What.** `dev.hexmob.win` is *deliberately* published with the `tsa` overlay (see `AGENTS.md`
+§4 — hexmob is the legacy product), but `App.tsx` classifies that hostname as hexmob. So on
+the dev host the tsa overlay supplies title/SEO/palette/icons while the JavaScript believes
+it is hexmob.
+
+**Evidence.** `src/App.tsx:34-47` (hostname switch lists `dev.hexmob.win` with `hexmob.win`);
+`src/BrandLogo.tsx:2` and `src/NewStakeForm.tsx:373` (`hostIsTSA` gates the Heart Game promo
+image) consume that flag.
+
+**Impact.** Before `BrandLogo` was moved to a runtime switch this mismatch was invisible.
+As of that change the next dev deploy will show the **HEXmob.win** logo and suppress the
+Heart Game promo on a page that is otherwise entirely the tshare presentation. This is now
+user-visible on `dev.hexmob.win`.
+
+**Fix (preferred).** Drive the switch from the brand actually compiled: export
+`VITE_BRAND=$TARGET` inside `_build` and resolve the flag as
+`import.meta.env.VITE_BRAND ?? detectFromHostname()`. That removes the hostname table for
+deployed hosts and keeps hostname detection only as the fallback for `yarn dev` /
+unknown hosts. Cheap interim fix if the flag is not wanted yet: move `dev.hexmob.win` into
+the tsa branch of the hostname switch (and note in a comment that it is intentional).
+
+**Verify.** Build tsa with the overlay applied, load the bundle, confirm both the logo and
+the Heart Game promo are the tsa variants; repeat for hexmob and confirm the opposite.
+
+---
+
+### A2 — production run restores the stash *between* the two brand builds; HEAD left detached
+
+**What.** Three related problems in the production flow, all stemming from `_cleanup` being
+called from inside `_build`'s `always` block while production calls `_build` twice:
+
+1. The `git stash pop` at `scripts/deploy.sh:51` runs at the end of the **first** (`tsa`)
+   build. The second (`hexmob`) build therefore compiles a tree with the user's stashed WIP
+   re-applied — and that build is the one archived and signed into
+   `release/hexmob.win-<TAG>-build.tgz`. Two "same release" artifacts can differ, and an
+   uncommitted change can reach production.
+2. The stash is only created once, so the second `_cleanup` runs `git stash pop` with
+   nothing stashed. It is `> /dev/null 2>&1`, so a real conflict/failure is invisible, and a
+   *third* party's stash (an older one the user had parked) could be popped by mistake.
+3. `_cleanup` only returns to `dev` when `STARTING_BRANCH == master` (`:50`). The normal case
+   is starting a production run *from* `dev`, after which HEAD is left detached at the tag.
+
+**Evidence.** `scripts/deploy.sh:50-51` (`_cleanup`), `:213-221` (stash + tag checkout),
+`:228`/`:231` (two `_build` calls), `:195-198` (`always`/`catch` calls `_cleanup`).
+
+**Impact.** Non-reproducible signed artifacts (the whole point of the tag flow); silent
+stash mishandling; a confusing detached HEAD after every production deploy.
+
+**Fix.** Move stash handling up to the top level of the production branch (stash before the
+checkout, pop once after the final tarball is produced), and leave `_cleanup` responsible
+only for the file overlay. Record `STARTING_BRANCH` and restore *that* branch at the end
+(`git checkout "$STARTING_BRANCH"`), not `dev`-when-master. Stop silencing the stash
+command's errors.
+
+**Verify.** Scratch run on a throwaway tag with a deliberately dirty tree: after completion,
+`git status` matches the pre-run state, `git stash list` is unchanged, and
+`git rev-parse --abbrev-ref HEAD` is back to the starting branch. Compare the two brand
+builds' `dist/index.php` asset hashes to confirm both came from the same source.
+
+---
+
+## B. Transport & secrets hygiene
+
+### B1 — FTP credentials are visible in the process table; data channel is plaintext
+
+**What.** The password is interpolated into the `lftp -e "...open -u user,pass..."` command
+string (`scripts/deploy.sh:161`), so it appears in `ps` output for the duration of the
+upload. The same line sets `ssl:verify-certificate false` (no protection against a
+substituted certificate) and leaves `ssl-protect-data false` (the HTTP payload is uploaded
+unencrypted; only the control channel is TLS).
+
+**Evidence.** `scripts/deploy.sh:150-161`.
+
+**Impact.** Local credential exposure while a deploy runs; interception risk on a hostile
+network. Shared-hosting constraints may cap what is achievable for the data channel, but the
+`ps` exposure and the blanket certificate-trust-off are our own choices.
+
+**Fix.** Hand lftp the credentials out-of-band: write a transient config file (mode 600,
+`open -u` inside it, `chmod`/`rm` in `_cleanup`), or use `lftp -u "$user" ...` relying on
+`LFTP_PASSWORD` in the environment. Try `ssl:verify-certificate true` first; if the host's
+chain is genuinely broken, record *why* in a comment and consider pinning the CA. Enable
+`ssl:protect-data true` only if the host supports `PROT P` — test before committing.
+
+**Verify.** Run a deploy and `ps aux | grep lftp` from another shell mid-upload; no password
+should appear. `openssl s_client -connect ftp.hexmob.win:21 -starttls ftp` should succeed
+with verification on.
+
+---
+
+### B2 — entry point is deleted before the mirror, leaving a live 404 window
+
+**What.** `rm -f index.html; rm -f index.php` runs on the server *before* the mirror uploads
+the new `index.php` (`scripts/deploy.sh:161`).
+
+**Evidence.** Same line as B1; the `--delete` mirror would remove the stale `index.html`
+anyway, so the pre-delete is belt-and-braces against a cache that keys on URL only.
+**Impact.** Between the `rm` and the upload, the site root returns 404 — on production hosts
+too, not just dev. Small, but it lands on real users and is avoidable.
+
+**Fix.** Upload `index.php` first, then delete only `index.html` (the file that must not
+exist), e.g. a two-step `mirror --only-existing`-style sequence or an explicit `put` of
+`index.php` before the `rm -f index.html; mirror -R`. Keep the "old entry point must be
+gone" guarantee — that part is load-bearing.
+
+**Verify.** Watch a deploy from a browser: `/` should never 404. `/index.html` should still
+be 404 afterwards.
+
+---
+
+## C. Release tooling
+
+### C1 — DEFERRED — `dev` and `master` disagree on how the release is signed
+
+**What.** `scripts/deploy.sh` differs between branches. On `master` (tags `0.4.25`+,
+`45681b9`/`611d00a`) the script signs the tarball itself (`${GPG} --yes -b …`) and falls back
+to copying the command to the clipboard. On `dev` there is no `${GPG}` invocation at all —
+it only copies `gpg --yes -b …` to the clipboard for the operator to run. `dev` also has no
+`scripts/release.sh`; that file exists only on `master`.
+
+**Evidence.** `git diff dev origin/master -- scripts/deploy.sh`,
+`git show origin/master:scripts/release.sh`.
+
+**Why deferred.** Historically automated signing did not work; the suspicion is a real
+interactive requirement (see C2). Until that is tested end to end, the clipboard fallback is
+what actually ships releases. Also unresolved: which branch should own release tooling —
+cherry-picking it onto `dev` inverts the documented dev → master flow for those files.
+
+**When picked up.** Decide the branch ownership first, then either cherry-pick
+`611d00a`+`45681b9` onto `dev` or accept master-only tooling and say so in `AGENTS.md` §5.
+
+---
+
+### C2 — DEFERRED — untested hypothesis: automated GPG signing needs an interactive TTY
+
+**What.** Automated signing is assumed to fail because of the passphrase prompt. Untested in
+the master variant of `deploy.sh`.
+
+**Things to test, in order** (cheap first):
+
+1. Does signing work at all from a non-interactive context?
+   `echo test >/tmp/x && gpg --yes -b /tmp/x` in a fresh shell — and again with stdin
+   redirected (`</dev/null`) and with no controlling TTY (`setsid`).
+2. Is the key passphrase-protected? `gpg --list-secret-keys` (look for `sec#` vs `sec`).
+   If protected, agent caching (`gpg-agent` / macOS Keychain
+   `pinentry-program`), `--pinentry-mode loopback --passphrase-file`, or a dedicated
+   passphrase-less release key are the options.
+3. Is `GPG_TTY` set/exported, and does `pinentry` find a program in the deploy script's
+   environment (it does not source `.zprofile` the way an interactive shell would)?
+4. Capture the actual stderr. The current master variant fails silently into the clipboard
+   fallback, which is why the cause was never identified: log `${GPG}`'s stderr to a file
+   before deciding.
+
+**Outcome to record here**, whichever way it goes, so the next person does not re-derive it.
+
+---
+
+### C3 — failure reporting is opaque
+
+**What.** Errors are raised as `throw ''` and caught by `if catch '*'; then`
+(`scripts/deploy.sh:195-200`), whose only diagnostic is `print "D'oh! CAUGHT: [$CAUGHT]"`.
+Every failure therefore reports `CAUGHT: []`, with no indication of which step died.
+
+**Impact.** Any failed deploy needs manual archaeology. This is exactly how A1 stayed hidden.
+
+**Fix.** Give each `throw` a message (`throw 'overlay: theme swap failed'` etc.) and echo
+`$CAUGHT` verbatim; consider `set -x` behind a `DEBUG=1` gate, and `print` the command that
+failed.
+
+**Verify.** Temporarily break one step (e.g. a missing `master.pub` variant) and confirm the
+error names that step.
+
+---
+
+### C4 — `dot-htaccess-sample` describes the superseded cache strategy
+
+**What.** The sample instructs setting a short TTL for `\.html$` entry points. Since the
+entry point is now served as `index.php`, that rule matches nothing, and the file does not
+mention the PHP-FPM/`open_file_cache` reasoning at all.
+
+**Evidence.** `dot-htaccess-sample` vs `scripts/deploy.sh:188-191` (the `.php` rename).
+
+**Fix.** Rewrite the sample to describe the current mechanism (entry point is `index.php`;
+hashed assets are immutable and may be cached for a year; do not add a cache rule for the
+entry point unless it is understood to bypass the rename). Keep it as manual-setup
+documentation — it is deliberately not uploaded.
+
+---
+
+### C5 — tag naming drift between prompt text and practice
+
+**What.** The production prompt suggests `eg. v0.2.3B`, but every real tag is
+`MAJOR.MINOR.PATCH` without a `v` (`0.4.26`) — and `release.sh`'s next-version suggestion
+greps `^[0-9]+\.[0-9]+\.[0-9]+$`, so a `v`-prefixed tag would break its suggestion logic
+while still being accepted.
+
+**Fix.** Update the prompt example, and validate the entered tag against the same regex
+`release.sh` uses. Low risk, but the tag ends up in the UI header and in the signed artifact
+name, so consistency matters.
+
+---
+
+### C6 — dead code and no-op assignments around the target configuration
+
+**What.** `GPG` (`:10`) and `SCP` are resolved but unused on `dev` (`GPG` is used on master,
+`SCP` on neither); `RSYNC_ARGS` is unused (see A1); `_configure_target` contains
+self-assignments like `DEST_FTP_PROTOCOL=${DEST_FTP_PROTOCOL}` (`:79-80`, `:88-89`,
+`:97-98`) that do nothing; the FTP protocol/port are global constants but treated as
+per-target state.
+
+**Impact.** None functional, but these are the kind of leftovers that made A1 hard to spot.
+
+**Fix.** Delete what is unused, or make protocol/port genuinely per-target (`DEST_<TARGET>_FTP_*`)
+rather than restating a constant three times. Fold into whichever item next touches that
+region.
+
+### C7 — DEFERRED — semi-automate the tag → sign → push → GitHub release cycle with `gh`
+
+**Current manual process** (as actually practised): merge `dev` → `master`; create a new
+version tag by hand; sign it; push `master` + tags to GitHub; then either **attach the new
+build to the existing latest release** (the usual case — a small patch) or, when the patch is
+significant enough, **create a brand-new release** and attach it there. For the usual case
+that means: delete the previous build's assets from the release, upload the new signed pair
+from `release/`, and append a line or two to the release's "Changes" notes. Tedious, and done
+by hand every time.
+
+**Why a release looks the way it does.** Releases here are not a distribution channel —
+nothing is installed from them. They exist so the signed source of a deploy can be checked
+against the JavaScript a browser actually runs. That makes "one release per milestone,
+carrying only the current build, with append-only notes" the *correct* model rather than an
+unconventional one. Rationale is recorded in `AGENTS.md` §5 ("What a published release is for").
+
+**What already exists.** `scripts/release.sh` on `master` implements roughly the first half:
+verify clean state on `dev`, merge `dev` → `master`, suggest the next patch version, `git tag
+-s`, run `yarn deploy` and let the operator answer the production prompts, verify the tarball
+`.tgz` + `.sig` exist, push `master` + tags, then `gh release create <tag> … --draft` with both
+assets. What it does **not** model is the release *policy* — that most builds join the existing
+release rather than starting a new one.
+
+**Wanted: one command, four decisions made for me.** Semi-automated, with the operator still
+confirming at the two points that matter (the production deploy, and which release the build
+lands in):
+
+1. verify clean state and that we are on `dev`;
+2. merge `dev` → `master`;
+3. derive the next patch version (reuse `release.sh`'s logic) and create a **signed** tag;
+4. run the production deploy (`deploy.sh` prompts unchanged);
+5. hard-stop if `release/hexmob.win-<TAG>-build.tgz.sig` is missing — the artifact is not
+   publishable unsigned (gated on C2);
+6. push `master` + tags **before** touching releases — `gh release` operations require the tag
+   to already exist on the remote;
+7. resolve the target release and prompt, defaulting to the latest existing release
+   (`gh release view --json tagName,isLatest`), with a "create new release" option for
+   significant patches:
+   - existing (the usual path) → delete the previous build's assets
+     (`gh release delete-asset <tag> <name> --yes`, `.tgz` and `.sig`), then
+     `gh release upload <tag> release/*.tgz release/*.tgz.sig --clobber`, then append the new
+     entry to the "Changes" notes (`gh release edit <tag> --notes-file <tmp>`);
+   - new (milestone) → `gh release create <tag> release/*.tgz release/*.tgz.sig --draft
+     --title … --notes …`, optionally seeded from `git log <prevTag>..<tag> --oneline`;
+8. print the resulting release URL.
+
+**Design notes / gotchas.**
+
+- **Replacing the previous build is the normal path, not the exception.** Because asset names
+  embed the tag (`hexmob.win-<TAG>-build.tgz`), uploading a new tag's files does *not* displace
+  the old ones — they accumulate. The step must be: delete the stale assets
+  (`gh release delete-asset <tag> <name> --yes`, for both the `.tgz` and its `.sig`), then
+  `gh release upload <tag> release/*.tgz release/*.tgz.sig --clobber`. Without the delete, a
+  release ends up advertising builds that no longer correspond to anything served.
+- **The notes are an append-only log, so never regenerate them.** Fetch the current body
+  (`gh release view <tag> --json body -q .body`), append the new entry under the existing
+  "Changes" heading, and write it back with `gh release edit <tag> --notes-file <tmp>`. Seeding
+  notes from `git log <prevTag>..<tag>` is fine for a *new* release; it would wipe the
+  accumulated log on an existing one.
+- Never silently overwrite assets on an already-published release — confirm the delete step
+  explicitly, and default new releases to `--draft`.
+- Draft releases are excluded from `gh release list` unless `--include-drafts` is passed, so a
+  "latest release" lookup can pick the wrong target if drafts are in play.
+- The decoupling is deliberate: **tags are per build** (the deploy and the signature are
+  tag-anchored), **releases are per milestone** (one release carries the current build). Now
+  stated in `AGENTS.md` §5 — keep both in step.
+- Depends on C1 (which branch owns release tooling) and C2 (does automated signing actually
+  work). Don't start before those are settled — this item's step 5 is meaningless otherwise.
+
+---
+
+## D. Done / decisions (for context, do not re-litigate)
+
+- [x] **D1 — stale code in the branding folders.** `master.pub/src/theme.scss.{tsa,hexmob}`
+  were 2023 copies still calling the deprecated global `scale-color()`; regenerated on the
+  current source structure (`@use "sass:color"` + `color.scale()`), hex palette preserved
+  including the tuned `info-darkened: -89%`. `src/BrandLogo.tsx` was removed from the
+  overlay entirely (`FILES` now `index.html` / `src/theme.scss` / `public`) and its two
+  stale per-brand copies deleted: the component selects its brand at runtime, so vendoring
+  per-brand copies only guaranteed an old logo in every build. Verified by replaying both
+  overlays and building: correct title/SEO/palette per brand, both logo branches in the
+  bundle, no sass deprecation warnings.
+- [x] **D2 — `dev.hexmob.win` serves the `tsa` brand. INTENTIONAL, not a bug.** `hexmob.win`
+  is the legacy product and the tshare presentation is preferred by most users, so the dev
+  host previews that brand. Recorded in `AGENTS.md` §4. The *consequence* of this decision
+  (the runtime brand switch disagreeing with the published brand) is tracked as A3.
+- [x] **D3 — local `master` was 27 commits stale; fast-forwarded to `origin/master`** (no
+  push). `dev` needed no pull — it was already current with `origin/dev`.
