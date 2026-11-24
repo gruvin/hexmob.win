@@ -21,7 +21,7 @@ Suggested order: A1 → A3 → A2 → B1 → B2 → C3 → C4 → C5 → C1/C2 (
 Tick these as they are fixed; the sections below hold the detail for each.
 
 - [x] **A1** — tsa rsync target deploys with `--delete` and no excludes (can delete `.htaccess` / `.well-known`)
-- [ ] **A3** — runtime brand switch follows the hostname, not the published brand (`dev.hexmob.win` shows the HEXmob logo on a tsa-branded page)
+- [x] **A3** — runtime brand switch follows the hostname, not the published brand (`dev.hexmob.win` shows the HEXmob logo on a tsa-branded page)
 - [ ] **A2** — production run re-applies the stash between the two brand builds; signed tarball can contain WIP; HEAD left detached
 - [ ] **B1** — FTP password visible in `ps`; certificate verification off; payload not TLS-protected
 - [ ] **B2** — entry point deleted before upload leaves a live 404 window
@@ -95,6 +95,21 @@ the tsa branch of the hostname switch (and note in a comment that it is intentio
 
 **Verify.** Build tsa with the overlay applied, load the bundle, confirm both the logo and
 the Heart Game promo are the tsa variants; repeat for hexmob and confirm the opposite.
+
+**Done** — `7fe05c8`. The preferred fix was implemented: `deploy.sh` exports
+`VITE_BRAND=${TARGET}` per build, and `src/brand.ts` folds it into `BRAND` / `IS_HM` /
+`IS_TSA`, which `BrandLogo` and the Heart Game promo now consume. Note that stamping the
+variable alone was not sufficient — with the brand inlined, both brands' markup still
+shipped, because the hostname fallback survived minification; the fallback had to be
+written as an `if` block so the bundler eliminates it. Verified per build by grepping the
+hashed bundle: tsa build has no hexmob logo and no hostname check, hexmob build has no tsa
+logo and no promo, unstamped build keeps both plus the fallback. Hostname detection now
+exists only for `yarn dev` / manual builds, i.e. a runtime brand switch is no longer in
+production code.
+
+**Remaining risk.** Nothing enforces this: a future component that reads
+`window.hostIsHM` instead of `IS_HM` silently reintroduces a runtime branch. Noted in
+`AGENTS.md` §2 — worth a lint rule or a build-time grep check if it recurs.
 
 ---
 
