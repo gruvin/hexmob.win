@@ -25,7 +25,7 @@ Tick these as they are fixed; the sections below hold the detail for each.
 - [x] **A2** — production run re-applied the stash between the two brand builds; signed tarball could contain WIP; HEAD left detached
 - [x] **A4** — failure while building the second brand left a half-published release (now: build both, then publish both)
 - [x] **B1** — FTP password was visible in `ps`; certificate verification off; payload not TLS-protected
-- [ ] **B2** — entry point deleted before upload leaves a live 404 window
+- [x] **B2** — entry point was deleted before upload, leaving a live 404 window
 - [ ] **B3** — macOS artefacts already on a server are protected from `--delete`, not removed (nothing Apple is uploaded; this is cleanup only)
 - [ ] **C1** — *DEFERRED* — `dev` and `master` disagree on how the release is signed; `release.sh` exists only on `master`
 - [ ] **C2** — *DEFERRED* — untested hypothesis: automated GPG signing needs an interactive TTY
@@ -197,7 +197,7 @@ to state both.
 3. `ftp:ssl-protect-data false` sent the payload in the clear; only the control channel was
    under TLS.
 
-**Done** — `<COMMIT>`.
+**Done** — `5c11cee`.
 
 - lftp now runs as `lftp -f <file>`, with the settings/credentials/`rm`/`mirror` in a **0600
   temp file** that `_cleanup` removes. Verified by inspecting the live process: the command
@@ -220,23 +220,31 @@ provider offers a cert matching our domain, so a MITM with *any* CA-signed certi
 another name would pass. Accepting that is the price of shared hosting; the alternative is a
 different host or a proxy (see C7-adjacent work if ever revisited).
 
-### B2 — entry point is deleted before the mirror, leaving a live 404 window
+### B2 — entry point was deleted before the mirror, leaving a live 404 window
 
-**What.** `rm -f index.html; rm -f index.php` runs on the server *before* the mirror uploads
-the new `index.php` (`scripts/deploy.sh:161`).
+**What (as it was).** The lftp command file did `rm -f index.html; rm -f index.php` on the
+server *before* `mirror -R` uploaded the new files. Between the `rm` and the upload — and
+permanently, if the mirror then failed — the site root had no entry point at all.
 
-**Evidence.** Same line as B1; the `--delete` mirror would remove the stale `index.html`
-anyway, so the pre-delete is belt-and-braces against a cache that keys on URL only.
-**Impact.** Between the `rm` and the upload, the site root returns 404 — on production hosts
-too, not just dev. Small, but it lands on real users and is avoidable.
+**Done** — `<COMMIT>`. The order inside the lftp script is now:
 
-**Fix.** Upload `index.php` first, then delete only `index.html` (the file that must not
-exist), e.g. a two-step `mirror --only-existing`-style sequence or an explicit `put` of
-`index.php` before the `rm -f index.html; mirror -R`. Keep the "old entry point must be
-gone" guarantee — that part is load-bearing.
+```
+mirror -R ...            # upload everything first, index.php included
+rm -f index.html || ...  # only then evict the stale entry point / URL-keyed cache entry
+```
 
-**Verify.** Watch a deploy from a browser: `/` should never 404. `/index.html` should still
-be 404 afterwards.
+`index.php` is never removed: the mirror overwrites it. `index.html` is deleted *after* a
+successful upload, purely to evict the URL-keyed server cache, and its `|| echo` form keeps
+`cmd:fail-exit` from aborting when it is already absent. If the mirror fails, lftp now aborts
+before the `rm`, so the previous working entry point survives.
+
+**Residual.** Not fully atomic: the mirror may overwrite `index.php` before all of the new
+hashed assets have landed, so a request in that window can reference assets that are not
+there yet. Closing that needs a directory-swap deployment (upload, then flip a symlink), which
+is out of scope while the document root is fixed by the host.
+
+**Verify on the next real deploy.** `/` must never return 404, and `/index.html` must still be
+404 afterwards.
 
 ### B3 — macOS artefacts already on a server are protected, not cleaned up
 

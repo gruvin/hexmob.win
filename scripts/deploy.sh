@@ -349,12 +349,14 @@ set ftp:prefer-epsv false
 set ftp:fix-pasv-address true
 open -u "${DEST_FTP_USERNAME}","${DEST_FTP_PASSWORD}" -p ${DEST_FTP_PORT} ${OPEN_URL}
 cd ${DEST_FTP_DIR}
-# The entry point must not survive as index.html (that is the stale-cache problem), but a
-# missing file must not abort the run either - hence the tolerated form, which cmd:fail-exit
-# honours: a failure followed by an unconditional command aborts, a chained OR does not.
-rm -f index.html || echo "(no remote index.html to remove)"
-rm -f index.php || echo "(no remote index.php to remove)"
+# Upload first, delete the stale entry point afterwards. Deleting index.html/index.php *before*
+# the mirror leaves the site with no entry point at all for the duration of the upload - and
+# permanently, if the mirror then fails. index.php is simply overwritten by the mirror, so it
+# must never be removed; the leftover index.html is deleted after a successful upload purely
+# to evict the URL-keyed server cache. The tolerated form keeps cmd:fail-exit from aborting on
+# a file that is already absent.
 mirror -R ${LFTP_MIRROR_ARGS} ${BUILD_DIR} .
+rm -f index.html || echo "(no remote index.html to remove)"
 bye
 EOF
     return 0
