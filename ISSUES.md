@@ -22,7 +22,8 @@ Tick these as they are fixed; the sections below hold the detail for each.
 
 - [x] **A1** — tsa rsync target deploys with `--delete` and no excludes (can delete `.htaccess` / `.well-known`)
 - [x] **A3** — runtime brand switch follows the hostname, not the published brand (`dev.hexmob.win` shows the HEXmob logo on a tsa-branded page)
-- [ ] **A2** — production run re-applies the stash between the two brand builds; signed tarball can contain WIP; HEAD left detached
+- [x] **A2** — production run re-applied the stash between the two brand builds; signed tarball could contain WIP; HEAD left detached
+- [ ] **A4** — failure while building the second brand leaves a half-published release (tsa live, hexmob not)
 - [ ] **B1** — FTP password visible in `ps`; certificate verification off; payload not TLS-protected
 - [ ] **B2** — entry point deleted before upload leaves a live 404 window
 - [ ] **B3** — macOS artefacts already on a server are protected from `--delete`, not removed (nothing Apple is uploaded; this is cleanup only)
@@ -114,38 +115,72 @@ production code.
 
 ---
 
-### A2 — production run restores the stash *between* the two brand builds; HEAD left detached
+### A2 — production run restored the stash between the two brand builds; HEAD left detached
 
-**What.** Three related problems in the production flow, all stemming from `_cleanup` being
-called from inside `_build`'s `always` block while production calls `_build` twice:
+**What (as it was).** `_cleanup` mixed two lifetimes: the per-build overlay restore and the
+per-*run* repo state (`git checkout dev`, `git stash pop`). Production calls `_build` twice,
+so per-run teardown ran per build. Three defects fell out of that:
 
-1. The `git stash pop` at `scripts/deploy.sh:51` runs at the end of the **first** (`tsa`)
-   build. The second (`hexmob`) build therefore compiles a tree with the user's stashed WIP
-   re-applied — and that build is the one archived and signed into
-   `release/hexmob.win-<TAG>-build.tgz`. Two "same release" artifacts can differ, and an
-   uncommitted change can reach production.
-2. The stash is only created once, so the second `_cleanup` runs `git stash pop` with
-   nothing stashed. It is `> /dev/null 2>&1`, so a real conflict/failure is invisible, and a
-   *third* party's stash (an older one the user had parked) could be popped by mistake.
-3. `_cleanup` only returns to `dev` when `STARTING_BRANCH == master` (`:50`). The normal case
-   is starting a production run *from* `dev`, after which HEAD is left detached at the tag.
+1. The stash was popped at the end of the **tsa** build, so the **hexmob** build compiled the
+   operator's WIP — and that build is what the signed tarball is made from.
+2. `git stash` on a clean tree exits 0 but creates no stash, so the unconditional
+   `git stash pop` popped *whatever was parked in `stash@{0}`* — someone else's work, silently,
+   twice per run.
+3. `dev` was only restored when the run started on `master`, so a normal production run from
+   `dev` left the main tree's `HEAD` detached at the tag.
 
-**Evidence.** `scripts/deploy.sh:50-51` (`_cleanup`), `:213-221` (stash + tag checkout),
-`:228`/`:231` (two `_build` calls), `:195-198` (`always`/`catch` calls `_cleanup`).
+**Decision (yours):** require a clean tree for production, and block on anything suspicious
+rather than repairing it. `git reset --hard` must never be something the deploy does or
+provokes. Also: build in a throwaway worktree rather than touching the dev/master checkout.
 
-**Impact.** Non-reproducible signed artifacts (the whole point of the tag flow); silent
-stash mishandling; a confusing detached HEAD after every production deploy.
+**Done** — `<COMMIT>`. No stash, no checkout, no restore — the whole class is gone:
 
-**Fix.** Move stash handling up to the top level of the production branch (stash before the
-checkout, pop once after the final tarball is produced), and leave `_cleanup` responsible
-only for the file overlay. Record `STARTING_BRANCH` and restore *that* branch at the end
-(`git checkout "$STARTING_BRANCH"`), not `dev`-when-master. Stop silencing the stash
-command's errors.
+- Both flows build in a disposable `git worktree` (`HEAD` for dev, the tag for release) under
+  `$TMPDIR`, with `node_modules` and `.env.local` symlinked in. The main tree's `HEAD`, index
+  and stash are never inputs, so there is nothing to restore and no detached-HEAD trap.
+- Overlay applied inside the worktree ⇒ the `-orig` backup/restore machinery is deleted
+  outright; `_cleanup` now only returns the shell to `$ORIG_PWD` and drops per-target vars.
+- Guards block with exit 5 and print what is in the way: dirty tree (tracked *and* untracked),
+  detached/wrong branch, unknown tag, incomplete brand overlay (checked for **both** brands
+  before the first upload), missing `node_modules`, non-interactive stdin.
+- A dev deploy now builds `HEAD`, so uncommitted edits are **not** deployed; it says so when
+  the tree is dirty (preview WIP with `yarn dev` instead).
+- `TRAPEXIT` owns worktree removal, because zsh skips an `always` block when `exit` runs
+  inside the `try` body — verified. Also fixed: the failure path re-`throw`n from inside
+  `always` made the documented `exit 2` unreachable (shell returned 1), and `dist/` is now
+  cleared per build so one brand's assets cannot survive into the other's artifact/tarball.
 
-**Verify.** Scratch run on a throwaway tag with a deliberately dirty tree: after completion,
-`git status` matches the pre-run state, `git stash list` is unchanged, and
-`git rev-parse --abbrev-ref HEAD` is back to the starting branch. Compare the two brand
-builds' `dist/index.php` asset hashes to confirm both came from the same source.
+**Verified** end-to-end in a throwaway copy of the repo (fake `yarn`, local rsync
+destinations, stubbed prompts): dirty tree → blocked; detached HEAD → blocked; unknown tag →
+blocked; missing hexmob variant → blocked *before* any upload; missing `node_modules` →
+blocked. Success path from `dev` with a pre-existing stash: exit 0, branch still `dev`,
+`git status` empty, **stash list byte-identical**, both brands built at the tag commit (not at
+`HEAD`), one worktree left (the main one), tarball contains `dist/index.php` + only the hexmob
+asset. Non-tty invocation is refused.
+
+### A4 — a failure while building the second brand leaves a half-published release
+
+**What.** Production builds and uploads each brand in turn: tsa is built *and deployed* before
+hexmob is built. If the hexmob build fails (or its overlay is wrong in a way the preflight
+cannot see, e.g. a sass error in one brand's theme), go.tshare.app is already serving the new
+release while hexmob.win still serves the old one — with a tag, a tarball and a signature that
+describe only what changed on one host.
+
+**Evidence.** Observed in the harness: with the hexmob overlay variant missing, the tsa target
+had already received `index.php` + assets before the guard fired. (The up-front overlay
+preflight now catches that particular case *before* the first upload, which is why this is
+narrowed to failures that can only be found by building.)
+
+**Impact.** Users on the older host get an inconsistent version; the signed artifact no longer
+describes both live sites.
+
+**Fix (options, in increasing size).** Keep both build outputs and deploy only after both
+builds succeed: build tsa → move `dist/` to `dist-tsa` inside the worktree → build hexmob →
+deploy `dist-tsa` then `dist`. That splits `_build` into *assemble* and *publish* phases and
+needs the deploy step parameterised by directory. Smaller alternative: after both builds, do a
+"dry" re-verify of what is about to be published (asset manifest comparison) — does not help,
+the failure is in the build. Worth doing after C1/C2, since it interacts with the release
+automation in C7.
 
 ---
 
@@ -277,6 +312,11 @@ Every failure therefore reports `CAUGHT: []`, with no indication of which step d
 **Fix.** Give each `throw` a message (`throw 'overlay: theme swap failed'` etc.) and echo
 `$CAUGHT` verbatim; consider `set -x` behind a `DEBUG=1` gate, and `print` the command that
 failed.
+
+**Progress (A2 work, `<COMMIT>`).** The top-level guards report properly (headline + detail
+lines + exit 5), the overlay and `dist/` steps now throw messages rather than `''`, and the
+failure path exits 2 as documented instead of 1. The remaining `throw ''` calls are in
+`_cleanup` and the transport/brand-overlay steps — still worth converting.
 
 **Verify.** Temporarily break one step (e.g. a missing `master.pub` variant) and confirm the
 error names that step.

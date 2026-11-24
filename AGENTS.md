@@ -174,11 +174,15 @@ than `p`/`P` (including Enter) takes the dev path.
 DEPLOY_TARGET=dev TARGET=tsa _build
 ```
 
-1. Overlay the `tsa` brand onto the working tree.
-2. `yarn build` (`tsc` then `vite build`) → `dist/`.
-3. Rename `dist/index.html` → `dist/index.php` (§7).
-4. Mirror `dist/` to `dev.hexmob.win`.
-5. `_cleanup`: restore the tree.
+1. Create a throwaway worktree at `HEAD` (§5.1) — the operator's tree is never touched.
+2. Overlay the `tsa` brand inside that worktree.
+3. `yarn build` (`tsc` then `vite build`) → `dist/`.
+4. Rename `dist/index.html` → `dist/index.php` (§7), mirror `dist/` to `dev.hexmob.win`.
+5. Delete the worktree.
+
+**Uncommitted work is not deployed.** The ref is `HEAD`, so the dev target previews the
+last commit; the script says so explicitly when the tree is dirty. To preview edits
+without committing, use `yarn dev` locally.
 
 Dev deploys run a **full production build**, not the Vite dev server. The point is to
 exercise exactly what production will serve — the same minified bundle, the same cache
@@ -201,15 +205,22 @@ the compiled brand (`VITE_BRAND` → `IS_HM` / `IS_TSA`, §2) and not from
 
 ## 5. Flow B — production deployment
 
-Prompted sequence, deliberately awkward:
+Prompted sequence, deliberately awkward — every step is a guard:
 
 1. `p` to select production.
-2. Type the word `yes`. Anything else aborts silently ("Didn't think so.").
-3. Enter a release tag. It must be an existing tag — the script runs
-   `git stash && git checkout <TAG>`, and aborts (exit 3) if the checkout fails. This is
-   what makes the published artifact correspond to a reviewable commit rather than to a
-   dirty tree.
-4. Confirm the checkout command. Then:
+2. **Blocking checks, before anything happens:** the working tree must be clean (tracked
+   *and* untracked), and the starting branch must be `dev` or `master` (a detached HEAD is
+   refused). A release starts from a committed state; the script will not stash, reset or
+   discard anything to get there — it tells you what is in the way and exits 5.
+3. Type the word `yes`. Anything else aborts ("Didn't think so.").
+4. Enter a release tag. It must exist as a local tag, or the run blocks with the list of
+   recent tags.
+5. Confirm the summary (tag, branch, both destinations).
+6. A throwaway worktree is created at the tag (§5.1), and **both** brands' overlays are
+   preflighted inside it, so a missing variant cannot surface after the other brand has
+   already been published.
+
+Then:
 
 ```
 export VITE_VERSION="<TAG>"
@@ -221,6 +232,26 @@ Each `_build` is the same overlay → build → rename → upload sequence as th
 a different brand and destination. `VITE_VERSION` is stamped into the header so the live
 site states which release it is.
 
+### 5.1 The build happens in a throwaway worktree
+
+Every build runs in a disposable `git worktree` — `HEAD` for a dev preview, the tag for a
+release — created under `$TMPDIR`, with `node_modules` and `.env.local` borrowed by symlink
+from the real checkout (they are gitignored, so they do not exist in a fresh worktree).
+
+This is the single most important property of the subsystem: **the operator's tree, branch,
+index and stash are never inputs to a deploy.** There is nothing to stash, nothing to
+restore, no way for the overlay to leave the tree half-branded, and no way for a build to
+happen on the wrong branch. The overlay is applied inside the worktree and disappears with
+it — which is why there are no `-orig` backups any more, and why `_cleanup` only has to leave
+the shell in the right directory.
+
+Two consequences worth knowing:
+
+- A release checkout cannot be "left behind": the main tree's `HEAD` never moves, so there is
+  no detached-HEAD trap and no `git reset --hard` in anyone's future.
+- The archive is produced from the worktree with `tar -C <worktree> … dist`, so paths inside
+  the tarball stay relative (`dist/...`).
+
 Afterwards the script:
 
 - archives the final `dist/` (the **hexmob** build) to
@@ -230,9 +261,9 @@ Afterwards the script:
 - tells you the deployment is live and points at the signature, which is what gets attached
   to the "official release" tag on GitHub.
 
-The stash/checkout discipline exists so a production run is possible from a working tree
-that has uncommitted work in it without either losing that work or leaking it into the
-build.
+Nothing is stashed, and nothing needs to be: a release refuses to start from a dirty tree
+(§5 step 2), and the build would not see uncommitted files anyway, because it happens in a
+worktree at the tagged commit. The guard exists for the operator's sake, not the build's.
 
 `scripts/release.sh` (carried on `master`) drives this flow end to end: verify a clean
 starting point on `dev`, merge `dev` → `master`, suggest and create a **signed** tag, run
@@ -273,23 +304,33 @@ That purpose makes several unconventional-looking practices correct rather than 
 
 ## 6. The cleanup contract
 
-Every deploy must leave the repo exactly as it was found, on every exit path (success,
-`throw`, Ctrl-C). `_cleanup` guarantees:
+Splitting the two lifetimes is what makes this subsystem safe — and it is the thing to keep
+straight when changing it:
 
-1. **Files restored.** For each overlay entry, the pre-overlay copy was parked in
-   `master.pub/<file>-orig`; it is copied back (`rsync -I`, forced) and the scratch copy
-   removed. Directories (e.g. `public`) are restored the same way. After a clean run, no
-   `-orig` entries remain in `master.pub/`.
-2. **Stash restored.** If the production flow stashed local work, it is popped back.
-3. **No accidental master commits.** If the run *started* on `master`, the tree is returned
-   to `dev` so a leftover detach/checkout cannot become a commit on the release branch.
-4. **Target variables unset**, so a second `_build` in the same process starts from a clean
-   slate.
+| lifetime | owner | guarantee |
+|---|---|---|
+| **per build** | `_cleanup`, from `_build`'s `always` block | leave the shell in `$ORIG_PWD` and drop the per-target variables. Nothing on disk needs restoring: the overlay was applied inside the disposable worktree. |
+| **per run** | `_remove_worktree`, called from `TRAPEXIT` | the worktree under `$TMPDIR` and its git registration are gone on **every** exit path. |
+| **never** | — | the operator's tree, branch, index and stash are not inputs and are never modified. No `stash`, no `reset`, no `checkout` of a release ref in the main tree. |
 
-Anything added to this subsystem must hook into this contract. If a new step mutates the
-working tree, its undo belongs in `_cleanup` next to the overlay restore.
+`TRAPEXIT` is the backstop rather than an `always` block around the main flow, because
+**zsh does not run an `always` block when `exit` is called inside its `try` body** — and the
+production path exits in several places. `TRAPEXIT` survives `exit N`, `throw`, and the
+SIGINT trap (`TRAPINT` → `_cleanup` → `exit 4` → `TRAPEXIT`). It does not fire in the
+`( … )` subshells `_cleanup` uses.
 
----
+The success path adds one convenience: a release that started on `master` leaves the
+operator on `dev` (`_finish_release`), because further work does not belong on the release
+branch. Nothing else about the repo is touched.
+
+### Exit codes
+
+| code | meaning |
+|---|---|
+| `0` | success, or a deliberate abort at a prompt |
+| `2` | a build/deploy step failed (`_build` threw); the worktree is removed |
+| `4` | SIGINT, after per-build cleanup |
+| `5` | **blocked by a guard** — dirty tree, detached HEAD, missing tag, missing overlay variant, missing `node_modules`, non-interactive invocation. Nothing was built or uploaded. |
 
 ## 7. Cache busting: why the entry point is `index.php`
 
@@ -313,9 +354,16 @@ deployed hosts; the site root and `/index.php` are. Anything that links to or ha
 
 ## 8. Operating rules
 
-- **Run from the repo root.** The script refuses to run otherwise (it sanity-checks for
-  `index.html`, `master.pub/` and `src/`), because both the overlay paths and `dist/` are
-  relative.
+- **Run from the repo root, from an interactive shell.** The script refuses to run
+  otherwise: it sanity-checks for `index.html`, `master.pub/` and `src/`, and it refuses a
+  non-terminal stdin, because the prompts are the safety mechanism (zsh's `read -k1` fails
+  silently without a tty, which used to select the dev path by accident).
+- **A release requires a clean tree on `dev` or `master`.** Not because the build needs it —
+  it runs in a worktree — but because a dirty tree means attention is elsewhere. The script
+  blocks and prints what is in the way; it never stashes, resets or discards to proceed.
+- **Never add a step that mutates the main tree.** Overlay work belongs in the worktree. If
+  something genuinely must touch the real checkout, it needs a `TRAPEXIT` undo and a very
+  good reason.
 - **Do not "fix" a deployed brand by editing files in `src/`.** For overlay files, the
   published content comes from `master.pub/<file>.<brand>`. Editing `src/theme.scss` changes
   localhost and nothing else.
@@ -345,10 +393,12 @@ Cheap, objective checks — no screenshots needed:
 | Which brand did a target receive? | Fetch the root HTML: `<title>` and `og:site_name` carry the brand (`HEXmob.win` vs `go.tshare.app`), and the hashed JS/CSS asset names change per build. |
 | Did the palette change reach a host? | The hashed CSS asset contains the palette's hex values (e.g. the brand's info/warning colours). |
 | Did a React change reach a host? | Grep the hashed JS asset for a string that only exists in the new code. |
+| Did the deploy touch my repo? | `git status` unchanged, `git stash list` unchanged, `git worktree list` = 1 entry. |
 | Which brand is in a build? | The other brand's markup must be **absent** from the hashed JS (e.g. a tsa build must not contain the HEXmob `header_logo` text, and must not contain a `location.hostname` brand check of its own). |
 
-`master.pub/*-orig` entries left behind, or a dirty `git status` after a run, mean a deploy
-did not complete its contract.
+Two cheap invariants after any deploy: `git status --porcelain` is exactly what it was
+before the run, and `git worktree list` shows only the main checkout. A leftover
+`hexmob-deploy.*` directory under `$TMPDIR` means the worktree removal did not run.
 
 ---
 
@@ -363,4 +413,7 @@ did not complete its contract.
 | Which brand is compiled, and where it goes | `TARGET` / `DEPLOY_TARGET` at the call site in `deploy.sh`, plus `_configure_target` for a new destination |
 | Upload mechanics / excludes / TLS | `_deploy_build_output`, `LFTP_MIRROR_ARGS` |
 | The list of overlaid files | `FILES` in `deploy.sh` — must match what actually differs per brand |
+| What a build is made from | `_make_worktree <ref>`: `HEAD` for dev, the tag for a release. Never the live checkout |
+| Guards / blocking behaviour | `_require_tty`, `_require_clean_tree`, `_require_release_branch`, `_require_tag`, `_require_overlay` |
+| Worktree lifecycle / teardown | `_make_worktree`, `_remove_worktree` (via `TRAPEXIT`), `_finish_release` |
 | Release tagging, signing, GitHub release | `scripts/release.sh` (master) |
