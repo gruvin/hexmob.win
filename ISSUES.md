@@ -20,7 +20,7 @@ Suggested order: A1 → A3 → A2 → B1 → B2 → C3 → C4 → C5 → C1/C2 (
 
 Tick these as they are fixed; the sections below hold the detail for each.
 
-- [ ] **A1** — tsa rsync target deploys with `--delete` and no excludes (can delete `.htaccess` / `.well-known`)
+- [x] **A1** — tsa rsync target deploys with `--delete` and no excludes (can delete `.htaccess` / `.well-known`)
 - [ ] **A3** — runtime brand switch follows the hostname, not the published brand (`dev.hexmob.win` shows the HEXmob logo on a tsa-branded page)
 - [ ] **A2** — production run re-applies the stash between the two brand builds; signed tarball can contain WIP; HEAD left detached
 - [ ] **B1** — FTP password visible in `ps`; certificate verification off; payload not TLS-protected
@@ -61,6 +61,12 @@ the quotes. e.g. `RSYNC_ARGS=(--exclude='.ht*' --exclude='.DS*' --exclude='.Tras
 
 **Verify.** Dry run against the tsa host with `-n --itemize-changes` and confirm no `.ht*`
 or `.well-known` deletions appear in the output.
+
+**Done** — `995b4fa`. `RSYNC_ARGS` is now an array and is what the call site expands
+(`"${RSYNC_ARGS[@]}"`). Verified locally against a fake web root rather than the live host:
+with the old (undefined-variable) form the dry run reports `*deleting .htaccess`,
+`.well-known/`, `.DS_Store`; with the fix only the genuinely stale file is deleted. A dry
+run against `go.tshare.app` itself is still worth doing once before the next tsa deploy.
 
 ---
 
@@ -270,7 +276,10 @@ name, so consistency matters.
 ### C6 — dead code and no-op assignments around the target configuration
 
 **What.** `GPG` (`:10`) and `SCP` are resolved but unused on `dev` (`GPG` is used on master,
-`SCP` on neither); `RSYNC_ARGS` is unused (see A1); `_configure_target` contains
+`SCP` on neither); the exclude patterns are now maintained twice — once as `RSYNC_ARGS`
+(rsync syntax) and once inside `LFTP_MIRROR_ARGS` (`--exclude-glob` syntax) — so a new
+pattern has to be added in two places or the two transports silently diverge;
+`_configure_target` contains
 self-assignments like `DEST_FTP_PROTOCOL=${DEST_FTP_PROTOCOL}` (`:79-80`, `:88-89`,
 `:97-98`) that do nothing; the FTP protocol/port are global constants but treated as
 per-target state.
