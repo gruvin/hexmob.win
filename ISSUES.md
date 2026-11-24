@@ -226,7 +226,7 @@ different host or a proxy (see C7-adjacent work if ever revisited).
 server *before* `mirror -R` uploaded the new files. Between the `rm` and the upload — and
 permanently, if the mirror then failed — the site root had no entry point at all.
 
-**Done** — `<COMMIT>`. The order inside the lftp script is now:
+**Done** — `d3e08c2`. The order inside the lftp script is now:
 
 ```
 mirror -R ...            # upload everything first, index.php included
