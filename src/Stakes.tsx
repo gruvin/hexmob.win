@@ -230,6 +230,19 @@ const Stakes = (props: {
 
   const chainId = useChainId() || 0;
 
+  // Read-only (?account=) view: the balance in hexData is the *connected*
+  // wallet's, so read the viewed account's own balance for the header.
+  const { data: accountHexBalance } = useReadContract({
+    address: HEX.CHAIN_ADDRESSES[chainId],
+    abi: HEX.ABI,
+    functionName: "balanceOf",
+    args: [walletAddress as `0x${string}`],
+    query: {
+      enabled: !!props.account && !!walletAddress && !!HEX.CHAIN_ADDRESSES[chainId],
+      refetchInterval: 10000,
+    },
+  });
+
   const [stakeList, setStakeList] = useState([] as StakeList);
   const [selectedCard, setSelectedCard] = useState(
     props.openActive ? "current_stakes" : ""
@@ -496,13 +509,21 @@ const Stakes = (props: {
           className={"text-light " + (props.className || "")}
           eventKey="current_stakes"
         >
-          {props.account && (
-            <div className="bg-secondary px-1 text-light text-center small">
-              <span className="text-info small align-baseline me-2">
-                {accountName}
-              </span>
-              {walletAddress}
-            </div>
+          {props.account && ( // read only header shows account's own HEX balance
+            <Row className="bg-secondary g-0 px-1 text-light small">
+              <Col className="text-center">
+                <span className="text-info small align-baseline me-2">
+                  {accountName}
+                </span>
+                {walletAddress}
+              </Col>
+              <Col xs="auto" className="lh-lg px-1 text-end text-success">
+                <span className="text-muted small align-baseline me-1">
+                  {t("HEX BALANCE")}
+                </span>
+                <CryptoVal className="fw-bold" value={accountHexBalance ?? "---"} />
+              </Col>
+            </Row>
           )}
           <Accordion.Header className="w-100">
             <Row className="w-100">
