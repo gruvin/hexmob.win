@@ -175,10 +175,12 @@ DEPLOY_TARGET=dev TARGET=tsa _build
 ```
 
 1. Create a throwaway worktree at `HEAD` (§5.1) — the operator's tree is never touched.
-2. Overlay the `tsa` brand inside that worktree.
-3. `yarn build` (`tsc` then `vite build`) → `dist/`.
-4. Rename `dist/index.html` → `dist/index.php` (§7), mirror `dist/` to `dev.hexmob.win`.
-5. Delete the worktree.
+2. `_assemble tsa`: overlay the `tsa` brand inside that worktree, `yarn build`
+   (`tsc` then `vite build`) → `dist/`, prune macOS litter, rename `dist/index.html` →
+   `dist/index.php` (§7).
+3. `_publish tsa`: mirror `dist/` to `dev.hexmob.win`. `DEPLOY_TARGET=dev` is set explicitly,
+   because the destination is chosen independently of the brand.
+4. Delete the worktree.
 
 **Uncommitted work is not deployed.** The ref is `HEAD`, so the dev target previews the
 last commit; the script says so explicitly when the tree is dirty. To preview edits
@@ -215,28 +217,34 @@ Prompted sequence, deliberately awkward — every step is a guard:
 3. Type the word `yes`. Anything else aborts ("Didn't think so.").
 4. Enter a release tag. It must exist as a local tag, or the run blocks with the list of
    recent tags.
-5. Confirm the summary (tag, branch, both destinations).
-6. A throwaway worktree is created at the tag (§5.1), and **both** brands' overlays are
-   preflighted inside it, so a missing variant cannot surface after the other brand has
+5. Confirm the summary (tag, branch, both destinations, and the build-then-publish order).
+6. Two throwaway worktrees are created at the tag — one per brand — and both brands'
+   overlays are preflighted, so a missing variant cannot surface after the other brand has
    already been published.
 
-Then:
+Then, in this order:
 
 ```
 export VITE_VERSION="<TAG>"
-TARGET=tsa    _build      → go.tshare.app
-TARGET=hexmob _build      → hexmob.win
+_assemble tsa      → build in the tsa worktree
+_assemble hexmob   → build in the hexmob worktree
+_publish  tsa      → go.tshare.app
+_publish  hexmob   → hexmob.win
 ```
 
-Each `_build` is the same overlay → build → rename → upload sequence as the dev path, with
-a different brand and destination. `VITE_VERSION` is stamped into the header so the live
-site states which release it is.
+**Both builds must succeed before either is published.** `_assemble` and `_publish` are
+deliberately separate phases over per-brand worktrees: if the second brand fails to build,
+nothing has been uploaded, so a release lands on both hosts or on neither (see `ISSUES.md`
+A4 for why this matters). `VITE_VERSION` is stamped into the header so the live site states
+which release it is.
 
 ### 5.1 The build happens in a throwaway worktree
 
 Every build runs in a disposable `git worktree` — `HEAD` for a dev preview, the tag for a
 release — created under `$TMPDIR`, with `node_modules` and `.env.local` borrowed by symlink
 from the real checkout (they are gitignored, so they do not exist in a fresh worktree).
+A release keeps **one worktree per brand, side by side**, each with its own overlay and its
+own `dist/`, which is what makes the build phase separable from the publish phase.
 
 This is the single most important property of the subsystem: **the operator's tree, branch,
 index and stash are never inputs to a deploy.** There is nothing to stash, nothing to
@@ -309,8 +317,8 @@ straight when changing it:
 
 | lifetime | owner | guarantee |
 |---|---|---|
-| **per build** | `_cleanup`, from `_build`'s `always` block | leave the shell in `$ORIG_PWD` and drop the per-target variables. Nothing on disk needs restoring: the overlay was applied inside the disposable worktree. |
-| **per run** | `_remove_worktree`, called from `TRAPEXIT` | the worktree under `$TMPDIR` and its git registration are gone on **every** exit path. |
+| **per phase** | `_cleanup`, from `_guarded` | leave the shell in `$ORIG_PWD`. Nothing on disk needs restoring: the overlay was applied inside the brand's disposable worktree. |
+| **per run** | `_remove_worktrees`, called from `TRAPEXIT` | every worktree under `$TMPDIR` and their git registrations are gone on **every** exit path. |
 | **never** | — | the operator's tree, branch, index and stash are not inputs and are never modified. No `stash`, no `reset`, no `checkout` of a release ref in the main tree. |
 
 `TRAPEXIT` is the backstop rather than an `always` block around the main flow, because
@@ -328,7 +336,7 @@ branch. Nothing else about the repo is touched.
 | code | meaning |
 |---|---|
 | `0` | success, or a deliberate abort at a prompt |
-| `2` | a build/deploy step failed (`_build` threw); the worktree is removed |
+| `2` | a build or publish phase failed (`_guarded` caught a `throw`); worktrees are removed, and a failed build means **nothing** was published |
 | `4` | SIGINT, after per-build cleanup |
 | `5` | **blocked by a guard** — dirty tree, detached HEAD, missing tag, missing overlay variant, missing `node_modules`, non-interactive invocation. Nothing was built or uploaded. |
 
@@ -413,7 +421,9 @@ before the run, and `git worktree list` shows only the main checkout. A leftover
 | Which brand is compiled, and where it goes | `TARGET` / `DEPLOY_TARGET` at the call site in `deploy.sh`, plus `_configure_target` for a new destination |
 | Upload mechanics / excludes / TLS | `_deploy_build_output`, `LFTP_MIRROR_ARGS` |
 | The list of overlaid files | `FILES` in `deploy.sh` — must match what actually differs per brand |
-| What a build is made from | `_make_worktree <ref>`: `HEAD` for dev, the tag for a release. Never the live checkout |
+| What a build is made from | `_make_worktree <ref> <brand>`: `HEAD` for dev, the tag for a release. Never the live checkout |
+| Build/publish order | production calls `_assemble` for each brand, then `_publish` for each. Do not interleave them — that is what makes a release all-or-nothing |
+| Which host a publish goes to | `DEPLOY_TARGET` (destination) vs `TARGET` (brand) — they are independent; the dev flow must set `DEPLOY_TARGET=dev` explicitly |
 | Guards / blocking behaviour | `_require_tty`, `_require_clean_tree`, `_require_release_branch`, `_require_tag`, `_require_overlay` |
 | Worktree lifecycle / teardown | `_make_worktree`, `_remove_worktree` (via `TRAPEXIT`), `_finish_release` |
 | Release tagging, signing, GitHub release | `scripts/release.sh` (master) |

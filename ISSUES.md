@@ -23,7 +23,7 @@ Tick these as they are fixed; the sections below hold the detail for each.
 - [x] **A1** — tsa rsync target deploys with `--delete` and no excludes (can delete `.htaccess` / `.well-known`)
 - [x] **A3** — runtime brand switch follows the hostname, not the published brand (`dev.hexmob.win` shows the HEXmob logo on a tsa-branded page)
 - [x] **A2** — production run re-applied the stash between the two brand builds; signed tarball could contain WIP; HEAD left detached
-- [ ] **A4** — failure while building the second brand leaves a half-published release (tsa live, hexmob not)
+- [x] **A4** — failure while building the second brand left a half-published release (now: build both, then publish both)
 - [ ] **B1** — FTP password visible in `ps`; certificate verification off; payload not TLS-protected
 - [ ] **B2** — entry point deleted before upload leaves a live 404 window
 - [ ] **B3** — macOS artefacts already on a server are protected from `--delete`, not removed (nothing Apple is uploaded; this is cleanup only)
@@ -158,31 +158,31 @@ blocked. Success path from `dev` with a pre-existing stash: exit 0, branch still
 `HEAD`), one worktree left (the main one), tarball contains `dist/index.php` + only the hexmob
 asset. Non-tty invocation is refused.
 
-### A4 — a failure while building the second brand leaves a half-published release
+### A4 — a failure while building the second brand left a half-published release
 
-**What.** Production builds and uploads each brand in turn: tsa is built *and deployed* before
-hexmob is built. If the hexmob build fails (or its overlay is wrong in a way the preflight
-cannot see, e.g. a sass error in one brand's theme), go.tshare.app is already serving the new
-release while hexmob.win still serves the old one — with a tag, a tarball and a signature that
-describe only what changed on one host.
+**What (as it was).** Production built *and deployed* each brand in turn: tsa was uploaded
+before hexmob was built. A hexmob build failure left go.tshare.app serving the new release and
+hexmob.win the old one, with a tag, tarball and signature describing only one host.
 
-**Evidence.** Observed in the harness: with the hexmob overlay variant missing, the tsa target
-had already received `index.php` + assets before the guard fired. (The up-front overlay
-preflight now catches that particular case *before* the first upload, which is why this is
-narrowed to failures that can only be found by building.)
+**Decision (yours):** build both, publish both — never publish unless both builds succeed, and
+keep one worktree per brand side by side so the phases can be separated.
 
-**Impact.** Users on the older host get an inconsistent version; the signed artifact no longer
-describes both live sites.
+**Done** — `<COMMIT>`. `_build` split into two phases over per-brand worktrees:
+`_assemble <brand>` (overlay → build → prune → rename, no upload) and `_publish <brand>`
+(`_configure_target` → upload), both wrapped in `_guarded` for labelled failures and exit 2.
+A release is now: `_assemble tsa`, `_assemble hexmob`, then `_publish tsa`, `_publish hexmob`.
+The dev flow uses the same two phases for its single brand.
 
-**Fix (options, in increasing size).** Keep both build outputs and deploy only after both
-builds succeed: build tsa → move `dist/` to `dist-tsa` inside the worktree → build hexmob →
-deploy `dist-tsa` then `dist`. That splits `_build` into *assemble* and *publish* phases and
-needs the deploy step parameterised by directory. Smaller alternative: after both builds, do a
-"dry" re-verify of what is about to be published (asset manifest comparison) — does not help,
-the failure is in the build. Worth doing after C1/C2, since it interacts with the release
-automation in C7.
+**Verified** in the harness with a build failure injected for hexmob only: tsa built, hexmob
+build failed → **0 files uploaded to either destination**, no tarball, worktrees and temp dirs
+removed, main tree untouched, exit 2.
 
----
+**Regression caught by the same harness, worth remembering:** splitting `_build` dropped the
+`DEPLOY_TARGET=dev` assignment from the dev flow, so the dev preview resolved `TARGET=tsa` →
+the *production* `DEST_TSA` and would have deployed a dev preview to go.tshare.app. The dev
+flow now sets `DEPLOY_TARGET=dev` explicitly and prints the resolved destination. `TARGET`
+(brand) and `DEPLOY_TARGET` (destination) are independent by design, so every call site has
+to state both.
 
 ## B. Transport & secrets hygiene
 

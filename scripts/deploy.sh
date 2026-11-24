@@ -38,8 +38,9 @@ DEST_FTP_PORT='21'
 autoload throw catch
 
 STARTING_BRANCH=$(git rev-parse --abbrev-ref HEAD)
-ORIG_PWD="$PWD"   # builds run inside a throwaway worktree; everything comes back here
-WORKTREE=""       # set by _make_worktree, removed by _remove_worktree via TRAPEXIT
+ORIG_PWD="$PWD"   # builds run inside throwaway worktrees; everything comes back here
+WT_PARENT=""      # mktemp dir holding this run's worktrees, removed via TRAPEXIT
+typeset -A WORKTREES # brand => worktree path; one per brand, built side by side
 
 # ----------------------------------------------------------------------------
 # Guards
@@ -129,8 +130,8 @@ _require_overlay() {
     local MISSING=()
     for FILE in $FILES; do
         SLASH=""
-        [[ -d "${WORKTREE}/${FILE}" ]] && SLASH="/"
-        [[ -e "${WORKTREE}/master.pub/${FILE}.${BRAND}${SLASH}" ]] \
+        [[ -d "${WORKTREES[$BRAND]}/${FILE}" ]] && SLASH="/"
+        [[ -e "${WORKTREES[$BRAND]}/master.pub/${FILE}.${BRAND}${SLASH}" ]] \
             || MISSING+=("master.pub/${FILE}.${BRAND}${SLASH}")
     done
     [[ ${#MISSING} -gt 0 ]] && _block "overlay incomplete for brand '${BRAND}'" \
@@ -141,53 +142,66 @@ _require_overlay() {
 }
 
 # ----------------------------------------------------------------------------
-# Build worktree
+# Build worktrees
 #
-# Every build happens in a disposable `git worktree` checkout of the ref being built
-# (the tag for a release, HEAD for a dev preview). That is what keeps the operator's
-# tree, branch, index and stash entirely out of the deploy's hands: there is nothing
-# to stash, nothing to restore, and no way for a build artefact to end up committed
-# on the wrong branch. The worktree is registered in the repo's metadata only until
-# the run ends (see _remove_worktree / TRAPEXIT).
+# Every build happens in a disposable `git worktree` checkout of the ref being built (the
+# tag for a release, HEAD for a dev preview), **one worktree per brand**, side by side.
+# That is what keeps the operator's tree, branch, index and stash entirely out of the
+# deploy's hands: there is nothing to stash, nothing to restore, and no way for a build
+# artefact to end up committed on the wrong branch.
+#
+# Separate worktrees also make the build phase separable from the publish phase: both
+# brands are built (and their artifacts sit in their own trees) before either is uploaded,
+# so a release either goes out on both hosts or on neither. See _assemble / _publish.
+#
+# They are registered in the repo's metadata only until the run ends (_remove_worktrees /
+# TRAPEXIT).
 # ----------------------------------------------------------------------------
 
-# @args: REF (tag or HEAD)
+# @args: REF (tag or HEAD) BRAND
 _make_worktree() {
     local REF=$1
-    local PARENT
+    local BRAND=$2
+    if [[ -z "${WT_PARENT}" ]]; then
+        WT_PARENT=$(mktemp -d "${TMPDIR:-/tmp}/hexmob-deploy.XXXXXX") \
+            || _block "could not create a temporary directory for the build worktrees"
+    fi
+    local WT="${WT_PARENT}/${BRAND}"
     ${GIT} worktree prune > /dev/null 2>&1
-    PARENT=$(mktemp -d "${TMPDIR:-/tmp}/hexmob-deploy.XXXXXX") \
-        || _block "could not create a temporary directory for the build worktree"
-    WORKTREE="${PARENT}/wt"
-    ${GIT} worktree add --detach "${WORKTREE}" "${REF}" > /dev/null 2>&1 \
-        || _block "could not create a build worktree for '${REF}'" "Resolve the repo state first; nothing has been built."
+    ${GIT} worktree add --detach "${WT}" "${REF}" > /dev/null 2>&1 \
+        || _block "could not create the ${BRAND} build worktree for '${REF}'" \
+            "Resolve the repo state first; nothing has been built."
+    WORKTREES[$BRAND]="${WT}"
     # A fresh checkout has none of the gitignored build inputs, so borrow them. node_modules
     # is essential; .env.local matters only if something reads it from disk (Vite gets the
     # VITE_* values from the exported environment, which deploy.sh sourced from the real one).
     [[ -d "${ORIG_PWD}/node_modules" ]] \
         || _block "node_modules is missing in ${ORIG_PWD}" "Install dependencies before deploying:  yarn install"
-    ln -s "${ORIG_PWD}/node_modules" "${WORKTREE}/node_modules" \
-        || _block "could not link node_modules into the build worktree"
-    [[ -f "${ORIG_PWD}/.env.local" ]] && ln -s "${ORIG_PWD}/.env.local" "${WORKTREE}/.env.local"
+    ln -s "${ORIG_PWD}/node_modules" "${WT}/node_modules" \
+        || _block "could not link node_modules into the ${BRAND} build worktree"
+    [[ -f "${ORIG_PWD}/.env.local" ]] && ln -s "${ORIG_PWD}/.env.local" "${WT}/.env.local"
     # Prove we landed on the requested commit - a checkout that silently does nothing
     # would otherwise build the wrong tree and sign it as the tag.
-    local AT=$(${GIT} -C "${WORKTREE}" rev-parse HEAD)
+    local AT=$(${GIT} -C "${WT}" rev-parse HEAD)
     local WANT=$(${GIT} rev-parse "${REF}^{commit}")
     if [[ "${AT}" != "${WANT}" ]]; then
-        _remove_worktree
-        _block "build worktree HEAD (${AT[1,8]}) is not '${REF}' (${WANT[1,8]})" \
+        _remove_worktrees
+        _block "${BRAND} build worktree HEAD (${AT[1,8]}) is not '${REF}' (${WANT[1,8]})" \
             "Refusing to build a release from an unexpected commit."
     fi
-    print "Build worktree: ${WORKTREE} (${REF} @ ${AT[1,8]})"
+    print "Build worktree (${BRAND}): ${WT} (${REF} @ ${AT[1,8]})"
     return 0
 }
 
-_remove_worktree() {
-    [[ -z "${WORKTREE}" ]] && return 0
-    ${GIT} worktree remove --force "${WORKTREE}" > /dev/null 2>&1
-    rm -rf "${WORKTREE:h}" # the mktemp parent
+_remove_worktrees() {
+    local BRAND
+    for BRAND in ${(k)WORKTREES}; do
+        [[ -n "${WORKTREES[$BRAND]}" ]] && ${GIT} worktree remove --force "${WORKTREES[$BRAND]}" > /dev/null 2>&1
+        unset "WORKTREES[$BRAND]"
+    done
+    [[ -n "${WT_PARENT}" ]] && rm -rf "${WT_PARENT}"
     ${GIT} worktree prune > /dev/null 2>&1
-    WORKTREE=""
+    WT_PARENT=""
     return 0
 }
 
@@ -195,7 +209,7 @@ _remove_worktree() {
 # the one convenience kept from the old flow: a release that started on master leaves
 # the operator on dev, because further work does not belong on the release branch.
 _finish_release() {
-    _remove_worktree
+    _remove_worktrees
     if [[ "${STARTING_BRANCH}" == "master" ]]; then
         ${GIT} checkout dev > /dev/null 2>&1 \
             && print "\nSwitched to dev - master is the release branch, don't work on it."
@@ -204,7 +218,7 @@ _finish_release() {
 }
 
 TRAPEXIT() {
-    _remove_worktree
+    _remove_worktrees
 }
 
 # Files that differ per brand and must be swapped in before a build: the parts that
@@ -218,19 +232,12 @@ if [[ ! ( -f ./index.html && -d ./master.pub && -d ./src ) ]]; then
     exit 1
 fi
 
-# Per-build teardown. There is nothing to restore on disk any more: the overlay was
-# applied inside the throwaway worktree, which _remove_worktree deletes wholesale. All
-# this has to do is leave the shell where it started and drop the per-target variables.
+# Per-phase teardown. There is nothing to restore on disk: the overlay was applied inside
+# the brand's throwaway worktree, which _remove_worktrees deletes wholesale. All this has
+# to do is leave the shell where it started. Note it deliberately does *not* unset
+# DEPLOY_TARGET - that is a per-run decision (which destination), not a per-phase one.
 _cleanup() {
     cd "${ORIG_PWD}" > /dev/null 2>&1
-    unset TARGET
-    unset DEST
-    unset DEPLOY_TARGET
-    unset DEST_TRANSPORT
-    unset DEST_FTP_HOST
-    unset DEST_FTP_DIR
-    unset DEST_FTP_USERNAME
-    unset DEST_FTP_PASSWORD
 }
 
 TRAPINT() {
@@ -358,65 +365,79 @@ _deploy_build_output() {
     esac
 }
 
-_build() {
-    {
-        [[ "$TARGET" == "" ]] && throw 'TARGET not set'
-        _configure_target
-        [[ "$DEST" == "" ]] && throw 'DEST not set'
-        [[ "$DEST_TRANSPORT" == "" ]] && throw 'DEST_TRANSPORT not set'
-        [[ -z "${WORKTREE}" ]] && throw 'no build worktree - _make_worktree must run first'
-
-        # Build inside the disposable checkout: from here on ./src, ./public, ./dist and
-        # ./master.pub all refer to the ref being built, not to the operator's tree.
-        cd "${WORKTREE}" || throw "could not enter the build worktree ${WORKTREE}"
-        print "\nBuild target is ${TARGET} ( => ${DEST} via ${DEST_TRANSPORT})\n"
-
-        # Overlay check (and again up front for releases, so a missing variant cannot
-        # surface after the other brand has already been published). throw, not _block:
-        # the always block still has to get the shell out of the worktree.
-        _require_overlay "${TARGET}"
-
-        # Dual branding: overlay the brand's files inside the worktree. No backups are
-        # taken because the worktree is disposable - the branch's files are untouched,
-        # both because they were never edited and because this tree is not the branch.
-        for FILE in $FILES; do
-            SLASH=""
-            [[ -d "$FILE" ]] && SLASH="/"
-            ${RSYNC} -r -I --delete "./master.pub/${FILE}.${TARGET}${SLASH}" "./${FILE}${SLASH}" \
-                || throw "could not apply the ${TARGET} overlay to ${FILE}"
-        done
-
-        # build
-        # Stamp the brand that is actually being compiled into the bundle, so the runtime
-        # brand switch (window.hostIsHM / hostIsTSA) follows the published brand rather
-        # than the hostname - dev.hexmob.win deliberately serves the tsa brand. Set per
-        # _build call, since production compiles both brands in one process.
-        export VITE_BRAND="${TARGET}"
-        # Start from an empty output dir. Vite empties it by default, but production builds
-        # both brands into the same worktree, and one brand's asset surviving into the
-        # other's artifact (and into the signed tarball) is not a failure mode worth
-        # leaving to a bundler default.
-        rm -rf "${BUILD_DIR}" || throw "could not clear ${BUILD_DIR}"
-        yarn build || throw ''
-        print "BUILD DONE"
-        _prune_apple_junk
-        # Rename to .php so nginx serves it via PHP-FPM rather than the static
-        # open_file_cache, which on this host holds stale content for days.
-        mv "${BUILD_DIR}index.html" "${BUILD_DIR}index.php" || throw 'Failed to rename index.html to index.php'
-
-        _deploy_build_output
-
-    } always {
+# @args: LABEL COMMAND...
+# Runs one phase, and turns any `throw` out of it into a readable message plus the
+# documented exit 2. The worktree removal is TRAPEXIT's job, so it happens either way.
+_guarded() {
+    local LABEL=$1
+    shift
+    { "$@" } always {
         if catch '*'; then
-            # exit, not throw: re-throwing here leaves the shell to decide the status (1),
-            # so the documented failure code was never actually produced. TRAPEXIT still
-            # runs, so the worktree is removed either way.
-            print "D'oh! CAUGHT: [$CAUGHT]"
+            print -r -- "D'oh! ${LABEL} failed: [$CAUGHT]"
             _cleanup
             exit 2
         fi
         _cleanup
     }
+}
+
+# @args: BRAND
+# Build phase: overlay the brand into its own worktree and produce dist/. Nothing is
+# uploaded here, which is what lets a release build both brands before publishing either.
+_assemble() {
+    local TARGET=$1
+    local WT=${WORKTREES[$TARGET]}
+    [[ -z "${WT}" ]] && throw "no build worktree for '${TARGET}' - _make_worktree must run first"
+
+    # Build inside the disposable checkout: from here on ./src, ./public, ./dist and
+    # ./master.pub all refer to the ref being built, not to the operator's tree.
+    cd "${WT}" || throw "could not enter the ${TARGET} build worktree ${WT}"
+    print "\n--- building ${TARGET} ---"
+
+    _require_overlay "${TARGET}"
+
+    # Dual branding: overlay the brand's files. No backups are taken because the worktree
+    # is disposable - the branch's files were never touched.
+    for FILE in $FILES; do
+        SLASH=""
+        [[ -d "$FILE" ]] && SLASH="/"
+        ${RSYNC} -r -I --delete "./master.pub/${FILE}.${TARGET}${SLASH}" "./${FILE}${SLASH}" \
+            || throw "could not apply the ${TARGET} overlay to ${FILE}"
+    done
+
+    # Stamp the brand that is actually compiled into the bundle, so the runtime brand
+    # constant (IS_HM / IS_TSA) folds to this build's brand rather than being decided by
+    # the hostname - dev.hexmob.win deliberately serves the tsa brand.
+    export VITE_BRAND="${TARGET}"
+    # Start from an empty output dir, so one brand's asset can never survive into another
+    # artifact or into the signed tarball.
+    rm -rf "${BUILD_DIR}" || throw "could not clear ${BUILD_DIR}"
+    yarn build || throw 'the build itself failed'
+    print "BUILD DONE (${TARGET})"
+    _prune_apple_junk
+    # Rename to .php so nginx serves it via PHP-FPM rather than the static
+    # open_file_cache, which on this host holds stale content for days.
+    mv "${BUILD_DIR}index.html" "${BUILD_DIR}index.php" || throw 'Failed to rename index.html to index.php'
+}
+
+# @args: BRAND
+# Publish phase: upload an already-built brand. Separate from _assemble so that both
+# brands can be built first and only then deployed - a release therefore either lands on
+# both hosts or on neither.
+_publish() {
+    local TARGET=$1 # dynamic scope: _configure_target reads $TARGET / $DEPLOY_TARGET
+    local WT=${WORKTREES[$TARGET]}
+    [[ -z "${WT}" ]] && throw "no build worktree for '${TARGET}' - _make_worktree must run first"
+
+    _configure_target
+    [[ "$DEST" == "" ]] && throw 'DEST not set'
+    [[ "$DEST_TRANSPORT" == "" ]] && throw 'DEST_TRANSPORT not set'
+
+    cd "${WT}" || throw "could not enter the ${TARGET} build worktree ${WT}"
+    [[ -f "${BUILD_DIR}index.php" ]] \
+        || throw "nothing to publish for '${TARGET}' - the ${TARGET} build is missing"
+    print "\n--- publishing ${TARGET} ( => ${DEST} via ${DEST_TRANSPORT}) ---"
+    _deploy_build_output
 }
 
 _require_tty
@@ -438,6 +459,7 @@ case "$DEPLOY_TYPE" in
         print "  branch  : ${STARTING_BRANCH} ($(git rev-parse --short HEAD))"
         print "  builds  : tsa => ${DEST_TSA}"
         print "            hexmob => ${DEST_HEXMOB}"
+        print "  order   : build both, then publish both (a failed build publishes nothing)"
         read -k1 YN\?"Build ${TAG} in a throwaway worktree and deploy it? [Y/n]: "
         print ""
         case ${YN} in
@@ -446,7 +468,8 @@ case "$DEPLOY_TYPE" in
                 exit 0
                 ;;
             (*)
-                _make_worktree "${TAG}"
+                _make_worktree "${TAG}" tsa
+                _make_worktree "${TAG}" hexmob
                 # Preflight everything detectable before the first upload: both brands'
                 # overlays must be complete, or the release would stop half-published.
                 _require_overlay tsa
@@ -454,13 +477,14 @@ case "$DEPLOY_TYPE" in
 
                 export VITE_VERSION="${TAG}"
 
-                print "Deploying version ${TAG} ..."
+                print "Building release ${TAG} (both brands) ..."
+                # Build both first: if either build fails, nothing has been published.
+                _guarded "tsa build" _assemble tsa
+                _guarded "hexmob build" _assemble hexmob
 
-                TARGET=tsa _build
-                sleep 1
-
-                TARGET=hexmob _build
-                sleep 1
+                print "\nBoth builds succeeded - publishing."
+                _guarded "tsa deploy" _publish tsa
+                _guarded "hexmob deploy" _publish hexmob
 
                 # Create release tarball for gpg signing and upload to repo 'official release tag'.
                 # Paths inside the archive stay relative (dist/...) so extraction is predictable.
@@ -469,7 +493,7 @@ case "$DEPLOY_TYPE" in
                 print -n "\nPreparing HEXMOB release files at ${RELEASE_DIR} ... "
                 [[ -d ${RELEASE_DIR} ]] && rm -f ${RELEASE_DIR}/*
                 [[ ! -d ${RELEASE_DIR} ]] && mkdir ${RELEASE_DIR}
-                ${TAR} -C "${WORKTREE}" -czf "${RELEASE_TGZ}" dist \
+                ${TAR} -C "${WORKTREES[hexmob]}" -czf "${RELEASE_TGZ}" dist \
                     || _block "could not create ${RELEASE_TGZ}"
                 print "Done!"
 
@@ -489,10 +513,14 @@ case "$DEPLOY_TYPE" in
             print "\nNote: the working tree has uncommitted changes."
             print "      Deploying HEAD ($(git rev-parse --short HEAD)) - they will NOT be included."
         fi
-        print "Deploying to dev target ..."
-        _make_worktree HEAD
-        DEPLOY_TARGET=dev TARGET=tsa _build
-        _remove_worktree
+        # DEPLOY_TARGET selects the destination, independently of TARGET (the brand):
+        # this must be the dev host, never the tsa production one.
+        DEPLOY_TARGET=dev
+        print "Deploying to dev target (${DEST_DEV}) ..."
+        _make_worktree HEAD tsa
+        _guarded "tsa build" _assemble tsa
+        _guarded "tsa deploy" _publish tsa
+        _remove_worktrees
         ;;
 esac
 
