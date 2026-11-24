@@ -133,7 +133,7 @@ so per-run teardown ran per build. Three defects fell out of that:
 rather than repairing it. `git reset --hard` must never be something the deploy does or
 provokes. Also: build in a throwaway worktree rather than touching the dev/master checkout.
 
-**Done** — `<COMMIT>`. No stash, no checkout, no restore — the whole class is gone:
+**Done** — `0986c2e`. No stash, no checkout, no restore — the whole class is gone:
 
 - Both flows build in a disposable `git worktree` (`HEAD` for dev, the tag for release) under
   `$TMPDIR`, with `node_modules` and `.env.local` symlinked in. The main tree's `HEAD`, index
@@ -313,7 +313,7 @@ Every failure therefore reports `CAUGHT: []`, with no indication of which step d
 `$CAUGHT` verbatim; consider `set -x` behind a `DEBUG=1` gate, and `print` the command that
 failed.
 
-**Progress (A2 work, `<COMMIT>`).** The top-level guards report properly (headline + detail
+**Progress (A2 work, `0986c2e`).** The top-level guards report properly (headline + detail
 lines + exit 5), the overlay and `dist/` steps now throw messages rather than `''`, and the
 failure path exits 2 as documented instead of 1. The remaining `throw ''` calls are in
 `_cleanup` and the transport/brand-overlay steps — still worth converting.
