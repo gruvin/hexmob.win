@@ -400,6 +400,14 @@ it would have cached nothing and wondered why deploys still looked stale.
   than a 500;
 - the header states it is manual, one-time, and never uploaded (the mirror excludes `.ht*`).
 
+**Caveat, verified after the rewrite.** On this host the directives are **inert**: the live
+`.htaccess` on `dev.hexmob.win` does carry `Header set Cache-Control` rules, yet responses for
+`/` and `/index.php` return **no** `Cache-Control`, `ETag` or `Last-Modified` at all
+(`Server: nginx`). nginx is evidently serving the entry point without consulting Apache's
+header directives, which is also why response headers were never a lever for the staleness
+problem — see D5. Treat this file as documentation of intent, not as an active control, until
+the host exposes nginx-level configuration.
+
 ### C5 — tag naming drifted between the prompt text and practice
 
 **What (as it was).** The prompt suggested `eg. v0.2.3B`, but every real release tag is
@@ -450,6 +458,16 @@ grounds that unused tool lookups are how A1 stayed invisible.
   (the runtime brand switch disagreeing with the published brand) is tracked as A3.
 - [x] **D3 — local `master` was 27 commits stale; fast-forwarded to `origin/master`** (no
   push). `dev` needed no pull — it was already current with `origin/dev`.
+- [x] **D5 — the `index.php` entry point stays (deliberately kept).** It exists only to dodge
+  this host's nginx `open_file_cache`, which serves static `.html` for days after a deploy with
+  no way to flush it without shell access (`53ba042`, after `6b4bc5a` failed to fix it by
+  deleting the file first). PHP-FPM responses are not in that cache, so a deploy becomes
+  visible within seconds. The trade-off — an unconventional entry point, `/index.html`
+  deliberately absent — is accepted: nginx *could* be disabled or its cache tuned, but the
+  operator cannot be bothered and, more importantly, would risk forgetting the consequences of
+  re-enabling it later. **If nginx/open_file_cache settings on this box ever change, re-test
+  the staleness before touching the rename**, and note that `.htaccess` header rules do not
+  reach responses here (C4), so headers are not a substitute.
 - [x] **D4 — no macOS artefact may be deployed.** `APPLE_JUNK` is now the single list
   (`.DS_Store`, `._*`, `.AppleDouble`, `.Trashes`, `.Trash`, `.Spotlight-V100`, `.fseventsd`,
   `.TemporaryItems`, `.DocumentRevisions-V100`, `.apdisk`) generating the rsync excludes, the

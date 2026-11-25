@@ -402,6 +402,12 @@ Consequence to keep in mind: **`/index.html` is intentionally not a valid URL** 
 deployed hosts; the site root and `/index.php` are. Anything that links to or hardcodes
 `index.html` is wrong by construction.
 
+This is a deliberate, permanent trade-off, not a temporary hack: the host's nginx is left as it
+is because changing it risks a stale-cache problem that is easy to reintroduce and hard to
+notice (`ISSUES.md` D5). Note that `.htaccess` header directives do not reach responses on this
+host (verified: no `Cache-Control` on `/` or `/index.php`), so response headers are not an
+alternative to the rename.
+
 ---
 
 ## 8. Operating rules
