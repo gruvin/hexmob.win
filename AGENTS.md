@@ -2,6 +2,9 @@
 
 How this repo gets published. Read this before touching `scripts/`, `master.pub/`, or a release.
 
+Application-level notes — stack and pins, architecture, key files, chains and pricing, coding
+conventions and gotchas — live in `README.md` §12.
+
 ---
 
 ## 1. What this is

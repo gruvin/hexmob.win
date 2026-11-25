@@ -122,7 +122,7 @@ Planned or suggested improvements:
 
 ---
 ## 9. Privacy
-The site itself does not run its own tracking scripts beyond optional anonymous analytics (`react-ga`) where enabled. Wallet addresses are only used to query public blockchain data. Bookmarking multi-account views keeps addresses in plain URL parameters — clear history if that’s a concern.
+The site runs **no analytics and no tracking of any kind**. There is no `react-ga` (or any other telemetry dependency) in the project. Wallet addresses are used only to query public blockchain data. Bookmarking multi-account views keeps addresses in plain URL parameters — clear history if that's a concern.
 
 ---
 ## 10. Technical Snapshot
@@ -147,14 +147,121 @@ The site itself does not run its own tracking scripts beyond optional anonymous 
 These replicate HEX contract logic using locally calculated values and fetched daily data slices.
 
 ---
-## 12. Contributing (For Curious Users)
-While this README targets end users, code contributions are welcome:
-1. Fork and clone.
-2. Install dependencies (`npm install`).
-3. Start dev server (`npm run dev`).
-4. Submit focused PRs with clear descriptions.
+## 12. Development
 
----
+Contributions are welcome. Work happens on the `dev` branch; PRs target `master`.
+
+### Setup
+
+```zsh
+yarn install
+cp dot-env.local-sample .env.local     # then fill it in
+yarn dev                               # http://localhost:5173
+```
+
+`.env.local` must supply `VITE_REOWN_APPKIT_ID` — the app throws without it. The FTP credentials in
+the same file are only needed to deploy.
+
+### Scripts
+
+| command | what it does |
+|---|---|
+| `yarn dev` | Vite dev server |
+| `yarn build` | `tsc && vite build` (type errors fail the build) |
+| `yarn test` / `yarn test-once` | vitest — **no test files exist yet** |
+| `yarn deploy:dev` | build and publish the preview to `dev.hexmob.win` |
+| `yarn release` | tagged, signed production release (see `AGENTS.md`) |
+
+There is **no CI**: the GitHub Actions workflow was removed, so builds and tests are local-only.
+
+### Stack
+
+React 19 + TypeScript (strict) + Vite 7 (SWC plugin). `wagmi` v2 (pinned `2.12.0`) + `viem` ^2.45
+for on-chain reads (multicall) and wallet connection; `@reown/appkit` 1.8.12 (pinned) for wallet
+selection and network switching; `@tanstack/react-query` for refresh/caching; `react-bootstrap` +
+`sass` for styling; `i18next` ^26 / `react-i18next` for wording modes; `recharts`, `d3-format`,
+`axios`, `debug`.
+
+`package.json` carries a `resolutions` block pinning `vite` 7.3.2 and
+`@reown/appkit-adapter-wagmi/@wagmi/connectors` 6.1.3. (`@types/react-copy-to-clipboard` remains
+even though the runtime dependency was dropped.)
+
+### Architecture & data flow
+
+`src/main.tsx` builds the provider tree — `WagmiProvider` (`WagmiAdapter` from AppKit) →
+`QueryClientProvider` → `App` — and configures AppKit with the `[pulsechain, mainnet]` networks,
+PulseChain as the default and the dark theme. Transports are `http()` with **no hardcoded URL**, so
+each chain resolves to its own definition's default RPC; that deliberately avoids our own endpoints
+rotting.
+
+Reads go through a viem **Public Client** (the transport), **never the wallet**; writes and signing
+always go through the wallet. So price, HEX day and stake data load with or without a connected
+wallet, and transports are a read-path concern only.
+
+### Key files
+
+| file | responsibility |
+|---|---|
+| `App.tsx` | header (price toggle, version/day, wording switcher), body; reads HEX globals via multicall into `HexData`, fetches both prices |
+| `Stakes.tsx` | per-account stake list: `stakeCount` + `stakeLists` multicall → `StakeData[]`, merged with daily data |
+| `StakeInfo.tsx`, `NewStakeForm.tsx`, `StakeHistory.tsx` | single stake detail; create-stake form; ended stakes (lazy-loaded) |
+| `simulateStakeEnd.ts`, `SimulateStakeEndButton.tsx` | on-chain `stakeEnd` simulation via `debug_traceCall` |
+| `Widgets.tsx` | shared bits: `CryptoVal`, `StakeStartButton`, `StakeEndButton`, `GitHubInfo`, `WalletUtils`, `BurgerHeading`, `WhatIsThis` |
+| `hex_contract.ts` | ABI, `CHAIN_ADDRESSES`, types (`HexData`, `Globals`, `StakeData`, `ClaimStats`, `DailyData`); `hex_contract.sol` is the reference source |
+| `util.ts` | pure HEX math (`calcPayoutRewards`, `calcAdoptionBonus`, `estimatePayoutRewardsDay`, `calcBigPayDaySlice`, `calcLatePenalty`, `calcStakeEnd`, `calcPercentGain`, `calcPercentAPY`, `cryptoFormat`, `formatUnitsWithCommas`, `getPulseXDaiHex`, `compactHexString`) |
+| `chains.ts` | `TChain` metadata (name, avatar, rpcURL, explorerURL) per chainId; `0` = “Not Connected” |
+| `brand.ts` | `BRAND` / `IS_HM` / `IS_TSA`, folded at build time from `VITE_BRAND`; hostname detection is the `yarn dev` fallback only |
+| `Context.tsx` | `HexContext` carrying `HexData | undefined` |
+| `lib/*.d.ts` | shared type declarations (`UriAccount`, `StakeData`, `StakeList`) |
+
+URL parameters are documented in §3 above.
+
+### Chains & pricing
+
+Supported: `1` Ethereum, `369` PulseChain, `943` PulseChain testnet v4, `10001` ETHW, `513100`
+ETHF, `31337` Hardhat (plus legacy `3` Ropsten). The HEX contract is
+`0x2b591e99afe9f32eaa6214f7b7629768c40eeb39` on every real chain. Switching network resets cached
+queries and reloads hex data for that chain.
+
+Two independent price sources feed the header: `pulsePrice` from the PulseX subgraph (HEX/DAI,
+`getPulseXDaiHex()`), and `ethPrice` from the Uniswap V2 HEX/USDC pair reserves
+(`0xF6DCdce0ac3001B2f67F750bc64ea5beB37B5824`). The header figure follows `headerPriceSource`
+(toggleable), while `USDHEX` — the value used in stake maths — follows the connected `chainId`
+(Ethereum → eth price, otherwise PulseX).
+
+### Conventions & gotchas
+
+- **Strict TypeScript** (`strict`, `noUnusedLocals`, `noUnusedParameters`,
+  `noFallthroughCasesInSwitch`). `yarn build` runs `tsc` first, so an unused variable fails the
+  build.
+- **`bigint` everywhere** for contract values (day, shares, hearts, payouts). `util.ts` maths are
+  bigint; display goes through `formatUnitsWithCommas` / `cryptoFormat` / `d3-format`.
+- **wagmi hooks only** for chain data — `useReadContract` / `useReadContracts` (multicall),
+  `useChainId`, `useAccount`. Don't add ethers; the legacy ethers5 path was removed.
+- **A locked MetaMask is not a disconnected one.** A locked MetaMask still answers `eth_accounts`
+  with the address (it keeps the site authorisation in its own storage), so wagmi reconnects and the
+  app shows as connected, reading public data over RPC. The lock only gates *signing*; the user gets
+  the unlock prompt when a transaction needs a signature. The only dApp-visible “logout” is the user
+  disconnecting the site in MetaMask. There is **no reliable signal for “wallet UI is locked”** —
+  don't gate the UI on it. Auto-reconnect is left enabled on purpose.
+- **Empty state must distinguish loading / error / zero.** Stake reads show “no stakes” only on a
+  *confirmed successful zero-count* read (spinner while loading, retry on error), so a slow RPC never
+  looks like an empty wallet. Don't collapse this back into `stakeList.length === 0`.
+- **Debug logging:** `import _debug from "debug"; const debug = _debug("<scope>")` per module
+  (scopes: app, Stakes, util, …). Enable with `localStorage.debug` / `DEBUG`.
+- **Wording modes:** default locale `en_WP` (the “Free Speech” variant) with `en` as the original.
+  `keySeparator: false`. Strings live in `src/locales/{en,en_WP}/translation.json`; the header's “WP”
+  badge reflects this default.
+- **Be conservative.** History shows several reverts of over-eager AI edits. Don't remove keys,
+  config or “unused” code you don't understand.
+
+### Branding & deployment
+
+Two brands ship from this one codebase (`hexmob.win` and `go.tshare.app`), differing only in
+metadata, palette and images. `AGENTS.md` is the reference for how that works, how to deploy a
+preview (`yarn deploy:dev`) and how to cut a release (`yarn release`) — read it before touching
+`scripts/` or `master.pub/`.
+
 ## 13. License
 If no explicit license file is present, treat this interface as "source-available" for personal use and review. For redistribution or commercial usage, please open an issue requesting clarification.
 
