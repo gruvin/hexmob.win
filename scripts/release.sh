@@ -311,7 +311,7 @@ if [[ -n "${CURRENT_RELEASE}" ]]; then
     fi
 
     print "\nHow should ${NEW_TAG} be published?"
-    print "  [u] update current release (${CURRENT_RELEASE}) → retag to ${NEW_TAG}, replace build, edit notes"
+    print "  [u] update current release (${CURRENT_RELEASE}) → retag to ${NEW_TAG}, replace source+sig files, edit notes"
     print "  [n] new release ${NEW_TAG} → open release notes editor"
     read -k1 TARGET_CHOICE\?"Choice [u/n] (Enter = ${PUBLISH_DEFAULT}): "
     print ""
