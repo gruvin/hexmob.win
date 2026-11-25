@@ -7,7 +7,6 @@ if [[ -f ./.env.local ]]; then
 fi
 
 GIT=$(command -v git)
-GPG=$(command -v gpg)
 LFTP=$(command -v lftp)
 RSYNC=$(command -v rsync)
 # macOS artefacts must never reach a deployed server, or the signed release tarball. One
@@ -30,7 +29,6 @@ LFTP_MIRROR_ARGS="--verbose --parallel=6 --exclude-glob .ht* --exclude-glob .wel
 for JUNK in ${APPLE_JUNK}; do LFTP_MIRROR_ARGS="${LFTP_MIRROR_ARGS} --exclude-glob ${JUNK}"; done
 LFTP_ASSETS_ARGS="--delete ${LFTP_MIRROR_ARGS}"
 unset JUNK
-SCP=/usr/bin/scp
 TAR=/usr/bin/tar
 BUILD_DIR="./dist/" # must include trailing / for rsync !
 DEST_DEV='ftp.hexmob.win:/dev.hexmob.win'
@@ -129,12 +127,22 @@ _require_release_branch() {
 
 # @args: TAG
 _require_tag() {
-    ${GIT} rev-parse --verify --quiet "refs/tags/$1" > /dev/null && return 0
-    _block "tag '$1' not found in this repository" \
+    local TAG=$1
+    ${GIT} rev-parse --verify --quiet "refs/tags/${TAG}" > /dev/null || _block \
+        "tag '${TAG}' not found in this repository" \
         "A release is built from a tag, so the tag has to exist locally." \
         "" \
         "Most recent tags:" \
         "$(${GIT} tag --sort=-v:refname | head -10 | tr '\n' ' ')"
+    # Warn rather than block: historical tags like TS1 exist and a release of one is not the
+    # tool's business. The convention is what release.sh keys its next-version suggestion on
+    # (it greps ^[0-9]+\.[0-9]+\.[0-9]+$), so a v-prefixed or otherwise off-pattern tag will
+    # later be skipped by that suggestion - worth saying out loud once.
+    if [[ ! "${TAG}" =~ '^[0-9]+\.[0-9]+\.[0-9]+$' ]]; then
+        print -r -- "Note: '${TAG}' is not MAJOR.MINOR.PATCH, which is the release convention"
+        print -r -- "      (release.sh suggests the next version from tags of that shape)."
+    fi
+    return 0
 }
 
 # @args: BRAND
@@ -293,8 +301,6 @@ _configure_target() {
         (dev)
             DEST=${DEST_DEV}
             DEST_TRANSPORT=${DEST_DEV_TRANSPORT}
-            DEST_FTP_PROTOCOL=${DEST_FTP_PROTOCOL}
-            DEST_FTP_PORT=${DEST_FTP_PORT}
             DEST_FTP_USERNAME=${DEST_DEV_FTP_USERNAME}
             DEST_FTP_PASSWORD=${DEST_DEV_FTP_PASSWORD}
             [[ "$DEST_TRANSPORT" == 'ftp' ]] && _configure_ftp_destination
@@ -302,8 +308,6 @@ _configure_target() {
         (hexmob)
             DEST=${DEST_HEXMOB}
             DEST_TRANSPORT=${DEST_HEXMOB_TRANSPORT}
-            DEST_FTP_PROTOCOL=${DEST_FTP_PROTOCOL}
-            DEST_FTP_PORT=${DEST_FTP_PORT}
             DEST_FTP_USERNAME=${DEST_HEXMOB_FTP_USERNAME}
             DEST_FTP_PASSWORD=${DEST_HEXMOB_FTP_PASSWORD}
             [[ "$DEST_TRANSPORT" == 'ftp' ]] && _configure_ftp_destination
@@ -311,8 +315,6 @@ _configure_target() {
         (*)
             DEST=${DEST_DEV}
             DEST_TRANSPORT=${DEST_DEV_TRANSPORT}
-            DEST_FTP_PROTOCOL=${DEST_FTP_PROTOCOL}
-            DEST_FTP_PORT=${DEST_FTP_PORT}
             DEST_FTP_USERNAME=${DEST_DEV_FTP_USERNAME}
             DEST_FTP_PASSWORD=${DEST_DEV_FTP_PASSWORD}
             [[ "$DEST_TRANSPORT" == 'ftp' ]] && _configure_ftp_destination

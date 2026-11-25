@@ -32,8 +32,8 @@ Tick these as they are fixed; the sections below hold the detail for each.
 - [ ] **C2** — *DEFERRED* — untested hypothesis: automated GPG signing needs an interactive TTY
 - [x] **C3** — failure reporting was opaque (`CAUGHT: []`)
 - [x] **C4** — `dot-htaccess-sample` described the superseded `index.html` cache strategy
-- [ ] **C5** — tag naming drift (prompt says `v0.2.3B`, real tags are `0.4.26`)
-- [ ] **C6** — dead variables and no-op assignments around target configuration
+- [x] **C5** — tag naming drifted between the prompt text and practice
+- [x] **C6** — dead variables and no-op assignments around the target configuration
 - [ ] **C7** — *DEFERRED* — semi-automate tag → sign → push → GitHub release with `gh` (replace assets + append "Changes" notes on the latest release; new release only for milestones)
 
 ---
@@ -400,113 +400,38 @@ it would have cached nothing and wondered why deploys still looked stale.
   than a 500;
 - the header states it is manual, one-time, and never uploaded (the mirror excludes `.ht*`).
 
-### C5 — tag naming drift between prompt text and practice
+### C5 — tag naming drifted between the prompt text and practice
 
-**What.** The production prompt suggests `eg. v0.2.3B`, but every real tag is
-`MAJOR.MINOR.PATCH` without a `v` (`0.4.26`) — and `release.sh`'s next-version suggestion
-greps `^[0-9]+\.[0-9]+\.[0-9]+$`, so a `v`-prefixed tag would break its suggestion logic
-while still being accepted.
+**What (as it was).** The prompt suggested `eg. v0.2.3B`, but every real release tag is
+`MAJOR.MINOR.PATCH` without a `v` (`0.4.26`) — and `release.sh`'s next-version suggestion greps
+`^[0-9]+\.[0-9]+\.[0-9]+$`, so a `v`-prefixed tag would be silently skipped by it while still
+being accepted for a deploy.
 
-**Fix.** Update the prompt example, and validate the entered tag against the same regex
-`release.sh` uses. Low risk, but the tag ends up in the UI header and in the signed artifact
-name, so consistency matters.
+**Done** — `<COMMIT>`. The prompt now says `eg. 0.4.26`, and `_require_tag` warns (rather than
+blocks) when the tag is not `MAJOR.MINOR.PATCH`, naming `release.sh`'s suggestion logic as the
+reason. Blocking would be wrong: historical tags like `TS1` exist and redeploying one is the
+operator's call. The tag still ends up in the UI header and in the signed artifact name, so
+consistency matters enough to say it out loud once per run.
 
----
+**Verify.** `_require_tag 0.4.26` → silent pass; `_require_tag TS1` → note printed, run
+continues; `_require_tag 9.9.9` → blocked with the recent-tags list.
 
 ### C6 — dead code and no-op assignments around the target configuration
 
-**What.** `GPG` (`:10`) and `SCP` are resolved but unused on `dev` (`GPG` is used on master,
-`SCP` on neither); `_configure_target` contains
-self-assignments like `DEST_FTP_PROTOCOL=${DEST_FTP_PROTOCOL}` (`:79-80`, `:88-89`,
-`:97-98`) that do nothing; the FTP protocol/port are global constants but treated as
-per-target state.
+**What (as it was).** `GPG` and `SCP` were resolved at the top and never used (signing happens
+by hand on this branch — see C1); `_configure_target` restated the global `DEST_FTP_PROTOCOL`
+and `DEST_FTP_PORT` as self-assignments in all three branches
+(`DEST_FTP_PROTOCOL=${DEST_FTP_PROTOCOL}`), which do nothing but suggest per-target state that
+does not exist.
 
-**Impact.** None functional, but these are the kind of leftovers that made A1 hard to spot.
+**Done** — `<COMMIT>`. Both variables and all six self-assignment lines are gone; protocol and
+port remain plain globals, which is what they are. Verified that all four target combinations
+still resolve correctly (`tsa` → rsync to the ssh host, `dev`/`hexmob` → FTPS to the shared
+host, and `DEPLOY_TARGET=dev TARGET=tsa` → the dev destination).
 
-**Fix.** Delete what is unused, or make protocol/port genuinely per-target (`DEST_<TARGET>_FTP_*`)
-rather than restating a constant three times. Fold into whichever item next touches that
-region.
-
-### C7 — DEFERRED — semi-automate the tag → sign → push → GitHub release cycle with `gh`
-
-**Current manual process** (as actually practised): merge `dev` → `master`; create a new
-version tag by hand; sign it; push `master` + tags to GitHub; then either **attach the new
-build to the existing latest release** (the usual case — a small patch) or, when the patch is
-significant enough, **create a brand-new release** and attach it there. For the usual case
-that means: move the existing release onto the **newly pushed tag**, delete the previous
-build's assets from it, upload the new signed pair from `release/`, and append a line or two
-to the release's "Changes" notes. Tedious, and done by hand every time.
-
-**Why a release looks the way it does.** Releases here are not a distribution channel —
-nothing is installed from them. They exist so the signed source of a deploy can be checked
-against the JavaScript a browser actually runs. That makes "one release per milestone,
-carrying only the current build, with append-only notes" the *correct* model rather than an
-unconventional one. Rationale is recorded in `AGENTS.md` §5 ("What a published release is for").
-
-**What already exists.** `scripts/release.sh` on `master` implements roughly the first half:
-verify clean state on `dev`, merge `dev` → `master`, suggest the next patch version, `git tag
--s`, run `yarn deploy` and let the operator answer the production prompts, verify the tarball
-`.tgz` + `.sig` exist, push `master` + tags, then `gh release create <tag> … --draft` with both
-assets. What it does **not** model is the release *policy* — that most builds join the existing
-release rather than starting a new one.
-
-**Wanted: one command, four decisions made for me.** Semi-automated, with the operator still
-confirming at the two points that matter (the production deploy, and which release the build
-lands in):
-
-1. verify clean state and that we are on `dev`;
-2. merge `dev` → `master`;
-3. derive the next patch version (reuse `release.sh`'s logic) and create a **signed** tag;
-4. run the production deploy (`deploy.sh` prompts unchanged);
-5. hard-stop if `release/hexmob.win-<TAG>-build.tgz.sig` is missing — the artifact is not
-   publishable unsigned (gated on C2);
-6. push `master` + tags **before** touching releases — `gh release` operations require the tag
-   to already exist on the remote;
-7. resolve the target release and prompt, defaulting to the latest existing release
-   (`gh release view --json tagName,isLatest`), with a "create new release" option for
-   significant patches:
-   - existing (the usual path) → **retag it onto the new tag** (`gh release edit <release>
-     --tag <newtag>`, possible only once the tag exists remotely, hence step 6), then delete
-     the previous build's assets (`gh release delete-asset <newtag> <name> --yes`, `.tgz` and
-     `.sig`), then `gh release upload <newtag> release/*.tgz release/*.tgz.sig --clobber`,
-     then append the new entry to the "Changes" notes (`gh release edit <newtag>
-     --notes-file <tmp>`);
-   - new (milestone) → `gh release create <tag> release/*.tgz release/*.tgz.sig --draft
-     --title … --notes …`, optionally seeded from `git log <prevTag>..<tag> --oneline`;
-8. print the resulting release URL.
-
-**Design notes / gotchas.**
-
-- **Retagging is part of the usual path.** The existing release is moved onto the new tag
-  (`gh release edit --tag`), so the release always advertises the build that is currently
-  served, while the individual tags stay in git as the per-build record. This must happen
-  *after* `git push --tags` (a release can only point at a tag that exists on the remote) and
-  *before* the asset swap (so the assets are addressed under the release's new tag).
-  Side effect to be aware of: GitHub release URLs are `/releases/tag/<tag>`, so any link to
-  the release under its previous tag stops resolving — fine here, since the release is a
-  moving pointer by design, but don't rely on old release URLs.
-- **Replacing the previous build is the normal path, not the exception.** Because asset names
-  embed the tag (`hexmob.win-<TAG>-build.tgz`), uploading a new tag's files does *not* displace
-  the old ones — they accumulate. The step must be: delete the stale assets
-  (`gh release delete-asset <tag> <name> --yes`, for both the `.tgz` and its `.sig`), then
-  `gh release upload <tag> release/*.tgz release/*.tgz.sig --clobber`. Without the delete, a
-  release ends up advertising builds that no longer correspond to anything served.
-- **The notes are an append-only log, so never regenerate them.** Fetch the current body
-  (`gh release view <tag> --json body -q .body`), append the new entry under the existing
-  "Changes" heading, and write it back with `gh release edit <tag> --notes-file <tmp>`. Seeding
-  notes from `git log <prevTag>..<tag>` is fine for a *new* release; it would wipe the
-  accumulated log on an existing one.
-- Never silently overwrite assets on an already-published release — confirm the delete step
-  explicitly, and default new releases to `--draft`.
-- Draft releases are excluded from `gh release list` unless `--include-drafts` is passed, so a
-  "latest release" lookup can pick the wrong target if drafts are in play.
-- The decoupling is deliberate: **tags are per build** (the deploy and the signature are
-  tag-anchored), **releases are per milestone** (one release carries the current build). Now
-  stated in `AGENTS.md` §5 — keep both in step.
-- Depends on C1 (which branch owns release tooling) and C2 (does automated signing actually
-  work). Don't start before those are settled — this item's step 5 is meaningless otherwise.
-
----
+**Note for C1.** When signing is wired up on this branch, it will need
+`GPG=$(command -v gpg)` again — that is the one thing deliberately removed here, on the
+grounds that unused tool lookups are how A1 stayed invisible.
 
 ## D. Done / decisions (for context, do not re-litigate)
 
