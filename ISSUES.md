@@ -202,7 +202,7 @@ but a renewal that coincided with a deploy could have failed). The same command 
 against `/public_html` on production — where an ACME renewal mid-deploy, or any other
 directory the host keeps in the document root, is the same hazard.
 
-**Done** — `<COMMIT>`. `--delete` is no longer offered at the web root at all. The root mirror
+**Done** — `cc795f4`. `--delete` is no longer offered at the web root at all. The root mirror
 is additive (`mirror -R` with exclusions, no `--delete`), and the only destructive
 reconciliation happens against `assets/`, which is 100% Vite output and therefore safe to
 prune exactly:
