@@ -1,12 +1,15 @@
+@use "sass:color";
+
 $hex-crimson: #c60990;
 $hex-orange: #dd6622;
 $hex-yellow: #e0c000;
 $hex-success: #80d631;
+$col-secondary: #333030;
 $col-dark: #252525;
 $col-light: #ddd;
 $theme-colors: (
   "primary": $hex-orange,
-  "secondary": #333030,
+  "secondary": $col-secondary,
   "dark": $col-dark,
   "success": $hex-success,
   "info": $hex-yellow,
@@ -15,19 +18,20 @@ $theme-colors: (
   "light": $col-light,
   "muted": #505050,
 
-  "primary-faded":  scale-color($hex-orange,  $lightness: -55%),
-  "secondary-faded":scale-color(#333030,    $lightness: -55%),
-  "success-faded":  scale-color($hex-success, $lightness: -55%),
-  "info-faded":     scale-color($hex-yellow,  $lightness: -55%),
-  "warning-faded":  scale-color($hex-orange,  $lightness: -55%),
-  "danger-faded":   scale-color($hex-crimson, $lightness: -55%),
-  "light-faded":    scale-color($col-light,   $lightness: -55%),
+  "primary-faded":      color.scale($hex-orange,    $lightness: -55%),
+  "secondary-faded":    color.scale($col-secondary, $lightness: -55%),
+  "success-faded":      color.scale($hex-success,   $lightness: -55%),
+  "info-faded":         color.scale($hex-yellow,    $lightness: -55%),
+  "warning-faded":      color.scale($hex-orange,    $lightness: -55%),
+  "danger-faded":       color.scale($hex-crimson,   $lightness: -55%),
+  "light-faded":        color.scale($col-light,     $lightness: -55%),
 
-  "primary-darkened":  scale-color($hex-orange,   $lightness: -85%),
-  "secondary-darkened":scale-color(#333030,     $lightness: -85%),
-  "success-darkened":  scale-color($hex-success,  $lightness: -85%),
-  "info-darkened":     scale-color($hex-yellow,   $lightness: -89%),
-  "warning-darkened":  scale-color($hex-orange,   $lightness: -85%),
-  "danger-darkened":   scale-color($hex-crimson,  $lightness: -85%),
-  "light-darkened":    scale-color($col-light,    $lightness: -85%),
+  "primary-darkened":   color.scale($hex-orange,    $lightness: -85%),
+  "secondary-darkened": color.scale($col-secondary, $lightness: -85%),
+  "success-darkened":   color.scale($hex-success,   $lightness: -85%),
+  // yellow needs a little more than the uniform -85% to read as darkened
+  "info-darkened":      color.scale($hex-yellow,    $lightness: -89%),
+  "warning-darkened":   color.scale($hex-orange,    $lightness: -85%),
+  "danger-darkened":    color.scale($hex-crimson,   $lightness: -85%),
+  "light-darkened":     color.scale($col-light,     $lightness: -85%),
 );

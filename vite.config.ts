@@ -18,6 +18,11 @@ export default defineConfig({
       }
     }
   },
+  server: {
+    // scripts/deploy.sh builds inside ./staging (gitignored worktrees). Don't let a running
+    // dev server churn through it while a deploy is in progress.
+    watch: { ignored: ['**/.git/**', '**/node_modules/**', '**/staging/**'] },
+  },
   css: {
     preprocessorOptions: {
       scss: {

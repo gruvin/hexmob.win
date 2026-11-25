@@ -1,5 +1,7 @@
+import { IS_HM } from "./brand"
+
 const branding = () => {
-    if (window.hostIsHM) {
+    if (IS_HM) {
         // HEXMOB.win branding
         return (
             <div id="branding">

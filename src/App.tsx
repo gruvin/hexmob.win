@@ -7,6 +7,7 @@ import { Address } from "viem";
 import { getPulseXDaiHex } from "./util";
 import { HexContext } from "./Context";
 import { UriAccount } from "./lib/App";
+import { IS_HM, IS_TSA } from "./brand";
 
 import CHAINS from "./chains";
 import HEX, { HexData } from "./hex_contract";
@@ -31,20 +32,10 @@ const debug = _debug("app");
 
 const uriQuery = new URLSearchParams(window.location.search);
 
-switch (window.location.hostname) {
-  case "hexmob.win":
-  case "dev.hexmob.win":
-    window.hostIsTSA = false;
-    window.hostIsHM = true;
-    break;
-
-  case "127.0.0.1":
-  case "localhost":
-  case "go.tshare.app":
-  default:
-    window.hostIsTSA = true;
-    window.hostIsHM = false;
-}
+// Kept for compatibility/debugging; components should use IS_HM / IS_TSA from ./brand so
+// that the branch folds away in production builds.
+window.hostIsHM = IS_HM;
+window.hostIsTSA = IS_TSA;
 
 const Header = (props: {
   usdhex: number;

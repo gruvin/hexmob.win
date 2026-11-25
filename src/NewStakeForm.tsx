@@ -18,6 +18,7 @@ import { ResponsiveContainer, Bar, BarChart, Rectangle, ReferenceLine, Tooltip, 
 import { SelectCallback } from '@restart/ui/types'
 import imgGameLogo from './assets/game-logo.png'
 import { Trans, useTranslation } from "react-i18next"
+import { IS_TSA } from './brand'
 
 import _axios from 'axios'
 const axios = _axios.create({
@@ -370,7 +371,7 @@ export const NewStakeForm = () => {
                         </Row>
                         <Row className="my-2 text-danger mt-3">
                             <Col className="col-2 p-0">
-                                {window.hostIsTSA && <Image
+                                {IS_TSA && <Image
                                     className="pt-3"
                                     src={imgGameLogo} title="Play the Heart Game! :-)"
                                     style={{ width: "90%" }}
