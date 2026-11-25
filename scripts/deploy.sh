@@ -263,44 +263,6 @@ _remove_worktrees() {
     return 0
 }
 
-# @args: TGZ path
-# Signs the release archive and verifies the signature it just produced. --batch is deliberate:
-# unattended signing works for a passphrase-less key (ISSUES.md C2), and if the key ever needs a
-# passphrase or a smartcard PIN, gpg must fail fast instead of blocking the deploy behind a
-# pinentry prompt. On failure the command is copied to the clipboard so the operator can run it
-# by hand in a terminal that can prompt.
-_sign_release() {
-    local TGZ=$1
-    local SIG="${TGZ}.sig"
-    # Calling this without a path used to hand gpg an empty filename, which failed with a
-    # confusing "can't open ''" - a bug in the caller, so say so rather than blaming the key.
-    if [[ -z "${TGZ}" ]]; then
-        ui_err "signing called without an archive path - the archive is UNSIGNED"
-        return 1
-    fi
-    if [[ -z "${GPG}" ]] || [[ ! -x "${GPG}" ]]; then
-        print "\n  gpg not found: release archive is UNSIGNED."
-        return 1
-    fi
-    ui_stage "Signing the release archive"
-    if ${GPG} --batch --yes -b "${TGZ}"; then
-        if ${GPG} --verify "${SIG}" "${TGZ}" > /dev/null 2>&1; then
-            ui_ok "signed and verified: ${SIG}"
-            return 0
-        fi
-        ui_warn "signature written but verification failed: ${SIG}"
-        return 1
-    fi
-    ui_err "signing failed - the archive is UNSIGNED"
-    print "  If the signing key needs a passphrase or a card PIN, run this in a terminal:"
-    print "      gpg --yes -b \"${TGZ}\""
-    echo -n "gpg --yes -b ${TGZ}" | pbcopy 2>/dev/null && print "  (command copied to clipboard)"
-    return 1
-}
-
-# Success path only. The main tree was never touched, so there is no state to restore;
-# the one convenience kept from the old flow: a release that started on master leaves
-# the operator on dev, because further work does not belong on the release branch.
 # Deploy touches no branches: the overlay lives in a worktree that is thrown away, and the
 # caller decides where to leave HEAD (scripts/release.sh returns to dev).
 _finish_release() {
@@ -662,8 +624,8 @@ case "$DEPLOY_TYPE" in
                     || _block "could not create ${RELEASE_TGZ}"
                 print "Done!"
 
-                print ""; ui_ok "${C_BOLD}live deployment completed${C_RESET}"
-                _sign_release "${RELEASE_TGZ}" || true
+                print ""; ui_ok "${C_BOLD}both hosts updated${C_RESET}"
+                ui_dim "archive: ${RELEASE_TGZ} (signing belongs to yarn release)"
                 ;;
         esac
         _finish_release

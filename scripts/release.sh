@@ -46,8 +46,10 @@ if [[ ! -t 0 ]]; then
 fi
 
 
+ORIG_PWD="$PWD"   # the script refuses to run outside the project root, so this is the repo
 GIT=$(command -v git)
 GH=$(command -v gh)
+GPG=$(command -v gpg)
 
 # ── Dry run ─────────────────────────────────────────────────────────────────
 # `yarn release --dry-run` (or DRY_RUN=1) exercises every prompt and prints the commands it
@@ -84,7 +86,43 @@ if [[ -z "${GH}" ]]; then
     exit 1
 fi
 
-# ── 1. Start from dev, with nothing uncommitted ──────────────────────────────
+# @args: TGZ path
+# Signs the release archive and verifies the signature it produced. --batch is deliberate:
+# unattended signing works for a passphrase-less key, and a key that needs a prompt or a card PIN
+# must fail fast rather than block the release behind pinentry. On failure the command is copied
+# to the clipboard so it can be run in a terminal that can prompt.
+#
+# Signing lives here, not in deploy.sh: deploy builds and publishes, this script owns the tag,
+# the signature, the push and the release. That split is what allows a retry to sign an archive
+# a previous attempt already built, without rebuilding or redeploying anything.
+_sign_release() {
+    local TGZ=$1
+    local SIG="${TGZ}.sig"
+    if [[ -z "${TGZ}" ]]; then
+        ui_err "signing called without an archive path - the archive is UNSIGNED"
+        return 1
+    fi
+    if [[ -z "${GPG}" ]] || [[ ! -x "${GPG}" ]]; then
+        ui_err "gpg not found - the archive is UNSIGNED"
+        return 1
+    fi
+    ui_stage "Signing the release archive"
+    if ${GPG} --batch --yes -b "${TGZ}"; then
+        if ${GPG} --verify "${SIG}" "${TGZ}" > /dev/null 2>&1; then
+            ui_ok "signed and verified: ${SIG}"
+            return 0
+        fi
+        ui_warn "signature written but verification failed: ${SIG}"
+        return 1
+    fi
+    ui_err "signing failed - the archive is UNSIGNED"
+    ui_dim "if the signing key needs a passphrase or a card PIN, run this in a terminal:"
+    ui_dim "    gpg --yes -b \"${TGZ}\""
+    echo -n "gpg --yes -b ${TGZ}" | pbcopy 2>/dev/null && ui_dim "(command copied to clipboard)"
+    return 1
+}
+
+# ── 1. Preconditions: on master, clean tree ──────────────────────────────────
 CURRENT_BRANCH=$(${GIT} rev-parse --abbrev-ref HEAD)
 if [[ "${CURRENT_BRANCH}" != "master" ]]; then
     ui_err "release must be run from master (currently on '${CURRENT_BRANCH}')"
@@ -405,33 +443,70 @@ if _notes_same "${NOTES_TMP}" "${NOTES_TMP}.orig"; then
 fi
 rm -f "${NOTES_TMP}.orig"
 
-# ── 7. Production deploy ─────────────────────────────────────────────────────
-# A release exists only to publish a tag, so the deploy's "production or dev?" and typed-yes
-# prompts are answered here rather than asked again. The deploy's remaining gate - build this
-# tag and deploy it to both hosts, yes/no - is left in place: it is the point of no return.
+# ── 7. Build and publish — or reuse what a previous attempt already built ───
+# A release exists only to publish a tag, so the deploy's own prompts are answered here. But a
+# retry does not always need the deploy: if the last attempt got as far as building and
+# publishing and then failed at signing or at a gh write, the archive it produced is still the
+# build of this tag. Rebuilding would be wasted work (two Vite builds and two full mirrors), so
+# offer to reuse it.
+RELEASE_DIR="${ORIG_PWD}/release"
+RELEASE_TGZ="${RELEASE_DIR}/hexmob.win-${NEW_TAG}-build.tgz"
+RELEASE_SIG="${RELEASE_TGZ}.sig"
+
 ui_stage "Production deploy of ${NEW_TAG}"
-ui_dim "deploy.sh builds and publishes; this script owns the tag, the push and the release"
-if [[ ${DRY_RUN} -eq 1 ]]; then
-    print "  [dry-run] DEPLOY_KIND=p DEPLOY_CONFIRM=yes DEPLOY_TAG=${NEW_TAG} ./scripts/deploy.sh"
-    print "  [dry-run] (production deploy skipped - no hosts touched, no archive produced)"
+ui_dim "deploy.sh builds and publishes; this script owns the tag, the signature, the push and the release"
+
+REUSE_ARCHIVE=0
+if [[ -f "${RELEASE_TGZ}" ]]; then
+    SIG_STATE="unsigned"
+    if [[ -f "${RELEASE_SIG}" ]] && ${GPG} --verify "${RELEASE_SIG}" "${RELEASE_TGZ}" > /dev/null 2>&1; then
+        SIG_STATE="signed and verified"
+    fi
+    ui_head "An archive from a previous attempt already exists:"
+    ui_dim "${RELEASE_TGZ}"
+    ui_dim "built $(date -r "${RELEASE_TGZ}" '+%Y-%m-%d %H:%M'), ${SIG_STATE}"
+    ui_dim "it is the build of ${NEW_TAG}, the same tag this run is publishing"
+    read -k1 YN\?"Reuse it and skip the rebuild + redeploy? [Yn] "
+    print ""
+    case "${YN}" in
+        (n|N) REUSE_ARCHIVE=0 ;;
+        (*)   REUSE_ARCHIVE=1 ;;
+    esac
+fi
+
+if [[ ${REUSE_ARCHIVE} -eq 1 ]]; then
+    ui_ok "reusing the existing archive - no rebuild, no redeploy"
     DEPLOY_STATUS=0
 else
-    DEPLOY_KIND=p DEPLOY_CONFIRM=yes DEPLOY_TAG="${NEW_TAG}" ./scripts/deploy.sh
-    DEPLOY_STATUS=$?
+    if [[ ${DRY_RUN} -eq 1 ]]; then
+        print "  [dry-run] DEPLOY_KIND=p DEPLOY_CONFIRM=yes DEPLOY_TAG=${NEW_TAG} ./scripts/deploy.sh"
+        print "  [dry-run] (deploy skipped in a dry run - no hosts touched, no archive produced)"
+        DEPLOY_STATUS=0
+    else
+        DEPLOY_KIND=p DEPLOY_CONFIRM=yes DEPLOY_TAG="${NEW_TAG}" ./scripts/deploy.sh
+        DEPLOY_STATUS=$?
+    fi
 fi
+
 if [[ ${DEPLOY_STATUS} -ne 0 ]]; then
     ui_err "deploy script exited with status ${DEPLOY_STATUS}"
-    print "The tag ${NEW_TAG} exists locally but nothing has been pushed."
-    print "  - re-run: the tag is reused, and both brands are rebuilt and re-published"
+    print "  The tag ${NEW_TAG} exists locally but nothing has been pushed."
+    print "  - re-run: the tag is reused; any archive already built will be offered for reuse"
     print "  - abandon: git tag -d ${NEW_TAG}"
     exit ${DEPLOY_STATUS}
 fi
 
-# ── 8. The signed archive must exist ────────────────────────────────────────
-RELEASE_DIR="./release"
-RELEASE_TGZ="${RELEASE_DIR}/hexmob.win-${NEW_TAG}-build.tgz"
-RELEASE_SIG="${RELEASE_TGZ}.sig"
+# Sign, unless this archive already carries a valid signature (that is the signing-failed retry).
+if [[ -f "${RELEASE_SIG}" ]] && ${GPG} --verify "${RELEASE_SIG}" "${RELEASE_TGZ}" > /dev/null 2>&1; then
+    ui_dim "archive already signed and verified - not re-signing"
+elif [[ ${DRY_RUN} -eq 1 ]]; then
+    ui_dim "[dry-run] would sign ${RELEASE_TGZ}"
+else
+    _sign_release "${RELEASE_TGZ}" || true
+fi
 
+# ── 8. The signed archive must exist ────────────────────────────────────────
+# Paths were resolved in step 7; this is the final gate before anything leaves the machine.
 if [[ ${DRY_RUN} -eq 1 ]]; then
     ui_dim "(dry-run: skipping the archive/signature check - the deploy that produces them was skipped)"
 elif [[ ! -f "$RELEASE_TGZ" ]]; then
@@ -441,7 +516,7 @@ fi
 if [[ ${DRY_RUN} -eq 0 && ! -f "$RELEASE_SIG" ]]; then
     ui_err "${RELEASE_SIG} not found."
     print "The archive is unsigned, and a release whose signature is missing is pointless."
-    print "Sign it in a terminal that can prompt for the key, then re-run from step 6:"
+    print "Sign it in a terminal that can prompt for the key, then re-run: the archive will be reused."
     print "  gpg --yes -b ${RELEASE_TGZ}"
     exit 1
 fi

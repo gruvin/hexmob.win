@@ -371,8 +371,11 @@ the ordering constraints that are easy to get wrong: the push must precede any `
 call (they address tags that have to exist on the remote), and the archive must be signed
 before it is published.
 
-**Signing is automatic.** `deploy.sh`'s `_sign_release` calls `gpg --batch --yes -b` and then
-verifies its own signature. `--batch` is the important part: unattended signing works for the
+**Signing is automatic, and belongs to `release.sh`.** `_sign_release` calls
+`gpg --batch --yes -b` and then verifies its own signature; `deploy.sh` builds, publishes and
+tars, and nothing more. Keeping the two apart is what makes a retry cheap: if the last attempt
+failed at signing or at a `gh` write, the archive it produced is still the build of this tag, so
+the next run offers to reuse it and skip the rebuild and redeploy entirely. `--batch` is the important part: unattended signing works for the
 passphrase-less key this machine uses, and if a key ever needs a passphrase or a smartcard PIN
 the deploy must fail fast with an UNSIGNED warning plus the command on the clipboard, rather
 than blocking behind a pinentry prompt. (The historical belief that automated signing could not
