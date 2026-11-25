@@ -363,6 +363,21 @@ current release; a **minor or major** bump (`0.4.26` → `0.5.0`) starts a new o
 not `MAJOR.MINOR.PATCH` (e.g. `TS1`) fall back to "update", and the prompt always shows which
 default applies, so it can be overridden either way.
 
+**A retry reuses the tag; it does not need a new one.** The tag is created before the deploy and
+pushed only after the release steps, so a failed run normally leaves a tag nobody else can see.
+`release.sh` therefore works out what state the tag is in and behaves accordingly:
+
+| tag state | behaviour |
+|---|---|
+| no local tag | create and sign it |
+| local, not on `origin` | **reuse** it — it is already signed, and re-signing churns the object |
+| local, on `origin`, no release | **resume** the release for it (nothing was published yet) |
+| local, on `origin`, already released | **block** unless `--republish`, because continuing would replace published assets |
+
+It never recreates a tag that might already be public: re-signing changes the tag object, and a
+published tag is precisely what a signed release exists to keep immutable. A local tag that is
+lightweight rather than annotated is the one exception — it is deleted and recreated signed.
+
 **Rehearse it with `yarn release --dry-run`** (or `DRY_RUN=1`). Every prompt runs, read-only
 steps hit the API for real — so the release list and the notes body you edit are live — and each
 destructive step is printed as `[dry-run] …` instead of executed: no merge, no tag, no deploy, no

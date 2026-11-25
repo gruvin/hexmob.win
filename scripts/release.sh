@@ -29,9 +29,11 @@ GH=$(command -v gh)
 # Read-only steps still run for real, so the release list and the notes body in $EDITOR are
 # the live ones - that is the point of rehearsing it.
 DRY_RUN=${DRY_RUN:-0}
+REPUBLISH=${REPUBLISH:-0}
 for ARG in "$@"; do
     case "$ARG" in
         (--dry-run|--dryrun|-n) DRY_RUN=1 ;;
+        (--republish) REPUBLISH=1 ;;
         (*) print "ERROR: unknown argument '${ARG}' (only --dry-run is understood)"; exit 1 ;;
     esac
 done
@@ -99,16 +101,58 @@ if [[ -z "$NEW_TAG" ]]; then
     exit 0
 fi
 
-# If the tag already exists, offer to delete and recreate it
-if ${GIT} rev-parse "$NEW_TAG" > /dev/null 2>&1; then
-    read -k1 YN\?"Tag '${NEW_TAG}' already exists. Delete and recreate? [y/N]: "
-    print ""
-    if [[ "$YN" == "y" || "$YN" == "Y" ]]; then
-        _run ${GIT} tag -d "${NEW_TAG}" || { print "ERROR: could not delete tag"; _run ${GIT} checkout dev; exit 1; }
+# ── 3b. Tag state ────────────────────────────────────────────────────────────
+# Three states, three behaviours. The tag is created before the deploy and pushed after the
+# release steps, so a failed run normally leaves a tag that nobody else can see - retrying with
+# the same tag is finishing an interrupted job, not rewriting history.
+#   no local tag                 -> create and sign it
+#   local, not on origin         -> reuse it (it is already signed; re-signing churns the object)
+#   local, on origin, no release -> resume: the tag is public, nothing was published yet
+#   local, on origin, released   -> only with --republish: it would replace published assets
+_remote_tag_state() { # absent | present | unknown
+    local OUT RC
+    OUT=$(${GIT} ls-remote --tags origin "refs/tags/$1" 2>/dev/null)
+    RC=$?
+    [[ ${RC} -ne 0 ]] && { print -n unknown; return; }
+    [[ -n "${OUT}" ]] && { print -n present; return; }
+    print -n absent
+}
+
+TAG_MODE=create
+if ${GIT} rev-parse --verify --quiet "refs/tags/${NEW_TAG}" > /dev/null; then
+    if [[ "$(${GIT} cat-file -t "refs/tags/${NEW_TAG}" 2>/dev/null)" != "tag" ]]; then
+        print "\nWARNING: ${NEW_TAG} exists but is not an annotated (signed) tag - recreating it."
+        _run ${GIT} tag -d "${NEW_TAG}" > /dev/null || { print "ERROR: could not delete ${NEW_TAG}"; exit 1; }
     else
-        print "Aborted."
-        ${GIT} checkout dev
-        exit 0
+        REMOTE_STATE=$(_remote_tag_state "${NEW_TAG}")
+        case "${REMOTE_STATE}" in
+            (absent)
+                TAG_MODE=reuse
+                print "\nTag ${NEW_TAG} exists locally and is not on origin - reusing it (nothing is rewritten)."
+                print "  summary: $(${GIT} for-each-ref --format='%(contents:subject)' "refs/tags/${NEW_TAG}")"
+                ;;
+            (present)
+                if ${GH} release view "${NEW_TAG}" > /dev/null 2>&1; then
+                    if [[ ${REPUBLISH} -eq 0 ]]; then
+                        print "\nERROR: ${NEW_TAG} is pushed AND already has a release."
+                        print "Continuing would rebuild, redeploy and REPLACE that release's published assets."
+                        print "  - to do that deliberately:  yarn release --republish"
+                        print "  - otherwise pick the next patch tag - a new tag says why the build changed."
+                        exit 1
+                    fi
+                    TAG_MODE=republish
+                    print "\n--republish: ${NEW_TAG} is released; its assets will be replaced."
+                else
+                    TAG_MODE=resume
+                    print "\nTag ${NEW_TAG} is pushed but has no release yet - resuming the release for it."
+                fi
+                ;;
+            (*)
+                print "\nERROR: cannot tell whether ${NEW_TAG} is on origin (git ls-remote failed)."
+                print "Refusing to recreate a tag that might already be public."
+                exit 1
+                ;;
+        esac
     fi
 fi
 
@@ -116,22 +160,26 @@ fi
 # The tag annotation is the human record *inside* the signed object (`git show <tag>`), and
 # every release tag in this repo carries a one-line summary. It is not the same thing as the
 # release notes: this says what the build is, the notes accumulate on the GitHub release.
-print ""
-read TAG_SUMMARY\?"One-line summary for the tag (eg. 'Fixed penalty calcs for stakes including BPD'): "
-if [[ -z "${TAG_SUMMARY//[[:space:]]/}" ]]; then
-    print "\nERROR: a one-line summary is required — it is the description inside the signed tag."
-    print "Nothing has been merged, tagged, deployed or pushed."
-    _run ${GIT} checkout dev 2>/dev/null
-    exit 1
-fi
+if [[ "${TAG_MODE}" == "create" ]]; then
+    print ""
+    read TAG_SUMMARY\?"One-line summary for the tag (eg. 'Fixed penalty calcs for stakes including BPD'): "
+    if [[ -z "${TAG_SUMMARY//[[:space:]]/}" ]]; then
+        print "\nERROR: a one-line summary is required — it is the description inside the signed tag."
+        print "Nothing has been merged, tagged, deployed or pushed."
+        _run ${GIT} checkout dev 2>/dev/null
+        exit 1
+    fi
 
-print "\nCreating signed tag ${NEW_TAG} ..."
-print "  summary: ${TAG_SUMMARY}"
-_run ${GIT} tag -s "${NEW_TAG}" -m "${TAG_SUMMARY}" || {
-    print "ERROR: git tag failed (smartcard PIN or passphrase needed for the tag signature?)"
-    _run ${GIT} checkout dev
-    exit 1
-}
+    print "\nCreating signed tag ${NEW_TAG} ..."
+    print "  summary: ${TAG_SUMMARY}"
+    _run ${GIT} tag -s "${NEW_TAG}" -m "${TAG_SUMMARY}" || {
+        print "ERROR: git tag failed (smartcard PIN or passphrase needed for the tag signature?)"
+        _run ${GIT} checkout dev
+        exit 1
+    }
+else
+    print "\nTag ${NEW_TAG} already exists (${TAG_MODE}) - not re-creating it."
+fi
 
 # ── 5. Production deploy ─────────────────────────────────────────────────────
 # A release exists only to publish a tag, so the deploy's "production or dev?" and typed-yes

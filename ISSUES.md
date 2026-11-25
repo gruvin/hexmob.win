@@ -519,6 +519,14 @@ abandoned attempt is not what the live site serves.
   Verified in a rig: with all three supplied, `deploy.sh` goes straight from the banner to the
   summary and the single gate, and answering "n" aborts with no worktree created.
 
+**Tag reuse on retry** (`<TAGSTATE>`): the interactive "Tag already exists. Delete and recreate?"
+prompt was too blunt — it offered the dangerous option (re-signing, hence force-pushing) for a tag
+that might already be public. `release.sh` now derives the state instead: no tag → create; local
+and not on `origin` → reuse as-is; on `origin` without a release → resume; on `origin` with a
+release → block unless `--republish`. Verified against a real bare repo as `origin` (so
+`git ls-remote` is genuine) with a stubbed `gh`: all four states take the right path, and the
+`--republish` override is the only way into the last one.
+
 **Three flaws the dry-run rehearsal itself found** (fixed in `a6d3d62`): `[dry-run]` lines for
 asset deletions were swallowed by a `> /dev/null` redirect; the closing message pointed at a
 notes file the EXIT trap deletes; and the milestone path seeded notes from `<prevTag>..<newTag>`,
