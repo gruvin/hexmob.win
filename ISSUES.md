@@ -498,7 +498,7 @@ abandoned attempt is not what the live site serves.
   mutating calls, unchanged tag list, clean tree, `dev` still checked out, and the final notes
   printed.
 
-  Also reworded after the first real rehearsal (`<UXHASH>`): the choice prompt read
+  Also reworded after the first real rehearsal (`45a8bc4`): the choice prompt read
   "Publish to '0.4.26'?", which sounded like publishing *onto* the old tag when it means
   retagging it. It now spells out both branches ("update the existing release \"<title>\"
   (currently on tag <tag>) … retagged; assets replaced; notes edited" vs "create a NEW
