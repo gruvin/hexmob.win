@@ -31,7 +31,7 @@ Tick these as they are fixed; the sections below hold the detail for each.
 - [ ] **C1** — *DEFERRED* — `dev` and `master` disagree on how the release is signed; `release.sh` exists only on `master`
 - [ ] **C2** — *DEFERRED* — untested hypothesis: automated GPG signing needs an interactive TTY
 - [x] **C3** — failure reporting was opaque (`CAUGHT: []`)
-- [ ] **C4** — `dot-htaccess-sample` describes the superseded `index.html` cache strategy
+- [x] **C4** — `dot-htaccess-sample` described the superseded `index.html` cache strategy
 - [ ] **C5** — tag naming drift (prompt says `v0.2.3B`, real tags are `0.4.26`)
 - [ ] **C6** — dead variables and no-op assignments around target configuration
 - [ ] **C7** — *DEFERRED* — semi-automate tag → sign → push → GitHub release with `gh` (replace assets + append "Changes" notes on the latest release; new release only for milestones)
@@ -382,20 +382,23 @@ only diagnostic was `print "D'oh! CAUGHT: [$CAUGHT]"`. Every failure therefore r
 **Verify.** Each guard and each phase failure was exercised: the harness injects build failures
 and unreachable destinations, and the messages name the phase, the exit code and the paths.
 
-### C4 — `dot-htaccess-sample` describes the superseded cache strategy
+### C4 — `dot-htaccess-sample` described the superseded cache strategy
 
-**What.** The sample instructs setting a short TTL for `\.html$` entry points. Since the
-entry point is now served as `index.php`, that rule matches nothing, and the file does not
-mention the PHP-FPM/`open_file_cache` reasoning at all.
+**What (as it was).** The sample instructed setting a short TTL on `\.html$` entry points. Since
+the deployed entry point is `index.php` (renamed to bypass nginx's `open_file_cache`), that rule
+matched nothing, and the file never mentioned the PHP-FPM reasoning at all — so anyone applying
+it would have cached nothing and wondered why deploys still looked stale.
 
-**Evidence.** `dot-htaccess-sample` vs `scripts/deploy.sh:188-191` (the `.php` rename).
+**Done** — `<COMMIT>`. Rewritten around what is actually served:
 
-**Fix.** Rewrite the sample to describe the current mechanism (entry point is `index.php`;
-hashed assets are immutable and may be cached for a year; do not add a cache rule for the
-entry point unless it is understood to bypass the rename). Keep it as manual-setup
-documentation — it is deliberately not uploaded.
-
----
+- the entry point is `index.php`, with `Cache-Control: no-cache, must-revalidate`;
+  `\.html$` is called out explicitly as a rule **not** to add, with the reason;
+- hashed build output keeps the year-long immutable rule (filename carries the content hash);
+- non-hashed files (`public/` images, `seo/` cards) are documented as *deliberately* left to the
+  host default, because their names do not change when their content does;
+- header blocks stay inside `<IfModule>` so a missing module degrades to "no headers" rather
+  than a 500;
+- the header states it is manual, one-time, and never uploaded (the mirror excludes `.ht*`).
 
 ### C5 — tag naming drift between prompt text and practice
 

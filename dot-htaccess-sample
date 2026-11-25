@@ -1,23 +1,40 @@
 # Sample .htaccess cache-control directives for hexmob.win / dev.hexmob.win
 #
 # Apply this content to .htaccess in the web root on the server.
-# It is NOT deployed automatically — configure once per server/hosting account.
+# It is NOT deployed automatically — configure once per server/hosting account. The deploy's
+# mirror explicitly excludes .ht* precisely so it can never overwrite this file.
 #
-# Strategy:
-#   - index.html: short TTL (5 min) so new deployments propagate quickly.
-#     Transparent caches ignore no-cache/no-store but honour real expiry times.
-#   - Vite-hashed assets (e.g. index-C7h0xmLY.js): immutable, 1-year TTL.
-#     The content hash in the filename guarantees freshness — a new build
-#     produces new filenames, so there is no stale-asset risk.
+# Why the entry point is not "index.html":
+#   The deploy renames Vite's index.html to index.php before uploading (see AGENTS.md §7).
+#   This host's nginx open_file_cache serves stale static .html for days and cannot be flushed
+#   without shell access; PHP-FPM revalidates from disk instead. A rule matching "\.html$"
+#   therefore never applies to a deployed site — the file does not exist under that name.
+#
+# Two classes of file, two policies:
+#   - Hashed build output (e.g. assets/index-C7h0xmLY.js): the content hash is in the filename,
+#     so a new build produces new names. Cache for a year, immutable.
+#   - Entry point (index.php): must be revalidated on every load, or visitors stay pinned to a
+#     bundle that no longer exists after a deploy.
+# Everything else (public/ images with stable names, seo/ cards) is deliberately left to the
+# host's defaults: those filenames do not change when their content does, so a long TTL would
+# keep serving replaced bytes. Cache them only if you accept that.
 
 <IfModule mod_headers.c>
-    # Vite content-hashed assets — filename changes with content, safe to cache forever
+    # Hashed build output — filename changes with content, safe to cache forever
     <FilesMatch "-[A-Za-z0-9_-]{8}\.(js|css|woff2?|ttf|eot|png|jpg|jpeg|svg|gif|ico|webp)$">
         Header set Cache-Control "public, max-age=31536000, immutable"
     </FilesMatch>
 
-    # HTML entry point — short TTL so deploys propagate within ~5 minutes
-    <FilesMatch "\.html$">
-        Header set Cache-Control "public, max-age=300"
+    # Entry point, served through PHP-FPM
+    <FilesMatch "^index\.php$">
+        Header set Cache-Control "no-cache, must-revalidate"
     </FilesMatch>
 </IfModule>
+
+# What NOT to add:
+#   - a rule for "\.html$" — nothing is served under that name any more (index.html is deleted
+#     by the deploy so a stale copy cannot be picked up by the directory index);
+#   - a long TTL for non-hashed files (public/ images, seo/ social cards) unless you accept that
+#     replacing such a file on the server keeps visitors on the old bytes;
+#   - anything that requires a module the shared host may not have enabled — keep the blocks
+#     inside <IfModule> so a missing module degrades to "no headers" rather than a 500.
