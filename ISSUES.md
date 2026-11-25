@@ -322,7 +322,7 @@ itself and fell back to the clipboard; on `dev` it only copied the command. `scr
 existed only on `master`, so the guided release flow was unavailable exactly where the work
 happens.
 
-**Done** — `<COMMIT>`. Ownership settled: **release tooling lives on `dev`**, and `master` gets it
+**Done** — `8ab13e3`. Ownership settled: **release tooling lives on `dev`**, and `master` gets it
 through the normal dev → master merge that `release.sh` performs itself.
 
 - `deploy.sh` signs the archive (`_sign_release`): `${GPG} --batch --yes -b`, then verifies the
@@ -457,7 +457,7 @@ release's "Changes" notes. Releases exist here so signed source can be checked a
 JavaScript a browser actually runs, not as a distribution channel, so a release is a moving
 pointer carrying the build currently served (AGENTS.md §5).
 
-**Done** — `<COMMIT>`. `yarn release` (`scripts/release.sh`) performs the whole sequence:
+**Done** — `8ab13e3`. `yarn release` (`scripts/release.sh`) performs the whole sequence:
 
 1. require a clean tree on `dev`;
 2. merge `dev` → `master`;

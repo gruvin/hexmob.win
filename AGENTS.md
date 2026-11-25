@@ -317,12 +317,25 @@ Nothing is stashed, and nothing needs to be: a release refuses to start from a d
 (§5 step 2), and the build would not see uncommitted files anyway, because it happens in a
 worktree at the tagged commit. The guard exists for the operator's sake, not the build's.
 
-`scripts/release.sh` (carried on `master`) drives this flow end to end: verify a clean
-starting point on `dev`, merge `dev` → `master`, suggest and create a **signed** tag, run
-`yarn deploy` and let the operator answer the production prompts, verify the tarball and
-signature exist, push `master` + tags, then create a **draft** GitHub release with the
-`.tgz` and `.sig` attached. Its whole value is that the manual steps — tag format, prompt
-answers, upload of both artifacts — happen in the right order every time.
+`yarn release` (`scripts/release.sh`, carried on `dev` like everything else) runs the whole
+ceremony: clean tree on `dev` → merge to `master` → signed tag → `yarn deploy` (production
+prompts unchanged) → require both the `.tgz` **and** its `.sig` → push `master` + tags →
+publish to GitHub. Its value is that the steps happen in the right order every time, including
+the ordering constraints that are easy to get wrong: the push must precede any `gh release`
+call (they address tags that have to exist on the remote), and the archive must be signed
+before it is published.
+
+**Signing is automatic.** `deploy.sh`'s `_sign_release` calls `gpg --batch --yes -b` and then
+verifies its own signature. `--batch` is the important part: unattended signing works for the
+passphrase-less key this machine uses, and if a key ever needs a passphrase or a smartcard PIN
+the deploy must fail fast with an UNSIGNED warning plus the command on the clipboard, rather
+than blocking behind a pinentry prompt. (The historical belief that automated signing could not
+work most likely came from signing with the card-backed key, which genuinely cannot.)
+
+**Where a build is published.** Releases are not a distribution channel (§5, "What a published
+release is for"). The default path treats the release as a **moving pointer**: retag it onto the
+new tag, delete the previous build's assets, upload the new signed pair, and append one line to
+the append-only "Changes" notes. Only a milestone gets a new (draft) release.
 
 ### What a published release is for (and what it is not)
 
