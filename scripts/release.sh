@@ -9,9 +9,11 @@
 #   3. derive the next version and create a SIGNED tag on master
 #   4. run the production deploy (deploy.sh prompts as usual; both brands, then both hosts)
 #   5. require the signed archive to exist
-#   6. push master + tags
-#   7. put the build on GitHub: retag the current release onto the new tag, replace its
-#      assets, append a line to its "Changes" notes - or create a new release for a milestone
+#   6. choose the target release, then edit its notes in $EDITOR (with the current body
+#      pre-loaded, like `git commit` does) - all before anything is pushed
+#   7. push master + tags
+#   8. put the build on GitHub: retag the current release onto the new tag and replace its
+#      assets, or create a new draft release for a milestone
 #
 # Background worth knowing (AGENTS.md §5): tags are per build, and the release is a moving
 # pointer that always carries the build currently served. Releases exist so the signed source
@@ -93,8 +95,8 @@ ${GIT} tag -s "${NEW_TAG}" -m "Release ${NEW_TAG}" || {
 
 # ── 5. Production deploy ─────────────────────────────────────────────────────
 print "\n── Running yarn deploy (production) ────────────────────────────────────"
-print "   At the prompts: select [p], type 'yes', enter tag: ${NEW_TAG}\n"
-yarn deploy
+print "   At the prompts: select [p], type 'yes'. The tag is passed through.\n"
+DEPLOY_TAG="${NEW_TAG}" yarn deploy
 DEPLOY_STATUS=$?
 if [[ ${DEPLOY_STATUS} -ne 0 ]]; then
     print "\nERROR: deploy script exited with status ${DEPLOY_STATUS}"
@@ -121,13 +123,48 @@ if [[ ! -f "$RELEASE_SIG" ]]; then
     exit 1
 fi
 
-# ── 7. Push ─────────────────────────────────────────────────────────────────
-# Before touching releases: gh release operations address tags that must exist on the remote.
-print "\nPushing master and tags to origin ..."
-${GIT} push origin master || { print "ERROR: git push origin master failed"; exit 1; }
-${GIT} push --tags        || { print "ERROR: git push --tags failed"; exit 1; }
+# ── Notes editing ───────────────────────────────────────────────────────────────────────────
+# Presents the notes in $EDITOR, the way `git commit` does: a comment header, a marker line,
+# and the existing text beneath it. Everything above the marker is instructions and is
+# discarded, so markdown headings in the notes themselves survive untouched (which is why this
+# does not simply strip lines starting with '#').
+NOTES_MARKER='<!-- ===== notes below this line; text above it is ignored ===== -->'
 
-# ── 8. Which release? ───────────────────────────────────────────────────────
+# @args: TMPFILE (pre-populated with the current notes), TITLE
+_edit_notes() {
+    local FILE=$1
+    local TITLE=$2
+    local EDITOR_BIN=${EDITOR:-vi}
+    local STAGED="${FILE}.edit"
+
+    {
+        print -r -- "# Release notes for ${NEW_TAG} (${TITLE})"
+        print -r -- "#"
+        print -r -- "# Edit below the marker. Save and quit to continue the release;"
+        print -r -- "# quit without saving to abort — nothing has been pushed yet."
+        print -r -- "# Set EDITOR to control the editor (eg. EDITOR='code --wait')."
+        print -r -- "${NOTES_MARKER}"
+        cat "${FILE}"
+    } > "${STAGED}"
+
+    # ${=VAR} word-splits, so EDITOR can carry arguments ("code --wait").
+    ${=EDITOR_BIN} "${STAGED}" || { print "\nERROR: editor exited non-zero — aborted, nothing pushed."; return 1; }
+
+    # Keep everything after the marker, drop trailing blank lines.
+    local BODY
+    BODY=$(sed "1,/$(print -r -- "${NOTES_MARKER}" | sed 's/[][\.*^$/]/\\&/g')/d" "${STAGED}")
+    BODY=$(print -r -- "${BODY}" | sed -e :a -e '/^\n*$/{$d;N;ba' -e '}')
+    rm -f "${STAGED}"
+
+    if [[ -z "${BODY//[[:space:]]/}" ]]; then
+        print "\nERROR: the notes came back empty — refusing to publish a release with no notes."
+        return 1
+    fi
+    print -r -- "${BODY}" > "${FILE}"
+    return 0
+}
+
+# ── 7. Which release? (read-only, before anything is pushed) ─────────────────
 # Default to the latest *published* release: a leftover draft from an abandoned attempt is
 # not what the build currently being served belongs to. Drafts are shown separately.
 CURRENT_RELEASE=$(${GH} release list --exclude-drafts --limit 1 --json tagName -q '.[0].tagName' 2>/dev/null)
@@ -140,7 +177,7 @@ ${GH} release list --exclude-drafts --limit 5 2>/dev/null | sed 's/^/  /' || pri
 if [[ -n "${CURRENT_RELEASE}" ]]; then
     print "\nDefault target: the current release '${CURRENT_RELEASE}'"
     print "  - it will be moved onto tag ${NEW_TAG}, its previous build assets replaced,"
-    print "    and a line appended to its Changes notes."
+    print "    and its notes taken from your editor."
     read -k1 TARGET_CHOICE\?"Publish to '${CURRENT_RELEASE}'? [Y] or create a NEW release [n]: "
     print ""
 else
@@ -148,61 +185,72 @@ else
     TARGET_CHOICE="n"
 fi
 
+# ── 8. Notes, before anything leaves this machine ───────────────────────────
+# Deliberately before the push: the notes are the last thing that needs a human, and asking
+# for them after the assets were already replaced would leave a half-described release behind
+# if the operator changed their mind.
 NOTES_TMP=$(mktemp "${TMPDIR:-/tmp}/release-notes.XXXXXX") || exit 1
-trap "rm -f '${NOTES_TMP}'" EXIT
+trap "rm -f '${NOTES_TMP}' '${NOTES_TMP}.edit'" EXIT
 
+NOTES_CHANGED=0
 if [[ "${TARGET_CHOICE}" == "n" || "${TARGET_CHOICE}" == "N" ]]; then
-    # New milestone release: seed notes from the commits since the previous tag.
     print "\nRelease title (Enter for '${NEW_TAG}'): "
     read RELEASE_TITLE
     [[ -z "${RELEASE_TITLE}" ]] && RELEASE_TITLE="${NEW_TAG}"
 
+    # Seed from the commits since the previous tag; the editor is where it gets shaped.
     PREV_TAG=$(${GIT} tag --sort=-v:refname | grep -v "^${NEW_TAG}$" | head -1)
     if [[ -n "${PREV_TAG}" ]]; then
-        {
-            print "Changes since ${PREV_TAG}:\n"
-            ${GIT} log "${PREV_TAG}..${NEW_TAG}" --pretty='- %s' 
-        } > "${NOTES_TMP}"
-        print "\nSeeded notes from ${PREV_TAG}..${NEW_TAG}. Append anything else, then Ctrl-D:\n"
+        print "\nSeeded from ${PREV_TAG}..${NEW_TAG}:"
         ${GIT} log "${PREV_TAG}..${NEW_TAG}" --pretty='- %s' | sed 's/^/  /'
-        print ""
+        printf 'Changes since %s:\n\n' "${PREV_TAG}" > "${NOTES_TMP}"
+        ${GIT} log "${PREV_TAG}..${NEW_TAG}" --pretty='- %s' >> "${NOTES_TMP}"
+    else
+        : > "${NOTES_TMP}"
     fi
-    print "(Optional extra notes — blank line then Ctrl-D to finish)"
-    EXTRA_NOTES=$(cat)
-    [[ -n "${EXTRA_NOTES}" ]] && print "${EXTRA_NOTES}" >> "${NOTES_TMP}"
+    _edit_notes "${NOTES_TMP}" "${RELEASE_TITLE}" || exit 1
+else
+    # The usual path: pull the current body so the edit is an append, not a replacement.
+    ${GH} release view "${CURRENT_RELEASE}" --json body -q .body > "${NOTES_TMP}" 2>/dev/null
+    cp "${NOTES_TMP}" "${NOTES_TMP}.orig"
+    _edit_notes "${NOTES_TMP}" "${CURRENT_RELEASE}" || exit 1
+    cmp -s "${NOTES_TMP}" "${NOTES_TMP}.orig" || NOTES_CHANGED=1
+    rm -f "${NOTES_TMP}.orig"
+fi
 
+# ── 9. Push ─────────────────────────────────────────────────────────────────
+# Before touching releases: gh release operations address tags that must exist on the remote.
+print "\nPushing master and tags to origin ..."
+${GIT} push origin master || { print "ERROR: git push origin master failed"; exit 1; }
+${GIT} push --tags        || { print "ERROR: git push --tags failed"; exit 1; }
+
+# ── 10. Publish ─────────────────────────────────────────────────────────────
+if [[ "${TARGET_CHOICE}" == "n" || "${TARGET_CHOICE}" == "N" ]]; then
     ${GH} release create "${NEW_TAG}" "${RELEASE_TGZ}" "${RELEASE_SIG}" \
         --draft --title "${RELEASE_TITLE}" --notes-file "${NOTES_TMP}" \
         && print "\nDraft release created. Review and publish at: $(${GH} release view "${NEW_TAG}" --json url -q .url)" \
         || print "\nWARNING: gh release create failed — artifacts are in ${RELEASE_DIR}, create the release manually."
-    ${GIT} checkout dev 2>/dev/null
-    print "\nAll done."
-    exit 0
+else
+    print "\nMoving release '${CURRENT_RELEASE}' onto tag ${NEW_TAG} ..."
+    ${GH} release edit "${CURRENT_RELEASE}" --tag "${NEW_TAG}" --verify-tag \
+        || { print "ERROR: could not retag the release (is ${NEW_TAG} pushed?). Nothing else was changed."; exit 1; }
+
+    print "Replacing the previous build assets ..."
+    for ASSET in $(${GH} release view "${NEW_TAG}" --json assets -q '.assets[].name' 2>/dev/null); do
+        print "  removing ${ASSET}"
+        ${GH} release delete-asset "${NEW_TAG}" "${ASSET}" --yes > /dev/null \
+            || print "  WARNING: could not remove ${ASSET}"
+    done
+    ${GH} release upload "${NEW_TAG}" "${RELEASE_TGZ}" "${RELEASE_SIG}" --clobber \
+        || { print "ERROR: upload failed — artifacts are in ${RELEASE_DIR}"; exit 1; }
+
+    if [[ ${NOTES_CHANGED} -eq 1 ]]; then
+        ${GH} release edit "${NEW_TAG}" --notes-file "${NOTES_TMP}" \
+            || print "WARNING: could not update the notes — the release body is unchanged."
+    else
+        print "Notes unchanged — leaving the release body alone."
+    fi
 fi
-
-# Existing release, the usual path: move it to the new tag, replace the build, append notes.
-print "\nMoving release '${CURRENT_RELEASE}' onto tag ${NEW_TAG} ..."
-${GH} release edit "${CURRENT_RELEASE}" --tag "${NEW_TAG}" --verify-tag \
-    || { print "ERROR: could not retag the release (is ${NEW_TAG} pushed?). Nothing else was changed."; exit 1; }
-
-print "Replacing the previous build assets ..."
-for ASSET in $(${GH} release view "${NEW_TAG}" --json assets -q '.assets[].name' 2>/dev/null); do
-    print "  removing ${ASSET}"
-    ${GH} release delete-asset "${NEW_TAG}" "${ASSET}" --yes > /dev/null \
-        || print "  WARNING: could not remove ${ASSET}"
-done
-${GH} release upload "${NEW_TAG}" "${RELEASE_TGZ}" "${RELEASE_SIG}" --clobber \
-    || { print "ERROR: upload failed — artifacts are in ${RELEASE_DIR}"; exit 1; }
-
-print "Appending to the release notes ..."
-${GH} release view "${NEW_TAG}" --json body -q .body > "${NOTES_TMP}" 2>/dev/null
-{
-    print ""
-    read CHANGE_LINE\?"One line for the Changes notes (eg. 'Fixed read-only HEX balance header'): "
-    print "- ${NEW_TAG} — ${CHANGE_LINE}"
-} >> "${NOTES_TMP}"
-${GH} release edit "${NEW_TAG}" --notes-file "${NOTES_TMP}" \
-    || print "WARNING: could not update the notes — the release body is unchanged."
 
 ${GIT} checkout dev 2>/dev/null
 

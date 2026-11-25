@@ -579,8 +579,15 @@ case "$DEPLOY_TYPE" in
         print "\n"
         read AMSURE\?"PRODUCTION deployment! Enter \"yes\" to continue: "
         if [[ ! "yes" = "$AMSURE" ]]; then print "Didn't think so." ; exit 0 ; fi
-        print "Enter release version tag for this PRODUCTION build"
-        read TAG\?"eg. 0.4.26 -- this must be an existing git tag: "
+        # DEPLOY_TAG lets a caller (scripts/release.sh) state the tag once. Prompting again
+        # invites the two answers to diverge, and the tag ends up in the artifact name.
+        if [[ -n "${DEPLOY_TAG}" ]]; then
+            TAG="${DEPLOY_TAG}"
+            print "Release version tag: ${TAG} (from DEPLOY_TAG)"
+        else
+            print "Enter release version tag for this PRODUCTION build"
+            read TAG\?"eg. 0.4.26 -- this must be an existing git tag: "
+        fi
         _require_tag "${TAG}"
         print ""
         print "  tag     : ${TAG}"

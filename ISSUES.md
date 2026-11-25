@@ -482,10 +482,21 @@ and never regenerated (that would wipe the accumulated log). Assets are replaced
 accumulated. Drafts are deliberately not treated as "current", because a leftover draft from an
 abandoned attempt is not what the live site serves.
 
+**Follow-up fixes** (`<FOLLOWUP>`), both UX rather than correctness:
+
+- `deploy.sh` honours `DEPLOY_TAG`, so `yarn release` states the tag once instead of asking for
+  it again at the deploy prompt — where the two answers could silently diverge.
+- the notes moved **before** the push, and are now edited in `$EDITOR` with the current body
+  pre-loaded (comment header + marker line, the `git commit` pattern) instead of answering a
+  one-line prompt after everything was already live. Markdown headings survive because only
+  text above the marker is discarded. A non-zero editor exit, empty notes, or "quit without
+  saving" leaves the release untouched.
+
 **Not exercised end to end.** Step 4 publishes to both live hosts, so the first full run needs
 watching. The `gh` steps were checked against `gh 2.93.0`'s real flags (`--tag`, `--verify-tag`,
-`--clobber`, `delete-asset --yes`, `--exclude-drafts`) and the signing step was verified
-independently (C1).
+`--clobber`, `delete-asset --yes`, `--exclude-drafts`); the signing step was verified
+independently (C1); and the editor flow was tested with stub editors (append keeps headings,
+non-zero exit aborts, empty body is refused).
 
 ## D. Done / decisions (for context, do not re-litigate)
 

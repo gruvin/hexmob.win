@@ -250,8 +250,10 @@ Prompted sequence, deliberately awkward — every step is a guard:
    refused). A release starts from a committed state; the script will not stash, reset or
    discard anything to get there — it tells you what is in the way and exits 5.
 3. Type the word `yes`. Anything else aborts ("Didn't think so.").
-4. Enter a release tag. It must exist as a local tag, or the run blocks with the list of
-   recent tags.
+4. Enter a release tag — or have it supplied: when `DEPLOY_TAG` is set (as `yarn release` does),
+   the tag is taken from there and not prompted for. It must exist as a local tag, or the run
+   blocks with the list of recent tags. Stating it once matters: the tag ends up in the artifact
+   filename and the release URL, so two answers that disagree are a real hazard.
 5. Confirm the summary (tag, branch, both destinations, and the build-then-publish order).
 6. Two throwaway worktrees are created at the tag — one per brand — and both brands'
    overlays are preflighted, so a missing variant cannot surface after the other brand has
@@ -334,8 +336,16 @@ work most likely came from signing with the card-backed key, which genuinely can
 
 **Where a build is published.** Releases are not a distribution channel (§5, "What a published
 release is for"). The default path treats the release as a **moving pointer**: retag it onto the
-new tag, delete the previous build's assets, upload the new signed pair, and append one line to
-the append-only "Changes" notes. Only a milestone gets a new (draft) release.
+new tag, delete the previous build's assets, upload the new signed pair, and update the
+append-only "Changes" notes. Only a milestone gets a new (draft) release.
+
+**Notes are edited in `$EDITOR`, before anything is pushed.** The current release body is
+pre-loaded under a comment header and a marker line (the `git commit` pattern). Text above the
+marker is discarded, so markdown headings in the notes survive — that is why the implementation
+strips up to a marker rather than stripping `#` lines. The editor runs *before* the push and
+before any asset is replaced, so backing out of the notes leaves nothing half-published. An
+editor that exits non-zero, or notes that come back empty, abort the release. If the body is
+unchanged, no `gh release edit --notes` call is made at all.
 
 ### What a published release is for (and what it is not)
 
