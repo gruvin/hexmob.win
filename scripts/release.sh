@@ -196,6 +196,41 @@ _remote_tag_state() { # absent | present | unknown
     print -n absent
 }
 
+# ── 2b. Gather the remote state, before asking anything ──────────────────────
+# Every read-only call happens here, ahead of the prompts: otherwise the operator is asked for a
+# tag while the console is still churning out release lists and spinners, and the information
+# arrives too late to inform the decision.
+# Default to the latest *published* release: a leftover draft from an abandoned attempt is
+# not what the build currently being served belongs to. Drafts are shown separately.
+# Identify releases by title as well as tag - these releases carry descriptive names
+# ("3rd Party Security Upgrades"), so the tag alone is ambiguous to a human reader.
+ui_spin "reading the release list" ${GH} release list --exclude-drafts --limit 1 \
+    --json tagName,name -q '.[0] | "\(.tagName)\t\(.name)"'
+CURRENT_RELEASE=${UI_SPIN_OUT%%$'\t'*}
+CURRENT_RELEASE_NAME=${UI_SPIN_OUT#*$'\t'}
+ui_spin "counting drafts" ${GH} release list --json isDraft -q '[.[] | select(.isDraft)] | length'
+DRAFT_COUNT=${UI_SPIN_OUT}
+[[ -z "${CURRENT_RELEASE_NAME}" ]] && CURRENT_RELEASE_NAME="${CURRENT_RELEASE}"
+
+# Format the list ourselves. gh only aligns columns when stdout is a terminal, so piping it
+# (as any script must) yields raw tabs and the columns come out ragged in the operator's
+# terminal. Also use publishedAt, which is the PUBLISHED column gh shows - createdAt is when
+# the release object was made and differs for releases that were edited later.
+ui_head "GitHub releases (published):"
+ui_spin "reading releases" ${GH} release list --exclude-drafts --limit 5 \
+    --json tagName,name,publishedAt,isLatest \
+    -q '.[] | [.tagName, (.publishedAt[:10]), (if ((.name // "") == "") then .tagName else .name end), (if .isLatest then "[latest]" else "" end)] | @tsv'
+RELEASE_ROWS=${UI_SPIN_OUT}
+if [[ -n "${RELEASE_ROWS}" ]]; then
+    print -r -- "${RELEASE_ROWS}" | while IFS=$'\t' read -r R_TAG R_DATE R_TITLE R_MARK; do
+        (( ${#R_TITLE} > 54 )) && R_TITLE="${R_TITLE[1,51]}..."
+        printf '  %-7s  %s  %-54s %s\n' "${R_TAG}" "${R_DATE}" "${R_TITLE}" "${R_MARK}"
+    done
+else
+    print "  (none found)"
+fi
+[[ "${DRAFT_COUNT:-0}" != "0" ]] && print "  note: ${DRAFT_COUNT} draft release(s) exist and are NOT considered the current release"
+
 # ── 3. Pick the next version ─────────────────────────────────────────────────
 ui_head "Recent tags (newest first)"
 ${GIT} tag --sort=-v:refname | head -10 | sed 's/^/  /'
@@ -208,10 +243,15 @@ LATEST_TAG=$(${GIT} tag --sort=-v:refname | grep -E '^[0-9]+\.[0-9]+\.[0-9]+$' |
 SUGGESTED=""
 if [[ -n "$LATEST_TAG" ]]; then
     LATEST_STATE=$(_remote_tag_state "${LATEST_TAG}")
+    PROBED_TAG="${LATEST_TAG}"
+    PROBED_STATE="${LATEST_STATE}"
+    PROBED_HAS_RELEASE=0
+    [[ "$LATEST_STATE" == "present" ]] && \
+        ui_spin "looking for a release of ${LATEST_TAG}" ${GH} release view "${LATEST_TAG}" && PROBED_HAS_RELEASE=1
     if [[ "$LATEST_STATE" == "absent" ]]; then
         SUGGESTED="${LATEST_TAG}"
         ui_warn "${LATEST_TAG} exists locally but was never pushed - suggesting it again (unfinished release)"
-    elif [[ "$LATEST_STATE" == "present" ]] && ! ui_spin "looking for a release of ${LATEST_TAG}" ${GH} release view "${LATEST_TAG}"; then
+    elif [[ "$LATEST_STATE" == "present" && ${PROBED_HAS_RELEASE} -eq 0 ]]; then
         SUGGESTED="${LATEST_TAG}"
         ui_warn "${LATEST_TAG} is pushed but has no release yet - suggesting it again (unfinished release)"
     else
@@ -246,7 +286,17 @@ if ${GIT} rev-parse --verify --quiet "refs/tags/${NEW_TAG}" > /dev/null; then
         print "\nWARNING: ${NEW_TAG} exists but is not an annotated (signed) tag - recreating it."
         _run ${GIT} tag -d "${NEW_TAG}" > /dev/null || { print "ERROR: could not delete ${NEW_TAG}"; exit 1; }
     else
-        REMOTE_STATE=$(_remote_tag_state "${NEW_TAG}")
+        # If the operator accepted the suggested tag, its state is already known - do not make
+        # them watch the console churn again right after typing.
+        if [[ "${NEW_TAG}" == "${PROBED_TAG:-}" ]]; then
+            REMOTE_STATE="${PROBED_STATE}"
+            HAS_RELEASE=${PROBED_HAS_RELEASE}
+        else
+            REMOTE_STATE=$(_remote_tag_state "${NEW_TAG}")
+            HAS_RELEASE=0
+            [[ "${REMOTE_STATE}" == "present" ]] && \
+                ui_spin "looking for a release of ${NEW_TAG}" ${GH} release view "${NEW_TAG}" && HAS_RELEASE=1
+        fi
         case "${REMOTE_STATE}" in
             (absent)
                 TAG_MODE=reuse
@@ -254,7 +304,7 @@ if ${GIT} rev-parse --verify --quiet "refs/tags/${NEW_TAG}" > /dev/null; then
                 print "  summary: $(${GIT} for-each-ref --format='%(contents:subject)' "refs/tags/${NEW_TAG}")"
                 ;;
             (present)
-                if ui_spin "looking for a release of ${NEW_TAG}" ${GH} release view "${NEW_TAG}"; then
+                if [[ ${HAS_RELEASE} -eq 1 ]]; then
                     if [[ ${REPUBLISH} -eq 0 ]]; then
                         ui_err "${NEW_TAG} is pushed AND already has a release."
                         print "Continuing would rebuild, redeploy and REPLACE that release's published assets."
@@ -301,38 +351,7 @@ else
     print "\nTag ${NEW_TAG} already exists (${TAG_MODE}) - not re-creating it."
 fi
 
-# ── 5. Which release? (read-only; nothing has been deployed or pushed yet) ───
-# Default to the latest *published* release: a leftover draft from an abandoned attempt is
-# not what the build currently being served belongs to. Drafts are shown separately.
-# Identify releases by title as well as tag - these releases carry descriptive names
-# ("3rd Party Security Upgrades"), so the tag alone is ambiguous to a human reader.
-ui_spin "reading the release list" ${GH} release list --exclude-drafts --limit 1 \
-    --json tagName,name -q '.[0] | "\(.tagName)\t\(.name)"'
-CURRENT_RELEASE=${UI_SPIN_OUT%%$'\t'*}
-CURRENT_RELEASE_NAME=${UI_SPIN_OUT#*$'\t'}
-ui_spin "counting drafts" ${GH} release list --json isDraft -q '[.[] | select(.isDraft)] | length'
-DRAFT_COUNT=${UI_SPIN_OUT}
-[[ -z "${CURRENT_RELEASE_NAME}" ]] && CURRENT_RELEASE_NAME="${CURRENT_RELEASE}"
-
-# Format the list ourselves. gh only aligns columns when stdout is a terminal, so piping it
-# (as any script must) yields raw tabs and the columns come out ragged in the operator's
-# terminal. Also use publishedAt, which is the PUBLISHED column gh shows - createdAt is when
-# the release object was made and differs for releases that were edited later.
-ui_head "GitHub releases (published):"
-ui_spin "reading releases" ${GH} release list --exclude-drafts --limit 5 \
-    --json tagName,name,publishedAt,isLatest \
-    -q '.[] | [.tagName, (.publishedAt[:10]), (if ((.name // "") == "") then .tagName else .name end), (if .isLatest then "[latest]" else "" end)] | @tsv'
-RELEASE_ROWS=${UI_SPIN_OUT}
-if [[ -n "${RELEASE_ROWS}" ]]; then
-    print -r -- "${RELEASE_ROWS}" | while IFS=$'\t' read -r R_TAG R_DATE R_TITLE R_MARK; do
-        (( ${#R_TITLE} > 54 )) && R_TITLE="${R_TITLE[1,51]}..."
-        printf '  %-7s  %s  %-54s %s\n' "${R_TAG}" "${R_DATE}" "${R_TITLE}" "${R_MARK}"
-    done
-else
-    print "  (none found)"
-fi
-[[ "${DRAFT_COUNT:-0}" != "0" ]] && print "  note: ${DRAFT_COUNT} draft release(s) exist and are NOT considered the current release"
-
+# ── 5b. Which release? (the state was gathered up front, so this is only the choice) ──
 if [[ -n "${CURRENT_RELEASE}" ]]; then
     # Default from the version bump: MAJOR.MINOR.PATCH -> same MAJOR.MINOR with a higher patch
     # continues the current release; a minor or major bump starts a new one. Unparseable tags

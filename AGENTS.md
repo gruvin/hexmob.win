@@ -423,6 +423,13 @@ destructive step is printed as `[dry-run] …` instead of executed: no merge, no
 push, no `gh release` write. It ends by printing the notes that would have been published. Use
 it after changing anything in this script, and before a release you care about.
 
+**Every read happens before every prompt.** The script gathers all remote state first — the
+release list, drafts, and the newest tag's state — then asks for the tag, then for the publish
+choice, then opens the editor. Otherwise the operator is asked for a tag while release lists and
+spinners are still churning past them, and the information arrives too late to inform the
+decision. If the tag accepted is the one already probed, its state is reused rather than fetched
+again, so nothing churns right after typing.
+
 **Everything is collected locally before anything is written to GitHub.** The order is: local
 tag → *Release how?* (read-only `gh`) → notes in `$EDITOR` → production deploy → `.tgz`/`.sig`
 check → push → `gh` writes. Every GitHub *read* happens before the deploy; every GitHub *write*

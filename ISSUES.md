@@ -536,6 +536,14 @@ Only a published tag advances the number. Verified against a rig with a real bar
 local-only → suggests and reuses `0.4.27`; pushed+released → suggests `0.4.28`; pushed but
 unreleased → suggests and resumes `0.4.27`.
 
+**All remote reads now precede the prompts** (`<ORDHASH>`): the tag prompt used to appear while
+`gh release list` and its spinners were still arriving, so the console churned *after* the
+operator had typed and the release state was presented too late to inform the decision. The reads
+moved to a "gather the remote state" step before any prompt; the publish choice now only renders
+what was already fetched (zero remote calls), and if the accepted tag is the one already probed,
+its state is reused instead of re-fetched. Verified in a rig by output ordering: the release table
+prints before the tag prompt.
+
 **Reuse is conditioned on what the hosts actually serve** (`<LIVEHASH>`): an existing archive only
 proves that a publish once returned 0 — the tar is the last step of a successful deploy — not that
 the hosts still serve that build. Each build now writes `dist/deploy.php`
