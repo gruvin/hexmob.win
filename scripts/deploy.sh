@@ -165,18 +165,29 @@ _require_overlay() {
 # TRAPEXIT).
 # ----------------------------------------------------------------------------
 
+# The scratch area is ./staging inside the checkout: easy to find, inspect after a failed run,
+# and delete by hand. It is gitignored, and anything in it is disposable by definition - so a
+# leftover from a killed run (including its git registration) is cleared rather than reused.
+_clear_staging() {
+    local REGISTERED WT
+    ${GIT} worktree prune > /dev/null 2>&1
+    for WT in ${(f)"$(${GIT} worktree list --porcelain | awk '/^worktree /{print substr($0, 10)}')"}; do
+        if [[ "${WT}" == "${ORIG_PWD}/staging"/* ]]; then
+            ${GIT} worktree remove --force "${WT}" > /dev/null 2>&1
+        fi
+    done
+    rm -rf "${WT_PARENT}"
+    mkdir -p "${WT_PARENT}" || return 1
+    return 0
+}
+
 # @args: REF (tag or HEAD) BRAND
 _make_worktree() {
     local REF=$1
     local BRAND=$2
     if [[ -z "${WT_PARENT}" ]]; then
-        # macOS's TMPDIR already ends with a slash, which would render as a doubled slash in
-        # paths we print (and in lftp's argv). Trim it; harmless either way, but it reads like
-        # a typo and makes real bugs harder to spot in a log.
-        local TMP_ROOT="${TMPDIR:-/tmp}"
-        TMP_ROOT="${TMP_ROOT%/}"
-        WT_PARENT=$(mktemp -d "${TMP_ROOT}/hexmob-deploy.XXXXXX") \
-            || _block "could not create a temporary directory for the build worktrees"
+        WT_PARENT="${ORIG_PWD}/staging"
+        _clear_staging || _block "could not prepare ${WT_PARENT}"
     fi
     local WT="${WT_PARENT}/${BRAND}"
     ${GIT} worktree prune > /dev/null 2>&1

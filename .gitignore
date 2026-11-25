@@ -14,6 +14,8 @@ lerna-debug.log*
 
 node_modules
 dist
+# deploy scratch area: per-brand build worktrees, created and removed per run
+staging/
 dist-ssr
 *.local
 

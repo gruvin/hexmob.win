@@ -136,8 +136,8 @@ provokes. Also: build in a throwaway worktree rather than touching the dev/maste
 
 **Done** — `0986c2e`. No stash, no checkout, no restore — the whole class is gone:
 
-- Both flows build in a disposable `git worktree` (`HEAD` for dev, the tag for release) under
-  `$TMPDIR`, with `node_modules` and `.env.local` symlinked in. The main tree's `HEAD`, index
+- Both flows build in a disposable `git worktree` (`HEAD` for dev, the tag for release) in
+  `./staging/`, with `node_modules` and `.env.local` symlinked in. The main tree's `HEAD`, index
   and stash are never inputs, so there is nothing to restore and no detached-HEAD trap.
 - Overlay applied inside the worktree ⇒ the `-orig` backup/restore machinery is deleted
   outright; `_cleanup` now only returns the shell to `$ORIG_PWD` and drops per-target vars.

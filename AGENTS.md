@@ -276,10 +276,19 @@ which release it is.
 ### 5.1 The build happens in a throwaway worktree
 
 Every build runs in a disposable `git worktree` — `HEAD` for a dev preview, the tag for a
-release — created under `$TMPDIR`, with `node_modules` and `.env.local` borrowed by symlink
-from the real checkout (they are gitignored, so they do not exist in a fresh worktree).
-A release keeps **one worktree per brand, side by side**, each with its own overlay and its
-own `dist/`, which is what makes the build phase separable from the publish phase.
+release — created in **`./staging/` inside the checkout**, with `node_modules` and `.env.local`
+borrowed by symlink from the real checkout (they are gitignored, so they do not exist in a
+fresh worktree). A release keeps **one worktree per brand, side by side**
+(`staging/tsa`, `staging/hexmob`), each with its own overlay and its own `dist/`, which is what
+makes the build phase separable from the publish phase.
+
+`staging/` is deliberately inside the repo rather than in the OS temp directory: a build tree
+you can find, inspect after a failed run, and delete by hand is worth more than one the OS
+hides under `/var/folders/…`. It is gitignored, `tsconfig` only includes `src` (so `tsc` never
+sees it), and the Vite dev server ignores it. Everything in it is disposable by definition:
+`_clear_staging` deletes whatever a killed run left behind (including its git registration)
+before a new run starts, and `_remove_worktrees` removes it on every exit path. **Do not put
+anything else in `staging/`.**
 
 This is the single most important property of the subsystem: **the operator's tree, branch,
 index and stash are never inputs to a deploy.** There is nothing to stash, nothing to
