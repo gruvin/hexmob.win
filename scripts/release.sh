@@ -261,7 +261,7 @@ if [[ -n "${CURRENT_RELEASE}" ]]; then
 
     print "\nHow should ${NEW_TAG} be published?"
     print "  [u] update current release (${CURRENT_RELEASE}) → retag to ${NEW_TAG}, replace build, edit notes"
-    print "  [n] new release ${NEW_TAG} → opens the notes editor"
+    print "  [n] new release ${NEW_TAG} → open release notes editor"
     read -k1 TARGET_CHOICE\?"Choice [u/n] (Enter = ${PUBLISH_DEFAULT}): "
     print ""
     [[ -z "${TARGET_CHOICE}" || "${TARGET_CHOICE}" == $'\n' ]] && TARGET_CHOICE="${PUBLISH_DEFAULT}"
