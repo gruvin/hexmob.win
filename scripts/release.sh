@@ -113,8 +113,21 @@ if ${GIT} rev-parse "$NEW_TAG" > /dev/null 2>&1; then
 fi
 
 # ── 4. Signed tag ────────────────────────────────────────────────────────────
+# The tag annotation is the human record *inside* the signed object (`git show <tag>`), and
+# every release tag in this repo carries a one-line summary. It is not the same thing as the
+# release notes: this says what the build is, the notes accumulate on the GitHub release.
+print ""
+read TAG_SUMMARY\?"One-line summary for the tag (eg. 'Fixed penalty calcs for stakes including BPD'): "
+if [[ -z "${TAG_SUMMARY//[[:space:]]/}" ]]; then
+    print "\nERROR: a one-line summary is required — it is the description inside the signed tag."
+    print "Nothing has been merged, tagged, deployed or pushed."
+    _run ${GIT} checkout dev 2>/dev/null
+    exit 1
+fi
+
 print "\nCreating signed tag ${NEW_TAG} ..."
-_run ${GIT} tag -s "${NEW_TAG}" -m "Release ${NEW_TAG}" || {
+print "  summary: ${TAG_SUMMARY}"
+_run ${GIT} tag -s "${NEW_TAG}" -m "${TAG_SUMMARY}" || {
     print "ERROR: git tag failed (smartcard PIN or passphrase needed for the tag signature?)"
     _run ${GIT} checkout dev
     exit 1

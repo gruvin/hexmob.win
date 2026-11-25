@@ -498,6 +498,16 @@ abandoned attempt is not what the live site serves.
   mutating calls, unchanged tag list, clean tree, `dev` still checked out, and the final notes
   printed.
 
+  A misunderstanding worth recording (`<TAGHASH>`): the "one line" in the original spec was the
+  **tag annotation**, not the release notes. Evidence: every existing tag carries a one-line
+  summary (`0.4.25` → "3rd party security updates", `0.4.21` → "Fixed panlty calcs for stakes
+  including BPD", `TS1` → "!!UNSTABLE!! TYPESCRIPT CONVERSION rebase"), and the only generic one
+  is `0.4.26` → "Release 0.4.26", which this script's placeholder produced. `release.sh` now
+  prompts for the summary and refuses to continue without it, so the signed tag keeps its human
+  record; the release notes remain a separate, longer, accumulating text. `0.4.26`'s tag message
+  is left as-is: re-tagging a published signed tag to improve its wording would break the
+  signature people are supposed to verify.
+
   Also reworded after the first real rehearsal (`45a8bc4`): the choice prompt read
   "Publish to '0.4.26'?", which sounded like publishing *onto* the old tag when it means
   retagging it. It now spells out both branches ("update the existing release \"<title>\"

@@ -322,7 +322,14 @@ worktree at the tagged commit. The guard exists for the operator's sake, not the
 `yarn release` (`scripts/release.sh`, carried on `dev` like everything else) runs the whole
 ceremony: clean tree on `dev` → merge to `master` → signed tag → `yarn deploy` (production
 prompts unchanged) → require both the `.tgz` **and** its `.sig` → push `master` + tags →
-publish to GitHub. Its value is that the steps happen in the right order every time, including
+publish to GitHub.
+
+It asks for two texts, and they are different things: a **one-line summary that becomes the tag
+annotation** (the description inside the signed tag, which is what `git show <tag>` shows and what
+every tag in this repo carries), and the **release notes** edited in `$EDITOR` (which accumulate
+on the GitHub release). The tag summary is required — `0.4.26` carries the generic
+"Release 0.4.26" because a tool invented it, which is exactly the degradation the prompt exists
+to prevent. Its value is that the steps happen in the right order every time, including
 the ordering constraints that are easy to get wrong: the push must precede any `gh release`
 call (they address tags that have to exist on the remote), and the archive must be signed
 before it is published.
