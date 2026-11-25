@@ -342,9 +342,14 @@ than blocking behind a pinentry prompt. (The historical belief that automated si
 work most likely came from signing with the card-backed key, which genuinely cannot.)
 
 **Where a build is published.** Releases are not a distribution channel (§5, "What a published
-release is for"). The default path treats the release as a **moving pointer**: retag it onto the
+release is for"). The usual path treats the release as a **moving pointer**: retag it onto the
 new tag, delete the previous build's assets, upload the new signed pair, and update the
-append-only "Changes" notes. Only a milestone gets a new (draft) release.
+append-only "Changes" notes. A milestone gets a new (draft) release instead.
+
+The *default* follows the version bump: a **patch** bump (`0.4.26` → `0.4.27`) continues the
+current release; a **minor or major** bump (`0.4.26` → `0.5.0`) starts a new one. Tags that are
+not `MAJOR.MINOR.PATCH` (e.g. `TS1`) fall back to "update", and the prompt always shows which
+default applies, so it can be overridden either way.
 
 **Rehearse it with `yarn release --dry-run`** (or `DRY_RUN=1`). Every prompt runs, read-only
 steps hit the API for real — so the release list and the notes body you edit are live — and each

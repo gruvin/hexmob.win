@@ -247,15 +247,24 @@ fi
 [[ "${DRAFT_COUNT:-0}" != "0" ]] && print "  note: ${DRAFT_COUNT} draft release(s) exist and are NOT considered the current release"
 
 if [[ -n "${CURRENT_RELEASE}" ]]; then
+    # Default from the version bump: MAJOR.MINOR.PATCH -> same MAJOR.MINOR with a higher patch
+    # continues the current release; a minor or major bump starts a new one. Unparseable tags
+    # (TS1, say) fall back to the usual case, update.
+    PUBLISH_DEFAULT=u
+    if [[ "${CURRENT_RELEASE}" =~ ^([0-9]+)\.([0-9]+)\.([0-9]+)$ ]]; then
+        CUR_MAJ=${match[1]}
+        CUR_MIN=${match[2]}
+        if [[ "${NEW_TAG}" =~ ^([0-9]+)\.([0-9]+)\.([0-9]+)$ ]]; then
+            [[ "${match[1]}" != "${CUR_MAJ}" || "${match[2]}" != "${CUR_MIN}" ]] && PUBLISH_DEFAULT=n
+        fi
+    fi
+
     print "\nHow should ${NEW_TAG} be published?"
-    print "  [u] update the existing release \"${CURRENT_RELEASE_NAME}\" (currently on tag ${CURRENT_RELEASE})"
-    print "      → that release is retagged to ${NEW_TAG}; its build assets are replaced;"
-    print "        its notes are opened in your editor. One release, always the live build."
-    print "  [n] create a NEW release for ${NEW_TAG}"
-    print "      → a separate release page for this milestone; the existing one is left"
-    print "        untouched on tag ${CURRENT_RELEASE}."
-    read -k1 TARGET_CHOICE\?"Choice [u/n] (Enter = u): "
+    print "  [u] update current release (${CURRENT_RELEASE}) → retag to ${NEW_TAG}, replace build, edit notes"
+    print "  [n] new release ${NEW_TAG} → opens the notes editor"
+    read -k1 TARGET_CHOICE\?"Choice [u/n] (Enter = ${PUBLISH_DEFAULT}): "
     print ""
+    [[ -z "${TARGET_CHOICE}" || "${TARGET_CHOICE}" == $'\n' ]] && TARGET_CHOICE="${PUBLISH_DEFAULT}"
 else
     print "\nNo existing release found — one will be created for ${NEW_TAG}."
     TARGET_CHOICE="n"
