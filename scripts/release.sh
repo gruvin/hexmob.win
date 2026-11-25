@@ -228,10 +228,22 @@ CURRENT_RELEASE_NAME=$(${GH} release list --exclude-drafts --limit 1 --json name
 DRAFT_COUNT=$(${GH} release list --json isDraft -q '[.[] | select(.isDraft)] | length' 2>/dev/null)
 [[ -z "${CURRENT_RELEASE_NAME}" ]] && CURRENT_RELEASE_NAME="${CURRENT_RELEASE}"
 
+# Format the list ourselves. gh only aligns columns when stdout is a terminal, so piping it
+# (as any script must) yields raw tabs and the columns come out ragged in the operator's
+# terminal. Also use publishedAt, which is the PUBLISHED column gh shows - createdAt is when
+# the release object was made and differs for releases that were edited later.
 print "\nGitHub releases (published):"
-${GH} release list --exclude-drafts --limit 5 --json tagName,name,isLatest \
-    -q '.[] | "\(.tagName)\t\(.name)\t\(if .isLatest then "<= latest" else "" end)"' 2>/dev/null \
-    | sed 's/^/  /' || print "  (none found)"
+RELEASE_ROWS=$(${GH} release list --exclude-drafts --limit 5 \
+    --json tagName,name,publishedAt,isLatest \
+    -q '.[] | [.tagName, (.publishedAt[:10]), (if ((.name // "") == "") then .tagName else .name end), (if .isLatest then "[latest]" else "" end)] | @tsv' 2>/dev/null)
+if [[ -n "${RELEASE_ROWS}" ]]; then
+    print -r -- "${RELEASE_ROWS}" | while IFS=$'\t' read -r R_TAG R_DATE R_TITLE R_MARK; do
+        (( ${#R_TITLE} > 54 )) && R_TITLE="${R_TITLE[1,51]}..."
+        printf '  %-7s  %s  %-54s %s\n' "${R_TAG}" "${R_DATE}" "${R_TITLE}" "${R_MARK}"
+    done
+else
+    print "  (none found)"
+fi
 [[ "${DRAFT_COUNT:-0}" != "0" ]] && print "  note: ${DRAFT_COUNT} draft release(s) exist and are NOT considered the current release"
 
 if [[ -n "${CURRENT_RELEASE}" ]]; then
