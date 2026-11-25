@@ -4,9 +4,10 @@
 # One command for the whole ceremony, with the operator confirming at the two points that
 # actually matter (the production deploy, and which GitHub release the build lands in):
 #
-#   1. verify we start from a clean dev
-#   2. merge dev -> master
-#   3. derive the next version and create a SIGNED tag on master
+#   1. require a clean tree on master (this script never merges or checks out - that is the
+#      operator's job, done deliberately before a release)
+#   2. warn if dev is ahead of master, so a release cannot silently omit work
+#   3. derive the next version and create a SIGNED tag
 #   4. run the production deploy (deploy.sh prompts as usual; both brands, then both hosts)
 #   5. require the signed archive to exist
 #   6. choose the target release, then edit its notes in $EDITOR (with the current body
@@ -76,33 +77,32 @@ fi
 
 # ── 1. Start from dev, with nothing uncommitted ──────────────────────────────
 CURRENT_BRANCH=$(${GIT} rev-parse --abbrev-ref HEAD)
-if [[ "$CURRENT_BRANCH" != "dev" ]]; then
-    print "ERROR: expected to be on dev branch, currently on '${CURRENT_BRANCH}'"
+if [[ "${CURRENT_BRANCH}" != "master" ]]; then
+    ui_err "release must be run from master (currently on '${CURRENT_BRANCH}')"
+    print "  This script does not merge or check out anything. Merge what you want released"
+    print "  into master, check master out, then re-run:"
+    print ""
+    ui_dim "git checkout master && git merge dev"
     exit 1
 fi
 if [[ -n "$(${GIT} status --porcelain --untracked-files=normal)" ]]; then
-    print "ERROR: working tree is not clean. Commit or stash your work first:"
-    ${GIT} status --short
+    ui_err "working tree is not clean"
+    ${GIT} status --short | sed 's/^/  /'
     exit 1
 fi
 
 if [[ ${DRY_RUN} -eq 1 ]]; then
-    print "\n=== DRY RUN: nothing will be merged, tagged, deployed, pushed or published ==="
+    print "\n=== DRY RUN: nothing will be tagged, deployed, pushed or published ==="
 fi
 
-# ── 2. Merge dev into master ─────────────────────────────────────────────────
-ui_stage "Merging dev → master"
-_run ${GIT} checkout master || { print "ERROR: checkout master failed"; exit 1 }
-if ! _run ${GIT} merge dev; then
-    # A conflicted merge leaves the tree mid-merge; never continue from here. This is the
-    # expected outcome when master carries script changes dev has not seen (or vice versa) -
-    # resolve it deliberately, then re-run.
-    ui_err "merging dev into master failed."
-    ${GIT} merge --abort > /dev/null 2>&1 && print "  Merge aborted; the tree is back on master."
-    print "  Resolve the divergence by hand, then re-run: something in dev and master has"
-    print "  changed the same file (scripts/ most likely)."
-    ${GIT} checkout dev > /dev/null 2>&1
-    exit 1
+# ── 2. Sanity: does master have everything you think it does? ────────────────
+# Not an error: releasing a curated master while dev runs ahead is a legitimate choice. But a
+# release that quietly omits work is not, so say it out loud and carry on.
+DEV_AHEAD=$(${GIT} rev-list --count master..dev 2>/dev/null || print 0)
+if [[ "${DEV_AHEAD:-0}" -gt 0 ]]; then
+    ui_warn "local dev is ${DEV_AHEAD} commit(s) ahead of master - this release contains only what is on master"
+    ${GIT} log --oneline master..dev | head -5 | sed 's/^/    /'
+    [[ ${DEV_AHEAD} -gt 5 ]] && ui_dim "  … and $(( DEV_AHEAD - 5 )) more"
 fi
 
 # ── 3. Pick the next version ─────────────────────────────────────────────────
@@ -123,7 +123,6 @@ read NEW_TAG\?"New release tag (eg. ${SUGGESTED}): "
 
 if [[ -z "$NEW_TAG" ]]; then
     print "Aborted — no tag entered."
-    ${GIT} checkout dev
     exit 0
 fi
 
@@ -191,8 +190,7 @@ if [[ "${TAG_MODE}" == "create" ]]; then
     read TAG_SUMMARY\?"One-line summary for the tag (eg. 'Fixed penalty calcs for stakes including BPD'): "
     if [[ -z "${TAG_SUMMARY//[[:space:]]/}" ]]; then
         ui_err "a one-line summary is required — it is the description inside the signed tag."
-        print "Nothing has been merged, tagged, deployed or pushed."
-        _run ${GIT} checkout dev 2>/dev/null
+        print "Nothing has been tagged, deployed or pushed."
         exit 1
     fi
 
@@ -200,7 +198,6 @@ if [[ "${TAG_MODE}" == "create" ]]; then
     ui_dim "summary: ${TAG_SUMMARY}"
     _run ${GIT} tag -s "${NEW_TAG}" -m "${TAG_SUMMARY}" || {
         print "ERROR: git tag failed (smartcard PIN or passphrase needed for the tag signature?)"
-        _run ${GIT} checkout dev
         exit 1
     }
 else
@@ -367,7 +364,6 @@ if _notes_same "${NOTES_TMP}" "${NOTES_TMP}.orig"; then
     ui_err "the notes are unchanged — nothing has been deployed, pushed or published."
     print "  The tag ${NEW_TAG} exists locally; re-running will reuse it (see 3b)."
     rm -f "${NOTES_TMP}.orig"
-    _run ${GIT} checkout dev 2>/dev/null
     exit 1
 fi
 rm -f "${NOTES_TMP}.orig"
@@ -391,7 +387,6 @@ if [[ ${DEPLOY_STATUS} -ne 0 ]]; then
     print "The tag ${NEW_TAG} exists locally but nothing has been pushed."
     print "  - re-run: the tag is reused, and both brands are rebuilt and re-published"
     print "  - abandon: git tag -d ${NEW_TAG}"
-    _run ${GIT} checkout dev 2>/dev/null
     exit ${DEPLOY_STATUS}
 fi
 
@@ -452,14 +447,11 @@ else
         || ui_warn "could not update the notes — the release body is unchanged."
 fi
 
-_run ${GIT} checkout dev 2>/dev/null
-
 if [[ ${DRY_RUN} -eq 1 ]]; then
-    ui_ok "DRY RUN complete — nothing was merged, tagged, deployed, pushed or published."
+    ui_ok "DRY RUN complete — nothing was tagged, deployed, pushed or published."
     ui_head "The notes that would have been published:"
     sed 's/^/  | /' "${NOTES_TMP}"
     exit 0
 fi
 
 ui_ok "release: ${C_MUTE}$(${GH} release view "${NEW_TAG}" --json url -q .url 2>/dev/null)${C_RESET}"
-ui_dim "branch: $(${GIT} rev-parse --abbrev-ref HEAD)"

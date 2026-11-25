@@ -459,9 +459,9 @@ pointer carrying the build currently served (AGENTS.md §5).
 
 **Done** — `8ab13e3`. `yarn release` (`scripts/release.sh`) performs the whole sequence:
 
-1. require a clean tree on `dev`;
-2. merge `dev` → `master`;
-3. suggest and create a **signed** tag;
+1. require a clean tree on **`master`** (no merging, no checkouts: getting `dev` in is the
+   operator's deliberate step, and the script warns if `dev` is ahead rather than merging it);
+2. suggest and create a **signed** tag;
 4. run `yarn deploy` (production prompts unchanged — both brands built, then both hosts);
 5. **hard-stop** if the archive or its `.sig` is missing (an unsigned release is pointless);
 6. `git push origin master && git push --tags` — before any release operation, because
@@ -518,6 +518,14 @@ abandoned attempt is not what the live site serves.
   and deploy it to both hosts? [Y/n]" is deliberately kept — it is the last point of no return.
   Verified in a rig: with all three supplied, `deploy.sh` goes straight from the banner to the
   summary and the single gate, and answering "n" aborts with no worktree created.
+
+**Master-only, no branch juggling** (`<MASTERHASH>`): `release.sh` no longer merges `dev` into
+`master` or checks anything out (it used to do both, and to return you to `dev` afterwards). It
+now requires `master`, refuses otherwise with the exact commands to run, warns when local `dev`
+is ahead of `master` (proceeding regardless, since releasing a curated `master` is legitimate),
+and leaves you where you started. Verified in a rig: from `dev` it aborts with guidance; from
+`master` with `dev` one commit ahead it warns and completes, with zero `checkout`/`merge`
+references in the plan and no helper errors.
 
 **Collect everything before touching GitHub** (`b519e6e`): the notes step moved ahead of the
 deploy (it used to run after it, so an abandoned edit left the hosts updated with no release

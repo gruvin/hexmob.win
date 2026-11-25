@@ -266,7 +266,7 @@ the compiled brand (`VITE_BRAND` → `IS_HM` / `IS_TSA`, §2) and not from
 
 Prompted sequence, deliberately awkward — every step is a guard:
 
-1. Entry is through `yarn release`, which runs the deploy engine with
+1. Entry is through `yarn release` — run from `master`, clean tree — which runs the deploy engine with
    `DEPLOY_KIND=p DEPLOY_CONFIRM=yes DEPLOY_TAG=<tag>`. A `p` without all three blocks: a
    standalone production deploy would leave the hosts serving a build no release describes.
 2. **Blocking checks, before anything happens:** the working tree must be clean (tracked
@@ -343,9 +343,14 @@ Nothing is stashed, and nothing needs to be: a release refuses to start from a d
 worktree at the tagged commit. The guard exists for the operator's sake, not the build's.
 
 `yarn release` (`scripts/release.sh`, carried on `dev` like everything else) runs the whole
-ceremony: clean tree on `dev` → merge to `master` → signed tag → `yarn deploy` (production
-prompts unchanged) → require both the `.tgz` **and** its `.sig` → push `master` + tags →
-publish to GitHub.
+ceremony: **run from `master` with a clean tree** → signed tag → production deploy → require
+both the `.tgz` **and** its `.sig` → push `master` + tags → publish to GitHub.
+
+It **does not merge, check out or move branches**. Getting `dev` into `master` is a deliberate
+act by the operator, done before the release; the script only refuses to run anywhere other than
+`master` and warns when local `dev` is ahead of it (`local dev is N commit(s) ahead of master -
+this release contains only what is on master`), because a release that silently omits work is
+worse than one that says so. It also leaves you on `master` when it finishes.
 
 It asks for two texts, and they are different things: a **one-line summary that becomes the tag
 annotation** (the description inside the signed tag, which is what `git show <tag>` shows and what
@@ -517,9 +522,10 @@ alternative to the rename.
   (`DEPLOY_KIND=p DEPLOY_CONFIRM=yes DEPLOY_TAG=<tag> ./scripts/deploy.sh`) exists for
   emergencies only, and it produces a build whose tarball will not byte-match the release's
   published one — prefer a new patch tag.
-- **A release requires a clean tree on `dev` or `master`.** Not because the build needs it —
-  it runs in a worktree — but because a dirty tree means attention is elsewhere. The script
-  blocks and prints what is in the way; it never stashes, resets or discards to proceed.
+- **A release requires a clean tree on `master`, and `release.sh` never merges or checks out.**
+  The build does not need the tree (it runs in a worktree), but a dirty tree means attention is
+  elsewhere. Getting `dev` into `master` is the operator's deliberate step; the script blocks on
+  any other branch and warns when `dev` is ahead, then proceeds.
 - **Never add a step that mutates the main tree.** Overlay work belongs in the worktree. If
   something genuinely must touch the real checkout, it needs a `TRAPEXIT` undo and a very
   good reason.
