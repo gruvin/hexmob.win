@@ -29,7 +29,7 @@ Tick these as they are fixed; the sections below hold the detail for each.
 - [x] **B2** — entry point was deleted before upload, leaving a live 404 window
 - [ ] **B3** — macOS artefacts already on a server are protected from `--delete`, not removed (nothing Apple is uploaded; this is cleanup only)
 - [ ] **C1** — *DEFERRED* — `dev` and `master` disagree on how the release is signed; `release.sh` exists only on `master`
-- [ ] **C2** — *DEFERRED* — untested hypothesis: automated GPG signing needs an interactive TTY
+- [x] **C2** — the "automated signing needs a TTY" hypothesis: tested, false for the passphrase-less local key (the card key would still fail)
 - [x] **C3** — failure reporting was opaque (`CAUGHT: []`)
 - [x] **C4** — `dot-htaccess-sample` described the superseded `index.html` cache strategy
 - [x] **C5** — tag naming drifted between the prompt text and practice
@@ -336,29 +336,33 @@ cherry-picking it onto `dev` inverts the documented dev → master flow for thos
 
 ---
 
-### C2 — DEFERRED — untested hypothesis: automated GPG signing needs an interactive TTY
+### C2 — the "automated signing needs a TTY" hypothesis, tested
 
-**What.** Automated signing is assumed to fail because of the passphrase prompt. Untested in
-the master variant of `deploy.sh`.
+**Hypothesis (as recorded).** Automated signing was assumed to fail because GPG needs an
+interactive console / passphrase prompt, which is why the deploy only copied the `gpg` command
+to the clipboard for the operator to run.
 
-**Things to test, in order** (cheap first):
+**Tested — the hypothesis does not hold for the key this machine signs with.** In this
+(non-interactive, no controlling terminal) shell:
 
-1. Does signing work at all from a non-interactive context?
-   `echo test >/tmp/x && gpg --yes -b /tmp/x` in a fresh shell — and again with stdin
-   redirected (`</dev/null`) and with no controlling TTY (`setsid`).
-2. Is the key passphrase-protected? `gpg --list-secret-keys` (look for `sec#` vs `sec`).
-   If protected, agent caching (`gpg-agent` / macOS Keychain
-   `pinentry-program`), `--pinentry-mode loopback --passphrase-file`, or a dedicated
-   passphrase-less release key are the options.
-3. Is `GPG_TTY` set/exported, and does `pinentry` find a program in the deploy script's
-   environment (it does not source `.zprofile` the way an interactive shell would)?
-4. Capture the actual stderr. The current master variant fails silently into the clipboard
-   fallback, which is why the cause was never identified: log `${GPG}`'s stderr to a file
-   before deciding.
+| test | result |
+|---|---|
+| `gpg --batch --yes -b file` | signs, exit 0 |
+| same after `gpg-connect-agent "clear_passphrase …"` | signs, exit 0 — so not merely a warm agent cache |
+| `gpg --batch --yes --pinentry-mode error -b file` | signs — **the key has no passphrase** |
+| `env -u GPG_TTY gpg --batch --yes -b file < /dev/null` | signs; `gpg --verify` reports `Good signature … [ultimate]` |
 
-**Outcome to record here**, whichever way it goes, so the next person does not re-derive it.
+Key in use: `5751D33B09A27356` (Bryan Rentoul <gruvin@gmail.com>), local `sec`, 2019.
 
----
+**Most likely explanation for the historical failure.** The *other* secret key on this machine,
+`097E794A93AF6EEA`, is smartcard-backed (`sec>` with `Card serial no. = 0006 18650236`). Signing
+with it needs the card plus its PIN, which cannot happen in a script — so whenever that key was
+the default (or was named explicitly), automated signing would have failed exactly as assumed.
+
+**Residual caveat.** This result is a property of the *signing key*, not of the deploy: if the
+key ever gains a passphrase, or a card-backed key becomes the default, unattended signing breaks
+again. Hence C1 keeps the clipboard fallback and fails loudly rather than hanging (`--batch`
+prevents a pinentry prompt from blocking a deploy).
 
 ### C3 — failure reporting was opaque
 
