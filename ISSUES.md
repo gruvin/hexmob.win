@@ -522,8 +522,8 @@ abandoned attempt is not what the live site serves.
 **Master-only, no branch juggling** (`488a1ac`): `release.sh` no longer merges `dev` into
 `master` or checks anything out (it used to do both, and to return you to `dev` afterwards). It
 now requires `master`, refuses otherwise with the exact commands to run, warns when local `dev`
-is ahead of `master` (proceeding regardless, since releasing a curated `master` is legitimate),
-and leaves you where you started. Verified in a rig: from `dev` it aborts with guidance; from
+is ahead of `master` and asks `Proceed anyway? [Yn]` (default yes — a curated `master` may be
+released, but deliberately), and leaves you where you started. Verified in a rig: from `dev` it aborts with guidance; from
 `master` with `dev` one commit ahead it warns and completes, with zero `checkout`/`merge`
 references in the plan and no helper errors.
 

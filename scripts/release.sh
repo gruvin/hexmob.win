@@ -37,6 +37,15 @@ if [[ -z "${_UI_LOADED:-}" ]]; then
     ui_kv()    { printf '  %-8s %s\n' "$1" "$2" }
 fi
 
+# Interactive by design. Without a terminal the `read -k1` prompts fail and leave their variables
+# empty, which means "yes" to every confirmation - so refuse up front.
+if [[ ! -t 0 ]]; then
+    ui_err "this script is interactive by design and stdin is not a terminal"
+    print "  Run it from an interactive shell (it asks for the tag, the notes and confirmations)."
+    exit 1
+fi
+
+
 GIT=$(command -v git)
 GH=$(command -v gh)
 
@@ -103,6 +112,13 @@ if [[ "${DEV_AHEAD:-0}" -gt 0 ]]; then
     ui_warn "local dev is ${DEV_AHEAD} commit(s) ahead of master - this release contains only what is on master"
     ${GIT} log --oneline master..dev | head -5 | sed 's/^/    /'
     [[ ${DEV_AHEAD} -gt 5 ]] && ui_dim "  … and $(( DEV_AHEAD - 5 )) more"
+    # Not a block: releasing a curated master is a legitimate choice. But it must be a choice,
+    # not a default nobody noticed.
+    read -k1 YN\?"Proceed anyway? [Yn] "
+    print ""
+    case "${YN}" in
+        (n|N) print "Aborted — nothing has been tagged, deployed or pushed." ; exit 0 ;;
+    esac
 fi
 
 # ── 3. Pick the next version ─────────────────────────────────────────────────

@@ -348,9 +348,13 @@ both the `.tgz` **and** its `.sig` → push `master` + tags → publish to GitHu
 
 It **does not merge, check out or move branches**. Getting `dev` into `master` is a deliberate
 act by the operator, done before the release; the script only refuses to run anywhere other than
-`master` and warns when local `dev` is ahead of it (`local dev is N commit(s) ahead of master -
-this release contains only what is on master`), because a release that silently omits work is
-worse than one that says so. It also leaves you on `master` when it finishes.
+`master` and, when local `dev` is ahead of it, warns with the commit count and asks
+`Proceed anyway? [Yn]` (default yes) — releasing a curated `master` is legitimate, but it has to
+be a choice rather than a default nobody noticed. It also leaves you on `master` when it
+finishes.
+
+Like anything interactive here, it refuses to run without a terminal: the `read -k1`
+confirmations would otherwise fail and leave their variables empty, which reads as "yes".
 
 It asks for two texts, and they are different things: a **one-line summary that becomes the tag
 annotation** (the description inside the signed tag, which is what `git show <tag>` shows and what
