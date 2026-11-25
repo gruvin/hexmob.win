@@ -366,7 +366,7 @@ the master variant of `deploy.sh`.
 only diagnostic was `print "D'oh! CAUGHT: [$CAUGHT]"`. Every failure therefore reported
 `CAUGHT: []`, with no indication of which step died. That is exactly how A1 stayed hidden.
 
-**Done** — `<COMMIT>`.
+**Done** — `0c8caa6`.
 
 - Every `throw` carries a message now, including the last one (rsync: exit status, source and
   destination). `_guarded` prefixes failures with the phase that failed
@@ -389,7 +389,7 @@ the deployed entry point is `index.php` (renamed to bypass nginx's `open_file_ca
 matched nothing, and the file never mentioned the PHP-FPM reasoning at all — so anyone applying
 it would have cached nothing and wondered why deploys still looked stale.
 
-**Done** — `<COMMIT>`. Rewritten around what is actually served:
+**Done** — `05c8ffc`. Rewritten around what is actually served:
 
 - the entry point is `index.php`, with `Cache-Control: no-cache, must-revalidate`;
   `\.html$` is called out explicitly as a rule **not** to add, with the reason;
@@ -407,7 +407,7 @@ it would have cached nothing and wondered why deploys still looked stale.
 `^[0-9]+\.[0-9]+\.[0-9]+$`, so a `v`-prefixed tag would be silently skipped by it while still
 being accepted for a deploy.
 
-**Done** — `<COMMIT>`. The prompt now says `eg. 0.4.26`, and `_require_tag` warns (rather than
+**Done** — `6c28c9f`. The prompt now says `eg. 0.4.26`, and `_require_tag` warns (rather than
 blocks) when the tag is not `MAJOR.MINOR.PATCH`, naming `release.sh`'s suggestion logic as the
 reason. Blocking would be wrong: historical tags like `TS1` exist and redeploying one is the
 operator's call. The tag still ends up in the UI header and in the signed artifact name, so
@@ -424,7 +424,7 @@ and `DEST_FTP_PORT` as self-assignments in all three branches
 (`DEST_FTP_PROTOCOL=${DEST_FTP_PROTOCOL}`), which do nothing but suggest per-target state that
 does not exist.
 
-**Done** — `<COMMIT>`. Both variables and all six self-assignment lines are gone; protocol and
+**Done** — `6c28c9f`. Both variables and all six self-assignment lines are gone; protocol and
 port remain plain globals, which is what they are. Verified that all four target combinations
 still resolve correctly (`tsa` → rsync to the ssh host, `dev`/`hexmob` → FTPS to the shared
 host, and `DEPLOY_TARGET=dev TARGET=tsa` → the dev destination).
