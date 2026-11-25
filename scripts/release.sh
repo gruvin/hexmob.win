@@ -249,7 +249,9 @@ _edit_notes() {
             sed 's/^/#   /' "${REF}"
         fi
         print -r -- "${NOTES_MARKER}"
-        cat "${FILE}"
+        # Strip CRs: release bodies authored elsewhere can be CRLF, and nvim then renders every
+        # line ending as ^M. Line endings are normalised on the way in and on the way out.
+        tr -d '\r' < "${FILE}"
     } > "${STAGED}"
 
     # ${=VAR} word-splits, so EDITOR can carry arguments ("code --wait").
@@ -265,7 +267,7 @@ _edit_notes() {
         print "\nERROR: the notes came back empty — refusing to publish a release with no notes."
         return 1
     fi
-    print -r -- "${BODY}" > "${FILE}"
+    print -r -- "${BODY}" | tr -d '\r' > "${FILE}"
     return 0
 }
 
@@ -358,7 +360,7 @@ if [[ "${TARGET_CHOICE}" == "n" || "${TARGET_CHOICE}" == "N" ]]; then
     rm -f "${REF_TMP}"
 else
     # The usual path: pull the current body so the edit is an append, not a replacement.
-    ${GH} release view "${CURRENT_RELEASE}" --json body -q .body > "${NOTES_TMP}" 2>/dev/null
+    ${GH} release view "${CURRENT_RELEASE}" --json body -q .body 2>/dev/null | tr -d '\r' > "${NOTES_TMP}"
     cp "${NOTES_TMP}" "${NOTES_TMP}.orig"
     _edit_notes "${NOTES_TMP}" "${CURRENT_RELEASE}" || exit 1
     cmp -s "${NOTES_TMP}" "${NOTES_TMP}.orig" || NOTES_CHANGED=1
