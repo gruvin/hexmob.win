@@ -519,7 +519,7 @@ abandoned attempt is not what the live site serves.
   Verified in a rig: with all three supplied, `deploy.sh` goes straight from the banner to the
   summary and the single gate, and answering "n" aborts with no worktree created.
 
-**Collect everything before touching GitHub** (`<LOCALHASH>`): the notes step moved ahead of the
+**Collect everything before touching GitHub** (`b519e6e`): the notes step moved ahead of the
 deploy (it used to run after it, so an abandoned edit left the hosts updated with no release
 describing them), and an unchanged body now aborts instead of continuing. Detection compares
 *normalised* text — `_edit_notes` rewrites trailing newlines, so a byte comparison would report a
