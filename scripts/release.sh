@@ -121,20 +121,43 @@ if [[ "${DEV_AHEAD:-0}" -gt 0 ]]; then
     esac
 fi
 
+_remote_tag_state() { # absent | present | unknown
+    local OUT RC
+    OUT=$(${GIT} ls-remote --tags origin "refs/tags/$1" 2>/dev/null)
+    RC=$?
+    [[ ${RC} -ne 0 ]] && { print -n unknown; return; }
+    [[ -n "${OUT}" ]] && { print -n present; return; }
+    print -n absent
+}
+
 # ── 3. Pick the next version ─────────────────────────────────────────────────
 ui_head "Recent tags (newest first)"
 ${GIT} tag --sort=-v:refname | head -10 | sed 's/^/  /'
 
+# A tag that was never published is an *unfinished release*, not released history: stepping past
+# it would leave it dangling (a local tag for a build nobody ever saw). So if the newest tag is
+# local-only, or pushed but without a release, suggest that same tag again - the tag-state logic
+# in 3b will then reuse or resume it rather than creating another.
 LATEST_TAG=$(${GIT} tag --sort=-v:refname | grep -E '^[0-9]+\.[0-9]+\.[0-9]+$' | head -1)
+SUGGESTED=""
 if [[ -n "$LATEST_TAG" ]]; then
-    NEXT_PATCH=$(( ${LATEST_TAG##*.} + 1 ))
-    SUGGESTED="${LATEST_TAG%.*}.${NEXT_PATCH}"
-else
-    SUGGESTED=""
+    LATEST_STATE=$(_remote_tag_state "${LATEST_TAG}")
+    if [[ "$LATEST_STATE" == "absent" ]]; then
+        SUGGESTED="${LATEST_TAG}"
+        ui_warn "${LATEST_TAG} exists locally but was never pushed - suggesting it again (unfinished release)"
+    elif [[ "$LATEST_STATE" == "present" ]] && ! ${GH} release view "${LATEST_TAG}" > /dev/null 2>&1; then
+        SUGGESTED="${LATEST_TAG}"
+        ui_warn "${LATEST_TAG} is pushed but has no release yet - suggesting it again (unfinished release)"
+    else
+        [[ "$LATEST_STATE" == "unknown" ]] && \
+            ui_warn "could not tell whether ${LATEST_TAG} is published (git ls-remote failed)"
+        NEXT_PATCH=$(( ${LATEST_TAG##*.} + 1 ))
+        SUGGESTED="${LATEST_TAG%.*}.${NEXT_PATCH}"
+    fi
 fi
 
 print ""
-read NEW_TAG\?"New release tag (eg. ${SUGGESTED}): "
+read NEW_TAG\?"Release tag [${SUGGESTED}]: "
 [[ -z "$NEW_TAG" && -n "$SUGGESTED" ]] && NEW_TAG="$SUGGESTED" && print "Using ${NEW_TAG}"
 
 if [[ -z "$NEW_TAG" ]]; then
@@ -150,14 +173,6 @@ fi
 #   local, not on origin         -> reuse it (it is already signed; re-signing churns the object)
 #   local, on origin, no release -> resume: the tag is public, nothing was published yet
 #   local, on origin, released   -> only with --republish: it would replace published assets
-_remote_tag_state() { # absent | present | unknown
-    local OUT RC
-    OUT=$(${GIT} ls-remote --tags origin "refs/tags/$1" 2>/dev/null)
-    RC=$?
-    [[ ${RC} -ne 0 ]] && { print -n unknown; return; }
-    [[ -n "${OUT}" ]] && { print -n present; return; }
-    print -n absent
-}
 
 TAG_MODE=create
 if ${GIT} rev-parse --verify --quiet "refs/tags/${NEW_TAG}" > /dev/null; then

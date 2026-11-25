@@ -527,6 +527,15 @@ released, but deliberately), and leaves you where you started. Verified in a rig
 `master` with `dev` one commit ahead it warns and completes, with zero `checkout`/`merge`
 references in the plan and no helper errors.
 
+**The version suggestion respects tag state** (`<SGTAG>`): the prompt used to compute the next
+patch from the newest version tag regardless of whether that tag had ever been published, so after
+a failed run it offered `0.4.28` while the unpublished `0.4.27` was still sitting there. It now
+checks the newest tag first — local-only, or pushed without a release, both mean an unfinished
+release, and the suggestion becomes that same tag (which the 3b logic then reuses or resumes).
+Only a published tag advances the number. Verified against a rig with a real bare `origin`:
+local-only → suggests and reuses `0.4.27`; pushed+released → suggests `0.4.28`; pushed but
+unreleased → suggests and resumes `0.4.27`.
+
 **Collect everything before touching GitHub** (`b519e6e`): the notes step moved ahead of the
 deploy (it used to run after it, so an abandoned edit left the hosts updated with no release
 describing them), and an unchanged body now aborts instead of continuing. Detection compares

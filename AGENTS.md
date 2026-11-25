@@ -401,6 +401,10 @@ pushed only after the release steps, so a failed run normally leaves a tag nobod
 | local, on `origin`, no release | **resume** the release for it (nothing was published yet) |
 | local, on `origin`, already released | **block** unless `--republish`, because continuing would replace published assets |
 
+The *suggestion* follows the same rule: an unpublished tag is unfinished history, not a released
+version, so the prompt offers that same tag again rather than the next patch. Otherwise a failed
+run would leave the old tag dangling while the operator moved blithely to the next number.
+
 It never recreates a tag that might already be public: re-signing changes the tag object, and a
 published tag is precisely what a signed release exists to keep immutable. A local tag that is
 lightweight rather than annotated is the one exception — it is deleted and recreated signed.
