@@ -165,10 +165,11 @@ fi
 # does not simply strip lines starting with '#').
 NOTES_MARKER='<!-- ===== notes below this line; text above it is ignored ===== -->'
 
-# @args: TMPFILE (pre-populated with the current notes), TITLE
+# @args: TMPFILE (pre-populated with the current notes), TITLE, [REFERENCE_FILE]
 _edit_notes() {
     local FILE=$1
     local TITLE=$2
+    local REF=${3:-}
     local EDITOR_BIN=${EDITOR:-vi}
     local STAGED="${FILE}.edit"
 
@@ -178,6 +179,11 @@ _edit_notes() {
         print -r -- "# Edit below the marker. Save and quit to continue the release;"
         print -r -- "# quit without saving to abort — nothing has been pushed yet."
         print -r -- "# Set EDITOR to control the editor (eg. EDITOR='code --wait')."
+        if [[ -n "${REF}" && -s "${REF}" ]]; then
+            print -r -- "#"
+            print -r -- "# For reference only (not published) — candidates for the notes:"
+            sed 's/^/#   /' "${REF}"
+        fi
         print -r -- "${NOTES_MARKER}"
         cat "${FILE}"
     } > "${STAGED}"
@@ -202,21 +208,31 @@ _edit_notes() {
 # ── 7. Which release? (read-only, before anything is pushed) ─────────────────
 # Default to the latest *published* release: a leftover draft from an abandoned attempt is
 # not what the build currently being served belongs to. Drafts are shown separately.
+# Identify releases by title as well as tag - these releases carry descriptive names
+# ("3rd Party Security Upgrades"), so the tag alone is ambiguous to a human reader.
 CURRENT_RELEASE=$(${GH} release list --exclude-drafts --limit 1 --json tagName -q '.[0].tagName' 2>/dev/null)
+CURRENT_RELEASE_NAME=$(${GH} release list --exclude-drafts --limit 1 --json name -q '.[0].name' 2>/dev/null)
 DRAFT_COUNT=$(${GH} release list --json isDraft -q '[.[] | select(.isDraft)] | length' 2>/dev/null)
+[[ -z "${CURRENT_RELEASE_NAME}" ]] && CURRENT_RELEASE_NAME="${CURRENT_RELEASE}"
 
 print "\nGitHub releases (published):"
-${GH} release list --exclude-drafts --limit 5 2>/dev/null | sed 's/^/  /' || print "  (none found)"
+${GH} release list --exclude-drafts --limit 5 --json tagName,name,isLatest \
+    -q '.[] | "\(.tagName)\t\(.name)\t\(if .isLatest then "<= latest" else "" end)"' 2>/dev/null \
+    | sed 's/^/  /' || print "  (none found)"
 [[ "${DRAFT_COUNT:-0}" != "0" ]] && print "  note: ${DRAFT_COUNT} draft release(s) exist and are NOT considered the current release"
 
 if [[ -n "${CURRENT_RELEASE}" ]]; then
-    print "\nDefault target: the current release '${CURRENT_RELEASE}'"
-    print "  - it will be moved onto tag ${NEW_TAG}, its previous build assets replaced,"
-    print "    and its notes taken from your editor."
-    read -k1 TARGET_CHOICE\?"Publish to '${CURRENT_RELEASE}'? [Y] or create a NEW release [n]: "
+    print "\nHow should ${NEW_TAG} be published?"
+    print "  [u] update the existing release \"${CURRENT_RELEASE_NAME}\" (currently on tag ${CURRENT_RELEASE})"
+    print "      → that release is retagged to ${NEW_TAG}; its build assets are replaced;"
+    print "        its notes are opened in your editor. One release, always the live build."
+    print "  [n] create a NEW release for ${NEW_TAG}"
+    print "      → a separate release page for this milestone; the existing one is left"
+    print "        untouched on tag ${CURRENT_RELEASE}."
+    read -k1 TARGET_CHOICE\?"Choice [u/n] (Enter = u): "
     print ""
 else
-    print "\nNo existing release found — one will be created."
+    print "\nNo existing release found — one will be created for ${NEW_TAG}."
     TARGET_CHOICE="n"
 fi
 
@@ -229,7 +245,7 @@ trap "rm -f '${NOTES_TMP}' '${NOTES_TMP}.edit'" EXIT
 
 NOTES_CHANGED=0
 if [[ "${TARGET_CHOICE}" == "n" || "${TARGET_CHOICE}" == "N" ]]; then
-    print "\nRelease title (Enter for '${NEW_TAG}'): "
+    print "\nTitle for the new release (Enter for '${NEW_TAG}'): "
     read RELEASE_TITLE
     [[ -z "${RELEASE_TITLE}" ]] && RELEASE_TITLE="${NEW_TAG}"
 
@@ -241,15 +257,20 @@ if [[ "${TARGET_CHOICE}" == "n" || "${TARGET_CHOICE}" == "N" ]]; then
     [[ -z "${PREV_TAG}" ]] && PREV_TAG=$(${GIT} tag --sort=-v:refname | grep -v "^${NEW_TAG}$" | head -1)
     RANGE_END="${NEW_TAG}"
     ${GIT} rev-parse --verify --quiet "refs/tags/${NEW_TAG}" > /dev/null || RANGE_END="HEAD"
+    # The commits go to the editor as *reference*, above the marker, rather than into the
+    # published body: a milestone note should say what it means, not replay `git log`.
+    REF_TMP="${NOTES_TMP}.ref"
     if [[ -n "${PREV_TAG}" ]]; then
-        print "\nSeeded from ${PREV_TAG}..${RANGE_END}:"
+        print "\nCommits since ${PREV_TAG} (shown in the editor for reference):"
         ${GIT} log "${PREV_TAG}..${RANGE_END}" --pretty='- %s' | sed 's/^/  /'
-        printf 'Changes since %s:\n\n' "${PREV_TAG}" > "${NOTES_TMP}"
-        ${GIT} log "${PREV_TAG}..${RANGE_END}" --pretty='- %s' >> "${NOTES_TMP}"
+        ${GIT} log "${PREV_TAG}..${RANGE_END}" --pretty='- %s' > "${REF_TMP}"
+        printf '## Changes\n\n' > "${NOTES_TMP}"
     else
-        : > "${NOTES_TMP}"
+        : > "${REF_TMP}"
+        printf '## Changes\n\n' > "${NOTES_TMP}"
     fi
-    _edit_notes "${NOTES_TMP}" "${RELEASE_TITLE}" || exit 1
+    _edit_notes "${NOTES_TMP}" "${RELEASE_TITLE}" "${REF_TMP}" || exit 1
+    rm -f "${REF_TMP}"
 else
     # The usual path: pull the current body so the edit is an append, not a replacement.
     ${GH} release view "${CURRENT_RELEASE}" --json body -q .body > "${NOTES_TMP}" 2>/dev/null

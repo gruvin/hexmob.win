@@ -346,7 +346,10 @@ push, no `gh release` write. It ends by printing the notes that would have been 
 it after changing anything in this script, and before a release you care about.
 
 **Notes are edited in `$EDITOR`, before anything is pushed.** The current release body is
-pre-loaded under a comment header and a marker line (the `git commit` pattern). Text above the
+pre-loaded under a comment header and a marker line (the `git commit` pattern). For a *new*
+milestone release the body starts as a bare `## Changes` skeleton and the commits since the
+previous tag appear **above** the marker as reference — like `git commit -v`, so a milestone note
+can say what it means instead of replaying `git log`. Text above the
 marker is discarded, so markdown headings in the notes survive — that is why the implementation
 strips up to a marker rather than stripping `#` lines. The editor runs *before* the push and
 before any asset is replaced, so backing out of the notes leaves nothing half-published. An

@@ -498,6 +498,15 @@ abandoned attempt is not what the live site serves.
   mutating calls, unchanged tag list, clean tree, `dev` still checked out, and the final notes
   printed.
 
+  Also reworded after the first real rehearsal (`<UXHASH>`): the choice prompt read
+  "Publish to '0.4.26'?", which sounded like publishing *onto* the old tag when it means
+  retagging it. It now spells out both branches ("update the existing release \"<title>\"
+  (currently on tag <tag>) … retagged; assets replaced; notes edited" vs "create a NEW
+  release … the existing one is left untouched"), and the release list shows tag, title and
+  `<= latest`, since those releases carry descriptive titles. New-release notes were also
+  seeding 35 commit subjects into the *published* body; the commits are now reference material
+  above the marker, with the body starting as `## Changes`.
+
   Three flaws the rehearsal itself found and fixed: `[dry-run]` lines for asset deletions were
   swallowed by a `> /dev/null` redirect; the closing message pointed at a notes file that the
   EXIT trap deletes; and the milestone path seeded notes from `<prevTag>..<newTag>`, which fails
