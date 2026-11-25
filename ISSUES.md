@@ -491,7 +491,7 @@ abandoned attempt is not what the live site serves.
   one-line prompt after everything was already live. Markdown headings survive because only
   text above the marker is discarded. A non-zero editor exit, empty notes, or "quit without
   saving" leaves the release untouched.
-- **`--dry-run` / `DRY_RUN=1`** (`2b6b186+1`): every prompt runs, read-only `gh` calls are real
+- **`--dry-run` / `DRY_RUN=1`** (`a6d3d62`): every prompt runs, read-only `gh` calls are real
   (so the release list and the notes body are live), and every destructive step prints
   `[dry-run] …` instead of executing. Verified in a rehearsal repo with a stubbed `gh` that
   fails on any mutating call: both paths (retag-existing and new-draft) complete with **zero**
