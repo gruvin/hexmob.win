@@ -519,7 +519,7 @@ abandoned attempt is not what the live site serves.
   Verified in a rig: with all three supplied, `deploy.sh` goes straight from the banner to the
   summary and the single gate, and answering "n" aborts with no worktree created.
 
-**Master-only, no branch juggling** (`<MASTERHASH>`): `release.sh` no longer merges `dev` into
+**Master-only, no branch juggling** (`488a1ac`): `release.sh` no longer merges `dev` into
 `master` or checks anything out (it used to do both, and to return you to `dev` afterwards). It
 now requires `master`, refuses otherwise with the exact commands to run, warns when local `dev`
 is ahead of `master` (proceeding regardless, since releasing a curated `master` is legitimate),
