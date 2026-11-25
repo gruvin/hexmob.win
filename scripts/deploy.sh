@@ -272,6 +272,12 @@ _remove_worktrees() {
 _sign_release() {
     local TGZ=$1
     local SIG="${TGZ}.sig"
+    # Calling this without a path used to hand gpg an empty filename, which failed with a
+    # confusing "can't open ''" - a bug in the caller, so say so rather than blaming the key.
+    if [[ -z "${TGZ}" ]]; then
+        ui_err "signing called without an archive path - the archive is UNSIGNED"
+        return 1
+    fi
     if [[ -z "${GPG}" ]] || [[ ! -x "${GPG}" ]]; then
         print "\n  gpg not found: release archive is UNSIGNED."
         return 1
@@ -612,7 +618,6 @@ case "$DEPLOY_TYPE" in
         _require_release_branch
         ui_dim "production deployment confirmed (DEPLOY_CONFIRM=yes)"
         TAG="${DEPLOY_TAG}"
-        ui_kv "tag" "${TAG}"
         _require_tag "${TAG}"
         print ""
         ui_kv "tag" "${TAG}"
@@ -658,7 +663,7 @@ case "$DEPLOY_TYPE" in
                 print "Done!"
 
                 print ""; ui_ok "${C_BOLD}live deployment completed${C_RESET}"
-                _sign_release || true
+                _sign_release "${RELEASE_TGZ}" || true
                 ;;
         esac
         _finish_release
