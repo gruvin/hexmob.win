@@ -536,6 +536,16 @@ Only a published tag advances the number. Verified against a rig with a real bar
 local-only → suggests and reuses `0.4.27`; pushed+released → suggests `0.4.28`; pushed but
 unreleased → suggests and resumes `0.4.27`.
 
+**Reuse is conditioned on what the hosts actually serve** (`<LIVEHASH>`): an existing archive only
+proves that a publish once returned 0 — the tar is the last step of a successful deploy — not that
+the hosts still serve that build. Each build now writes `dist/deploy.php`
+(`{brand,tag,built,assets}`), served fresh via PHP-FPM for the same reason the entry point is
+`.php`; `release.sh` asks both hosts what they serve after deploying (refusing to publish a
+mismatch without an explicit override) and, when offering to reuse an old archive, flips its
+default to rebuild unless both hosts confirm the tag. Verified in a rig with stubbed hosts:
+matching tags -> default reuse; tsa on an older build -> default redeploy; operator override
+honoured with a warning.
+
 **Collect everything before touching GitHub** (`b519e6e`): the notes step moved ahead of the
 deploy (it used to run after it, so an abandoned edit left the hosts updated with no release
 describing them), and an unchanged body now aborts instead of continuing. Detection compares

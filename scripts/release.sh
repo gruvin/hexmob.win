@@ -47,6 +47,10 @@ fi
 
 
 ORIG_PWD="$PWD"   # the script refuses to run outside the project root, so this is the repo
+# Where the two brands are actually served from - the deploy targets are FTP paths, these are how
+# an end user reaches them, which is what a release has to match.
+URL_HEXMOB="https://hexmob.win"
+URL_TSA="https://go.tshare.app"
 GIT=$(command -v git)
 GH=$(command -v gh)
 GPG=$(command -v gpg)
@@ -85,6 +89,29 @@ if [[ -z "${GH}" ]]; then
     print "ERROR: gh CLI not found — install with: brew install gh"
     exit 1
 fi
+
+# @args: BASE_URL
+# Prints the tag the host reports in its deploy marker, or nothing if it cannot be read. The
+# marker is named .php so PHP-FPM serves it fresh rather than the host's static cache, and the
+# query string defeats any intermediate cache in front of it.
+_live_tag() {
+    local OUT
+    OUT=$(curl -fsS --max-time 8 "${1}/deploy.php?t=$(date +%s)" 2>/dev/null) || return 1
+    print -r -- "${OUT}" | sed -n 's/.*"tag"[[:space:]]*:[[:space:]]*"\([^"]*\)".*/\1/p'
+}
+
+# @args: TAG
+# Confirms both brands are serving TAG right now. Sets LIVE_HEXMOB / LIVE_TSA, and returns 0 only
+# when both agree - an archive on disk proves a publish once returned 0, not that the hosts still
+# serve that build.
+_verify_live() {
+    local WANT=$1
+    ui_spin "asking ${URL_HEXMOB} what it serves" _live_tag "${URL_HEXMOB}"
+    LIVE_HEXMOB=${UI_SPIN_OUT}
+    ui_spin "asking ${URL_TSA} what it serves" _live_tag "${URL_TSA}"
+    LIVE_TSA=${UI_SPIN_OUT}
+    [[ "${LIVE_HEXMOB}" == "${WANT}" && "${LIVE_TSA}" == "${WANT}" ]]
+}
 
 # @args: TGZ path
 # Signs the release archive and verifies the signature it produced. --batch is deliberate:
@@ -465,13 +492,26 @@ if [[ -f "${RELEASE_TGZ}" ]]; then
     ui_head "An archive from a previous attempt already exists:"
     ui_dim "${RELEASE_TGZ}"
     ui_dim "built $(date -r "${RELEASE_TGZ}" '+%Y-%m-%d %H:%M'), ${SIG_STATE}"
-    ui_dim "it is the build of ${NEW_TAG}, the same tag this run is publishing"
-    read -k1 YN\?"Reuse it and skip the rebuild + redeploy? [Yn] "
+
+    # The archive proves a publish once returned 0; it does not prove what is live now. Ask both
+    # hosts, and let the answer decide the default.
+    if _verify_live "${NEW_TAG}"; then
+        ui_ok "both hosts are serving ${NEW_TAG} - the deploy did complete"
+        REUSE_DEFAULT=Y
+    else
+        ui_warn "hosts are serving hexmob=${LIVE_HEXMOB:-unknown} tsa=${LIVE_TSA:-unknown}, not ${NEW_TAG}"
+        ui_dim "so the previous attempt did not finish publishing: reusing its archive would release"
+        ui_dim "a build the sites are not serving"
+        REUSE_DEFAULT=n
+    fi
+    if [[ ${REUSE_DEFAULT} == "Y" ]]; then PROMPT="[Yn]"; else PROMPT="[yN]"; fi
+    read -k1 YN\?"Reuse it and skip the rebuild + redeploy? ${PROMPT} "
     print ""
-    case "${YN}" in
-        (n|N) REUSE_ARCHIVE=0 ;;
-        (*)   REUSE_ARCHIVE=1 ;;
-    esac
+    if [[ ${REUSE_DEFAULT} == "Y" ]]; then
+        case "${YN}" in (n|N) REUSE_ARCHIVE=0 ;; (*) REUSE_ARCHIVE=1 ;; esac
+    else
+        case "${YN}" in (y|Y) REUSE_ARCHIVE=1 ;; (*) REUSE_ARCHIVE=0 ;; esac
+    fi
 fi
 
 if [[ ${REUSE_ARCHIVE} -eq 1 ]]; then
@@ -494,6 +534,27 @@ if [[ ${DEPLOY_STATUS} -ne 0 ]]; then
     print "  - re-run: the tag is reused; any archive already built will be offered for reuse"
     print "  - abandon: git tag -d ${NEW_TAG}"
     exit ${DEPLOY_STATUS}
+fi
+
+# Public truth check: both brands must be serving this tag before anything is published. A mirror
+# can succeed while the host serves something else (a cache, or a half-finished previous attempt).
+if _verify_live "${NEW_TAG}"; then
+    ui_ok "confirmed: both hosts are serving ${NEW_TAG}"
+else
+    ui_warn "hosts report hexmob=${LIVE_HEXMOB:-unknown} tsa=${LIVE_TSA:-unknown}, expected ${NEW_TAG}"
+    if [[ ${DRY_RUN} -eq 1 ]]; then
+        ui_dim "(dry-run: nothing was deployed, so a mismatch here is expected)"
+    else
+        ui_dim "Publishing now would attach the release to a build the sites are not serving."
+        read -k1 YN\?"Publish anyway? [y/N] "
+        print ""
+        case "${YN}" in
+            (y|Y) ui_warn "continuing at the operator's request" ;;
+            (*)    ui_err "aborted - nothing was pushed or published"
+                   print "  Fix the deploy (re-run, or check the hosts), then use the archive reuse path."
+                   exit 1 ;;
+        esac
+    fi
 fi
 
 # Sign, unless this archive already carries a valid signature (that is the signing-failed retry).

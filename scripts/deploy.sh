@@ -528,6 +528,17 @@ _assemble() {
     # Rename to .php so nginx serves it via PHP-FPM rather than the static
     # open_file_cache, which on this host holds stale content for days.
     mv "${BUILD_DIR}index.html" "${BUILD_DIR}index.php" || throw 'Failed to rename index.html to index.php'
+
+    # Self-report marker, so anything can ask a host what it is actually serving instead of
+    # trusting that a publish once returned 0. Named .php on purpose: a static .json would sit in
+    # the host's open_file_cache for days and report the previous release (see AGENTS.md §7);
+    # PHP-FPM revalidates from disk. The file is plain JSON with no PHP tags, so PHP emits it
+    # verbatim.
+    local ASSETS_HASH
+    ASSETS_HASH=$( (cd "${BUILD_DIR}assets" 2>/dev/null && ls -1 | sort | shasum -a 256 | cut -c1-16) || print unknown )
+    printf '{"brand":"%s","tag":"%s","built":"%s","assets":"%s"}\n' \
+        "${TARGET}" "${VITE_VERSION:-dev}" "$(date -u '+%Y-%m-%dT%H:%M:%SZ')" "${ASSETS_HASH}" \
+        > "${BUILD_DIR}deploy.php" || throw 'could not write the deploy marker'
 }
 
 # @args: BRAND
