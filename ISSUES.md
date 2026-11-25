@@ -482,7 +482,7 @@ and never regenerated (that would wipe the accumulated log). Assets are replaced
 accumulated. Drafts are deliberately not treated as "current", because a leftover draft from an
 abandoned attempt is not what the live site serves.
 
-**Follow-up fixes** (`<FOLLOWUP>`), both UX rather than correctness:
+**Follow-up fixes** (`2b6b186`), both UX rather than correctness:
 
 - `deploy.sh` honours `DEPLOY_TAG`, so `yarn release` states the tag once instead of asking for
   it again at the deploy prompt — where the two answers could silently diverge.
