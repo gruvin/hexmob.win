@@ -491,6 +491,18 @@ abandoned attempt is not what the live site serves.
   one-line prompt after everything was already live. Markdown headings survive because only
   text above the marker is discarded. A non-zero editor exit, empty notes, or "quit without
   saving" leaves the release untouched.
+- **`--dry-run` / `DRY_RUN=1`** (`<DRYHASH>`): every prompt runs, read-only `gh` calls are real
+  (so the release list and the notes body are live), and every destructive step prints
+  `[dry-run] …` instead of executing. Verified in a rehearsal repo with a stubbed `gh` that
+  fails on any mutating call: both paths (retag-existing and new-draft) complete with **zero**
+  mutating calls, unchanged tag list, clean tree, `dev` still checked out, and the final notes
+  printed.
+
+  Three flaws the rehearsal itself found and fixed: `[dry-run]` lines for asset deletions were
+  swallowed by a `> /dev/null` redirect; the closing message pointed at a notes file that the
+  EXIT trap deletes; and the milestone path seeded notes from `<prevTag>..<newTag>`, which fails
+  when the new tag does not exist yet (dry run) — it now uses `HEAD` as the range end, and
+  prefers a version-shaped previous tag so a stray `TS1` cannot sort above `0.4.26`.
 
 **Not exercised end to end.** Step 4 publishes to both live hosts, so the first full run needs
 watching. The `gh` steps were checked against `gh 2.93.0`'s real flags (`--tag`, `--verify-tag`,

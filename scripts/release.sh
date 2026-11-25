@@ -23,6 +23,29 @@
 GIT=$(command -v git)
 GH=$(command -v gh)
 
+# ── Dry run ─────────────────────────────────────────────────────────────────
+# `yarn release --dry-run` (or DRY_RUN=1) exercises every prompt and prints the commands it
+# would run, without merging, tagging, deploying, pushing or touching any GitHub release.
+# Read-only steps still run for real, so the release list and the notes body in $EDITOR are
+# the live ones - that is the point of rehearsing it.
+DRY_RUN=${DRY_RUN:-0}
+for ARG in "$@"; do
+    case "$ARG" in
+        (--dry-run|--dryrun|-n) DRY_RUN=1 ;;
+        (*) print "ERROR: unknown argument '${ARG}' (only --dry-run is understood)"; exit 1 ;;
+    esac
+done
+
+# @args: command...
+# Runs it, or prints it. Only for simple commands - pipelines and redirections stay inline.
+_run() {
+    if [[ ${DRY_RUN} -eq 1 ]]; then
+        print -r -- "  [dry-run] ${(j: :)${(q)@}}"
+        return 0
+    fi
+    "$@"
+}
+
 if [[ ! ( -f ./index.html && -d ./src ) ]]; then
     print "ERROR: run from project root"
     exit 1
@@ -45,10 +68,14 @@ if [[ -n "$(${GIT} status --porcelain --untracked-files=normal)" ]]; then
     exit 1
 fi
 
+if [[ ${DRY_RUN} -eq 1 ]]; then
+    print "\n=== DRY RUN: nothing will be merged, tagged, deployed, pushed or published ==="
+fi
+
 # ── 2. Merge dev into master ─────────────────────────────────────────────────
 print "\nMerging dev → master ..."
-${GIT} checkout master || { print "ERROR: checkout master failed"; exit 1 }
-${GIT} merge dev       || { print "ERROR: merge dev failed"; ${GIT} checkout dev; exit 1 }
+_run ${GIT} checkout master || { print "ERROR: checkout master failed"; exit 1 }
+_run ${GIT} merge dev       || { print "ERROR: merge dev failed"; _run ${GIT} checkout dev; exit 1 }
 
 # ── 3. Pick the next version ─────────────────────────────────────────────────
 print "\nRecent tags (newest first):"
@@ -77,7 +104,7 @@ if ${GIT} rev-parse "$NEW_TAG" > /dev/null 2>&1; then
     read -k1 YN\?"Tag '${NEW_TAG}' already exists. Delete and recreate? [y/N]: "
     print ""
     if [[ "$YN" == "y" || "$YN" == "Y" ]]; then
-        ${GIT} tag -d "${NEW_TAG}" || { print "ERROR: could not delete tag"; ${GIT} checkout dev; exit 1; }
+        _run ${GIT} tag -d "${NEW_TAG}" || { print "ERROR: could not delete tag"; _run ${GIT} checkout dev; exit 1; }
     else
         print "Aborted."
         ${GIT} checkout dev
@@ -87,17 +114,23 @@ fi
 
 # ── 4. Signed tag ────────────────────────────────────────────────────────────
 print "\nCreating signed tag ${NEW_TAG} ..."
-${GIT} tag -s "${NEW_TAG}" -m "Release ${NEW_TAG}" || {
+_run ${GIT} tag -s "${NEW_TAG}" -m "Release ${NEW_TAG}" || {
     print "ERROR: git tag failed (smartcard PIN or passphrase needed for the tag signature?)"
-    ${GIT} checkout dev
+    _run ${GIT} checkout dev
     exit 1
 }
 
 # ── 5. Production deploy ─────────────────────────────────────────────────────
 print "\n── Running yarn deploy (production) ────────────────────────────────────"
 print "   At the prompts: select [p], type 'yes'. The tag is passed through.\n"
-DEPLOY_TAG="${NEW_TAG}" yarn deploy
-DEPLOY_STATUS=$?
+if [[ ${DRY_RUN} -eq 1 ]]; then
+    print "  [dry-run] DEPLOY_TAG=${NEW_TAG} yarn deploy"
+    print "  [dry-run] (production deploy skipped - no hosts touched, no archive produced)"
+    DEPLOY_STATUS=0
+else
+    DEPLOY_TAG="${NEW_TAG}" yarn deploy
+    DEPLOY_STATUS=$?
+fi
 if [[ ${DEPLOY_STATUS} -ne 0 ]]; then
     print "\nERROR: deploy script exited with status ${DEPLOY_STATUS}"
     print "The tag ${NEW_TAG} exists locally but nothing has been pushed. To recover:"
@@ -111,11 +144,13 @@ RELEASE_DIR="./release"
 RELEASE_TGZ="${RELEASE_DIR}/hexmob.win-${NEW_TAG}-build.tgz"
 RELEASE_SIG="${RELEASE_TGZ}.sig"
 
-if [[ ! -f "$RELEASE_TGZ" ]]; then
+if [[ ${DRY_RUN} -eq 1 ]]; then
+    print "\n(dry-run: skipping the archive/signature check - the deploy that produces them was skipped)"
+elif [[ ! -f "$RELEASE_TGZ" ]]; then
     print "\nERROR: ${RELEASE_TGZ} not found — cannot publish a release without it."
     exit 1
 fi
-if [[ ! -f "$RELEASE_SIG" ]]; then
+if [[ ${DRY_RUN} -eq 0 && ! -f "$RELEASE_SIG" ]]; then
     print "\nERROR: ${RELEASE_SIG} not found."
     print "The archive is unsigned, and a release whose signature is missing is pointless."
     print "Sign it in a terminal that can prompt for the key, then re-run from step 6:"
@@ -199,12 +234,18 @@ if [[ "${TARGET_CHOICE}" == "n" || "${TARGET_CHOICE}" == "N" ]]; then
     [[ -z "${RELEASE_TITLE}" ]] && RELEASE_TITLE="${NEW_TAG}"
 
     # Seed from the commits since the previous tag; the editor is where it gets shaped.
-    PREV_TAG=$(${GIT} tag --sort=-v:refname | grep -v "^${NEW_TAG}$" | head -1)
+    # Prefer a version-shaped tag (a stray TS1 would otherwise sort above 0.4.26 and produce a
+    # range spanning the whole history), and in a dry run the new tag does not exist yet, so
+    # fall back to HEAD as the range end.
+    PREV_TAG=$(${GIT} tag --sort=-v:refname | grep -E '^[0-9]+\.[0-9]+\.[0-9]+$' | grep -v "^${NEW_TAG}$" | head -1)
+    [[ -z "${PREV_TAG}" ]] && PREV_TAG=$(${GIT} tag --sort=-v:refname | grep -v "^${NEW_TAG}$" | head -1)
+    RANGE_END="${NEW_TAG}"
+    ${GIT} rev-parse --verify --quiet "refs/tags/${NEW_TAG}" > /dev/null || RANGE_END="HEAD"
     if [[ -n "${PREV_TAG}" ]]; then
-        print "\nSeeded from ${PREV_TAG}..${NEW_TAG}:"
-        ${GIT} log "${PREV_TAG}..${NEW_TAG}" --pretty='- %s' | sed 's/^/  /'
+        print "\nSeeded from ${PREV_TAG}..${RANGE_END}:"
+        ${GIT} log "${PREV_TAG}..${RANGE_END}" --pretty='- %s' | sed 's/^/  /'
         printf 'Changes since %s:\n\n' "${PREV_TAG}" > "${NOTES_TMP}"
-        ${GIT} log "${PREV_TAG}..${NEW_TAG}" --pretty='- %s' >> "${NOTES_TMP}"
+        ${GIT} log "${PREV_TAG}..${RANGE_END}" --pretty='- %s' >> "${NOTES_TMP}"
     else
         : > "${NOTES_TMP}"
     fi
@@ -221,38 +262,53 @@ fi
 # ── 9. Push ─────────────────────────────────────────────────────────────────
 # Before touching releases: gh release operations address tags that must exist on the remote.
 print "\nPushing master and tags to origin ..."
-${GIT} push origin master || { print "ERROR: git push origin master failed"; exit 1; }
-${GIT} push --tags        || { print "ERROR: git push --tags failed"; exit 1; }
+_run ${GIT} push origin master || { print "ERROR: git push origin master failed"; exit 1; }
+_run ${GIT} push --tags        || { print "ERROR: git push --tags failed"; exit 1; }
 
 # ── 10. Publish ─────────────────────────────────────────────────────────────
 if [[ "${TARGET_CHOICE}" == "n" || "${TARGET_CHOICE}" == "N" ]]; then
-    ${GH} release create "${NEW_TAG}" "${RELEASE_TGZ}" "${RELEASE_SIG}" \
-        --draft --title "${RELEASE_TITLE}" --notes-file "${NOTES_TMP}" \
-        && print "\nDraft release created. Review and publish at: $(${GH} release view "${NEW_TAG}" --json url -q .url)" \
-        || print "\nWARNING: gh release create failed — artifacts are in ${RELEASE_DIR}, create the release manually."
+    if [[ ${DRY_RUN} -eq 1 ]]; then
+        print "  [dry-run] would create a DRAFT release '${NEW_TAG}' with the assets above"
+    elif ${GH} release create "${NEW_TAG}" "${RELEASE_TGZ}" "${RELEASE_SIG}" \
+        --draft --title "${RELEASE_TITLE}" --notes-file "${NOTES_TMP}"; then
+        print "\nDraft release created. Review and publish at: $(${GH} release view "${NEW_TAG}" --json url -q .url)"
+    else
+        print "\nWARNING: gh release create failed — artifacts are in ${RELEASE_DIR}, create the release manually."
+    fi
 else
     print "\nMoving release '${CURRENT_RELEASE}' onto tag ${NEW_TAG} ..."
-    ${GH} release edit "${CURRENT_RELEASE}" --tag "${NEW_TAG}" --verify-tag \
+    _run ${GH} release edit "${CURRENT_RELEASE}" --tag "${NEW_TAG}" --verify-tag \
         || { print "ERROR: could not retag the release (is ${NEW_TAG} pushed?). Nothing else was changed."; exit 1; }
 
     print "Replacing the previous build assets ..."
     for ASSET in $(${GH} release view "${NEW_TAG}" --json assets -q '.assets[].name' 2>/dev/null); do
-        print "  removing ${ASSET}"
-        ${GH} release delete-asset "${NEW_TAG}" "${ASSET}" --yes > /dev/null \
-            || print "  WARNING: could not remove ${ASSET}"
+        if [[ ${DRY_RUN} -eq 1 ]]; then
+            print "  [dry-run] would remove ${ASSET}"
+        else
+            print "  removing ${ASSET}"
+            ${GH} release delete-asset "${NEW_TAG}" "${ASSET}" --yes > /dev/null \
+                || print "  WARNING: could not remove ${ASSET}"
+        fi
     done
-    ${GH} release upload "${NEW_TAG}" "${RELEASE_TGZ}" "${RELEASE_SIG}" --clobber \
+    _run ${GH} release upload "${NEW_TAG}" "${RELEASE_TGZ}" "${RELEASE_SIG}" --clobber \
         || { print "ERROR: upload failed — artifacts are in ${RELEASE_DIR}"; exit 1; }
 
     if [[ ${NOTES_CHANGED} -eq 1 ]]; then
-        ${GH} release edit "${NEW_TAG}" --notes-file "${NOTES_TMP}" \
+        _run ${GH} release edit "${NEW_TAG}" --notes-file "${NOTES_TMP}" \
             || print "WARNING: could not update the notes — the release body is unchanged."
     else
         print "Notes unchanged — leaving the release body alone."
     fi
 fi
 
-${GIT} checkout dev 2>/dev/null
+_run ${GIT} checkout dev 2>/dev/null
+
+if [[ ${DRY_RUN} -eq 1 ]]; then
+    print "\nDRY RUN complete — nothing was merged, tagged, deployed, pushed or published."
+    print "\nThe notes that would have been published:"
+    sed 's/^/  | /' "${NOTES_TMP}"
+    exit 0
+fi
 
 print "\nAll done. Release: $(${GH} release view "${NEW_TAG}" --json url -q .url 2>/dev/null)"
 print "Branch: $(${GIT} rev-parse --abbrev-ref HEAD)"

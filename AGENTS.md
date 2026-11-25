@@ -339,6 +339,12 @@ release is for"). The default path treats the release as a **moving pointer**: r
 new tag, delete the previous build's assets, upload the new signed pair, and update the
 append-only "Changes" notes. Only a milestone gets a new (draft) release.
 
+**Rehearse it with `yarn release --dry-run`** (or `DRY_RUN=1`). Every prompt runs, read-only
+steps hit the API for real — so the release list and the notes body you edit are live — and each
+destructive step is printed as `[dry-run] …` instead of executed: no merge, no tag, no deploy, no
+push, no `gh release` write. It ends by printing the notes that would have been published. Use
+it after changing anything in this script, and before a release you care about.
+
 **Notes are edited in `$EDITOR`, before anything is pushed.** The current release body is
 pre-loaded under a comment header and a marker line (the `git commit` pattern). Text above the
 marker is discarded, so markdown headings in the notes survive — that is why the implementation
