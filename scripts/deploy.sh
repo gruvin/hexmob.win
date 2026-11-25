@@ -21,8 +21,14 @@ APPLE_JUNK=(.DS_Store '._*' .AppleDouble .Trashes .Trash .Spotlight-V100 .fseven
 RSYNC_ARGS=(--exclude='.ht*' --exclude='.well-known')
 for JUNK in ${APPLE_JUNK}; do RSYNC_ARGS+=(--exclude="${JUNK}"); done
 
-LFTP_MIRROR_ARGS="--delete --verbose --parallel=6 --exclude-glob .ht* --exclude-glob .well-known"
+# Mirror flags. The web root is mirrored *without* --delete: lftp's exclude patterns protect
+# a path from being transferred but not its contents, so --delete at the root emptied
+# .well-known/ (every challenge file inside "isn't in dist/") and then removed the directory.
+# Deleting at the root is therefore not offered at all. Only assets/ is reconciled
+# destructively, because it is 100% build output and old hashed bundles must not accumulate.
+LFTP_MIRROR_ARGS="--verbose --parallel=6 --exclude-glob .ht* --exclude-glob .well-known"
 for JUNK in ${APPLE_JUNK}; do LFTP_MIRROR_ARGS="${LFTP_MIRROR_ARGS} --exclude-glob ${JUNK}"; done
+LFTP_ASSETS_ARGS="--delete ${LFTP_MIRROR_ARGS}"
 unset JUNK
 SCP=/usr/bin/scp
 TAR=/usr/bin/tar
@@ -355,6 +361,7 @@ cd ${DEST_FTP_DIR}
 # must never be removed; the leftover index.html is deleted after a successful upload purely
 # to evict the URL-keyed server cache. The tolerated form keeps cmd:fail-exit from aborting on
 # a file that is already absent.
+mirror -R ${LFTP_ASSETS_ARGS} ${BUILD_DIR}assets/ assets/
 mirror -R ${LFTP_MIRROR_ARGS} ${BUILD_DIR} .
 rm -f index.html || echo "(no remote index.html to remove)"
 bye
@@ -496,6 +503,7 @@ _publish() {
 
 _require_tty
 read -k1 DEPLOY_TYPE\?"Poduction or Dev deployment? [D/p]: "
+print "" # read -k1 leaves the cursor on the prompt line
 case "$DEPLOY_TYPE" in
     ([Pp])
         # Block early: a release built from a tree we cannot account for is worse than

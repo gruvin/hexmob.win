@@ -165,6 +165,14 @@ anonymous login, which also gets you rate-limited for failed logins.
 | `DEST_FTP_CHECK_HOSTNAME` → `ssl:check-hostname` | `false` | …the *hostname* can never match. Checking it would fail every deploy. Chain validation is the part that requires a CA-signed certificate and is what protects against a substituted cert. |
 | `DEST_FTP_PROTECT_DATA` → `ftp:ssl-protect-data` | `true` | The host accepts `PROT P` (`200 Data protection level set to "private"`), so the payload is encrypted as well as the control channel. |
 
+**What `--delete` is allowed to touch: only `assets/`.** The web root is mirrored *additively*;
+`assets/` — pure Vite output — is the only path reconciled destructively, because old hashed
+bundles must not accumulate. This is not caution for its own sake: lftp's `--exclude-glob`
+protects a *path* from being transferred but not its *contents*, so `--delete` at the root
+emptied `.well-known/` (no challenge file "exists in dist/"), then removed the directory.
+`.htaccess` survived only because it is a file, whose name the pattern matches. Stale
+root-level files lingering instead of being pruned is the accepted trade — see `ISSUES.md` A5.
+
 **`set cmd:fail-exit true` is load-bearing.** Without it a failed command (a bad `cd`, say) is
 followed by a successful one and lftp still exits 0 — the deploy would report success having
 uploaded to the wrong place. The entry-point `rm`s are written as

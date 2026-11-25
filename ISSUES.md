@@ -24,6 +24,7 @@ Tick these as they are fixed; the sections below hold the detail for each.
 - [x] **A3** — runtime brand switch follows the hostname, not the published brand (`dev.hexmob.win` shows the HEXmob logo on a tsa-branded page)
 - [x] **A2** — production run re-applied the stash between the two brand builds; signed tarball could contain WIP; HEAD left detached
 - [x] **A4** — failure while building the second brand left a half-published release (now: build both, then publish both)
+- [x] **A5** — lftp `--delete` at the web root removed `.well-known/` (exclusion protects the name, not the contents)
 - [x] **B1** — FTP password was visible in `ps`; certificate verification off; payload not TLS-protected
 - [x] **B2** — entry point was deleted before upload, leaving a live 404 window
 - [ ] **B3** — macOS artefacts already on a server are protected from `--delete`, not removed (nothing Apple is uploaded; this is cleanup only)
@@ -183,6 +184,48 @@ the *production* `DEST_TSA` and would have deployed a dev preview to go.tshare.a
 flow now sets `DEPLOY_TARGET=dev` explicitly and prints the resolved destination. `TARGET`
 (brand) and `DEPLOY_TARGET` (destination) are independent by design, so every call site has
 to state both.
+
+### A5 — lftp `--delete` at the web root removed `.well-known/`
+
+**What.** `mirror -R --delete` ran at the document root with `--exclude-glob .well-known` and
+`--exclude-glob .ht*` assumed to protect the hosting plumbing. The exclusion protects the
+*path* from being transferred, **not its contents**: every file under `.well-known/`
+"did not exist in dist/", so they were deleted, the directory was left empty, and lftp then
+removed the directory itself.
+
+**Evidence.** The first real dev deploy's own log: `.htaccess` never appears (a file, so the
+name exclusion held), but `Removing old directory '.well-known'` does. Live listing confirmed
+`.htaccess` present and `.well-known` gone; the directory was then recreated by hand.
+
+**Impact.** Deleted ACME state on the dev host (certbot recreates it at renewal, so no outage,
+but a renewal that coincided with a deploy could have failed). The same command would run
+against `/public_html` on production — where an ACME renewal mid-deploy, or any other
+directory the host keeps in the document root, is the same hazard.
+
+**Done** — `<COMMIT>`. `--delete` is no longer offered at the web root at all. The root mirror
+is additive (`mirror -R` with exclusions, no `--delete`), and the only destructive
+reconciliation happens against `assets/`, which is 100% Vite output and therefore safe to
+prune exactly:
+
+```
+mirror -R --delete <flags> ./dist/assets/ assets/   # old hashed bundles must not accumulate
+mirror -R          <flags> ./dist/ .                # add-only: never deletes hosting plumbing
+rm -f index.html || echo ...                        # cache-bust, last
+```
+
+**Verified** with `mirror --just-print` against `dev.hexmob.win`: every planned `rm` is under
+`assets/`, and nothing matching `.well-known` or `.ht*` appears in the plan.
+
+**Accepted trade-off.** Stale *root-level* files (e.g. something deleted from `public/`) now
+linger on the server instead of being pruned. That is deliberate: an accumulating stray file
+is a cosmetic problem, whereas deleting the wrong path is an incident. If it ever matters,
+prune by explicit name rather than by re-enabling `--delete` at the root.
+
+**Note for tooling.** `mirror --just-print` prints transfer URLs *including the password*, so
+any dry-run output must be treated as a secret (the transcript of the verification run above
+was deleted).
+
+---
 
 ## B. Transport & secrets hygiene
 
