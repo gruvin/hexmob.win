@@ -519,7 +519,7 @@ abandoned attempt is not what the live site serves.
   Verified in a rig: with all three supplied, `deploy.sh` goes straight from the banner to the
   summary and the single gate, and answering "n" aborts with no worktree created.
 
-**Tag reuse on retry** (`<TAGSTATE>`): the interactive "Tag already exists. Delete and recreate?"
+**Tag reuse on retry** (`31cea57`): the interactive "Tag already exists. Delete and recreate?"
 prompt was too blunt — it offered the dangerous option (re-signing, hence force-pushing) for a tag
 that might already be public. `release.sh` now derives the state instead: no tag → create; local
 and not on `origin` → reuse as-is; on `origin` without a release → resume; on `origin` with a
