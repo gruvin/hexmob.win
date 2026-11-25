@@ -134,14 +134,16 @@ _run ${GIT} tag -s "${NEW_TAG}" -m "${TAG_SUMMARY}" || {
 }
 
 # ── 5. Production deploy ─────────────────────────────────────────────────────
-print "\n── Running yarn deploy (production) ────────────────────────────────────"
-print "   At the prompts: select [p], type 'yes'. The tag is passed through.\n"
+# A release exists only to publish a tag, so the deploy's "production or dev?" and typed-yes
+# prompts are answered here rather than asked again. The deploy's remaining gate - build this
+# tag and deploy it to both hosts, yes/no - is left in place: it is the point of no return.
+print "\n── Production deploy of ${NEW_TAG} ────────────────────────────────────\n"
 if [[ ${DRY_RUN} -eq 1 ]]; then
-    print "  [dry-run] DEPLOY_TAG=${NEW_TAG} yarn deploy"
+    print "  [dry-run] DEPLOY_KIND=p DEPLOY_CONFIRM=yes DEPLOY_TAG=${NEW_TAG} yarn deploy"
     print "  [dry-run] (production deploy skipped - no hosts touched, no archive produced)"
     DEPLOY_STATUS=0
 else
-    DEPLOY_TAG="${NEW_TAG}" yarn deploy
+    DEPLOY_KIND=p DEPLOY_CONFIRM=yes DEPLOY_TAG="${NEW_TAG}" yarn deploy
     DEPLOY_STATUS=$?
 fi
 if [[ ${DEPLOY_STATUS} -ne 0 ]]; then

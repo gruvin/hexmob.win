@@ -568,17 +568,28 @@ _publish() {
 }
 
 _require_tty
-read -k1 DEPLOY_TYPE\?"Poduction or Dev deployment? [D/p]: "
-print "" # read -k1 leaves the cursor on the prompt line
+if [[ -n "${DEPLOY_KIND}" ]]; then
+    # A caller that has already established intent (yarn release: a new tag means a release)
+    # should not have to answer this again. The guards below still apply unchanged.
+    DEPLOY_TYPE="${DEPLOY_KIND}"
+    print -r -- "Deployment kind: ${DEPLOY_TYPE} (from DEPLOY_KIND)"
+else
+    read -k1 DEPLOY_TYPE\?"Poduction or Dev deployment? [D/p]: "
+    print "" # read -k1 leaves the cursor on the prompt line
+fi
 case "$DEPLOY_TYPE" in
     ([Pp])
         # Block early: a release built from a tree we cannot account for is worse than
         # no release at all. Nothing above this point has mutated anything.
         _require_clean_tree
         _require_release_branch
-        print "\n"
-        read AMSURE\?"PRODUCTION deployment! Enter \"yes\" to continue: "
-        if [[ ! "yes" = "$AMSURE" ]]; then print "Didn't think so." ; exit 0 ; fi
+        if [[ "yes" = "${DEPLOY_CONFIRM}" ]]; then
+            print -r -- "Production deployment confirmed (DEPLOY_CONFIRM=yes)."
+        else
+            print "\n"
+            read AMSURE\?"PRODUCTION deployment! Enter \"yes\" to continue: "
+            if [[ ! "yes" = "$AMSURE" ]]; then print "Didn't think so." ; exit 0 ; fi
+        fi
         # DEPLOY_TAG lets a caller (scripts/release.sh) state the tag once. Prompting again
         # invites the two answers to diverge, and the tag ends up in the artifact name.
         if [[ -n "${DEPLOY_TAG}" ]]; then

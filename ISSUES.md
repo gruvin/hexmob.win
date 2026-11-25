@@ -512,6 +512,12 @@ abandoned attempt is not what the live site serves.
 - **`83bd1a4`** — the choice is two lines instead of three paragraphs, and Enter no longer always
   means "update": the default follows the bump (patch → update, minor/major → new release,
   non-semver → update), printed in the prompt so it is never a guess.
+- **`<KINDHASH>`** — `yarn release` no longer asks "production or dev?" or for a typed `yes`: a
+  release exists only to publish a tag, so `release.sh` supplies `DEPLOY_KIND=p` and
+  `DEPLOY_CONFIRM=yes` (alongside the existing `DEPLOY_TAG`). The deploy's final "build this tag
+  and deploy it to both hosts? [Y/n]" is deliberately kept — it is the last point of no return.
+  Verified in a rig: with all three supplied, `deploy.sh` goes straight from the banner to the
+  summary and the single gate, and answering "n" aborts with no worktree created.
 
 **Three flaws the dry-run rehearsal itself found** (fixed in `a6d3d62`): `[dry-run]` lines for
 asset deletions were swallowed by a `> /dev/null` redirect; the closing message pointed at a

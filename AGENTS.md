@@ -244,12 +244,13 @@ the compiled brand (`VITE_BRAND` → `IS_HM` / `IS_TSA`, §2) and not from
 
 Prompted sequence, deliberately awkward — every step is a guard:
 
-1. `p` to select production.
+1. `p` to select production — skipped when `DEPLOY_KIND` is set (see below).
 2. **Blocking checks, before anything happens:** the working tree must be clean (tracked
    *and* untracked), and the starting branch must be `dev` or `master` (a detached HEAD is
    refused). A release starts from a committed state; the script will not stash, reset or
    discard anything to get there — it tells you what is in the way and exits 5.
-3. Type the word `yes`. Anything else aborts ("Didn't think so.").
+3. Type the word `yes`. Anything else aborts ("Didn't think so."); skipped when
+   `DEPLOY_CONFIRM=yes` is supplied by the caller.
 4. Enter a release tag — or have it supplied: when `DEPLOY_TAG` is set (as `yarn release` does),
    the tag is taken from there and not prompted for. It must exist as a local tag, or the run
    blocks with the list of recent tags. Stating it once matters: the tag ends up in the artifact
@@ -340,6 +341,13 @@ passphrase-less key this machine uses, and if a key ever needs a passphrase or a
 the deploy must fail fast with an UNSIGNED warning plus the command on the clipboard, rather
 than blocking behind a pinentry prompt. (The historical belief that automated signing could not
 work most likely came from signing with the card-backed key, which genuinely cannot.)
+
+**`yarn release` answers the ceremony prompts for you.** A release exists only to publish a tag,
+so there is nothing to decide at "production or dev?" or the typed `yes`: `release.sh` passes
+`DEPLOY_KIND=p`, `DEPLOY_CONFIRM=yes` and `DEPLOY_TAG=<tag>`, leaving exactly one gate — the
+final "build this tag and deploy it to both hosts? [Y/n]" — as the point of no return. Running
+`yarn deploy` directly still asks everything, and all guards (clean tree, branch, tag existence,
+overlay preflight, worktree creation) apply either way.
 
 **Where a build is published.** Releases are not a distribution channel (§5, "What a published
 release is for"). The usual path treats the release as a **moving pointer**: retag it onto the
