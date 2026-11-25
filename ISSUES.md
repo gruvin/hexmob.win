@@ -30,7 +30,7 @@ Tick these as they are fixed; the sections below hold the detail for each.
 - [ ] **B3** — macOS artefacts already on a server are protected from `--delete`, not removed (nothing Apple is uploaded; this is cleanup only)
 - [ ] **C1** — *DEFERRED* — `dev` and `master` disagree on how the release is signed; `release.sh` exists only on `master`
 - [ ] **C2** — *DEFERRED* — untested hypothesis: automated GPG signing needs an interactive TTY
-- [ ] **C3** — failure reporting is opaque (`CAUGHT: []`)
+- [x] **C3** — failure reporting was opaque (`CAUGHT: []`)
 - [ ] **C4** — `dot-htaccess-sample` describes the superseded `index.html` cache strategy
 - [ ] **C5** — tag naming drift (prompt says `v0.2.3B`, real tags are `0.4.26`)
 - [ ] **C6** — dead variables and no-op assignments around target configuration
@@ -360,27 +360,27 @@ the master variant of `deploy.sh`.
 
 ---
 
-### C3 — failure reporting is opaque
+### C3 — failure reporting was opaque
 
-**What.** Errors are raised as `throw ''` and caught by `if catch '*'; then`
-(`scripts/deploy.sh:195-200`), whose only diagnostic is `print "D'oh! CAUGHT: [$CAUGHT]"`.
-Every failure therefore reports `CAUGHT: []`, with no indication of which step died.
+**What (as it was).** Errors were raised as `throw ''` and caught by `if catch '*'; then`, whose
+only diagnostic was `print "D'oh! CAUGHT: [$CAUGHT]"`. Every failure therefore reported
+`CAUGHT: []`, with no indication of which step died. That is exactly how A1 stayed hidden.
 
-**Impact.** Any failed deploy needs manual archaeology. This is exactly how A1 stayed hidden.
+**Done** — `<COMMIT>`.
 
-**Fix.** Give each `throw` a message (`throw 'overlay: theme swap failed'` etc.) and echo
-`$CAUGHT` verbatim; consider `set -x` behind a `DEBUG=1` gate, and `print` the command that
-failed.
+- Every `throw` carries a message now, including the last one (rsync: exit status, source and
+  destination). `_guarded` prefixes failures with the phase that failed
+  (`D'oh! hexmob build failed: [the build itself failed]`) and suggests the trace flag.
+- Guards report a headline plus detail lines instead of dying silently — see `_block` and the
+  exit-code table in `AGENTS.md` §6.
+- `DEPLOY_DEBUG=1` enables `setopt xtrace` with `PS4='+%x:%I: '` (function:line), which shows
+  precisely which command broke. Off by default.
+- `_prompt_for_secret` disables tracing around the read and emits the value before resuming it,
+  so a password typed at the prompt can never appear in a trace (verified: 0 occurrences of the
+  secret in tracelines while the returned value still carries it).
 
-**Progress (A2 work, `0986c2e`).** The top-level guards report properly (headline + detail
-lines + exit 5), the overlay and `dist/` steps now throw messages rather than `''`, and the
-failure path exits 2 as documented instead of 1. The remaining `throw ''` calls are in
-`_cleanup` and the transport/brand-overlay steps — still worth converting.
-
-**Verify.** Temporarily break one step (e.g. a missing `master.pub` variant) and confirm the
-error names that step.
-
----
+**Verify.** Each guard and each phase failure was exercised: the harness injects build failures
+and unreachable destinations, and the messages name the phase, the exit code and the paths.
 
 ### C4 — `dot-htaccess-sample` describes the superseded cache strategy
 

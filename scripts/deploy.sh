@@ -43,6 +43,15 @@ DEST_FTP_PROTOCOL='ftps'
 DEST_FTP_PORT='21'
 autoload throw catch
 
+# DEPLOY_DEBUG=1 traces every command (PS4 shows the line and function), which is the quickest
+# way to see which step actually broke. Off by default: the trace is noisy and the FTP
+# password travels in a file, not on a command line, but tracelines still reveal a lot.
+if [[ -n "${DEPLOY_DEBUG}" ]]; then
+    PS4='+%x:%I: '
+    setopt xtrace
+    print -r -- "(DEPLOY_DEBUG=${DEPLOY_DEBUG}: tracing to stderr)"
+fi
+
 STARTING_BRANCH=$(git rev-parse --abbrev-ref HEAD)
 ORIG_PWD="$PWD"   # builds run inside throwaway worktrees; everything comes back here
 WT_PARENT=""      # mktemp dir holding this run's worktrees, removed via TRAPEXIT
@@ -314,10 +323,16 @@ _configure_target() {
 _prompt_for_secret() {
     local PROMPT="$1"
     local SECRET
+    local TRACING=0
+    [[ -o xtrace ]] && TRACING=1
 
+    # xtrace would echo the value being read, so silence it for the duration. The result is
+    # emitted before tracing resumes, for the same reason.
+    set +x
     read -s SECRET\?"${PROMPT}: "
     print ""
     print -- "$SECRET"
+    [[ ${TRACING} -eq 1 ]] && set -x
 }
 
 _configure_ftp_destination() {
@@ -390,7 +405,8 @@ _deploy_build_output() {
     case "$DEST_TRANSPORT" in
         (rsync)
             print "RSYNCing ${BUILD_DIR} => ${DEST}"
-            ${RSYNC} "${RSYNC_ARGS[@]}" -r --delete ${BUILD_DIR} ${DEST} || throw ''
+            ${RSYNC} "${RSYNC_ARGS[@]}" -r --delete ${BUILD_DIR} ${DEST} \
+                || throw "rsync failed (exit $?) uploading ${BUILD_DIR} => ${DEST}"
             ;;
         (ftp)
             if [[ -z ${LFTP} || ! -x ${LFTP} ]]; then
@@ -451,7 +467,8 @@ _guarded() {
     shift
     { "$@" } always {
         if catch '*'; then
-            print -r -- "D'oh! ${LABEL} failed: [$CAUGHT]"
+            print -r -- "D'oh! ${LABEL} failed: [${CAUGHT}]"
+            print -r -- "  (re-run with DEPLOY_DEBUG=1 for a command trace)"
             _cleanup
             exit 2
         fi
