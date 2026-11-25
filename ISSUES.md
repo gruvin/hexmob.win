@@ -28,13 +28,13 @@ Tick these as they are fixed; the sections below hold the detail for each.
 - [x] **B1** — FTP password was visible in `ps`; certificate verification off; payload not TLS-protected
 - [x] **B2** — entry point was deleted before upload, leaving a live 404 window
 - [ ] **B3** — macOS artefacts already on a server are protected from `--delete`, not removed (nothing Apple is uploaded; this is cleanup only)
-- [ ] **C1** — *DEFERRED* — `dev` and `master` disagree on how the release is signed; `release.sh` exists only on `master`
+- [x] **C1** — `dev` and `master` disagreed on signing; release tooling now lives on `dev` and the deploy signs automatically
 - [x] **C2** — the "automated signing needs a TTY" hypothesis: tested, false for the passphrase-less local key (the card key would still fail)
 - [x] **C3** — failure reporting was opaque (`CAUGHT: []`)
 - [x] **C4** — `dot-htaccess-sample` described the superseded `index.html` cache strategy
 - [x] **C5** — tag naming drifted between the prompt text and practice
 - [x] **C6** — dead variables and no-op assignments around the target configuration
-- [ ] **C7** — *DEFERRED* — semi-automate tag → sign → push → GitHub release with `gh` (replace assets + append "Changes" notes on the latest release; new release only for milestones)
+- [x] **C7** — semi-automated tag → sign → push → GitHub release via `yarn release` (retag + replace assets + append notes; new release for milestones)
 
 ---
 
@@ -315,26 +315,29 @@ be proven with a local rsync pair — and then a `-n --itemize-changes` dry run 
 
 ## C. Release tooling
 
-### C1 — DEFERRED — `dev` and `master` disagree on how the release is signed
+### C1 — `dev` and `master` disagreed on how the release is signed
 
-**What.** `scripts/deploy.sh` differs between branches. On `master` (tags `0.4.25`+,
-`45681b9`/`611d00a`) the script signs the tarball itself (`${GPG} --yes -b …`) and falls back
-to copying the command to the clipboard. On `dev` there is no `${GPG}` invocation at all —
-it only copies `gpg --yes -b …` to the clipboard for the operator to run. `dev` also has no
-`scripts/release.sh`; that file exists only on `master`.
+**What (as it was).** `deploy.sh` differed between branches: on `master` it signed the archive
+itself and fell back to the clipboard; on `dev` it only copied the command. `scripts/release.sh`
+existed only on `master`, so the guided release flow was unavailable exactly where the work
+happens.
 
-**Evidence.** `git diff dev origin/master -- scripts/deploy.sh`,
-`git show origin/master:scripts/release.sh`.
+**Done** — `<COMMIT>`. Ownership settled: **release tooling lives on `dev`**, and `master` gets it
+through the normal dev → master merge that `release.sh` performs itself.
 
-**Why deferred.** Historically automated signing did not work; the suspicion is a real
-interactive requirement (see C2). Until that is tested end to end, the clipboard fallback is
-what actually ships releases. Also unresolved: which branch should own release tooling —
-cherry-picking it onto `dev` inverts the documented dev → master flow for those files.
+- `deploy.sh` signs the archive (`_sign_release`): `${GPG} --batch --yes -b`, then verifies the
+  signature it just produced with `${GPG} --verify`. `--batch` is deliberate — C2 proved
+  unattended signing works for a passphrase-less key, and batch mode guarantees that a key which
+  *does* need a prompt fails fast instead of hanging the deploy behind pinentry. On failure: a
+  loud "UNSIGNED" warning, the reason, and the command copied to the clipboard.
+- `scripts/release.sh` now exists on `dev` (adapted from the `master` version: a clean-tree guard
+  before merging, an explicit abort if the archive or its signature is missing, and a recovery
+  hint if the deploy fails after the tag was created), and `package.json` gains `yarn release`.
+- `GPG` is resolved again — C6 had removed it as dead code, with a note that C1 would bring it
+  back.
 
-**When picked up.** Decide the branch ownership first, then either cherry-pick
-`611d00a`+`45681b9` onto `dev` or accept master-only tooling and say so in `AGENTS.md` §5.
-
----
+**Verify.** `_sign_release` on a throwaway archive: signs, self-verifies, and an independent
+`gpg --verify` reports `Good signature … [ultimate]`.
 
 ### C2 — the "automated signing needs a TTY" hypothesis, tested
 
@@ -444,6 +447,45 @@ host, and `DEPLOY_TARGET=dev TARGET=tsa` → the dev destination).
 **Note for C1.** When signing is wired up on this branch, it will need
 `GPG=$(command -v gpg)` again — that is the one thing deliberately removed here, on the
 grounds that unused tool lookups are how A1 stayed invisible.
+
+### C7 — semi-automate the tag → sign → push → GitHub release cycle
+
+**What (as it was).** Manual every time: merge `dev` → `master`, create and sign a tag, push,
+then either attach the build to the *existing* release or create a new one — which meant
+deleting the previous assets by hand, uploading the signed pair, and appending a line to the
+release's "Changes" notes. Releases exist here so signed source can be checked against the
+JavaScript a browser actually runs, not as a distribution channel, so a release is a moving
+pointer carrying the build currently served (AGENTS.md §5).
+
+**Done** — `<COMMIT>`. `yarn release` (`scripts/release.sh`) performs the whole sequence:
+
+1. require a clean tree on `dev`;
+2. merge `dev` → `master`;
+3. suggest and create a **signed** tag;
+4. run `yarn deploy` (production prompts unchanged — both brands built, then both hosts);
+5. **hard-stop** if the archive or its `.sig` is missing (an unsigned release is pointless);
+6. `git push origin master && git push --tags` — before any release operation, because
+   `gh release` addresses tags that must already exist on the remote;
+7. resolve the target release, defaulting to the latest **published** one (`--exclude-drafts`,
+   with a note when drafts exist), and prompt: retag it, or create a new release;
+   - *existing (usual)* — `gh release edit <release> --tag <newtag> --verify-tag`, delete the
+     previous build's assets (`gh release delete-asset … --yes` — asset names embed the tag, so
+     they would otherwise accumulate), `gh release upload … --clobber`, then append the new line
+     to the "Changes" notes (`gh release view --json body` → append → `gh release edit
+     --notes-file`);
+   - *new (milestone)* — `gh release create --draft`, notes seeded from
+     `git log <prevTag>..<newTag>`, with room to add more;
+8. print the release URL and return to `dev`.
+
+**Design points worth keeping.** Tags stay per build; the release moves. Notes are append-only
+and never regenerated (that would wipe the accumulated log). Assets are replaced, not
+accumulated. Drafts are deliberately not treated as "current", because a leftover draft from an
+abandoned attempt is not what the live site serves.
+
+**Not exercised end to end.** Step 4 publishes to both live hosts, so the first full run needs
+watching. The `gh` steps were checked against `gh 2.93.0`'s real flags (`--tag`, `--verify-tag`,
+`--clobber`, `delete-asset --yes`, `--exclude-drafts`) and the signing step was verified
+independently (C1).
 
 ## D. Done / decisions (for context, do not re-litigate)
 

@@ -7,6 +7,7 @@ if [[ -f ./.env.local ]]; then
 fi
 
 GIT=$(command -v git)
+GPG=$(command -v gpg)
 LFTP=$(command -v lftp)
 RSYNC=$(command -v rsync)
 # macOS artefacts must never reach a deployed server, or the signed release tarball. One
@@ -243,6 +244,35 @@ _remove_worktrees() {
     ${GIT} worktree prune > /dev/null 2>&1
     WT_PARENT=""
     return 0
+}
+
+# @args: TGZ path
+# Signs the release archive and verifies the signature it just produced. --batch is deliberate:
+# unattended signing works for a passphrase-less key (ISSUES.md C2), and if the key ever needs a
+# passphrase or a smartcard PIN, gpg must fail fast instead of blocking the deploy behind a
+# pinentry prompt. On failure the command is copied to the clipboard so the operator can run it
+# by hand in a terminal that can prompt.
+_sign_release() {
+    local TGZ=$1
+    local SIG="${TGZ}.sig"
+    if [[ -z "${GPG}" ]] || [[ ! -x "${GPG}" ]]; then
+        print "\n  gpg not found: release archive is UNSIGNED."
+        return 1
+    fi
+    print "\nSigning release archive ..."
+    if ${GPG} --batch --yes -b "${TGZ}"; then
+        if ${GPG} --verify "${SIG}" "${TGZ}" > /dev/null 2>&1; then
+            print "  signed and verified: ${SIG}"
+            return 0
+        fi
+        print "  WARNING: signature written but verification failed: ${SIG}"
+        return 1
+    fi
+    print "  WARNING: signing failed - the archive is UNSIGNED."
+    print "  If the signing key needs a passphrase or a card PIN, run this in a terminal:"
+    print "      gpg --yes -b \"${TGZ}\""
+    echo -n "gpg --yes -b ${TGZ}" | pbcopy 2>/dev/null && print "  (command copied to clipboard)"
+    return 1
 }
 
 # Success path only. The main tree was never touched, so there is no state to restore;
@@ -596,8 +626,7 @@ case "$DEPLOY_TYPE" in
                 print "Done!"
 
                 print "\nLIVE DEPLOYMENT COMPLETED."
-                echo -n "gpg --yes -b ${RELEASE_TGZ}" | pbcopy
-                print "\nRemember to sign the release tarbal: \"gpg --yes -b ${RELEASE_TGZ}\" [copied to clipboard]"
+                _sign_release || true
                 ;;
         esac
         _finish_release
