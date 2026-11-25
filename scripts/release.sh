@@ -77,7 +77,17 @@ fi
 # ── 2. Merge dev into master ─────────────────────────────────────────────────
 print "\nMerging dev → master ..."
 _run ${GIT} checkout master || { print "ERROR: checkout master failed"; exit 1 }
-_run ${GIT} merge dev       || { print "ERROR: merge dev failed"; _run ${GIT} checkout dev; exit 1 }
+if ! _run ${GIT} merge dev; then
+    # A conflicted merge leaves the tree mid-merge; never continue from here. This is the
+    # expected outcome when master carries script changes dev has not seen (or vice versa) -
+    # resolve it deliberately, then re-run.
+    print "\nERROR: merging dev into master failed."
+    ${GIT} merge --abort > /dev/null 2>&1 && print "  Merge aborted; the tree is back on master."
+    print "  Resolve the divergence by hand, then re-run: something in dev and master has"
+    print "  changed the same file (scripts/ most likely)."
+    ${GIT} checkout dev > /dev/null 2>&1
+    exit 1
+fi
 
 # ── 3. Pick the next version ─────────────────────────────────────────────────
 print "\nRecent tags (newest first):"
@@ -181,97 +191,7 @@ else
     print "\nTag ${NEW_TAG} already exists (${TAG_MODE}) - not re-creating it."
 fi
 
-# ── 5. Production deploy ─────────────────────────────────────────────────────
-# A release exists only to publish a tag, so the deploy's "production or dev?" and typed-yes
-# prompts are answered here rather than asked again. The deploy's remaining gate - build this
-# tag and deploy it to both hosts, yes/no - is left in place: it is the point of no return.
-print "\n── Production deploy of ${NEW_TAG} ────────────────────────────────────\n"
-print "   (deploy.sh does the build/publish; this script owns the tag, the push and the release)\n"
-if [[ ${DRY_RUN} -eq 1 ]]; then
-    print "  [dry-run] DEPLOY_KIND=p DEPLOY_CONFIRM=yes DEPLOY_TAG=${NEW_TAG} ./scripts/deploy.sh"
-    print "  [dry-run] (production deploy skipped - no hosts touched, no archive produced)"
-    DEPLOY_STATUS=0
-else
-    DEPLOY_KIND=p DEPLOY_CONFIRM=yes DEPLOY_TAG="${NEW_TAG}" ./scripts/deploy.sh
-    DEPLOY_STATUS=$?
-fi
-if [[ ${DEPLOY_STATUS} -ne 0 ]]; then
-    print "\nERROR: deploy script exited with status ${DEPLOY_STATUS}"
-    print "The tag ${NEW_TAG} exists locally but nothing has been pushed. To recover:"
-    print "  git push origin master && git push --tags     (if the deploy did publish)"
-    print "  git tag -d ${NEW_TAG}                         (if it did not, and retry)"
-    exit ${DEPLOY_STATUS}
-fi
-
-# ── 6. The signed archive must exist ────────────────────────────────────────
-RELEASE_DIR="./release"
-RELEASE_TGZ="${RELEASE_DIR}/hexmob.win-${NEW_TAG}-build.tgz"
-RELEASE_SIG="${RELEASE_TGZ}.sig"
-
-if [[ ${DRY_RUN} -eq 1 ]]; then
-    print "\n(dry-run: skipping the archive/signature check - the deploy that produces them was skipped)"
-elif [[ ! -f "$RELEASE_TGZ" ]]; then
-    print "\nERROR: ${RELEASE_TGZ} not found — cannot publish a release without it."
-    exit 1
-fi
-if [[ ${DRY_RUN} -eq 0 && ! -f "$RELEASE_SIG" ]]; then
-    print "\nERROR: ${RELEASE_SIG} not found."
-    print "The archive is unsigned, and a release whose signature is missing is pointless."
-    print "Sign it in a terminal that can prompt for the key, then re-run from step 6:"
-    print "  gpg --yes -b ${RELEASE_TGZ}"
-    exit 1
-fi
-
-# ── Notes editing ───────────────────────────────────────────────────────────────────────────
-# Presents the notes in $EDITOR, the way `git commit` does: a comment header, a marker line,
-# and the existing text beneath it. Everything above the marker is instructions and is
-# discarded, so markdown headings in the notes themselves survive untouched (which is why this
-# does not simply strip lines starting with '#').
-NOTES_MARKER='<!-- ===== notes below this line; text above it is ignored ===== -->'
-
-# @args: TMPFILE (pre-populated with the current notes), TITLE, [REFERENCE_FILE]
-_edit_notes() {
-    local FILE=$1
-    local TITLE=$2
-    local REF=${3:-}
-    local EDITOR_BIN=${EDITOR:-vi}
-    local STAGED="${FILE}.edit"
-
-    {
-        print -r -- "# Release notes for ${NEW_TAG} (${TITLE})"
-        print -r -- "#"
-        print -r -- "# Edit below the marker. Save and quit to continue the release;"
-        print -r -- "# quit without saving to abort — nothing has been pushed yet."
-        print -r -- "# Set EDITOR to control the editor (eg. EDITOR='code --wait')."
-        if [[ -n "${REF}" && -s "${REF}" ]]; then
-            print -r -- "#"
-            print -r -- "# For reference only (not published) — candidates for the notes:"
-            sed 's/^/#   /' "${REF}"
-        fi
-        print -r -- "${NOTES_MARKER}"
-        # Strip CRs: release bodies authored elsewhere can be CRLF, and nvim then renders every
-        # line ending as ^M. Line endings are normalised on the way in and on the way out.
-        tr -d '\r' < "${FILE}"
-    } > "${STAGED}"
-
-    # ${=VAR} word-splits, so EDITOR can carry arguments ("code --wait").
-    ${=EDITOR_BIN} "${STAGED}" || { print "\nERROR: editor exited non-zero — aborted, nothing pushed."; return 1; }
-
-    # Keep everything after the marker, drop trailing blank lines.
-    local BODY
-    BODY=$(sed "1,/$(print -r -- "${NOTES_MARKER}" | sed 's/[][\.*^$/]/\\&/g')/d" "${STAGED}")
-    BODY=$(print -r -- "${BODY}" | sed -e :a -e '/^\n*$/{$d;N;ba' -e '}')
-    rm -f "${STAGED}"
-
-    if [[ -z "${BODY//[[:space:]]/}" ]]; then
-        print "\nERROR: the notes came back empty — refusing to publish a release with no notes."
-        return 1
-    fi
-    print -r -- "${BODY}" | tr -d '\r' > "${FILE}"
-    return 0
-}
-
-# ── 7. Which release? (read-only, before anything is pushed) ─────────────────
+# ── 5. Which release? (read-only; nothing has been deployed or pushed yet) ───
 # Default to the latest *published* release: a leftover draft from an abandoned attempt is
 # not what the build currently being served belongs to. Drafts are shown separately.
 # Identify releases by title as well as tag - these releases carry descriptive names
@@ -323,14 +243,73 @@ else
     TARGET_CHOICE="n"
 fi
 
-# ── 8. Notes, before anything leaves this machine ───────────────────────────
-# Deliberately before the push: the notes are the last thing that needs a human, and asking
-# for them after the assets were already replaced would leave a half-described release behind
-# if the operator changed their mind.
+# ── Notes editing ───────────────────────────────────────────────────────────────────────────
+# Presents the notes in $EDITOR, the way `git commit` does: a comment header, a marker line,
+# and the existing text beneath it. Everything above the marker is instructions and is
+# discarded, so markdown headings in the notes themselves survive untouched (which is why this
+# does not simply strip lines starting with '#').
+NOTES_MARKER='<!-- ===== notes below this line; text above it is ignored ===== -->'
+
+# @args: FILE REFERENCE
+# True when the two are the same text once line endings and trailing blank lines are normalised.
+# A byte comparison is useless here: _edit_notes rewrites the body (trailing newlines included),
+# so an editor that changed nothing would still differ by a newline.
+_notes_same() {
+    local A B
+    A=$(sed 's/\r$//' "$1" | sed -e :a -e '/^\n*$/{$d;N;ba' -e '}')
+    B=$(sed 's/\r$//' "$2" | sed -e :a -e '/^\n*$/{$d;N;ba' -e '}')
+    [[ "${A}" == "${B}" ]]
+}
+
+# @args: TMPFILE (pre-populated with the current notes), TITLE, [REFERENCE_FILE]
+_edit_notes() {
+    local FILE=$1
+    local TITLE=$2
+    local REF=${3:-}
+    local EDITOR_BIN=${EDITOR:-vi}
+    local STAGED="${FILE}.edit"
+
+    {
+        print -r -- "# Release notes for ${NEW_TAG} (${TITLE})"
+        print -r -- "#"
+        print -r -- "# Edit below the marker. Save and quit to continue the release;"
+        print -r -- "# quit without saving to abort — nothing has been pushed yet."
+        print -r -- "# Set EDITOR to control the editor (eg. EDITOR='code --wait')."
+        if [[ -n "${REF}" && -s "${REF}" ]]; then
+            print -r -- "#"
+            print -r -- "# For reference only (not published) — candidates for the notes:"
+            sed 's/^/#   /' "${REF}"
+        fi
+        print -r -- "${NOTES_MARKER}"
+        # Strip CRs: release bodies authored elsewhere can be CRLF, and nvim then renders every
+        # line ending as ^M. Line endings are normalised on the way in and on the way out.
+        tr -d '\r' < "${FILE}"
+    } > "${STAGED}"
+
+    # ${=VAR} word-splits, so EDITOR can carry arguments ("code --wait").
+    ${=EDITOR_BIN} "${STAGED}" || { print "\nERROR: editor exited non-zero — aborted, nothing pushed."; return 1; }
+
+    # Keep everything after the marker, drop trailing blank lines.
+    local BODY
+    BODY=$(sed "1,/$(print -r -- "${NOTES_MARKER}" | sed 's/[][\.*^$/]/\\&/g')/d" "${STAGED}")
+    BODY=$(print -r -- "${BODY}" | sed -e :a -e '/^\n*$/{$d;N;ba' -e '}')
+    rm -f "${STAGED}"
+
+    if [[ -z "${BODY//[[:space:]]/}" ]]; then
+        print "\nERROR: the notes came back empty — refusing to publish a release with no notes."
+        return 1
+    fi
+    print -r -- "${BODY}" | tr -d '\r' > "${FILE}"
+    return 0
+}
+
+# ── 6. Notes — the last thing needing a human, before anything is deployed ──
+# Before the deploy, not merely before the push: once the hosts are updated, backing out of the
+# notes would leave a live build with no release describing it. Here, an unchanged body (or an
+# editor that exits non-zero) aborts while everything is still local.
 NOTES_TMP=$(mktemp "${TMPDIR:-/tmp}/release-notes.XXXXXX") || exit 1
 trap "rm -f '${NOTES_TMP}' '${NOTES_TMP}.edit'" EXIT
 
-NOTES_CHANGED=0
 if [[ "${TARGET_CHOICE}" == "n" || "${TARGET_CHOICE}" == "N" ]]; then
     print "\nTitle for the new release (Enter for '${NEW_TAG}'): "
     read RELEASE_TITLE
@@ -356,6 +335,7 @@ if [[ "${TARGET_CHOICE}" == "n" || "${TARGET_CHOICE}" == "N" ]]; then
         : > "${REF_TMP}"
         printf '## Changes\n\n' > "${NOTES_TMP}"
     fi
+    cp "${NOTES_TMP}" "${NOTES_TMP}.orig"
     _edit_notes "${NOTES_TMP}" "${RELEASE_TITLE}" "${REF_TMP}" || exit 1
     rm -f "${REF_TMP}"
 else
@@ -363,8 +343,59 @@ else
     ${GH} release view "${CURRENT_RELEASE}" --json body -q .body 2>/dev/null | tr -d '\r' > "${NOTES_TMP}"
     cp "${NOTES_TMP}" "${NOTES_TMP}.orig"
     _edit_notes "${NOTES_TMP}" "${CURRENT_RELEASE}" || exit 1
-    cmp -s "${NOTES_TMP}" "${NOTES_TMP}.orig" || NOTES_CHANGED=1
+fi
+
+# Unchanged notes mean the release was not described, which is almost always a mistake rather
+# than an intention - and because this runs before the deploy, aborting costs nothing.
+if _notes_same "${NOTES_TMP}" "${NOTES_TMP}.orig"; then
+    print "\nERROR: the notes are unchanged — nothing has been deployed, pushed or published."
+    print "  The tag ${NEW_TAG} exists locally; re-running will reuse it (see 3b)."
     rm -f "${NOTES_TMP}.orig"
+    _run ${GIT} checkout dev 2>/dev/null
+    exit 1
+fi
+rm -f "${NOTES_TMP}.orig"
+
+# ── 7. Production deploy ─────────────────────────────────────────────────────
+# A release exists only to publish a tag, so the deploy's "production or dev?" and typed-yes
+# prompts are answered here rather than asked again. The deploy's remaining gate - build this
+# tag and deploy it to both hosts, yes/no - is left in place: it is the point of no return.
+print "\n── Production deploy of ${NEW_TAG} ────────────────────────────────────\n"
+print "   (deploy.sh does the build/publish; this script owns the tag, the push and the release)\n"
+if [[ ${DRY_RUN} -eq 1 ]]; then
+    print "  [dry-run] DEPLOY_KIND=p DEPLOY_CONFIRM=yes DEPLOY_TAG=${NEW_TAG} ./scripts/deploy.sh"
+    print "  [dry-run] (production deploy skipped - no hosts touched, no archive produced)"
+    DEPLOY_STATUS=0
+else
+    DEPLOY_KIND=p DEPLOY_CONFIRM=yes DEPLOY_TAG="${NEW_TAG}" ./scripts/deploy.sh
+    DEPLOY_STATUS=$?
+fi
+if [[ ${DEPLOY_STATUS} -ne 0 ]]; then
+    print "\nERROR: deploy script exited with status ${DEPLOY_STATUS}"
+    print "The tag ${NEW_TAG} exists locally but nothing has been pushed."
+    print "  - re-run: the tag is reused, and both brands are rebuilt and re-published"
+    print "  - abandon: git tag -d ${NEW_TAG}"
+    _run ${GIT} checkout dev 2>/dev/null
+    exit ${DEPLOY_STATUS}
+fi
+
+# ── 8. The signed archive must exist ────────────────────────────────────────
+RELEASE_DIR="./release"
+RELEASE_TGZ="${RELEASE_DIR}/hexmob.win-${NEW_TAG}-build.tgz"
+RELEASE_SIG="${RELEASE_TGZ}.sig"
+
+if [[ ${DRY_RUN} -eq 1 ]]; then
+    print "\n(dry-run: skipping the archive/signature check - the deploy that produces them was skipped)"
+elif [[ ! -f "$RELEASE_TGZ" ]]; then
+    print "\nERROR: ${RELEASE_TGZ} not found — cannot publish a release without it."
+    exit 1
+fi
+if [[ ${DRY_RUN} -eq 0 && ! -f "$RELEASE_SIG" ]]; then
+    print "\nERROR: ${RELEASE_SIG} not found."
+    print "The archive is unsigned, and a release whose signature is missing is pointless."
+    print "Sign it in a terminal that can prompt for the key, then re-run from step 6:"
+    print "  gpg --yes -b ${RELEASE_TGZ}"
+    exit 1
 fi
 
 # ── 9. Push ─────────────────────────────────────────────────────────────────
@@ -401,12 +432,8 @@ else
     _run ${GH} release upload "${NEW_TAG}" "${RELEASE_TGZ}" "${RELEASE_SIG}" --clobber \
         || { print "ERROR: upload failed — artifacts are in ${RELEASE_DIR}"; exit 1; }
 
-    if [[ ${NOTES_CHANGED} -eq 1 ]]; then
-        _run ${GH} release edit "${NEW_TAG}" --notes-file "${NOTES_TMP}" \
-            || print "WARNING: could not update the notes — the release body is unchanged."
-    else
-        print "Notes unchanged — leaving the release body alone."
-    fi
+    _run ${GH} release edit "${NEW_TAG}" --notes-file "${NOTES_TMP}" \
+        || print "WARNING: could not update the notes — the release body is unchanged."
 fi
 
 _run ${GIT} checkout dev 2>/dev/null

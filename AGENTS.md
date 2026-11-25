@@ -384,6 +384,13 @@ destructive step is printed as `[dry-run] …` instead of executed: no merge, no
 push, no `gh release` write. It ends by printing the notes that would have been published. Use
 it after changing anything in this script, and before a release you care about.
 
+**Everything is collected locally before anything is written to GitHub.** The order is: local
+tag → *Release how?* (read-only `gh`) → notes in `$EDITOR` → production deploy → `.tgz`/`.sig`
+check → push → `gh` writes. Every GitHub *read* happens before the deploy; every GitHub *write*
+happens after the push and after the archive is signed. An unchanged notes body (or an editor
+that exits non-zero) aborts while everything is still local — nothing deployed, pushed or
+published.
+
 **Notes are edited in `$EDITOR`, before anything is pushed.** The current release body is
 pre-loaded under a comment header and a marker line (the `git commit` pattern). For a *new*
 milestone release the body starts as a bare `## Changes` skeleton and the commits since the
