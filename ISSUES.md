@@ -498,7 +498,7 @@ abandoned attempt is not what the live site serves.
   mutating calls, unchanged tag list, clean tree, `dev` still checked out, and the final notes
   printed.
 
-  A misunderstanding worth recording (`PLACEHOLDER`): the "one line" in the original spec was the
+  A misunderstanding worth recording (`83bd1a4`): the "one line" in the original spec was the
   **tag annotation**, not the release notes. Evidence: every existing tag carries a one-line
   summary (`0.4.25` → "3rd party security updates", `0.4.21` → "Fixed panlty calcs for stakes
   including BPD", `TS1` → "!!UNSTABLE!! TYPESCRIPT CONVERSION rebase"), and the only generic one
