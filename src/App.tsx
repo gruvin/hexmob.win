@@ -85,7 +85,7 @@ const Header = (props: {
           style={{ cursor: "pointer", userSelect: "none", display: "inline-block" }}
           title={`Click to toggle network price source`}
         >
-          {"$" + (isNaN(headerDisplayPrice) ? "-.--" : format(",.4f")(headerDisplayPrice))}
+          {"$" + (headerDisplayPrice > 0 ? format(",.4f")(headerDisplayPrice) : "-.----")}
         </span>
         <img
           src={props.headerPriceSource === "ethereum" ? "/ethereum.png" : "/pulsechain.png"}
