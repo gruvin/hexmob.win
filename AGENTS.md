@@ -44,8 +44,10 @@ Everything below follows from those four points.
 
 ### `scripts/deploy.sh` (zsh, no dependencies beyond git)
 
-The single entry point for all deploys (`yarn deploy`). It owns target selection, the
-brand overlay, the build, the transport and the restore-the-tree-on-exit guarantee.
+The deploy engine, invoked as `yarn deploy:dev` for previews. It owns target selection, the
+brand overlay, the build, the transport and the worktree lifecycle. **It does not touch the
+remote repository** — no tag creation, no push, no branch movement; those belong to
+`release.sh`. Production is reachable only through it (see §5).
 
 It is structured as small functions rather than a linear script, because the production
 flow needs to run the build step twice with different branding:
@@ -202,8 +204,10 @@ of the two.
 
 ## 4. Flow A — dev deployment (default)
 
-Prompt: `Poduction or Dev deployment? [D/p]:` — a **single keypress**, and anything other
-than `p`/`P` (including Enter) takes the dev path.
+There is no prompt: the flow is `DEPLOY_KIND`, which defaults to **dev**. `yarn deploy:dev`
+therefore always previews, and a stray keypress can no longer select production. (Production
+requires `DEPLOY_KIND=p` *and* `DEPLOY_TAG` *and* `DEPLOY_CONFIRM=yes`, which only
+`release.sh` supplies — see Flow B.)
 
 ```
 DEPLOY_TARGET=dev TARGET=tsa _build
@@ -244,17 +248,17 @@ the compiled brand (`VITE_BRAND` → `IS_HM` / `IS_TSA`, §2) and not from
 
 Prompted sequence, deliberately awkward — every step is a guard:
 
-1. `p` to select production — skipped when `DEPLOY_KIND` is set (see below).
+1. Entry is through `yarn release`, which runs the deploy engine with
+   `DEPLOY_KIND=p DEPLOY_CONFIRM=yes DEPLOY_TAG=<tag>`. A `p` without all three blocks: a
+   standalone production deploy would leave the hosts serving a build no release describes.
 2. **Blocking checks, before anything happens:** the working tree must be clean (tracked
    *and* untracked), and the starting branch must be `dev` or `master` (a detached HEAD is
    refused). A release starts from a committed state; the script will not stash, reset or
    discard anything to get there — it tells you what is in the way and exits 5.
-3. Type the word `yes`. Anything else aborts ("Didn't think so."); skipped when
-   `DEPLOY_CONFIRM=yes` is supplied by the caller.
-4. Enter a release tag — or have it supplied: when `DEPLOY_TAG` is set (as `yarn release` does),
-   the tag is taken from there and not prompted for. It must exist as a local tag, or the run
-   blocks with the list of recent tags. Stating it once matters: the tag ends up in the artifact
-   filename and the release URL, so two answers that disagree are a real hazard.
+3. The tag is supplied by the caller (no prompt).
+4. The tag must exist as a local tag, or the run blocks with the list of recent tags. Stating it
+   once matters: it ends up in the artifact filename and the release URL, so two answers that
+   disagree are a real hazard.
 5. Confirm the summary (tag, branch, both destinations, and the build-then-publish order).
 6. Two throwaway worktrees are created at the tag — one per brand — and both brands'
    overlays are preflighted, so a missing variant cannot surface after the other brand has
@@ -342,12 +346,12 @@ the deploy must fail fast with an UNSIGNED warning plus the command on the clipb
 than blocking behind a pinentry prompt. (The historical belief that automated signing could not
 work most likely came from signing with the card-backed key, which genuinely cannot.)
 
-**`yarn release` answers the ceremony prompts for you.** A release exists only to publish a tag,
-so there is nothing to decide at "production or dev?" or the typed `yes`: `release.sh` passes
-`DEPLOY_KIND=p`, `DEPLOY_CONFIRM=yes` and `DEPLOY_TAG=<tag>`, leaving exactly one gate — the
-final "build this tag and deploy it to both hosts? [Y/n]" — as the point of no return. Running
-`yarn deploy` directly still asks everything, and all guards (clean tree, branch, tag existence,
-overlay preflight, worktree creation) apply either way.
+**Production is a release stage, not a command.** `release.sh` is the only caller that supplies
+`DEPLOY_KIND=p` (with `DEPLOY_TAG` and `DEPLOY_CONFIRM=yes`), because a production deploy must be
+part of publishing a tagged, signed release — otherwise the live build corresponds to no
+release, which is exactly what this subsystem exists to prevent. Exactly one gate is left in
+place: the deploy's final "build this tag and deploy it to both hosts? [Y/n]". All guards (clean
+tree, branch, tag existence, overlay preflight, worktree creation) apply as usual.
 
 **Where a build is published.** Releases are not a distribution channel (§5, "What a published
 release is for"). The usual path treats the release as a **moving pointer**: retag it onto the
@@ -468,6 +472,11 @@ alternative to the rename.
   otherwise: it sanity-checks for `index.html`, `master.pub/` and `src/`, and it refuses a
   non-terminal stdin, because the prompts are the safety mechanism (zsh's `read -k1` fails
   silently without a tty, which used to select the dev path by accident).
+- **Production deploys only happen inside `yarn release`.** There is no `yarn deploy:prod`, and
+  `deploy.sh` blocks `DEPLOY_KIND=p` without the full intent trio. The break-glass form
+  (`DEPLOY_KIND=p DEPLOY_CONFIRM=yes DEPLOY_TAG=<tag> ./scripts/deploy.sh`) exists for
+  emergencies only, and it produces a build whose tarball will not byte-match the release's
+  published one — prefer a new patch tag.
 - **A release requires a clean tree on `dev` or `master`.** Not because the build needs it —
   it runs in a worktree — but because a dirty tree means attention is elsewhere. The script
   blocks and prints what is in the way; it never stashes, resets or discards to proceed.

@@ -278,12 +278,10 @@ _sign_release() {
 # Success path only. The main tree was never touched, so there is no state to restore;
 # the one convenience kept from the old flow: a release that started on master leaves
 # the operator on dev, because further work does not belong on the release branch.
+# Deploy touches no branches: the overlay lives in a worktree that is thrown away, and the
+# caller decides where to leave HEAD (scripts/release.sh returns to dev).
 _finish_release() {
     _remove_worktrees
-    if [[ "${STARTING_BRANCH}" == "master" ]]; then
-        ${GIT} checkout dev > /dev/null 2>&1 \
-            && print "\nSwitched to dev - master is the release branch, don't work on it."
-    fi
     return 0
 }
 
@@ -568,37 +566,36 @@ _publish() {
 }
 
 _require_tty
-if [[ -n "${DEPLOY_KIND}" ]]; then
-    # A caller that has already established intent (yarn release: a new tag means a release)
-    # should not have to answer this again. The guards below still apply unchanged.
-    DEPLOY_TYPE="${DEPLOY_KIND}"
-    print -r -- "Deployment kind: ${DEPLOY_TYPE} (from DEPLOY_KIND)"
-else
-    read -k1 DEPLOY_TYPE\?"Poduction or Dev deployment? [D/p]: "
-    print "" # read -k1 leaves the cursor on the prompt line
-fi
+# Which flow this is comes from the caller, never from a prompt: one stray keypress used to be
+# the difference between a preview and a production deploy. Dev is the default because it is
+# what this script is normally run for; production is reachable only from scripts/release.sh,
+# which supplies DEPLOY_KIND=p together with DEPLOY_TAG and DEPLOY_CONFIRM=yes.
+DEPLOY_TYPE="${DEPLOY_KIND:-d}"
+case "${DEPLOY_TYPE}" in
+    (d|D) print -r -- "Deployment: dev preview → ${DEST_DEV}" ;;
+    (p|P) print -r -- "Deployment: production (invoked as part of a release)" ;;
+    (*)   _block "unknown DEPLOY_KIND '${DEPLOY_TYPE}'" \
+              "Expected 'd' (dev preview, the default) or 'p' (release only).";;
+esac
 case "$DEPLOY_TYPE" in
     ([Pp])
+        # Production is only reachable as the deploy step of a release: a tagged build whose
+        # tarball and signature are about to be published. Deploying production on its own
+        # would leave the hosts serving a build that no release describes.
+        if [[ -z "${DEPLOY_TAG}" || "${DEPLOY_CONFIRM}" != "yes" ]]; then
+            _block "production deploy requires DEPLOY_TAG and DEPLOY_CONFIRM=yes" \
+                "A standalone production deploy is deliberately not offered: the live build" \
+                "must correspond to a published, signed release." \
+                "" \
+                "Use:  yarn release"
+        fi
         # Block early: a release built from a tree we cannot account for is worse than
         # no release at all. Nothing above this point has mutated anything.
         _require_clean_tree
         _require_release_branch
-        if [[ "yes" = "${DEPLOY_CONFIRM}" ]]; then
-            print -r -- "Production deployment confirmed (DEPLOY_CONFIRM=yes)."
-        else
-            print "\n"
-            read AMSURE\?"PRODUCTION deployment! Enter \"yes\" to continue: "
-            if [[ ! "yes" = "$AMSURE" ]]; then print "Didn't think so." ; exit 0 ; fi
-        fi
-        # DEPLOY_TAG lets a caller (scripts/release.sh) state the tag once. Prompting again
-        # invites the two answers to diverge, and the tag ends up in the artifact name.
-        if [[ -n "${DEPLOY_TAG}" ]]; then
-            TAG="${DEPLOY_TAG}"
-            print "Release version tag: ${TAG} (from DEPLOY_TAG)"
-        else
-            print "Enter release version tag for this PRODUCTION build"
-            read TAG\?"eg. 0.4.26 -- this must be an existing git tag: "
-        fi
+        print -r -- "Production deployment confirmed (DEPLOY_CONFIRM=yes)."
+        TAG="${DEPLOY_TAG}"
+        print "Release version tag: ${TAG}"
         _require_tag "${TAG}"
         print ""
         print "  tag     : ${TAG}"

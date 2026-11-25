@@ -19,7 +19,7 @@ React 19 + TypeScript + Vite 7 (SWC plugin). `wagmi` v2 (pinned `2.12.0`) + `vie
 - `yarn dev` — vite dev server
 - `yarn build` — `tsc && vite build`
 - `yarn test` / `yarn test-once` — vitest (**no test files exist yet** despite the config)
-- `yarn deploy` — `./scripts/deploy.sh`
+- `yarn deploy:dev` — `./scripts/deploy.sh` (dev preview; production goes through `yarn release`)
 
 There is **no CI** — the GitHub Actions workflow was removed (`.github/workflows/` is gone). Builds/tests are local-only.
 

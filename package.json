@@ -9,7 +9,7 @@
     "preview": "vite preview",
     "test": "vitest",
     "test-once": "vitest --run",
-    "deploy": "./scripts/deploy.sh",
+    "deploy:dev": "./scripts/deploy.sh",
     "release": "./scripts/release.sh"
   },
   "dependencies": {

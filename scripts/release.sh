@@ -138,12 +138,13 @@ _run ${GIT} tag -s "${NEW_TAG}" -m "${TAG_SUMMARY}" || {
 # prompts are answered here rather than asked again. The deploy's remaining gate - build this
 # tag and deploy it to both hosts, yes/no - is left in place: it is the point of no return.
 print "\n── Production deploy of ${NEW_TAG} ────────────────────────────────────\n"
+print "   (deploy.sh does the build/publish; this script owns the tag, the push and the release)\n"
 if [[ ${DRY_RUN} -eq 1 ]]; then
-    print "  [dry-run] DEPLOY_KIND=p DEPLOY_CONFIRM=yes DEPLOY_TAG=${NEW_TAG} yarn deploy"
+    print "  [dry-run] DEPLOY_KIND=p DEPLOY_CONFIRM=yes DEPLOY_TAG=${NEW_TAG} ./scripts/deploy.sh"
     print "  [dry-run] (production deploy skipped - no hosts touched, no archive produced)"
     DEPLOY_STATUS=0
 else
-    DEPLOY_KIND=p DEPLOY_CONFIRM=yes DEPLOY_TAG="${NEW_TAG}" yarn deploy
+    DEPLOY_KIND=p DEPLOY_CONFIRM=yes DEPLOY_TAG="${NEW_TAG}" ./scripts/deploy.sh
     DEPLOY_STATUS=$?
 fi
 if [[ ${DEPLOY_STATUS} -ne 0 ]]; then
