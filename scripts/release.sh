@@ -328,6 +328,21 @@ if ${GIT} rev-parse --verify --quiet "refs/tags/${NEW_TAG}" > /dev/null; then
     fi
 fi
 
+# Back to dev. This is the *only* checkout the script performs, and only on success: everything
+# before it runs on master because a release is built from master, but leaving the operator on the
+# release branch invites the next commit landing there.
+_finish_on_dev() {
+    if [[ ${DRY_RUN} -eq 1 ]]; then
+        ui_dim "[dry-run] would return to dev"
+        return 0
+    fi
+    if ${GIT} checkout dev > /dev/null 2>&1; then
+        ui_ok "back on dev - master is the release branch, don't work on it"
+    else
+        ui_warn "could not switch back to dev; you are still on ${CURRENT_BRANCH}"
+    fi
+}
+
 # ── 4. Signed tag ────────────────────────────────────────────────────────────
 # The tag annotation is the human record *inside* the signed object (`git show <tag>`), and
 # every release tag in this repo carries a one-line summary. It is not the same thing as the
@@ -644,7 +659,9 @@ if [[ ${DRY_RUN} -eq 1 ]]; then
     ui_ok "DRY RUN complete — nothing was tagged, deployed, pushed or published."
     ui_head "The notes that would have been published:"
     sed 's/^/  | /' "${NOTES_TMP}"
+    _finish_on_dev
     exit 0
 fi
 
 ui_ok "release: ${C_MUTE}$(${GH} release view "${NEW_TAG}" --json url -q .url 2>/dev/null)${C_RESET}"
+_finish_on_dev
