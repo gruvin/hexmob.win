@@ -482,46 +482,42 @@ and never regenerated (that would wipe the accumulated log). Assets are replaced
 accumulated. Drafts are deliberately not treated as "current", because a leftover draft from an
 abandoned attempt is not what the live site serves.
 
-**Follow-up fixes** (`2b6b186`), both UX rather than correctness:
+**Follow-up fixes**, all UX/correctness of the tooling rather than of a release itself:
 
-- `deploy.sh` honours `DEPLOY_TAG`, so `yarn release` states the tag once instead of asking for
-  it again at the deploy prompt — where the two answers could silently diverge.
-- the notes moved **before** the push, and are now edited in `$EDITOR` with the current body
-  pre-loaded (comment header + marker line, the `git commit` pattern) instead of answering a
-  one-line prompt after everything was already live. Markdown headings survive because only
-  text above the marker is discarded. A non-zero editor exit, empty notes, or "quit without
-  saving" leaves the release untouched.
-- **`--dry-run` / `DRY_RUN=1`** (`a6d3d62`): every prompt runs, read-only `gh` calls are real
-  (so the release list and the notes body are live), and every destructive step prints
-  `[dry-run] …` instead of executing. Verified in a rehearsal repo with a stubbed `gh` that
-  fails on any mutating call: both paths (retag-existing and new-draft) complete with **zero**
-  mutating calls, unchanged tag list, clean tree, `dev` still checked out, and the final notes
-  printed.
+- **`2b6b186`** — `deploy.sh` honours `DEPLOY_TAG`, so `yarn release` states the tag once instead
+  of asking again at the deploy prompt (where the two answers could silently diverge); the notes
+  moved **before** the push and are edited in `$EDITOR` with the current body pre-loaded
+  (comment header + marker line, the `git commit` pattern) rather than answering a one-line
+  prompt after everything was already live. Markdown headings survive because only text above
+  the marker is discarded; a non-zero editor exit, empty notes, or "quit without saving" leaves
+  the release untouched.
+- **`a6d3d62`** — `--dry-run` / `DRY_RUN=1`. Every prompt runs, read-only `gh` calls are real (so
+  the release list and the notes body are live) and each destructive step prints `[dry-run] …`.
+  Verified in a rehearsal repo with a stubbed `gh` that fails on any mutating call: both paths
+  complete with **zero** mutating calls, unchanged tag list, clean tree, `dev` checked out.
+- **`45a8bc4`** — the choice prompt read "Publish to '0.4.26'?", which sounded like publishing
+  *onto* the old tag when it means retagging it; and the new-release path was seeding 35 commit
+  subjects into the *published* body. Commits are now reference material above the marker and
+  the body starts as `## Changes`.
+- **`2ce7388`** — the "one line" in the original brief was the **tag annotation**, not the
+  release notes. Evidence: every tag carries a one-line summary (`0.4.25` → "3rd party security
+  updates", `0.4.21` → "Fixed panlty calcs for stakes including BPD", `TS1` → "!!UNSTABLE!!
+  TYPESCRIPT CONVERSION rebase"); the only generic one is `0.4.26` → "Release 0.4.26", produced
+  by this script's placeholder. `release.sh` now prompts for the summary and refuses to continue
+  without it. `0.4.26`'s tag message stays as-is — re-tagging a published signed tag to improve
+  its wording would break the signature people are meant to verify.
+- **`2f35ef7`** — the release list was ragged because gh only aligns columns when stdout is a
+  terminal and a script must pipe it. It is now fetched as TSV and formatted with `printf`, using
+  `publishedAt` (what gh displays) rather than `createdAt`.
+- **`83bd1a4`** — the choice is two lines instead of three paragraphs, and Enter no longer always
+  means "update": the default follows the bump (patch → update, minor/major → new release,
+  non-semver → update), printed in the prompt so it is never a guess.
 
-  A misunderstanding worth recording (`83bd1a4`): the "one line" in the original spec was the
-  **tag annotation**, not the release notes. Evidence: every existing tag carries a one-line
-  summary (`0.4.25` → "3rd party security updates", `0.4.21` → "Fixed panlty calcs for stakes
-  including BPD", `TS1` → "!!UNSTABLE!! TYPESCRIPT CONVERSION rebase"), and the only generic one
-  is `0.4.26` → "Release 0.4.26", which this script's placeholder produced. `release.sh` now
-  prompts for the summary and refuses to continue without it, so the signed tag keeps its human
-  record; the release notes remain a separate, longer, accumulating text. `0.4.26`'s tag message
-  is left as-is: re-tagging a published signed tag to improve its wording would break the
-  signature people are supposed to verify.
-
-  Also reworded after the first real rehearsal (`45a8bc4`): the choice prompt read
-  "Publish to '0.4.26'?", which sounded like publishing *onto* the old tag when it means
-  retagging it. It now spells out both branches ("update the existing release \"<title>\"
-  (currently on tag <tag>) … retagged; assets replaced; notes edited" vs "create a NEW
-  release … the existing one is left untouched"), and the release list shows tag, title and
-  `<= latest`, since those releases carry descriptive titles. New-release notes were also
-  seeding 35 commit subjects into the *published* body; the commits are now reference material
-  above the marker, with the body starting as `## Changes`.
-
-  Three flaws the rehearsal itself found and fixed: `[dry-run]` lines for asset deletions were
-  swallowed by a `> /dev/null` redirect; the closing message pointed at a notes file that the
-  EXIT trap deletes; and the milestone path seeded notes from `<prevTag>..<newTag>`, which fails
-  when the new tag does not exist yet (dry run) — it now uses `HEAD` as the range end, and
-  prefers a version-shaped previous tag so a stray `TS1` cannot sort above `0.4.26`.
+**Three flaws the dry-run rehearsal itself found** (fixed in `a6d3d62`): `[dry-run]` lines for
+asset deletions were swallowed by a `> /dev/null` redirect; the closing message pointed at a
+notes file the EXIT trap deletes; and the milestone path seeded notes from `<prevTag>..<newTag>`,
+which cannot work when the new tag does not exist yet — it now uses `HEAD` as the range end, and
+prefers a version-shaped previous tag so a stray `TS1` cannot sort above `0.4.26`.
 
 **Not exercised end to end.** Step 4 publishes to both live hosts, so the first full run needs
 watching. The `gh` steps were checked against `gh 2.93.0`'s real flags (`--tag`, `--verify-tag`,
