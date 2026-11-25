@@ -20,6 +20,22 @@
 # can be checked against what a browser actually runs, not as a distribution channel. The
 # conventional "one release per version with regenerated notes" model does not apply here.
 
+# shellcheck source=scripts/ui.zsh
+[[ -f "${0:A:h}/ui.zsh" ]] && . "${0:A:h}/ui.zsh"
+
+# If the cosmetic library is missing, fall back to plain output rather than dying on undefined
+# helpers: styling must never be able to break a deploy.
+if [[ -z "${_UI_LOADED:-}" ]]; then
+    C_RESET=''; C_BOLD=''; C_DIM=''; C_MUTE=''; C_HEAD=''; C_ACC=''; C_OK=''; C_WARN=''; C_ERR=''
+    ui_stage() { print -r -- ""; print -r -- "  ◆ $1${2:+  $2}" }
+    ui_head()  { print -r -- "$1" }
+    ui_ok()    { print -r -- "  ✔ $1" }
+    ui_warn()  { print -r -- "  ! $1" }
+    ui_err()   { print -r -- "  ✖ $1" }
+    ui_dim()   { print -r -- "  $1" }
+    ui_kv()    { printf '  %-8s %s\n' "$1" "$2" }
+fi
+
 GIT=$(command -v git)
 GH=$(command -v gh)
 
@@ -75,13 +91,13 @@ if [[ ${DRY_RUN} -eq 1 ]]; then
 fi
 
 # ── 2. Merge dev into master ─────────────────────────────────────────────────
-print "\nMerging dev → master ..."
+ui_stage "Merging dev → master"
 _run ${GIT} checkout master || { print "ERROR: checkout master failed"; exit 1 }
 if ! _run ${GIT} merge dev; then
     # A conflicted merge leaves the tree mid-merge; never continue from here. This is the
     # expected outcome when master carries script changes dev has not seen (or vice versa) -
     # resolve it deliberately, then re-run.
-    print "\nERROR: merging dev into master failed."
+    ui_err "merging dev into master failed."
     ${GIT} merge --abort > /dev/null 2>&1 && print "  Merge aborted; the tree is back on master."
     print "  Resolve the divergence by hand, then re-run: something in dev and master has"
     print "  changed the same file (scripts/ most likely)."
@@ -90,7 +106,7 @@ if ! _run ${GIT} merge dev; then
 fi
 
 # ── 3. Pick the next version ─────────────────────────────────────────────────
-print "\nRecent tags (newest first):"
+ui_head "Recent tags (newest first)"
 ${GIT} tag --sort=-v:refname | head -10 | sed 's/^/  /'
 
 LATEST_TAG=$(${GIT} tag --sort=-v:refname | grep -E '^[0-9]+\.[0-9]+\.[0-9]+$' | head -1)
@@ -144,7 +160,7 @@ if ${GIT} rev-parse --verify --quiet "refs/tags/${NEW_TAG}" > /dev/null; then
             (present)
                 if ${GH} release view "${NEW_TAG}" > /dev/null 2>&1; then
                     if [[ ${REPUBLISH} -eq 0 ]]; then
-                        print "\nERROR: ${NEW_TAG} is pushed AND already has a release."
+                        ui_err "${NEW_TAG} is pushed AND already has a release."
                         print "Continuing would rebuild, redeploy and REPLACE that release's published assets."
                         print "  - to do that deliberately:  yarn release --republish"
                         print "  - otherwise pick the next patch tag - a new tag says why the build changed."
@@ -158,7 +174,7 @@ if ${GIT} rev-parse --verify --quiet "refs/tags/${NEW_TAG}" > /dev/null; then
                 fi
                 ;;
             (*)
-                print "\nERROR: cannot tell whether ${NEW_TAG} is on origin (git ls-remote failed)."
+                ui_err "cannot tell whether ${NEW_TAG} is on origin (git ls-remote failed)."
                 print "Refusing to recreate a tag that might already be public."
                 exit 1
                 ;;
@@ -174,14 +190,14 @@ if [[ "${TAG_MODE}" == "create" ]]; then
     print ""
     read TAG_SUMMARY\?"One-line summary for the tag (eg. 'Fixed penalty calcs for stakes including BPD'): "
     if [[ -z "${TAG_SUMMARY//[[:space:]]/}" ]]; then
-        print "\nERROR: a one-line summary is required — it is the description inside the signed tag."
+        ui_err "a one-line summary is required — it is the description inside the signed tag."
         print "Nothing has been merged, tagged, deployed or pushed."
         _run ${GIT} checkout dev 2>/dev/null
         exit 1
     fi
 
-    print "\nCreating signed tag ${NEW_TAG} ..."
-    print "  summary: ${TAG_SUMMARY}"
+    ui_stage "Creating signed tag ${NEW_TAG}"
+    ui_dim "summary: ${TAG_SUMMARY}"
     _run ${GIT} tag -s "${NEW_TAG}" -m "${TAG_SUMMARY}" || {
         print "ERROR: git tag failed (smartcard PIN or passphrase needed for the tag signature?)"
         _run ${GIT} checkout dev
@@ -205,7 +221,7 @@ DRAFT_COUNT=$(${GH} release list --json isDraft -q '[.[] | select(.isDraft)] | l
 # (as any script must) yields raw tabs and the columns come out ragged in the operator's
 # terminal. Also use publishedAt, which is the PUBLISHED column gh shows - createdAt is when
 # the release object was made and differs for releases that were edited later.
-print "\nGitHub releases (published):"
+ui_head "GitHub releases (published):"
 RELEASE_ROWS=$(${GH} release list --exclude-drafts --limit 5 \
     --json tagName,name,publishedAt,isLatest \
     -q '.[] | [.tagName, (.publishedAt[:10]), (if ((.name // "") == "") then .tagName else .name end), (if .isLatest then "[latest]" else "" end)] | @tsv' 2>/dev/null)
@@ -287,7 +303,7 @@ _edit_notes() {
     } > "${STAGED}"
 
     # ${=VAR} word-splits, so EDITOR can carry arguments ("code --wait").
-    ${=EDITOR_BIN} "${STAGED}" || { print "\nERROR: editor exited non-zero — aborted, nothing pushed."; return 1; }
+    ${=EDITOR_BIN} "${STAGED}" || { ui_err "editor exited non-zero — aborted, nothing pushed."; return 1; }
 
     # Keep everything after the marker, drop trailing blank lines.
     local BODY
@@ -296,7 +312,7 @@ _edit_notes() {
     rm -f "${STAGED}"
 
     if [[ -z "${BODY//[[:space:]]/}" ]]; then
-        print "\nERROR: the notes came back empty — refusing to publish a release with no notes."
+        ui_err "the notes came back empty — refusing to publish a release with no notes."
         return 1
     fi
     print -r -- "${BODY}" | tr -d '\r' > "${FILE}"
@@ -348,7 +364,7 @@ fi
 # Unchanged notes mean the release was not described, which is almost always a mistake rather
 # than an intention - and because this runs before the deploy, aborting costs nothing.
 if _notes_same "${NOTES_TMP}" "${NOTES_TMP}.orig"; then
-    print "\nERROR: the notes are unchanged — nothing has been deployed, pushed or published."
+    ui_err "the notes are unchanged — nothing has been deployed, pushed or published."
     print "  The tag ${NEW_TAG} exists locally; re-running will reuse it (see 3b)."
     rm -f "${NOTES_TMP}.orig"
     _run ${GIT} checkout dev 2>/dev/null
@@ -360,8 +376,8 @@ rm -f "${NOTES_TMP}.orig"
 # A release exists only to publish a tag, so the deploy's "production or dev?" and typed-yes
 # prompts are answered here rather than asked again. The deploy's remaining gate - build this
 # tag and deploy it to both hosts, yes/no - is left in place: it is the point of no return.
-print "\n── Production deploy of ${NEW_TAG} ────────────────────────────────────\n"
-print "   (deploy.sh does the build/publish; this script owns the tag, the push and the release)\n"
+ui_stage "Production deploy of ${NEW_TAG}"
+ui_dim "deploy.sh builds and publishes; this script owns the tag, the push and the release"
 if [[ ${DRY_RUN} -eq 1 ]]; then
     print "  [dry-run] DEPLOY_KIND=p DEPLOY_CONFIRM=yes DEPLOY_TAG=${NEW_TAG} ./scripts/deploy.sh"
     print "  [dry-run] (production deploy skipped - no hosts touched, no archive produced)"
@@ -371,7 +387,7 @@ else
     DEPLOY_STATUS=$?
 fi
 if [[ ${DEPLOY_STATUS} -ne 0 ]]; then
-    print "\nERROR: deploy script exited with status ${DEPLOY_STATUS}"
+    ui_err "deploy script exited with status ${DEPLOY_STATUS}"
     print "The tag ${NEW_TAG} exists locally but nothing has been pushed."
     print "  - re-run: the tag is reused, and both brands are rebuilt and re-published"
     print "  - abandon: git tag -d ${NEW_TAG}"
@@ -385,13 +401,13 @@ RELEASE_TGZ="${RELEASE_DIR}/hexmob.win-${NEW_TAG}-build.tgz"
 RELEASE_SIG="${RELEASE_TGZ}.sig"
 
 if [[ ${DRY_RUN} -eq 1 ]]; then
-    print "\n(dry-run: skipping the archive/signature check - the deploy that produces them was skipped)"
+    ui_dim "(dry-run: skipping the archive/signature check - the deploy that produces them was skipped)"
 elif [[ ! -f "$RELEASE_TGZ" ]]; then
-    print "\nERROR: ${RELEASE_TGZ} not found — cannot publish a release without it."
+    ui_err "${RELEASE_TGZ} not found — cannot publish a release without it."
     exit 1
 fi
 if [[ ${DRY_RUN} -eq 0 && ! -f "$RELEASE_SIG" ]]; then
-    print "\nERROR: ${RELEASE_SIG} not found."
+    ui_err "${RELEASE_SIG} not found."
     print "The archive is unsigned, and a release whose signature is missing is pointless."
     print "Sign it in a terminal that can prompt for the key, then re-run from step 6:"
     print "  gpg --yes -b ${RELEASE_TGZ}"
@@ -400,7 +416,7 @@ fi
 
 # ── 9. Push ─────────────────────────────────────────────────────────────────
 # Before touching releases: gh release operations address tags that must exist on the remote.
-print "\nPushing master and tags to origin ..."
+ui_stage "Pushing master and tags to origin"
 _run ${GIT} push origin master || { print "ERROR: git push origin master failed"; exit 1; }
 _run ${GIT} push --tags        || { print "ERROR: git push --tags failed"; exit 1; }
 
@@ -415,35 +431,35 @@ if [[ "${TARGET_CHOICE}" == "n" || "${TARGET_CHOICE}" == "N" ]]; then
         print "\nWARNING: gh release create failed — artifacts are in ${RELEASE_DIR}, create the release manually."
     fi
 else
-    print "\nMoving release '${CURRENT_RELEASE}' onto tag ${NEW_TAG} ..."
+    ui_stage "Moving release '${CURRENT_RELEASE}' onto tag ${NEW_TAG}"
     _run ${GH} release edit "${CURRENT_RELEASE}" --tag "${NEW_TAG}" --verify-tag \
         || { print "ERROR: could not retag the release (is ${NEW_TAG} pushed?). Nothing else was changed."; exit 1; }
 
-    print "Replacing the previous build assets ..."
+    ui_stage "Replacing the source+sig assets"
     for ASSET in $(${GH} release view "${NEW_TAG}" --json assets -q '.assets[].name' 2>/dev/null); do
         if [[ ${DRY_RUN} -eq 1 ]]; then
             print "  [dry-run] would remove ${ASSET}"
         else
-            print "  removing ${ASSET}"
+            ui_dim "removing ${ASSET}"
             ${GH} release delete-asset "${NEW_TAG}" "${ASSET}" --yes > /dev/null \
-                || print "  WARNING: could not remove ${ASSET}"
+                || ui_warn "could not remove ${ASSET}"
         fi
     done
     _run ${GH} release upload "${NEW_TAG}" "${RELEASE_TGZ}" "${RELEASE_SIG}" --clobber \
         || { print "ERROR: upload failed — artifacts are in ${RELEASE_DIR}"; exit 1; }
 
     _run ${GH} release edit "${NEW_TAG}" --notes-file "${NOTES_TMP}" \
-        || print "WARNING: could not update the notes — the release body is unchanged."
+        || ui_warn "could not update the notes — the release body is unchanged."
 fi
 
 _run ${GIT} checkout dev 2>/dev/null
 
 if [[ ${DRY_RUN} -eq 1 ]]; then
-    print "\nDRY RUN complete — nothing was merged, tagged, deployed, pushed or published."
-    print "\nThe notes that would have been published:"
+    ui_ok "DRY RUN complete — nothing was merged, tagged, deployed, pushed or published."
+    ui_head "The notes that would have been published:"
     sed 's/^/  | /' "${NOTES_TMP}"
     exit 0
 fi
 
-print "\nAll done. Release: $(${GH} release view "${NEW_TAG}" --json url -q .url 2>/dev/null)"
-print "Branch: $(${GIT} rev-parse --abbrev-ref HEAD)"
+ui_ok "release: ${C_MUTE}$(${GH} release view "${NEW_TAG}" --json url -q .url 2>/dev/null)${C_RESET}"
+ui_dim "branch: $(${GIT} rev-parse --abbrev-ref HEAD)"

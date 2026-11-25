@@ -119,6 +119,24 @@ only when the difference has to exist in the built artifact itself (SEO tags, CS
 image assets). Either way, verify the result: the *other* brand's markup must be absent from
 the built bundle.
 
+### `scripts/ui.zsh` — console styling
+
+Both scripts source this for a small shared palette: one accent, three statuses (ok/warn/err),
+and dim for secondary detail (paths, TLS settings, hints). Colour is emitted **only when stdout
+is a terminal**, and never when `NO_COLOR` is set or `TERM=dumb`, so pipes, logs and test harnesses
+stay plain; override with `DEPLOY_COLOR=always|never`.
+
+Two rules if you touch it:
+
+- **Prefix helper names with `ui_`.** A helper called `head` shadowed the `head(1)` command and
+  silently broke `git tag | head -10`, which fed garbage into the version suggestion. Cosmetic
+  code must not be able to capture a command name.
+- **Keep the palette small.** A deploy log should read as headings, stages and statuses, not as a
+  christmas tree.
+
+If the file is missing, both scripts fall back to plain output rather than dying on undefined
+helpers.
+
 ### `.env.local` (gitignored, sample in `dot-env.local-sample`)
 
 Supplies `VITE_REOWN_APPKIT_ID` and the FTP credentials. `deploy.sh` sources it with

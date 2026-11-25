@@ -6,6 +6,22 @@ if [[ -f ./.env.local ]]; then
     set +a
 fi
 
+# shellcheck source=scripts/ui.zsh
+[[ -f "${0:A:h}/ui.zsh" ]] && . "${0:A:h}/ui.zsh"
+
+# If the cosmetic library is missing, fall back to plain output rather than dying on undefined
+# helpers: styling must never be able to break a deploy.
+if [[ -z "${_UI_LOADED:-}" ]]; then
+    C_RESET=''; C_BOLD=''; C_DIM=''; C_MUTE=''; C_HEAD=''; C_ACC=''; C_OK=''; C_WARN=''; C_ERR=''
+    ui_stage() { print -r -- ""; print -r -- "  ◆ $1${2:+  $2}" }
+    ui_head()  { print -r -- "$1" }
+    ui_ok()    { print -r -- "  ✔ $1" }
+    ui_warn()  { print -r -- "  ! $1" }
+    ui_err()   { print -r -- "  ✖ $1" }
+    ui_dim()   { print -r -- "  $1" }
+    ui_kv()    { printf '  %-8s %s\n' "$1" "$2" }
+fi
+
 GIT=$(command -v git)
 GPG=$(command -v gpg)
 LFTP=$(command -v lftp)
@@ -78,10 +94,11 @@ _require_tty() {
 
 # @args: headline, detail lines...
 _block() {
-    print "\nBLOCKED: $1"
+    print ""
+    ui_err "BLOCKED: ${1}"
     shift
     local LINE
-    for LINE in "$@"; do print -r -- "  ${LINE}"; done
+    for LINE in "$@"; do print -r -- "  ${C_MUTE}${LINE}${C_RESET}"; done
     print ""
     exit 5
 }
@@ -230,7 +247,7 @@ _make_worktree() {
         _block "${BRAND} build worktree HEAD (${AT[1,8]}) is not '${REF}' (${WANT[1,8]})" \
             "Refusing to build a release from an unexpected commit."
     fi
-    print "Build worktree (${BRAND}): ${WT} (${REF} @ ${AT[1,8]})"
+    ui_dim "worktree ${BRAND}: ${WT} (${REF} @ ${AT[1,8]})"
     return 0
 }
 
@@ -259,16 +276,16 @@ _sign_release() {
         print "\n  gpg not found: release archive is UNSIGNED."
         return 1
     fi
-    print "\nSigning release archive ..."
+    ui_stage "Signing the release archive"
     if ${GPG} --batch --yes -b "${TGZ}"; then
         if ${GPG} --verify "${SIG}" "${TGZ}" > /dev/null 2>&1; then
-            print "  signed and verified: ${SIG}"
+            ui_ok "signed and verified: ${SIG}"
             return 0
         fi
-        print "  WARNING: signature written but verification failed: ${SIG}"
+        ui_warn "signature written but verification failed: ${SIG}"
         return 1
     fi
-    print "  WARNING: signing failed - the archive is UNSIGNED."
+    ui_err "signing failed - the archive is UNSIGNED"
     print "  If the signing key needs a passphrase or a card PIN, run this in a terminal:"
     print "      gpg --yes -b \"${TGZ}\""
     echo -n "gpg --yes -b ${TGZ}" | pbcopy 2>/dev/null && print "  (command copied to clipboard)"
@@ -389,7 +406,7 @@ _prune_apple_junk() {
             COUNT=$(( COUNT + $(print -r -- "${FOUND}" | wc -l | tr -d ' ') ))
         fi
     done
-    [[ ${COUNT} -gt 0 ]] && print "Pruned ${COUNT} macOS artefact(s) from ${BUILD_DIR}"
+    [[ ${COUNT} -gt 0 ]] && ui_dim "pruned ${COUNT} macOS artefact(s) from ${BUILD_DIR}"
     return 0
 }
 
@@ -434,7 +451,7 @@ EOF
 _deploy_build_output() {
     case "$DEST_TRANSPORT" in
         (rsync)
-            print "RSYNCing ${BUILD_DIR} => ${DEST}"
+            ui_dim "rsync ${BUILD_DIR} => ${DEST}"
             ${RSYNC} "${RSYNC_ARGS[@]}" -r --delete ${BUILD_DIR} ${DEST} \
                 || throw "rsync failed (exit $?) uploading ${BUILD_DIR} => ${DEST}"
             ;;
@@ -478,8 +495,8 @@ _deploy_build_output() {
             local SSL_CHECK_HOSTNAME=${DEST_FTP_CHECK_HOSTNAME:-false}
             local SSL_PROTECT_DATA=${DEST_FTP_PROTECT_DATA:-true}
 
-            print "FTP mirroring ${BUILD_DIR} => ${DEST}"
-            print "  tls: force=${SSL_FORCE} verify-certificate=${SSL_VERIFY} check-hostname=${SSL_CHECK_HOSTNAME} protect-data=${SSL_PROTECT_DATA}"
+            ui_dim "mirror ${BUILD_DIR} => ${DEST}"
+            ui_dim "tls: force=${SSL_FORCE} verify-certificate=${SSL_VERIFY} check-hostname=${SSL_CHECK_HOSTNAME} protect-data=${SSL_PROTECT_DATA}"
             _write_ftp_command_file || throw 'could not prepare the FTP command file'
             ${LFTP} -f "${FTP_CMD_FILE}" || throw "FTP mirror to ${DEST_FTP_HOST} failed"
             ;;
@@ -497,8 +514,8 @@ _guarded() {
     shift
     { "$@" } always {
         if catch '*'; then
-            print -r -- "D'oh! ${LABEL} failed: [${CAUGHT}]"
-            print -r -- "  (re-run with DEPLOY_DEBUG=1 for a command trace)"
+            ui_err "${LABEL} failed: ${CAUGHT}"
+            ui_dim "(re-run with DEPLOY_DEBUG=1 for a command trace)"
             _cleanup
             exit 2
         fi
@@ -517,7 +534,7 @@ _assemble() {
     # Build inside the disposable checkout: from here on ./src, ./public, ./dist and
     # ./master.pub all refer to the ref being built, not to the operator's tree.
     cd "${WT}" || throw "could not enter the ${TARGET} build worktree ${WT}"
-    print "\n--- building ${TARGET} ---"
+    ui_stage "Building ${TARGET}"
 
     _require_overlay "${TARGET}"
 
@@ -538,7 +555,7 @@ _assemble() {
     # artifact or into the signed tarball.
     rm -rf "${BUILD_DIR}" || throw "could not clear ${BUILD_DIR}"
     yarn build || throw 'the build itself failed'
-    print "BUILD DONE (${TARGET})"
+    ui_ok "build done (${TARGET})"
     _prune_apple_junk
     # Rename to .php so nginx serves it via PHP-FPM rather than the static
     # open_file_cache, which on this host holds stale content for days.
@@ -561,7 +578,7 @@ _publish() {
     cd "${WT}" || throw "could not enter the ${TARGET} build worktree ${WT}"
     [[ -f "${BUILD_DIR}index.php" ]] \
         || throw "nothing to publish for '${TARGET}' - the ${TARGET} build is missing"
-    print "\n--- publishing ${TARGET} ( => ${DEST} via ${DEST_TRANSPORT}) ---"
+    ui_stage "Publishing ${TARGET}" "=> ${DEST} via ${DEST_TRANSPORT}"
     _deploy_build_output
 }
 
@@ -572,8 +589,8 @@ _require_tty
 # which supplies DEPLOY_KIND=p together with DEPLOY_TAG and DEPLOY_CONFIRM=yes.
 DEPLOY_TYPE="${DEPLOY_KIND:-d}"
 case "${DEPLOY_TYPE}" in
-    (d|D) print -r -- "Deployment: dev preview → ${DEST_DEV}" ;;
-    (p|P) print -r -- "Deployment: production (invoked as part of a release)" ;;
+    (d|D) ui_dim "deployment: dev preview → ${DEST_DEV}" ;;
+    (p|P) ui_dim "deployment: production (invoked as part of a release)" ;;
     (*)   _block "unknown DEPLOY_KIND '${DEPLOY_TYPE}'" \
               "Expected 'd' (dev preview, the default) or 'p' (release only).";;
 esac
@@ -593,16 +610,16 @@ case "$DEPLOY_TYPE" in
         # no release at all. Nothing above this point has mutated anything.
         _require_clean_tree
         _require_release_branch
-        print -r -- "Production deployment confirmed (DEPLOY_CONFIRM=yes)."
+        ui_dim "production deployment confirmed (DEPLOY_CONFIRM=yes)"
         TAG="${DEPLOY_TAG}"
-        print "Release version tag: ${TAG}"
+        ui_kv "tag" "${TAG}"
         _require_tag "${TAG}"
         print ""
-        print "  tag     : ${TAG}"
-        print "  branch  : ${STARTING_BRANCH} ($(git rev-parse --short HEAD))"
-        print "  builds  : tsa => ${DEST_TSA}"
-        print "            hexmob => ${DEST_HEXMOB}"
-        print "  order   : build both, then publish both (a failed build publishes nothing)"
+        ui_kv "tag" "${TAG}"
+        ui_kv "branch" "${STARTING_BRANCH} ($(git rev-parse --short HEAD))"
+        ui_kv "builds" "tsa => ${DEST_TSA}"
+        print "             hexmob => ${DEST_HEXMOB}"
+        ui_dim "order: build both, then publish both (a failed build publishes nothing)"
         read -k1 YN\?"Build ${TAG} in a throwaway worktree and deploy it? [Y/n]: "
         print ""
         case ${YN} in
@@ -640,7 +657,7 @@ case "$DEPLOY_TYPE" in
                     || _block "could not create ${RELEASE_TGZ}"
                 print "Done!"
 
-                print "\nLIVE DEPLOYMENT COMPLETED."
+                print ""; ui_ok "${C_BOLD}live deployment completed${C_RESET}"
                 _sign_release || true
                 ;;
         esac
