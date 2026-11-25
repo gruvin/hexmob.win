@@ -170,7 +170,12 @@ _make_worktree() {
     local REF=$1
     local BRAND=$2
     if [[ -z "${WT_PARENT}" ]]; then
-        WT_PARENT=$(mktemp -d "${TMPDIR:-/tmp}/hexmob-deploy.XXXXXX") \
+        # macOS's TMPDIR already ends with a slash, which would render as a doubled slash in
+        # paths we print (and in lftp's argv). Trim it; harmless either way, but it reads like
+        # a typo and makes real bugs harder to spot in a log.
+        local TMP_ROOT="${TMPDIR:-/tmp}"
+        TMP_ROOT="${TMP_ROOT%/}"
+        WT_PARENT=$(mktemp -d "${TMP_ROOT}/hexmob-deploy.XXXXXX") \
             || _block "could not create a temporary directory for the build worktrees"
     fi
     local WT="${WT_PARENT}/${BRAND}"
@@ -339,7 +344,8 @@ _prune_apple_junk() {
 # back to anonymous).
 # @args: none (reads the DEST_FTP_* / SSL_* values from the caller's scope)
 _write_ftp_command_file() {
-    FTP_CMD_FILE=$(mktemp "${TMPDIR:-/tmp}/hexmob-ftp.XXXXXX") || throw 'mktemp failed for the FTP command file'
+    local TMP_ROOT="${TMPDIR:-/tmp}"
+    FTP_CMD_FILE=$(mktemp "${TMP_ROOT%/}/hexmob-ftp.XXXXXX") || throw 'mktemp failed for the FTP command file'
     chmod 600 "${FTP_CMD_FILE}" || throw 'chmod 600 failed for the FTP command file'
     cat > "${FTP_CMD_FILE}" <<EOF || throw 'could not write the FTP command file'
 # Without fail-exit, a failed command (a bad cd, say) is followed by a successful one and
