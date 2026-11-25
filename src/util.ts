@@ -3,17 +3,22 @@ import { parseUnits } from 'viem'
 import { Globals, HexData, DailyData } from './hex_contract'
 import { StakeData, StakeList } from './lib/Stakes'
 import { format } from 'd3-format'
-import axios from 'axios'
 import _debug from 'debug'
 const debug = _debug("util")
 debug("loaded")
 
 export const getPulseXDaiHex = async () => {
-    const response = await axios.post("https://graph.pulsechain.com/subgraphs/name/pulsechain/pulsex", {
-        query: '{pair(id:"0x6f1747370b1cacb911ad6d4477b718633db328c8"){token1Price}}' // HEX/DAI, where token1Price => DAI per HEX
+    const response = await fetch("https://graph.pulsechain.com/subgraphs/name/pulsechain/pulsex", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+            query: '{pair(id:"0x6f1747370b1cacb911ad6d4477b718633db328c8"){token1Price}}' // HEX/DAI, where token1Price => DAI per HEX
+        })
     })
-    debug("HEX DAI: ", response.data.data.pair.token1Price)
-    return parseFloat(response.data.data.pair?.token1Price || "?.??")
+    if (!response.ok) throw new Error(`HEX/DAI price: HTTP ${response.status}`)
+    const json = await response.json()
+    debug("HEX DAI: ", json.data.pair.token1Price)
+    return parseFloat(json.data.pair?.token1Price || "?.??")
 }
 
 /*

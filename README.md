@@ -168,7 +168,7 @@ the same file are only needed to deploy.
 |---|---|
 | `yarn dev` | Vite dev server |
 | `yarn build` | `tsc && vite build` (type errors fail the build) |
-| `yarn test` / `yarn test-once` | vitest — **no test files exist yet** |
+| `yarn test` | vitest — **no test files exist yet** |
 | `yarn deploy:dev` | build and publish the preview to `dev.hexmob.win` |
 | `yarn release` | tagged, signed production release (see `AGENTS.md`) |
 
@@ -176,15 +176,24 @@ There is **no CI**: the GitHub Actions workflow was removed, so builds and tests
 
 ### Stack
 
-React 19 + TypeScript (strict) + Vite 7 (SWC plugin). `wagmi` v2 (pinned `2.12.0`) + `viem` ^2.45
+React 19 + TypeScript (strict) + Vite 7 (SWC plugin). `wagmi` v2 (pinned `2.19.5`) + `viem` ^2.45
 for on-chain reads (multicall) and wallet connection; `@reown/appkit` 1.8.12 (pinned) for wallet
 selection and network switching; `@tanstack/react-query` for refresh/caching; `react-bootstrap` +
 `sass` for styling; `i18next` ^26 / `react-i18next` for wording modes; `recharts`, `d3-format`,
-`axios`, `debug`.
+`debug`. HTTP is plain `fetch` — there is no axios. The only two off-chain endpoints are the PulseX
+subgraph price (`POST` to `graph.pulsechain.com`) and the future-stake graph (`GET`
+`futureus.win`, `?future` only), in `util.ts` / `NewStakeForm.tsx`; timeouts use `AbortController`,
+and a non-2xx is turned into a throw so callers keep the axios-era error handling.
 
-`package.json` carries a `resolutions` block pinning `vite` 7.3.2 and
-`@reown/appkit-adapter-wagmi/@wagmi/connectors` 6.1.3. (`@types/react-copy-to-clipboard` remains
-even though the runtime dependency was dropped.)
+`package.json` carries a `resolutions` block. Two entries are structural: `vite` 7.3.7 (an exact pin —
+the lock does not move without it) and `@reown/appkit-adapter-wagmi/@wagmi/connectors` 6.2.0 (which
+must match the connectors version wagmi itself pins — 2.19.5 wants exactly 6.2.0, and AppKit's
+adapter declares `wagmi >=2.17.5`, so it is satisfied by the same copy). The
+rest exist to keep transitive build-tool versions at patched releases (`rollup`, `postcss`,
+`js-yaml`, `flatted`, `nanoid`, `source-map-js`, `immutable`) and one to override
+`@coinbase/cdp-sdk`'s exact `axios` pin (`1.16.0`), which reaches the tree through the Coinbase
+smart-wallet connector and is never bundled. (`@types/react-copy-to-clipboard` remains even though
+the runtime dependency was dropped.)
 
 ### Architecture & data flow
 
@@ -254,6 +263,36 @@ Two independent price sources feed the header: `pulsePrice` from the PulseX subg
   badge reflects this default.
 - **Be conservative.** History shows several reverts of over-eager AI edits. Don't remove keys,
   config or “unused” code you don't understand.
+
+### Known dependency advisories
+
+Dependabot alerts on this repo were **dismissed wholesale**, so this list — not the GitHub security
+tab — is the record. Re-check with `yarn audit` (there is no CI to do it).
+
+Current state after the axios→`fetch` + wagmi 2.19.5 sweep: **78 advisories, 41 high, confined to
+three packages** (`zod`, `ws`, `decode-uri-component`) — down from 139 / 53 high / 21 packages.
+
+Cleared in that sweep, and not to be reintroduced: `axios` · `follow-redirects` · `form-data`
+(gone from the bundle entirely — the app uses `fetch`); `vite`, `rollup`, `postcss`, `js-yaml`,
+`flatted`, `nanoid`, `minimatch`, `brace-expansion`, `picomatch`, `source-map-js`, `immutable`,
+`i18next`, `ajv`, `vitest`, `hono`, `socket.io-parser`, `@coinbase/wallet-sdk` (→ 4.3.6),
+`@metamask/sdk` (→ 0.33.1). The last four came in with the wagmi bump, not from an override: wagmi
+2.19.5 pulls `@wagmi/connectors` 6.2.0, which already depended on patched Coinbase/MetaMask SDKs.
+
+Accepted, with why:
+
+| advisory | why it stays |
+|---|---|
+| `zod` < 4.6.6 | `@reown/appkit-wallet` pins `zod` to exactly `3.22.4` and the advisory range is `< 4.6.6`, so **no 3.x patch exists** — and AppKit 2.0.0 still pins `3.22.4`, so a major AppKit upgrade would *not* clear it either. Nothing to do but wait for a Reown release that moves off zod 3. Validation is of AppKit's own config, not untrusted input. |
+| `ws` 8.20.1 | the flagged copies sit behind WalletConnect's `jsonrpc-ws-connection` / `ethereum-provider` (Node transports). No `ws` code is in `dist/` — the browser uses the native `WebSocket`. Clearing it means forcing `ws` 8.x into a consumer that asks for `^7.5.1`. |
+| `decode-uri-component` 0.2.2 | reached only through `@walletconnect/utils`→`query-string`; the 0.5.x fix is a cross-major (ESM) bump and the code isn't in `dist/`. |
+
+Moderate leftovers are all nested dev-tool copies (`@babel/runtime`, `@humanfs/node`, `minimatch`,
+`uuid`) that a range-preserving re-resolve will not move.
+
+Two direct dependencies are imported nowhere: `@stablelib/ed25519` and `@stablelib/random`. Left in
+place deliberately (see the last conventions bullet); `@stablelib/ed25519` carries an unpatchable
+moderate (signature malleability, no fixed release).
 
 ### Branding & deployment
 

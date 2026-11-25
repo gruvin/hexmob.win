@@ -20,13 +20,6 @@ import imgGameLogo from './assets/game-logo.png'
 import { Trans, useTranslation } from "react-i18next"
 import { IS_TSA } from './brand'
 
-import _axios from 'axios'
-const axios = _axios.create({
-    baseURL: '/',
-    timeout: 3000,
-    headers: { "Content-Type": "application/json", "Accept": "applicaiton/json" },
-})
-
 const uriQuery = new URLSearchParams(window.location.search)
 
 import _debug from 'debug'
@@ -121,9 +114,18 @@ export const NewStakeForm = () => {
         data = [],
         graphIconClass = "icon-wait-bg"
 
-        let response
+        let response: Response
         try {
-            response = await axios.get(`https://futureus.win/hexmob/fs/${graphStartDay}/${numDataPoints}`, { timeout: 5000 })
+            const controller = new AbortController()
+            const timeout = setTimeout(() => controller.abort(), 5000)
+            try {
+                response = await fetch(`https://futureus.win/hexmob/fs/${graphStartDay}/${numDataPoints}`, {
+                    signal: controller.signal,
+                })
+            } finally {
+                clearTimeout(timeout)
+            }
+            if (!response.ok) throw new Error(`HTTP ${response.status}`)
         } catch (e: any) {
             debug("updateBarGraph: ", e.message)
             graphIconClass = "icon-error-bg"
@@ -131,7 +133,8 @@ export const NewStakeForm = () => {
         }
         debug('fs response:', response)
 
-        data = response.data.data.map((d: { uiEndDay: number; totalHearts: string }) => {
+        const json = await response.json()
+        data = json.data.map((d: { uiEndDay: number; totalHearts: string }) => {
             return ({
                 uiEndDay: d.uiEndDay,
                 stakedHex: Number(formatUnits(BigInt(d.totalHearts), 14))
