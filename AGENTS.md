@@ -133,6 +133,11 @@ Two rules if you touch it:
   code must not be able to capture a command name.
 - **Keep the palette small.** A deploy log should read as headings, stages and statuses, not as a
   christmas tree.
+- **Wrap network reads in `ui_spin`.** Calls that pause before printing anything (`git ls-remote`,
+  `gh release list/view`) look like a hang otherwise. `ui_spin "<label>" <command...>` draws a
+  spinner on **stderr**, captures the command's stdout into `UI_SPIN_OUT`, and replays stderr
+  only on failure — so captured output and pipelines stay clean, and without a terminal the
+  command simply runs. Never print the command's stdout directly from inside a spinner.
 
 If the file is missing, both scripts fall back to plain output rather than dying on undefined
 helpers.

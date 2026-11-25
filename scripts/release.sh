@@ -123,7 +123,8 @@ fi
 
 _remote_tag_state() { # absent | present | unknown
     local OUT RC
-    OUT=$(${GIT} ls-remote --tags origin "refs/tags/$1" 2>/dev/null)
+    ui_spin "checking origin for tag $1" ${GIT} ls-remote --tags origin "refs/tags/$1"
+    OUT=${UI_SPIN_OUT}
     RC=$?
     [[ ${RC} -ne 0 ]] && { print -n unknown; return; }
     [[ -n "${OUT}" ]] && { print -n present; return; }
@@ -145,7 +146,7 @@ if [[ -n "$LATEST_TAG" ]]; then
     if [[ "$LATEST_STATE" == "absent" ]]; then
         SUGGESTED="${LATEST_TAG}"
         ui_warn "${LATEST_TAG} exists locally but was never pushed - suggesting it again (unfinished release)"
-    elif [[ "$LATEST_STATE" == "present" ]] && ! ${GH} release view "${LATEST_TAG}" > /dev/null 2>&1; then
+    elif [[ "$LATEST_STATE" == "present" ]] && ! ui_spin "looking for a release of ${LATEST_TAG}" ${GH} release view "${LATEST_TAG}"; then
         SUGGESTED="${LATEST_TAG}"
         ui_warn "${LATEST_TAG} is pushed but has no release yet - suggesting it again (unfinished release)"
     else
@@ -188,7 +189,7 @@ if ${GIT} rev-parse --verify --quiet "refs/tags/${NEW_TAG}" > /dev/null; then
                 print "  summary: $(${GIT} for-each-ref --format='%(contents:subject)' "refs/tags/${NEW_TAG}")"
                 ;;
             (present)
-                if ${GH} release view "${NEW_TAG}" > /dev/null 2>&1; then
+                if ui_spin "looking for a release of ${NEW_TAG}" ${GH} release view "${NEW_TAG}"; then
                     if [[ ${REPUBLISH} -eq 0 ]]; then
                         ui_err "${NEW_TAG} is pushed AND already has a release."
                         print "Continuing would rebuild, redeploy and REPLACE that release's published assets."
@@ -240,9 +241,12 @@ fi
 # not what the build currently being served belongs to. Drafts are shown separately.
 # Identify releases by title as well as tag - these releases carry descriptive names
 # ("3rd Party Security Upgrades"), so the tag alone is ambiguous to a human reader.
-CURRENT_RELEASE=$(${GH} release list --exclude-drafts --limit 1 --json tagName -q '.[0].tagName' 2>/dev/null)
-CURRENT_RELEASE_NAME=$(${GH} release list --exclude-drafts --limit 1 --json name -q '.[0].name' 2>/dev/null)
-DRAFT_COUNT=$(${GH} release list --json isDraft -q '[.[] | select(.isDraft)] | length' 2>/dev/null)
+ui_spin "reading the release list" ${GH} release list --exclude-drafts --limit 1 \
+    --json tagName,name -q '.[0] | "\(.tagName)\t\(.name)"'
+CURRENT_RELEASE=${UI_SPIN_OUT%%$'\t'*}
+CURRENT_RELEASE_NAME=${UI_SPIN_OUT#*$'\t'}
+ui_spin "counting drafts" ${GH} release list --json isDraft -q '[.[] | select(.isDraft)] | length'
+DRAFT_COUNT=${UI_SPIN_OUT}
 [[ -z "${CURRENT_RELEASE_NAME}" ]] && CURRENT_RELEASE_NAME="${CURRENT_RELEASE}"
 
 # Format the list ourselves. gh only aligns columns when stdout is a terminal, so piping it
@@ -250,9 +254,10 @@ DRAFT_COUNT=$(${GH} release list --json isDraft -q '[.[] | select(.isDraft)] | l
 # terminal. Also use publishedAt, which is the PUBLISHED column gh shows - createdAt is when
 # the release object was made and differs for releases that were edited later.
 ui_head "GitHub releases (published):"
-RELEASE_ROWS=$(${GH} release list --exclude-drafts --limit 5 \
+ui_spin "reading releases" ${GH} release list --exclude-drafts --limit 5 \
     --json tagName,name,publishedAt,isLatest \
-    -q '.[] | [.tagName, (.publishedAt[:10]), (if ((.name // "") == "") then .tagName else .name end), (if .isLatest then "[latest]" else "" end)] | @tsv' 2>/dev/null)
+    -q '.[] | [.tagName, (.publishedAt[:10]), (if ((.name // "") == "") then .tagName else .name end), (if .isLatest then "[latest]" else "" end)] | @tsv'
+RELEASE_ROWS=${UI_SPIN_OUT}
 if [[ -n "${RELEASE_ROWS}" ]]; then
     print -r -- "${RELEASE_ROWS}" | while IFS=$'\t' read -r R_TAG R_DATE R_TITLE R_MARK; do
         (( ${#R_TITLE} > 54 )) && R_TITLE="${R_TITLE[1,51]}..."
@@ -384,7 +389,8 @@ if [[ "${TARGET_CHOICE}" == "n" || "${TARGET_CHOICE}" == "N" ]]; then
     rm -f "${REF_TMP}"
 else
     # The usual path: pull the current body so the edit is an append, not a replacement.
-    ${GH} release view "${CURRENT_RELEASE}" --json body -q .body 2>/dev/null | tr -d '\r' > "${NOTES_TMP}"
+    ui_spin "reading the current release notes" ${GH} release view "${CURRENT_RELEASE}" --json body -q .body
+    print -r -- "${UI_SPIN_OUT}" | tr -d '\r' > "${NOTES_TMP}"
     cp "${NOTES_TMP}" "${NOTES_TMP}.orig"
     _edit_notes "${NOTES_TMP}" "${CURRENT_RELEASE}" || exit 1
 fi
@@ -462,7 +468,8 @@ else
         || { print "ERROR: could not retag the release (is ${NEW_TAG} pushed?). Nothing else was changed."; exit 1; }
 
     ui_stage "Replacing the source+sig assets"
-    for ASSET in $(${GH} release view "${NEW_TAG}" --json assets -q '.assets[].name' 2>/dev/null); do
+    ui_spin "reading the current assets" ${GH} release view "${NEW_TAG}" --json assets -q '.assets[].name'
+    for ASSET in ${(f)UI_SPIN_OUT}; do
         if [[ ${DRY_RUN} -eq 1 ]]; then
             print "  [dry-run] would remove ${ASSET}"
         else

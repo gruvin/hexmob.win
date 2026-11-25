@@ -75,3 +75,40 @@ ui_dim() {
 ui_kv() {
     printf '  %s%-8s%s %s\n' "${C_ACC}" "${1}" "${C_RESET}" "${2}"
 }
+
+# Run a command while showing a spinner, for calls that pause on the network (gh, git ls-remote)
+# but print nothing until they return. The command's stdout is captured into UI_SPIN_OUT and its
+# stderr is only replayed if it fails; the spinner goes to stderr so pipelines and redirects of
+# stdout stay clean. Without a terminal the command simply runs.
+# @args: LABEL COMMAND...
+ui_spin() {
+    local label=$1
+    shift
+    UI_SPIN_OUT=""
+    local out err rc pid
+    out=$(mktemp "${TMPDIR:-/tmp}/ui-spin-out.XXXXXX") || return 1
+    err=$(mktemp "${TMPDIR:-/tmp}/ui-spin-err.XXXXXX") || { rm -f "${out}"; return 1; }
+
+    if [[ ${_ui} -ne 1 ]]; then
+        "$@" > "${out}" 2> "${err}"
+        rc=$?
+    else
+        "$@" > "${out}" 2> "${err}" &
+        pid=$!
+        local -a FRAMES=(⠋ ⠙ ⠹ ⠸ ⠼ ⠴ ⠦ ⠧ ⠇ ⠏)
+        local i=0
+        while kill -0 "${pid}" 2>/dev/null; do
+            printf '\r  %s%s%s %s' "${C_ACC}" "${FRAMES[$(( i % 10 + 1 ))]}" "${C_RESET}" "${label}" >&2
+            (( i++ ))
+            sleep 0.08
+        done
+        wait "${pid}"
+        rc=$?
+        printf '\r\033[K' >&2
+    fi
+
+    UI_SPIN_OUT=$(cat "${out}")
+    [[ ${rc} -ne 0 && -s "${err}" ]] && sed 's/^/  /' "${err}" >&2
+    rm -f "${out}" "${err}"
+    return ${rc}
+}
